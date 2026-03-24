@@ -5,7 +5,11 @@ import { watchUrlChanges } from "./url-watcher.js";
 import { watchKetcherDialog } from "./overlay-watcher.js";
 import { ensurePanel, renderFromState } from "./features/sample-panel.js";
 import { ensurePrintButtons } from "./features/print-buttons.js";
-import { ensureDepletedStyle, markDepletedSamplesInSelector } from "./features/depleted-marker.js";
+import {
+  ensureDepletedStyle,
+  markDepletedSamplesInSelector,
+  startDepletedMarkerObserver
+} from "./features/depleted-marker.js";
 import {resetState} from "./state";
 
 
@@ -25,6 +29,7 @@ function init() {
 
   ensurePanel();
   ensureDepletedStyle();
+  startDepletedMarkerObserver();
 
   renderFromState();
   ensurePrintButtons();

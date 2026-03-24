@@ -509,7 +509,11 @@ export function ensurePrintButtons() {
     const reactionElements = getReactionElements();
     if (!reactionElements.length) return;
 
+    ensurePrintButtonStyles();
+
     reactionElements.forEach((reactionEl, index) => {
+        reactionEl.classList.add("cdd-stoich-reaction-host");
+
         const existing = reactionEl.querySelector(
             `.${BTN_CLASS}[data-reaction-index="${index}"]`
         );
@@ -547,4 +551,26 @@ function getReactionImageHtmlForIndex(reactionIndex) {
     return img.outerHTML;
 }
 
+function ensurePrintButtonStyles() {
+    if (document.getElementById("cdd-stoich-print-button-styles")) return;
 
+    const style = document.createElement("style");
+    style.id = "cdd-stoich-print-button-styles";
+    style.textContent = `
+        .cdd-stoich-reaction-host .${BTN_CLASS} {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(-2px);
+            transition: opacity 0.15s ease, transform 0.15s ease;
+        }
+
+        .cdd-stoich-reaction-host:hover .${BTN_CLASS},
+        .cdd-stoich-reaction-host:focus-within .${BTN_CLASS} {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+        }
+    `;
+
+    document.head.appendChild(style);
+}

@@ -1,0 +1,13 @@
+{
+  "name": "cdd-stoich-tools",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build:content": "vite build --config vite.content.config.js",
+    "build:inject": "vite build --config vite.inject.config.js",
+    "build": "npm run build:content && npm run build:inject"
+  },
+  "devDependencies": {
+    "vite": "^7.3.1"
+  }
+}

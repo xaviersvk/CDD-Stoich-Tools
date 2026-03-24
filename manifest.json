@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "CDD Stoich Tools",
+  "version": "1.0.0",
+  "description": "CDD helper tools for stoichiometry tables",
+  "icons": {
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.collaborativedrug.com/*"],
+      "js": ["assets/content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["assets/inject.js"],
+      "matches": ["*://*.collaborativedrug.com/*"]
+    }
+  ]
+}

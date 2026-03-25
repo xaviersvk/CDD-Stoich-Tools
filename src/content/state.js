@@ -6,7 +6,7 @@ export const STATE = {
 
   lastPayload: null,          // sample panel payload
   reactionPayloads: [],       // print payloads per reaction
-  depletedIdentifiers: [],
+  depletedIdentifiers: new Set(),
 
   panelCollapsed: false
 };
@@ -16,5 +16,5 @@ export function resetState() {
   STATE.hasReactionFeature = false;
   STATE.lastPayload = null;
   STATE.reactionPayloads = [];
-  STATE.depletedIdentifiers = [];
+  STATE.depletedIdentifiers = new Set();
 }

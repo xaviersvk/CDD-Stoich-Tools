@@ -11,9 +11,12 @@ function normalizeValue(value) {
 }
 
 function getDepletedSet() {
-    const raw = Array.isArray(STATE.depletedIdentifiers)
-        ? STATE.depletedIdentifiers
-        : [];
+    const raw =
+        STATE.depletedIdentifiers instanceof Set
+            ? Array.from(STATE.depletedIdentifiers)
+            : Array.isArray(STATE.depletedIdentifiers)
+                ? STATE.depletedIdentifiers
+                : [];
 
     return new Set(raw.map(normalizeValue).filter(Boolean));
 }

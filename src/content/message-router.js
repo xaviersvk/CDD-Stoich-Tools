@@ -36,9 +36,18 @@ export function handleMessage(event) {
                 ? data.payload.reactionPayloads
                 : [];
 
-            STATE.depletedIdentifiers = Array.isArray(data.payload?.depletedIdentifiers)
+            const incoming = Array.isArray(data.payload?.depletedIdentifiers)
                 ? data.payload.depletedIdentifiers
                 : [];
+
+            if (incoming.length > 0) {
+                const next = new Set(STATE.depletedIdentifiers || []);
+                for (const id of incoming) {
+                    const normalized = String(id || "").replace(/\s+/g, " ").trim();
+                    if (normalized) next.add(normalized);
+                }
+                STATE.depletedIdentifiers = next;
+            }
 
             setTimeout(() => {
                 ensurePrintButtons();

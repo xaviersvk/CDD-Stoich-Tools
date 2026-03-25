@@ -16,7 +16,6 @@ function getReactionTitle(payload) {
 
 function resolveDisplayName(row) {
     return (
-        row?.sample?.sample_identifier ||
         row?.sample?.name ||
         row?.name ||
         row?.iupacName ||
@@ -37,13 +36,13 @@ function resolveRowData(row) {
     const amountUnit = row?.amountUnit ?? row?.unit ?? row?.units ?? "";
 
     const desiredEq = row?.desiredEq ?? row?.equivalents ?? row?.eq ?? row?.equivalent ?? "";
-    const mmol = row?.mmol ?? row?.moles ?? row?.mole ?? "";
+    const mol = row?.mole ?? "";
     const mw = row?.mw ?? row?.molecularWeight ?? row?.formulaWeight ?? "";
     const exactMass = row?.exactMass ?? "";
     const volume = row?.volume ?? "";
     const density = row?.density ?? row?.sample?.density ?? "";
     const boilingPoint = row?.boilingPoint ?? "";
-    const effectiveMole = row?.effectiveMole ?? "";
+    const effectiveMole = row?.moleffective ?? row?.effectiveMole ?? "";
     const limitingReagent = !!(row?.limitingReagent ?? row?.limiting);
     const yieldValue = row?.yield ?? "";
 
@@ -71,7 +70,7 @@ function resolveRowData(row) {
         volume: formatValue(volume),
 
         equivalent: formatValue(desiredEq),
-        mole: formatValue(mmol),
+        mole: formatValue(mol),
         effectiveMole: formatValue(effectiveMole),
         limitingReagent,
         yield: formatValue(yieldValue),
@@ -87,7 +86,13 @@ function extractRows(feature) {
     const stoichTable = feature?.data?.stoichiometryTable;
     const rows = Array.isArray(stoichTable?.rows) ? stoichTable.rows : [];
 
-    return rows.map(resolveRowData);
+    return rows
+        .filter((row) => {
+            const role = String(row?.role || "").toLowerCase();
+            const rowType = String(row?.rowType || "").toLowerCase();
+            return role !== "product" && rowType !== "product";
+        })
+        .map(resolveRowData);
 }
 
 function extractDepletedIdentifiers(payload) {

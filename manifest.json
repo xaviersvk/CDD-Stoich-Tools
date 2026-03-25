@@ -18,5 +18,11 @@
       "resources": ["assets/inject.js"],
       "matches": ["*://*.collaborativedrug.com/*"]
     }
-  ]
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "cdd-stoich-tools@local",
+      "strict_min_version": "109.0"
+    }
+  }
 }

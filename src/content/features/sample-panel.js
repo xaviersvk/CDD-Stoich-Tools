@@ -412,6 +412,7 @@ export function renderSamples(payload) {
             const concentrationText = formatConcentration(sample);
             const purityValue = parsePurity(sample.purity);
             const lowPurity = !isNaN(purityValue) && purityValue <= 93;
+            const { internalID, solvent } = sample;
 
             if (lowPurity) {
                 card.style.borderLeftColor = "#ef4444";
@@ -436,8 +437,10 @@ export function renderSamples(payload) {
                 createCopyableRow("Name", sample.name || "—"),
                 createCopyableRow("Location", sample.location || "Location not set"),
                 purityRow,
+                createCopyableRow("Internal ID", internalID),
                 createCopyableRow("Density [g/mL]", sample.density),
                 createCopyableRow("Concentration", concentrationText),
+                createCopyableRow("Solvent", solvent),
             ].filter(Boolean);
 
             for (const rowEl of rows) {

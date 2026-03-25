@@ -27,8 +27,8 @@ export function extractRowsFromReactionFeature(feature, reactionIndex) {
         if (seen.has(dedupeKey)) continue;
         seen.add(dedupeKey);
 
-        const { purity, density } = resolveBatchFields(row);
-        const { concentration, concentrationUnits } = resolveSampleFields(row);
+        const { purity, density, internalID } = resolveBatchFields(row);
+        const { concentration, concentrationUnits, solvent } = resolveSampleFields(row);
 
         output.push({
             reactionIndex,
@@ -43,6 +43,8 @@ export function extractRowsFromReactionFeature(feature, reactionIndex) {
             density,
             concentration,
             concentrationUnits,
+            internalID,
+            solvent,
         });
     }
 

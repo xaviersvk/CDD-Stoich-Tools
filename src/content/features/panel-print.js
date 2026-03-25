@@ -19,7 +19,8 @@ export function printPanel() {
             <td>${escapeHtml(sample.location || "")}</td>
             <td>${escapeHtml(sample.concentration || "")}</td>
             <td>${escapeHtml(sample.purity || "")}</td>
-            <td>${escapeHtml(sample.density || "")}</td>
+            <td>${escapeHtml(sample.solvent || "")}</td>
+            <td>${escapeHtml(sample.internalID || "")}</td>
         </tr>
     `).join("");
 
@@ -58,16 +59,17 @@ export function printPanel() {
 <body>
     <h1>CDD Samples</h1>
     <table>
-        <thead>
-            <tr>
-                <th>Reaction</th>
-                <th>Name</th>
-                <th>Location</th>
-                <th>Concentration</th>
-                <th>Purity</th>
-                <th>Density</th>
-            </tr>
-        </thead>
+<thead>
+    <tr>
+        <th>Reaction</th>
+        <th>Name</th>
+        <th>Location</th>
+        <th>Concentration</th>
+        <th>Purity</th>
+        <th>Solvent</th>
+        <th>Internal ID</th>
+    </tr>
+</thead>
         <tbody>
             ${rowsHtml}
         </tbody>

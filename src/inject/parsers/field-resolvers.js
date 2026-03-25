@@ -75,6 +75,11 @@ export function resolveBatchFields(row) {
         "Purity",
     ]);
 
+    const internalID = getFieldValueCaseInsensitive(batchFields, [
+        "Internal ID",
+        "*Internal ID"
+    ]);
+
     const density = getFieldValueCaseInsensitive(batchFields, [
         "Density [g/mL]",
         "Density[g/mL]",
@@ -84,6 +89,7 @@ export function resolveBatchFields(row) {
     return {
         purity,
         density,
+        internalID
     };
 }
 
@@ -100,6 +106,13 @@ export function resolveSampleFields(row) {
         "*Concentration",
     ]);
 
+    const solvent = getFieldValueCaseInsensitive(sampleFields, [
+        "*Solvent",
+        "Solvent",
+        "Buffer",
+        "*Buffer",
+    ]);
+
     const concentrationUnits = getFieldValueCaseInsensitive(sampleFields, [
         "Concentration units",
         "Concentration Units",
@@ -111,5 +124,6 @@ export function resolveSampleFields(row) {
     return {
         concentration,
         concentrationUnits,
+        solvent,
     };
 }

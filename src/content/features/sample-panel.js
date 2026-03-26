@@ -316,17 +316,79 @@ export function parsePurity(value) {
     return parseFloat(String(value).replace(",", "."));
 }
 
+function formatClipboardNumber(value) {
+    if (!Number.isFinite(value)) return null;
+
+    const rounded = Number(value.toFixed(12));
+    if (Object.is(rounded, -0)) return "0";
+
+    return String(rounded);
+}
+
+function normalizeConcentrationUnit(unit) {
+    return String(unit || "")
+        .trim()
+        .replace(/\s+/g, "")
+        .replace(/μ/g, "u")
+        .replace(/µ/g, "u")
+        .toLowerCase();
+}
+
+function getCddCompatibleConcentrationCopyValue(sample) {
+    const rawValue = sample?.concentration;
+    const rawUnits = sample?.concentrationUnits;
+
+    if (rawValue == null || rawValue === "") return null;
+
+    const numericValue = parseFloat(String(rawValue).replace(",", "."));
+    if (!Number.isFinite(numericValue)) {
+        return rawUnits ? `${rawValue} ${rawUnits}` : String(rawValue);
+    }
+
+    const unit = normalizeConcentrationUnit(rawUnits);
+
+    if (!unit) {
+        return String(rawValue);
+    }
+
+    if (unit === "m" || unit === "mol/l") {
+        return `${formatClipboardNumber(numericValue)} mol/L`;
+    }
+
+    if (unit === "mm" || unit === "mmol/l") {
+        return `${formatClipboardNumber(numericValue)} mmol/L`;
+    }
+
+    if (unit === "um" || unit === "umol/l") {
+        return `${formatClipboardNumber(numericValue / 1000)} mmol/L`;
+    }
+
+    if (unit === "nm" || unit === "nmol/l") {
+        return `${formatClipboardNumber(numericValue / 1000000)} mmol/L`;
+    }
+
+    if (unit === "mol/ml") {
+        return `${formatClipboardNumber(numericValue)} mol/mL`;
+    }
+
+    return rawUnits ? `${rawValue} ${rawUnits}` : String(rawValue);
+}
+
 export function createCopyableRow(label, value, options = {}) {
     if (value == null || value === "") return null;
 
     const row = document.createElement("div");
     row.className = "cdd-stoich-row-copyable";
 
-    const valueText = String(value);
+    const displayValue = String(value);
+    const copyValue =
+        options.copyValue != null && options.copyValue !== ""
+            ? String(options.copyValue)
+            : displayValue;
 
     row.innerHTML = `
     <span class="cdd-stoich-label">${escapeHtml(label)}:</span>
-    <span class="cdd-stoich-copy-value">${escapeHtml(valueText)}</span>
+    <span class="cdd-stoich-copy-value">${escapeHtml(displayValue)}</span>
   `;
 
     const valueEl = row.querySelector(".cdd-stoich-copy-value");
@@ -337,7 +399,7 @@ export function createCopyableRow(label, value, options = {}) {
     }
 
     valueEl.addEventListener("click", async () => {
-        await copyTextWithFeedback(valueEl, valueText);
+        await copyTextWithFeedback(valueEl, copyValue);
     });
 
     return row;
@@ -439,7 +501,9 @@ export function renderSamples(payload) {
                 purityRow,
                 createCopyableRow("Internal ID", internalID),
                 createCopyableRow("Density [g/mL]", sample.density),
-                createCopyableRow("Concentration", concentrationText),
+                createCopyableRow("Concentration", concentrationText, {
+                    copyValue: getCddCompatibleConcentrationCopyValue(sample),
+                }),
                 createCopyableRow("Solvent", solvent),
             ].filter(Boolean);
 

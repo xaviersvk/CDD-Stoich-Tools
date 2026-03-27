@@ -1,10 +1,9 @@
 import { copyTextWithFeedback } from "../utils/clipboard.js";
-import {STATE} from "../state";
-import {isElnEntryPage} from "../../shared/page-detection";
-import {PANEL_ID, REACTION_COLORS} from "../../shared/plugin-constants";
-import {escapeHtml} from "../utils/dom";
-import {updatePanelVisibilityForOverlays} from "../overlay-watcher";
-import {printPanel} from "./panel-print";
+import { STATE } from "../state.js";
+import { isElnEntryPage } from "../../shared/page-detection.js";
+import { PANEL_ID, REACTION_COLORS } from "../../shared/plugin-constants.js";
+import { updatePanelVisibilityForOverlays } from "../overlay-watcher.js";
+import { printPanel } from "./panel-print.js";
 
 export function makePanelDraggable(panel) {
     const header = panel.querySelector(".cdd-stoich-header");
@@ -73,20 +72,53 @@ export function ensurePanel() {
     panel.style.right = "16px";
     panel.style.left = "auto";
 
-    panel.innerHTML = `
-      <div class="cdd-stoich-header">
-        <div class="cdd-stoich-title">CDD Samples</div>
-        <div class="cdd-stoich-actions">
-          <button id="${PANEL_ID}-refresh" type="button">Refresh</button>
-          <button id="${PANEL_ID}-print" type="button">Print</button>
-          <button id="${PANEL_ID}-toggle" type="button">−</button>
-        </div>
-      </div>
-      <div class="cdd-stoich-body">
-        <div class="cdd-stoich-status">Waiting for reaction data...</div>
-        <div class="cdd-stoich-list"></div>
-      </div>
-    `;
+    const header = document.createElement("div");
+    header.className = "cdd-stoich-header";
+
+    const title = document.createElement("div");
+    title.className = "cdd-stoich-title";
+    title.textContent = "CDD Samples";
+
+    const actions = document.createElement("div");
+    actions.className = "cdd-stoich-actions";
+
+    const refreshBtn = document.createElement("button");
+    refreshBtn.id = `${PANEL_ID}-refresh`;
+    refreshBtn.type = "button";
+    refreshBtn.textContent = "Refresh";
+
+    const printBtn = document.createElement("button");
+    printBtn.id = `${PANEL_ID}-print`;
+    printBtn.type = "button";
+    printBtn.textContent = "Print";
+
+    const toggleBtn = document.createElement("button");
+    toggleBtn.id = `${PANEL_ID}-toggle`;
+    toggleBtn.type = "button";
+    toggleBtn.textContent = "−";
+
+    actions.appendChild(refreshBtn);
+    actions.appendChild(printBtn);
+    actions.appendChild(toggleBtn);
+
+    header.appendChild(title);
+    header.appendChild(actions);
+
+    const body = document.createElement("div");
+    body.className = "cdd-stoich-body";
+
+    const status = document.createElement("div");
+    status.className = "cdd-stoich-status";
+    status.textContent = "Waiting for reaction data...";
+
+    const list = document.createElement("div");
+    list.className = "cdd-stoich-list";
+
+    body.appendChild(status);
+    body.appendChild(list);
+
+    panel.appendChild(header);
+    panel.appendChild(body);
 
     const style = document.createElement("style");
     style.textContent = `
@@ -255,15 +287,15 @@ export function ensurePanel() {
     display: none;
   }
 
-#${PANEL_ID} .cdd-low-purity-badge {
-  background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
-  font-weight: 700;
-  font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 999px;
-  border: 1px solid rgba(239, 68, 68, 0.35);
-}
+  #${PANEL_ID} .cdd-low-purity-badge {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    font-weight: 700;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 999px;
+    border: 1px solid rgba(239, 68, 68, 0.35);
+  }
 `;
 
     document.documentElement.appendChild(style);
@@ -271,18 +303,17 @@ export function ensurePanel() {
 
     makePanelDraggable(panel);
 
-    panel.querySelector(`#${PANEL_ID}-refresh`)?.addEventListener("click", () => {
+    refreshBtn.addEventListener("click", () => {
         renderFromState();
     });
 
-    panel.querySelector(`#${PANEL_ID}-print`)?.addEventListener("click", () => {
+    printBtn.addEventListener("click", () => {
         printPanel();
     });
 
-    panel.querySelector(`#${PANEL_ID}-toggle`)?.addEventListener("click", () => {
+    toggleBtn.addEventListener("click", () => {
         panel.classList.toggle("collapsed");
-        const btn = panel.querySelector(`#${PANEL_ID}-toggle`);
-        if (btn) btn.textContent = panel.classList.contains("collapsed") ? "+" : "−";
+        toggleBtn.textContent = panel.classList.contains("collapsed") ? "+" : "−";
     });
 
     updatePanelVisibilityForOverlays();
@@ -374,24 +405,30 @@ function getCddCompatibleConcentrationCopyValue(sample) {
     return rawUnits ? `${rawValue} ${rawUnits}` : String(rawValue);
 }
 
-export function createCopyableRow(label, value, options = {}) {
+function createCopyableRow(label, value, options = {}) {
     if (value == null || value === "") return null;
 
     const row = document.createElement("div");
     row.className = "cdd-stoich-row-copyable";
 
-    const displayValue = String(value);
-    const copyValue =
+    const labelEl = document.createElement("span");
+    labelEl.className = "cdd-stoich-label";
+    labelEl.textContent = `${label}:`;
+
+    const valueEl = document.createElement("span");
+    valueEl.className = "cdd-stoich-copy-value";
+
+    const valueText = String(value);
+    const copyText =
         options.copyValue != null && options.copyValue !== ""
             ? String(options.copyValue)
-            : displayValue;
+            : valueText;
 
-    row.innerHTML = `
-    <span class="cdd-stoich-label">${escapeHtml(label)}:</span>
-    <span class="cdd-stoich-copy-value">${escapeHtml(displayValue)}</span>
-  `;
+    valueEl.textContent = valueText;
 
-    const valueEl = row.querySelector(".cdd-stoich-copy-value");
+    row.appendChild(labelEl);
+    row.appendChild(document.createTextNode(" "));
+    row.appendChild(valueEl);
 
     if (options.highlight) {
         valueEl.style.color = "#ef4444";
@@ -399,7 +436,7 @@ export function createCopyableRow(label, value, options = {}) {
     }
 
     valueEl.addEventListener("click", async () => {
-        await copyTextWithFeedback(valueEl, copyValue);
+        await copyTextWithFeedback(valueEl, copyText);
     });
 
     return row;
@@ -444,11 +481,15 @@ export function formatConcentration(sample) {
 export function renderSamples(payload) {
     const { list } = getPanelParts();
     if (!list) return;
-    list.innerHTML = "";
+
+    list.replaceChildren();
 
     const samples = payload?.samples || [];
     if (!samples.length) {
-        list.innerHTML = `<div class="cdd-stoich-card">No samples found in reaction block.</div>`;
+        const emptyCard = document.createElement("div");
+        emptyCard.className = "cdd-stoich-card";
+        emptyCard.textContent = "No samples found in reaction block.";
+        list.appendChild(emptyCard);
         return;
     }
 
@@ -461,6 +502,21 @@ export function renderSamples(payload) {
         groupEl.className = "cdd-stoich-group";
         groupEl.style.borderColor = color.border;
         groupEl.style.boxShadow = `0 0 0 1px ${color.glow} inset`;
+
+        const groupHeader = document.createElement("div");
+        groupHeader.className = "cdd-stoich-group-header";
+        groupHeader.style.background = color.badgeBg;
+        groupHeader.style.color = color.badgeText;
+
+        const groupTitle = document.createElement("span");
+        groupTitle.textContent = group.reactionLabel;
+
+        const groupCount = document.createElement("span");
+        groupCount.className = "cdd-stoich-group-count";
+        groupCount.textContent = `${group.items.length} sample(s)`;
+
+        groupHeader.appendChild(groupTitle);
+        groupHeader.appendChild(groupCount);
 
         const groupBody = document.createElement("div");
         groupBody.className = "cdd-stoich-group-body";
@@ -479,17 +535,27 @@ export function renderSamples(payload) {
             if (lowPurity) {
                 card.style.borderLeftColor = "#ef4444";
                 card.style.background = "rgba(239,68,68,0.05)";
-                card.style.borderLeftColor = "#ef4444";
             }
 
-            card.innerHTML = `
-        <div class="cdd-stoich-card-top">
-          <div class="cdd-stoich-reaction-badge" style="background: ${color.badgeBg}; color: ${color.badgeText};">
-            ${escapeHtml(group.reactionLabel)}
-          </div>
-          ${lowPurity ? `<div class="cdd-low-purity-badge">⚠ LOW PURITY</div>` : ""}
-        </div>
-      `;
+            const cardTop = document.createElement("div");
+            cardTop.className = "cdd-stoich-card-top";
+
+            const badge = document.createElement("div");
+            badge.className = "cdd-stoich-reaction-badge";
+            badge.style.background = color.badgeBg;
+            badge.style.color = color.badgeText;
+            badge.textContent = group.reactionLabel;
+
+            cardTop.appendChild(badge);
+
+            if (lowPurity) {
+                const purityBadge = document.createElement("div");
+                purityBadge.className = "cdd-low-purity-badge";
+                purityBadge.textContent = "⚠ LOW PURITY";
+                cardTop.appendChild(purityBadge);
+            }
+
+            card.appendChild(cardTop);
 
             const purityRow = lowPurity
                 ? createCopyableRow("Purity [%]", sample.purity, { highlight: true })
@@ -514,13 +580,7 @@ export function renderSamples(payload) {
             groupBody.appendChild(card);
         }
 
-        groupEl.innerHTML = `
-      <div class="cdd-stoich-group-header" style="background: ${color.badgeBg}; color: ${color.badgeText};">
-        <span>${escapeHtml(group.reactionLabel)}</span>
-        <span class="cdd-stoich-group-count">${group.items.length} sample(s)</span>
-      </div>
-    `;
-
+        groupEl.appendChild(groupHeader);
         groupEl.appendChild(groupBody);
         list.appendChild(groupEl);
     }

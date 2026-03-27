@@ -88,52 +88,6 @@ function normalizeName(str) {
         .trim();
 }
 
-function buildPropertiesCell(row) {
-    const lines = [];
-
-    if (row.role) lines.push(`<div><strong>Role:</strong> ${escapeHtml(formatValue(row.role))}</div>`);
-    if (row.batchName) lines.push(`<div><strong>Batch:</strong> ${escapeHtml(formatValue(row.batchName))}</div>`);
-    if (row.sampleIdentifier) lines.push(`<div><strong>Sample:</strong> ${escapeHtml(formatValue(row.sampleIdentifier))}</div>`);
-    if (row.mw) lines.push(`<div><strong>MW:</strong> ${escapeHtml(formatValue(row.mw))}</div>`);
-    if (row.density) lines.push(`<div><strong>Density:</strong> ${escapeHtml(formatValue(row.density))}</div>`);
-
-    if (row.concentration || row.concentrationUnit) {
-        lines.push(
-            `<div><strong>Conc.:</strong> ${escapeHtml(
-                `${formatValue(row.concentration)} ${formatValue(row.concentrationUnit)}`.trim()
-            )}</div>`
-        );
-    }
-
-    return lines.length ? lines.join("") : `<div style="opacity:.6">—</div>`;
-}
-
-function buildAmountsCell(row) {
-    const lines = [];
-
-    if (row.amount || row.amountUnit) {
-        lines.push(
-            `<div><strong>Amount:</strong> ${escapeHtml(
-                `${formatValue(row.amount)} ${formatValue(row.amountUnit)}`.trim()
-            )}</div>`
-        );
-    }
-
-    if (row.volume) lines.push(`<div><strong>Volume:</strong> ${escapeHtml(formatValue(row.volume))}</div>`);
-    if (row.mmol) lines.push(`<div><strong>mmol:</strong> ${escapeHtml(formatValue(row.mmol))}</div>`);
-
-    return lines.length ? lines.join("") : `<div style="opacity:.6">—</div>`;
-}
-
-function buildCalculationCell(row) {
-    const lines = [];
-
-    if (row.desiredEq) lines.push(`<div><strong>Eq:</strong> ${escapeHtml(formatValue(row.desiredEq))}</div>`);
-    if (row.depleted) lines.push(`<div><strong>Status:</strong> <span style="color:#b91c1c;">Depleted</span></div>`);
-
-    return lines.length ? lines.join("") : `<div style="opacity:.6">—</div>`;
-}
-
 function buildRowsHtml(rows) {
     return rows.map((row, index) => {
         const fw = row.formulaWeight ?? row.molecularWeight;
@@ -468,19 +422,28 @@ function buildButton(reactionIndex) {
     btn.title = "Print stoichiometry sheet";
     btn.setAttribute("aria-label", "Print stoichiometry sheet");
 
-    btn.innerHTML = `
-        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-            <path fill="currentColor" d="M6 9V4h12v5h1a2 2 0 0 1 2 2v5h-3v4H6v-4H3v-5a2 2 0 0 1 2-2h1zm2-3v3h8V6H8zm8 12v-4H8v4h8zm2-7H6a1 1 0 0 0-1 1v2h1v-2h12v2h1v-2a1 1 0 0 0-1-1z"/>
-        </svg>
-    `;
+    const svgNs = "http://www.w3.org/2000/svg";
 
-    const svg = btn.querySelector("svg");
-    if (svg) {
-        svg.style.display = "block";
-        svg.style.width = "14px";
-        svg.style.height = "14px";
-        svg.style.flexShrink = "0";
-    }
+    const svg = document.createElementNS(svgNs, "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("width", "16");
+    svg.setAttribute("height", "16");
+    svg.setAttribute("aria-hidden", "true");
+
+    const path = document.createElementNS(svgNs, "path");
+    path.setAttribute(
+        "d",
+        "M6 9V4h12v5h1a2 2 0 0 1 2 2v5h-3v4H6v-4H3v-5a2 2 0 0 1 2-2h1zm2-3v3h8V6H8zm8 12v-4H8v4h8zm2-7H6a1 1 0 0 0-1 1v2h1v-2h12v2h1v-2a1 1 0 0 0-1-1z"
+    );
+    path.setAttribute("fill", "currentColor");
+
+    svg.appendChild(path);
+    btn.appendChild(svg);
+
+    svg.style.display = "block";
+    svg.style.width = "14px";
+    svg.style.height = "14px";
+    svg.style.flexShrink = "0";
 
     btn.style.position = "absolute";
     btn.style.top = "8px";

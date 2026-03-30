@@ -478,6 +478,61 @@ export function formatConcentration(sample) {
     return String(sample.concentration);
 }
 
+function isRenderableTextValue(value) {
+    // console.log("[CDD panel][location check] raw value =", value);
+    // console.log("[CDD panel][location check] type =", typeof value);
+
+    if (value == null) {
+        // console.log("[CDD panel][location check] → NULL/undefined → skip");
+        return false;
+    }
+
+    if (typeof value === "object") {
+        // console.log("[CDD panel][location check] → OBJECT → skip", JSON.stringify(value, null, 2));
+        return false;
+    }
+
+    const text = String(value).trim();
+
+    // console.log("[CDD panel][location check] normalized text =", text);
+
+    if (text === "") {
+        // console.log("[CDD panel][location check] → empty string → skip");
+        return false;
+    }
+
+    // console.log("[CDD panel][location check] → OK render");
+    return true;
+}
+
+function normalizeValue(value) {
+    return String(value || "")
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
+function isSampleDepleted(sample) {
+    const depleted = STATE.depletedIdentifiers instanceof Set
+        ? STATE.depletedIdentifiers
+        : new Set();
+
+    const candidates = [
+        sample?.name,
+        sample?.sampleId,
+        sample?.internalID,
+    ]
+        .map(normalizeValue)
+        .filter(Boolean);
+
+    for (const candidate of candidates) {
+        if (depleted.has(candidate)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 export function renderSamples(payload) {
     const { list } = getPanelParts();
     if (!list) return;
@@ -530,9 +585,10 @@ export function renderSamples(payload) {
             const concentrationText = formatConcentration(sample);
             const purityValue = parsePurity(sample.purity);
             const lowPurity = !isNaN(purityValue) && purityValue <= 93;
+            const depletedSample = isSampleDepleted(sample);
             const { internalID, solvent } = sample;
 
-            if (lowPurity) {
+            if (lowPurity || depletedSample) {
                 card.style.borderLeftColor = "#ef4444";
                 card.style.background = "rgba(239,68,68,0.05)";
             }
@@ -555,6 +611,13 @@ export function renderSamples(payload) {
                 cardTop.appendChild(purityBadge);
             }
 
+            if (depletedSample) {
+                const depletedBadge = document.createElement("div");
+                depletedBadge.className = "cdd-low-purity-badge";
+                depletedBadge.textContent = "⚠ DEPLETED SAMPLE USED";
+                cardTop.appendChild(depletedBadge);
+            }
+
             card.appendChild(cardTop);
 
             const purityRow = lowPurity
@@ -563,7 +626,9 @@ export function renderSamples(payload) {
 
             const rows = [
                 createCopyableRow("Name", sample.name || "—"),
-                createCopyableRow("Location", sample.location || "Location not set"),
+                isRenderableTextValue(sample.location)
+                    ? createCopyableRow("Location", sample.location)
+                    : null,
                 purityRow,
                 createCopyableRow("Internal ID", internalID),
                 createCopyableRow("Density [g/mL]", sample.density),

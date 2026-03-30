@@ -57,7 +57,23 @@ export function resolveRowLocation(row) {
         row?.sample?.location ??
         null;
 
-    return shortenLocation(rawLocation || "Location not set");
+    if (!rawLocation) return null;
+
+    let normalized = null;
+
+    if (typeof rawLocation === "string") {
+        normalized = rawLocation;
+    } else if (typeof rawLocation === "object") {
+        normalized =
+            rawLocation.value ||
+            rawLocation.name ||
+            rawLocation.label ||
+            null;
+    }
+
+    if (!normalized || typeof normalized !== "string") return null;
+
+    return shortenLocation(normalized);
 }
 export function resolveBatchFields(row) {
     const batchFields =

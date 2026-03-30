@@ -104,22 +104,36 @@ function extractDepletedIdentifiers(payload) {
         const stoichTable = feature?.data?.stoichiometryTable;
         const samples = stoichTable?.samples || {};
 
+        // console.log("[CDD depleted][inject] reactionFeatures count =", reactionFeatures.length);
+        // console.log("[CDD depleted][inject] stoichTable =", stoichTable);
+        // console.log("[CDD depleted][inject] samples =", samples);
+
 
 
         for (const [key, arr] of Object.entries(samples)) {
 
-
+            // console.log("[CDD depleted][inject] sample bucket =", key, arr);//
             if (!Array.isArray(arr)) continue;
 
             for (const sample of arr) {
 
+               // console.log("[CDD depleted][inject] candidate sample =", sample);
 
                 if (sample?.depleted !== true) continue;
+
+                // console.log("[CDD depleted][inject] raw depleted sample =", {
+                //     sample_identifier: sample?.sample_identifier,
+                //     name: sample?.name,
+                //     id: sample?.id
+                // });
+
 
                 const identifier =
                     sample?.sample_identifier ||
                     sample?.name ||
                     sample?.id;
+
+                //console.log("[CDD depleted][inject] resolved identifier =", identifier);
 
                 if (identifier) {
                     identifiers.add(String(identifier).trim());
@@ -128,7 +142,7 @@ function extractDepletedIdentifiers(payload) {
         }
     }
 
-    // console.log("[CDD depleted][inject] allDepleted =", Array.from(identifiers));
+    // console.log("[CDD depleted][inject] final identifiers =", Array.from(identifiers));
     return Array.from(identifiers);
 }
 

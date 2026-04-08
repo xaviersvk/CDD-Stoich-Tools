@@ -127,6 +127,16 @@ export function resolveSampleFields(row) {
         "Solvent",
         "Buffer",
         "*Buffer",
+        "*Solvent/Buffer/Medium",
+        "Solvent/Buffer/Medium",
+        "Solvent/Buffer",
+        "Solvent/Medium",
+        "Buffer/Medium",
+        "Buffer/Solvent",
+        "Buffer/Medium",
+        "Medium/Solvent",
+        "Medium/Buffer",
+        "Medium",
     ]);
 
     const concentrationUnits = getFieldValueCaseInsensitive(sampleFields, [

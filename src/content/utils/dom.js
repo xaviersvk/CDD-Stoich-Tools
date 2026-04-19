@@ -9,6 +9,6 @@ export function escapeHtml(value) {
 
 export function decodeHtmlEntities(value) {
     const textarea = document.createElement("textarea");
-    textarea.innerHTML = value;
+    textarea.value = value ?? "";
     return textarea.value;
 }

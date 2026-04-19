@@ -53,10 +53,10 @@ export function removeAllActionMenus() {
 export function scanDoseResponseOverride() {
     const plots = findPlotRoots();
 
-    if (!loggedPlotRootsOnce) {
+
         logOverride("Found plot roots:", plots.length);
         loggedPlotRootsOnce = true;
-    }
+
 
     if (!state.easyOverrideEnabled) return;
 

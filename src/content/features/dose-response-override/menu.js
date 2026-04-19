@@ -95,6 +95,11 @@ export function createActionMenu (plotRoot) {
                 button.classList.remove("loading");
                 button.classList.add("success");
                 button.textContent = "Applied";
+
+                setTimeout(() => {
+                    button.classList.remove("success");
+                    button.textContent = "Apply";
+                }, 1200);
             } catch (error) {
                 console.error("[CDD Override] Failed:", error);
                 button.classList.remove("loading");

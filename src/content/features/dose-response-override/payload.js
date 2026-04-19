@@ -92,3 +92,61 @@ export function buildDoNotOverwritePayload  (editResponse) {
 export function buildIc50LessThanMinPayload  (editResponse) {
         return buildInterceptOverridePayload(editResponse, 2);
     }
+
+
+
+import { decodeHtmlEntities } from "../../utils/dom.js";
+
+export function extractViewSettings(plotRoot) {
+    const raw = plotRoot?.getAttribute("react_props");
+    if (!raw) {
+        return {
+            batch_run_aggregate_row_ids: null,
+            edit_mode: false,
+            response_axis_min: -20,
+            response_axis_max: 120,
+            scale_by_global_min_max: false,
+            scale_by_protocol_settings: true,
+            scale_to_show_all_data: false
+        };
+    }
+
+    const decoded = decodeHtmlEntities(raw);
+
+    function pick(name, fallback = null) {
+        const match = decoded.match(new RegExp(`"${name}":(".*?"|true|false|-?\\d+(?:\\.\\d+)?)`));
+        if (!match) return fallback;
+
+        const value = match[1];
+        if (value === "true") return true;
+        if (value === "false") return false;
+        if (value.startsWith('"')) return value.slice(1, -1);
+        return Number(value);
+    }
+
+    return {
+        batch_run_aggregate_row_ids: pick("batch_run_aggregate_row_ids", null),
+        edit_mode: pick("edit_mode", false),
+        response_axis_min: pick("response_axis_min", -20),
+        response_axis_max: pick("response_axis_max", 120),
+        scale_by_global_min_max: pick("scale_by_global_min_max", false),
+        scale_by_protocol_settings: pick("scale_by_protocol_settings", true),
+        scale_to_show_all_data: pick("scale_to_show_all_data", false)
+    };
+}
+
+export function buildViewRefreshPayload(editResponse, plotRoot) {
+    const settings = extractViewSettings(plotRoot);
+
+    return {
+        batch_run_aggregate_row_ids: settings.batch_run_aggregate_row_ids,
+        run_ids_in_search: editResponse?.run_ids_in_search || [],
+        condition_set_ids_in_search: editResponse?.condition_set_ids_in_search || [],
+        scale_by_protocol_settings: settings.scale_by_protocol_settings,
+        scale_to_show_all_data: settings.scale_to_show_all_data,
+        scale_by_global_min_max: settings.scale_by_global_min_max,
+        response_axis_min: settings.response_axis_min,
+        response_axis_max: settings.response_axis_max,
+        edit_mode: settings.edit_mode
+    };
+}

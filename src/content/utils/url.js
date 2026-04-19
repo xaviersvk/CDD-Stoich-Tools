@@ -12,3 +12,10 @@ export function editUrlToPutUrl(editUrl) {
     if (!editUrl) return null;
     return editUrl.replace(/\/edit(\?.*)?$/, "/");
 }
+
+export function viewUrlToJsonUrl(viewUrl) {
+    if (!viewUrl) return null;
+
+    if (viewUrl.includes("/view.json")) return viewUrl;
+    return viewUrl.replace(/\/dose_response_plot\/view(\?|$)/, "/dose_response_plot/view.json$1");
+}

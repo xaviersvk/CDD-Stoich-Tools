@@ -1,17 +1,24 @@
-import { fetchJson } from "../../api/cdd-api.js";
-import { absoluteUrl, editUrlToPutUrl } from "../../utils/url.js";
-import { extractEditUrl } from "./dom.js";
+import { buildFormBody, fetchJson, fetchText } from "../../api/cdd-api.js";
+import {absoluteUrl, editUrlToPutUrl, viewUrlToJsonUrl} from "../../utils/url.js";
+import {extractEditUrl, extractShowUrl, replacePlotRootFromHtml, updatePlotUiFromJson} from "./dom.js";
 import {
     buildDoNotCalculatePayload,
     buildDoNotOverwritePayload,
     buildIc50GreaterThanMaxPayload,
-    buildIc50LessThanMinPayload
+    buildIc50LessThanMinPayload,
+    buildViewRefreshPayload
 } from "./payload.js";
+import { scanDoseResponseOverride } from "./scanner.js";
 
 export async function applyPayloadBuilder(plotRoot, payloadBuilder) {
     const editUrlRaw = extractEditUrl(plotRoot);
     if (!editUrlRaw) {
         throw new Error("Could not determine edit URL.");
+    }
+
+    const showUrlRaw = extractShowUrl(plotRoot);
+    if (!showUrlRaw) {
+        throw new Error("Could not determine show URL.");
     }
 
     const editUrl = absoluteUrl(editUrlRaw);
@@ -24,6 +31,20 @@ export async function applyPayloadBuilder(plotRoot, payloadBuilder) {
         method: "PUT",
         body: JSON.stringify(payload)
     });
+
+    const refreshPayload = buildViewRefreshPayload(editResponse, plotRoot);
+
+    const refreshedHtml = await fetchText(absoluteUrl(showUrlRaw), {
+        method: "POST",
+        body: buildFormBody(refreshPayload)
+    });
+
+    console.log("[CDD Override] refreshed HTML", refreshedHtml);
+
+    const newPlotRoot = replacePlotRootFromHtml(plotRoot, refreshedHtml);
+
+    scanDoseResponseOverride();
+    return newPlotRoot;
 }
 
 export async function handleIc50GreaterThanMax(plotRoot) {

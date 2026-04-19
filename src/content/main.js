@@ -11,6 +11,7 @@ import {
   startDepletedMarkerObserver
 } from "./features/depleted-marker.js";
 import {resetState} from "./state";
+import {initDoseResponseOverride} from "./features/dose-response-override/init";
 
 
 function isSupportedHost() {
@@ -24,6 +25,7 @@ function init() {
   window.__CDD_STOICH_TOOLS_CONTENT__ = true;
 
   injectPageScript();
+  initDoseResponseOverride();
 
   window.addEventListener("message", handleMessage);
 

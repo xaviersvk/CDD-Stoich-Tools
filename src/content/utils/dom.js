@@ -7,3 +7,8 @@ export function escapeHtml(value) {
         .replace(/'/g, "&#039;");
 }
 
+export function decodeHtmlEntities(value) {
+    const textarea = document.createElement("textarea");
+    textarea.innerHTML = value;
+    return textarea.value;
+}

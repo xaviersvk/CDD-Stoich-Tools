@@ -3,13 +3,13 @@ import {handleDoNotCalculate, handleDoNotOverwrite, handleIc50GreaterThanMax, ha
 
 export const actions = {
         ic50GreaterThanMax: {
-            label: "IC50 > max",
+            label: "> Max",
             run: async (plotRoot) => {
                 await handleIc50GreaterThanMax(plotRoot);
             }
         },
         ic50LessThanMin: {
-            label: "IC50 < min",
+            label: "< Min",
             run: async (plotRoot) => {
                 await handleIc50LessThanMin(plotRoot);
             }

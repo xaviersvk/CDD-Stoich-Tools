@@ -12,6 +12,7 @@ import {
 } from "./features/depleted-marker.js";
 import {resetState} from "./state";
 import {initDoseResponseOverride} from "./features/dose-response-override/init";
+import {applyFileDialogFixes, injectAssociateFileBarStyles} from "./features/ui-fixes/file-dialog-fixes";
 
 
 function isSupportedHost() {
@@ -36,6 +37,17 @@ function init() {
   renderFromState();
   ensurePrintButtons();
   markDepletedSamplesInSelector();
+  applyFileDialogFixes();
+  injectAssociateFileBarStyles()
+
+  const fileDialogObserver = new MutationObserver(() => {
+    applyFileDialogFixes();
+  });
+
+  fileDialogObserver.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
 
 
   watchUrlChanges(() => {

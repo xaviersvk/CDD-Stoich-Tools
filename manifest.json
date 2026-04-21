@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "CDD Stoichiometric Table Tools",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "description": "CDD helper tools for stoichiometry tables",
   "icons": {
     "128": "icons/icon128.png"

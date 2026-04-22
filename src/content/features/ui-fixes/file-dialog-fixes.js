@@ -40,13 +40,16 @@ export function applyFileDialogFixes() {
 }
 
 export function injectAssociateFileBarStyles() {
+    const isFileDialog = document.querySelector("#existing_file_selector_single");
+    if (!isFileDialog) return;
+
     const existing = document.getElementById("cdd-stoich-associate-file-bar-fix");
     if (existing) return;
 
     const style = document.createElement("style");
     style.id = "cdd-stoich-associate-file-bar-fix";
     style.textContent = `
-        .buttons-right {
+        #existing_file_selector_single .buttons-right {
             position: fixed !important;
             right: 32px !important;
             bottom: 24px !important;
@@ -61,3 +64,28 @@ export function injectAssociateFileBarStyles() {
 
     document.head.appendChild(style);
 }
+
+
+export function fixAssociateFileBar() {
+    const dialog = document.querySelector("#existing_file_selector_single");
+    if (!dialog) return;
+
+    const bar = dialog.querySelector(".buttons-right");
+    if (!bar) return;
+
+    if (bar.dataset.fixed) return;
+    bar.dataset.fixed = "true";
+
+    Object.assign(bar.style, {
+        position: "fixed",
+        right: "32px",
+        bottom: "24px",
+        zIndex: "99999",
+        background: "#fff",
+        padding: "12px 16px",
+        border: "1px solid #ddd",
+        borderRadius: "8px",
+        boxShadow: "0 4px 16px rgba(0,0,0,0.18)"
+    });
+}
+

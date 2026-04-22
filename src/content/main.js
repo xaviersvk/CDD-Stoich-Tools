@@ -12,11 +12,27 @@ import {
 } from "./features/depleted-marker.js";
 import {resetState} from "./state";
 import {initDoseResponseOverride} from "./features/dose-response-override/init";
-import {applyFileDialogFixes, injectAssociateFileBarStyles} from "./features/ui-fixes/file-dialog-fixes";
+import {
+  applyFileDialogFixes,
+  fixAssociateFileBar,
+  injectAssociateFileBarStyles
+} from "./features/ui-fixes/file-dialog-fixes";
 
 
 function isSupportedHost() {
   return /collaborativedrug\.com/i.test(location.hostname);
+}
+
+function watchFileDialog() {
+  const observer = new MutationObserver(() => {
+    applyFileDialogFixes();
+    fixAssociateFileBar();
+  });
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
 }
 
 function init() {
@@ -39,6 +55,7 @@ function init() {
   markDepletedSamplesInSelector();
   applyFileDialogFixes();
   injectAssociateFileBarStyles()
+  watchFileDialog();
 
   const fileDialogObserver = new MutationObserver(() => {
     applyFileDialogFixes();
@@ -48,6 +65,8 @@ function init() {
     childList: true,
     subtree: true
   });
+
+
 
 
   watchUrlChanges(() => {

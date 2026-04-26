@@ -15,6 +15,11 @@ export function injectFileDialogStyles() {
             word-break: break-word !important;
             max-width: 100% !important;
         }
+         .ui-dialog.ui-widget.ui-widget-content {
+            min-width: min(1600px, 80vw) !important;
+        }
+
+
     `;
 
     document.head.appendChild(style);
@@ -88,4 +93,8 @@ export function fixAssociateFileBar() {
         boxShadow: "0 4px 16px rgba(0,0,0,0.18)"
     });
 }
+
+
+
+
 

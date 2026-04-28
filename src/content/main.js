@@ -17,6 +17,8 @@ import {
   fixAssociateFileBar,
   injectAssociateFileBarStyles
 } from "./features/ui-fixes/file-dialog-fixes";
+import {observeCopyableFields} from "./features/ui-fixes/copyable-fields";
+import {injectLeftEllipsisForLocations} from "./features/ui-fixes/left-ellipsis-locations";
 
 
 function isSupportedHost() {
@@ -80,6 +82,11 @@ function init() {
   });
 
   watchKetcherDialog();
+
+  observeCopyableFields();
+
+
+  injectLeftEllipsisForLocations();
 }
 
 init();

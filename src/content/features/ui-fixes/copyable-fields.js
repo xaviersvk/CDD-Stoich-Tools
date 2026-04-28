@@ -1,6 +1,6 @@
 let stylesInjected = false;
 
-const DEBUG = true;
+const DEBUG = false
 
 const CONTAINER_SELECTORS = [
     "#molecule-batches-container",
@@ -168,11 +168,17 @@ export function enhanceCopyableFields() {
     });
 }
 
+let enhanceTimer = null;
+
 export function observeCopyableFields() {
     enhanceCopyableFields();
 
     const observer = new MutationObserver(() => {
-        enhanceCopyableFields();
+        window.clearTimeout(enhanceTimer);
+
+        enhanceTimer = window.setTimeout(() => {
+            enhanceCopyableFields();
+        }, 200);
     });
 
     observer.observe(document.body, {
@@ -180,5 +186,5 @@ export function observeCopyableFields() {
         subtree: true,
     });
 
-    log("MutationObserver started");
+   log("MutationObserver started");
 }

@@ -23,7 +23,6 @@ function injectCopyableFieldStyles() {
     if (stylesInjected) return;
     stylesInjected = true;
 
-    // log("Injecting styles");
 
     const style = document.createElement("style");
     style.id = "cdd-copyable-fields-style";
@@ -115,7 +114,6 @@ function findCopyableFieldNodes() {
         const container = document.querySelector(containerSelector);
 
         if (!container) {
-            log("Container not found:", containerSelector);
             return;
         }
 
@@ -129,26 +127,20 @@ function findCopyableFieldNodes() {
 }
 
 export function enhanceCopyableFields() {
-    // log("Running enhanceCopyableFields");
+
 
     injectCopyableFieldStyles();
 
     const nodes = findCopyableFieldNodes();
 
-    // log("Found candidate count:", nodes.length);
+
 
     nodes.forEach((node) => {
         if (node.dataset.cddCopyableBound === "1") return;
 
         const text = getCopyableText(node);
 
-        // log("Inspecting:", {
-        //     tag: node.tagName,
-        //     className: node.className,
-        //     label: node.getAttribute("data-editable-cell-label"),
-        //     text,
-        //     node,
-        // });
+
 
         if (!text) return;
 
@@ -165,14 +157,14 @@ export function enhanceCopyableFields() {
             try {
                 await copyText(currentText);
                 markCopied(node);
-                // log("Copied:", currentText);
+
             } catch (error) {
                 markCopyError(node);
                 console.warn("[COPYABLE-FIELDS] Copy failed:", error);
             }
         });
 
-        // log("Attached listener:", node);
+
     });
 }
 

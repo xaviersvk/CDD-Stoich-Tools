@@ -1,6 +1,6 @@
 // src/content/features/ui-fixes/filter-default.js
 
-const DEBUG = true;
+const DEBUG = false;
 const OBSERVER_KEY = "__CDD_FILTER_DEFAULT_OBSERVER__";
 
 function log(...args) {

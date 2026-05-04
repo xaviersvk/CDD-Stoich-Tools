@@ -85,7 +85,19 @@ The goal is simple: remove friction from working with samples, stoichiometry tab
     - truncated file names
     - button positioning
 - Responsive improvements for dialogs and tables
+- Smart default selection for filter operators (auto-selects meaningful option instead of "Any value")
+### 🎛️ Smart Filter Defaults (NEW)
 
+- Automatically adjusts filter operators to a more useful default
+- Instead of the CDD default `Any value`, the extension selects the second logical option:
+  - `has` for text fields (e.g. Author, Solvent)
+  - `from` for date fields (e.g. Created)
+- Works across:
+  - ELN filters
+  - Inventory filters (Material UI-based)
+- Reacts dynamically when:
+  - a new filter is added
+  - the filter field is changed
 ---
 
 ## 🧠 How It Works (High-Level)

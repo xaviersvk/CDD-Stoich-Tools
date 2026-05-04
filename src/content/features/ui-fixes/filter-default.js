@@ -62,8 +62,11 @@ function fixElnFilters() {
         if (!fieldName) return;
         if (operatorValue !== "Any value") return;
 
-        if (operatorInput.dataset.cddDefaultOperatorAttempted === "1") return;
-        operatorInput.dataset.cddDefaultOperatorAttempted = "1";
+        const lastFixedField = operatorInput.dataset.cddLastFixedField || "";
+
+        if (lastFixedField === fieldName) return;
+
+        operatorInput.dataset.cddLastFixedField = fieldName;
 
         selectSecondCddOption(operatorInput);
     });
@@ -92,8 +95,17 @@ function fixInventoryFilters() {
 
         if (value !== "any") return;
 
-        if (hiddenInput.dataset.cddDefaultOperatorAttempted === "1") return;
-        hiddenInput.dataset.cddDefaultOperatorAttempted = "1";
+        const fieldValue =
+            filterItem.querySelector('input[name="search_field"]')?.value ||
+            filterItem.querySelector('[name="filterField"]')?.value ||
+            filterItem.querySelector('.filter-field-select [role="combobox"]')?.textContent?.trim() ||
+            "";
+
+        const lastFixedField = hiddenInput.dataset.cddLastFixedField || "";
+
+        if (lastFixedField === fieldValue) return;
+
+        hiddenInput.dataset.cddLastFixedField = fieldValue;
 
         selectSecondMuiOption(combobox, hiddenInput);
     });

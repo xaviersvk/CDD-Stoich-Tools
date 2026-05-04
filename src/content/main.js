@@ -19,6 +19,7 @@ import {
 } from "./features/ui-fixes/file-dialog-fixes";
 import {observeCopyableFields} from "./features/ui-fixes/copyable-fields";
 import {injectLeftEllipsisForLocations} from "./features/ui-fixes/left-ellipsis-locations";
+import {initFilterDefaultFix} from "./features/ui-fixes/filter-default";
 
 
 function isSupportedHost() {
@@ -87,6 +88,8 @@ function init() {
 
 
   injectLeftEllipsisForLocations();
+  initFilterDefaultFix();
+
 }
 
 init();

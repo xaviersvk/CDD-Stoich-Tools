@@ -31,13 +31,13 @@ export function injectMoleculeLinksStyles() {
         line-height: 1.4 !important;
     }
 
-    @media (max-width: 1300px) {
+    @media (max-width: 1500px) {
         #molecule-links .collapsible.collapsible-open .collapsible-inner {
             grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
         }
     }
 
-    @media (max-width: 1050px) {
+    @media (max-width: 1300px) {
         #molecule-links .collapsible.collapsible-open .collapsible-inner {
             grid-template-columns: 1fr !important;
         }

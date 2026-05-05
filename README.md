@@ -86,6 +86,8 @@ The goal is simple: remove friction from working with samples, stoichiometry tab
     - button positioning
 - Responsive improvements for dialogs and tables
 - Smart default selection for filter operators (auto-selects meaningful option instead of "Any value")
+- Groups depleted samples into a collapsible container to keep active samples clean and focused
+- Fixes broken location tree layout and adds resizable panel with persistent width (localStorage)
 ### 🎛️ Smart Filter Defaults (NEW)
 
 - Automatically adjusts filter operators to a more useful default

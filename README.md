@@ -88,6 +88,15 @@ The goal is simple: remove friction from working with samples, stoichiometry tab
 - Smart default selection for filter operators (auto-selects meaningful option instead of "Any value")
 - Groups depleted samples into a collapsible container to keep active samples clean and focused
 - Fixes broken location tree layout and adds resizable panel with persistent width (localStorage)
+- Improves Entity Links (e.g. to ELN) layout:
+  - Converts long, unreadable link lists into responsive multi-column layout
+  - Automatically adapts:
+    - 3 columns on wide screens
+    - 2 columns on medium screens
+    - 1 column on narrow screens
+  - Fully respects native CDD collapsible behavior
+  - Significantly improves readability for entries with large number of linked experiments
+
 ### 🎛️ Smart Filter Defaults (NEW)
 
 - Automatically adjusts filter operators to a more useful default

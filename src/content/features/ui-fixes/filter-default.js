@@ -281,7 +281,7 @@ function selectSecondMuiOption(combobox, hiddenInput) {
             window.setTimeout(() => {
                 log("Inventory final value:", hiddenInput.value);
                 isSelecting = false;
-            }, 500);
-        }, 300);
-    }, 300);
+            }, 100);
+        }, 100);
+    }, 100);
 }

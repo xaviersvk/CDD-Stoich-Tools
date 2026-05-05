@@ -9,7 +9,7 @@ export function injectLocationPickerTreeStyles() {
 
     style.textContent = `
         .LocationPicker [role="treeitem"] .location-picker-tree-item-content {
-            padding: 0 0 0 calc(var(--TreeView-itemDepth, 0) * 5px) !important;
+            padding: 0 0 0 calc(var(--TreeView-itemDepth, 0) * 6px) !important;
         }
         
      

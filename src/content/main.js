@@ -20,7 +20,6 @@ import {
 import {observeCopyableFields} from "./features/ui-fixes/copyable-fields";
 import {injectLeftEllipsisForLocations} from "./features/ui-fixes/left-ellipsis-locations";
 import {initFilterDefaultFix} from "./features/ui-fixes/filter-default";
-import {injectLocationPickerTreeStyles} from "./features/ui-fixes/location-picker-tree-fixes";
 import {initLocationPickerResize} from "./features/ui-fixes/location-picker-resize";
 
 
@@ -91,7 +90,6 @@ function init() {
 
   injectLeftEllipsisForLocations();
   initFilterDefaultFix();
-  injectLocationPickerTreeStyles();
   initLocationPickerResize();
 }
 

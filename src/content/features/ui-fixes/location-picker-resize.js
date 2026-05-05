@@ -2,9 +2,15 @@ let stylesInjected = false;
 let observerStarted = false;
 
 const STORAGE_KEY = "cdd-location-picker-tree-width";
-const DEFAULT_WIDTH = 320;
-const MIN_WIDTH = 220;
+const DEFAULT_WIDTH = 250;
+const MIN_WIDTH = 120;
 const MAX_WIDTH = 520;
+const TREE_PANEL_SELECTOR = [
+    ".LocationPicker .tree-container",
+    ".LocationPickerDialog .tree-container",
+    ".LocationPicker .tree-root",
+    ".LocationPickerDialog .tree-root",
+].join(", ");
 
 function injectStyles() {
     if (stylesInjected) return;
@@ -14,19 +20,29 @@ function injectStyles() {
     style.id = "cdd-location-picker-resize-style";
 
     style.textContent = `
-    .LocationPicker .tree-container {
-        flex: 0 0 var(--cdd-location-tree-width, 220px) !important;
-        width: var(--cdd-location-tree-width, 220px) !important;
+    .LocationPicker .tree-container,
+    .LocationPickerDialog .tree-container,
+    .LocationPicker .tree-root,
+    .LocationPickerDialog .tree-root {
+        flex: 0 0 var(--cdd-location-tree-width, 320px) !important;
+        width: var(--cdd-location-tree-width, 320px) !important;
         min-width: 220px !important;
         max-width: 520px !important;
-        position: relative;
+        position: relative !important;
     }
 
     .LocationPicker ul.MuiSimpleTreeView-root,
-    .LocationPicker [role="tree"] {
+    .LocationPickerDialog ul.MuiSimpleTreeView-root,
+    .LocationPicker [role="tree"],
+    .LocationPickerDialog [role="tree"] {
         width: 100% !important;
         min-width: 100% !important;
         max-width: none !important;
+    }
+
+    .LocationPicker [role="treeitem"] .location-picker-tree-item-content,
+    .LocationPickerDialog [role="treeitem"] .location-picker-tree-item-content {
+        padding-left: calc(var(--TreeView-itemDepth, 0) * 18px) !important;
     }
 
     .cdd-location-tree-resizer {
@@ -36,7 +52,11 @@ function injectStyles() {
         width: 8px;
         height: 100%;
         cursor: col-resize;
-        z-index: 20;
+        z-index: 9999;
+    }
+
+    .cdd-location-tree-resizer:hover {
+        background: rgba(0, 119, 204, 0.18);
     }
 `;
 
@@ -104,7 +124,7 @@ export function initLocationPickerResize() {
 
     const observer = new MutationObserver(() => {
         document
-            .querySelectorAll(".LocationPicker .tree-container")
+            .querySelectorAll(TREE_PANEL_SELECTOR)
             .forEach(enhanceTreeContainer);
     });
 

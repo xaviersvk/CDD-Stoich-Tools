@@ -20,6 +20,7 @@ function injectStyles() {
     style.id = "cdd-location-picker-resize-style";
 
     style.textContent = `
+    /* ===== LEFT PANEL WIDTH CONTROL ===== */
     .LocationPicker .tree-container,
     .LocationPickerDialog .tree-container,
     .LocationPicker .tree-root,
@@ -31,6 +32,7 @@ function injectStyles() {
         position: relative !important;
     }
 
+    /* ===== TREE SHOULD FILL PANEL ===== */
     .LocationPicker ul.MuiSimpleTreeView-root,
     .LocationPickerDialog ul.MuiSimpleTreeView-root,
     .LocationPicker [role="tree"],
@@ -40,25 +42,54 @@ function injectStyles() {
         max-width: none !important;
     }
 
+    /* ===== INDENT FIX ===== */
     .LocationPicker [role="treeitem"] .location-picker-tree-item-content,
     .LocationPickerDialog [role="treeitem"] .location-picker-tree-item-content {
-        padding-left: calc(var(--TreeView-itemDepth, 0) * 18px) !important;
+        padding-left: calc(var(--TreeView-itemDepth, 0) * 8px) !important;
     }
 
+    /* ===== RESIZER HANDLE ===== */
     .cdd-location-tree-resizer {
         position: absolute;
         top: 0;
-        right: -4px;
-        width: 8px;
+        right: -3px;
+        width: 6px;
         height: 100%;
         cursor: col-resize;
         z-index: 9999;
+
+        background: rgba(0, 0, 0, 0.08);
+        border-left: 1px solid rgba(0, 0, 0, 0.15);
+        transition: background 0.15s ease;
     }
 
     .cdd-location-tree-resizer:hover {
-        background: rgba(0, 119, 204, 0.18);
+        background: rgba(0, 119, 204, 0.35);
     }
-`;
+
+    /* ===== VISUAL GRIP ===== */
+    .cdd-location-tree-resizer::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 2px;
+        height: 24px;
+        background: rgba(0, 0, 0, 0.25);
+        border-radius: 1px;
+    }
+
+    /* ===== ACTIVE DRAG STATE ===== */
+    body.cdd-location-resizing {
+        cursor: col-resize !important;
+        user-select: none !important;
+    }
+
+    body.cdd-location-resizing .cdd-location-tree-resizer {
+        background: rgba(0, 119, 204, 0.5);
+    }
+    `;
 
     document.head.appendChild(style);
 }
@@ -114,6 +145,11 @@ function enhanceTreeContainer(treeContainer) {
         document.addEventListener("mousemove", onMouseMove);
         document.addEventListener("mouseup", onMouseUp);
     });
+
+    resizer.addEventListener("dblclick", () => {
+        applyWidth(treeContainer, DEFAULT_WIDTH);
+        localStorage.setItem(STORAGE_KEY, String(DEFAULT_WIDTH));
+    });
 }
 
 export function initLocationPickerResize() {
@@ -134,6 +170,6 @@ export function initLocationPickerResize() {
     });
 
     document
-        .querySelectorAll(".LocationPicker .tree-container")
+        .querySelectorAll(TREE_PANEL_SELECTOR)
         .forEach(enhanceTreeContainer);
 }

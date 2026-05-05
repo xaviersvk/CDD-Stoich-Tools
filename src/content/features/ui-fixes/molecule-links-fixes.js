@@ -7,17 +7,36 @@ export function injectMoleculeLinksStyles() {
     const style = document.createElement("style");
     style.id = "cdd-molecule-links-fixes";
     style.textContent = `
+    #molecule-links .collapsible-inner {
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        column-gap: 24px !important;
+        row-gap: 5px !important;
+        align-items: start !important;
+    }
+
     #molecule-links .collapsible-inner > span {
-        display: flex !important;
-        flex-wrap: wrap !important;
-        gap: 4px 8px !important;
+        display: block !important;
+        min-width: 0 !important;
     }
 
     #molecule-links .collapsible-inner > span > a {
-        display: inline !important;
+        display: block !important;
+        min-width: 0 !important;
+        overflow-wrap: anywhere !important;
         line-height: 1.4 !important;
-        max-width: 100% !important;
-        word-break: break-word !important;
+    }
+
+    @media (max-width: 1300px) {
+        #molecule-links .collapsible-inner {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        }
+    }
+
+    @media (max-width: 1050px) {
+        #molecule-links .collapsible-inner {
+            grid-template-columns: 1fr !important;
+        }
     }
 `;
 

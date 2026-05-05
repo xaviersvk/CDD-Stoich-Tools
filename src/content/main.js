@@ -21,6 +21,7 @@ import {observeCopyableFields} from "./features/ui-fixes/copyable-fields";
 import {injectLeftEllipsisForLocations} from "./features/ui-fixes/left-ellipsis-locations";
 import {initFilterDefaultFix} from "./features/ui-fixes/filter-default";
 import {initLocationPickerResize} from "./features/ui-fixes/location-picker-resize";
+import {injectMoleculeLinksStyles} from "./features/ui-fixes/molecule-links-fixes";
 
 
 function isSupportedHost() {
@@ -91,6 +92,7 @@ function init() {
   injectLeftEllipsisForLocations();
   initFilterDefaultFix();
   initLocationPickerResize();
+  injectMoleculeLinksStyles();
 }
 
 init();

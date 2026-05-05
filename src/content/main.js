@@ -22,6 +22,7 @@ import {injectLeftEllipsisForLocations} from "./features/ui-fixes/left-ellipsis-
 import {initFilterDefaultFix} from "./features/ui-fixes/filter-default";
 import {initLocationPickerResize} from "./features/ui-fixes/location-picker-resize";
 import {injectMoleculeLinksStyles} from "./features/ui-fixes/molecule-links-fixes";
+import {watchDepletedSamples} from "./features/ui-fixes/depleted-samples-collapse";
 
 
 function isSupportedHost() {
@@ -93,6 +94,7 @@ function init() {
   initFilterDefaultFix();
   initLocationPickerResize();
   injectMoleculeLinksStyles();
+  watchDepletedSamples();
 }
 
 init();

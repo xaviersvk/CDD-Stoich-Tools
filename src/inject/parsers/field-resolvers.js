@@ -86,7 +86,9 @@ export function resolveBatchFields(row) {
     const purity = getFieldValueCaseInsensitive(batchFields, [
         "Purity (%)",
         "Purity [%]",
+        "*Purity [%]",
         "Purity[%]",
+        "*Purity[%]",
         "Purity %",
         "Purity",
     ]);
@@ -98,8 +100,11 @@ export function resolveBatchFields(row) {
 
     const density = getFieldValueCaseInsensitive(batchFields, [
         "Density [g/mL]",
+        "*Density [g/mL]",
         "Density[g/mL]",
+        "*Density[g/mL]",
         "Density",
+        "*Density",
     ]);
 
     return {

@@ -23,6 +23,7 @@ import {initFilterDefaultFix} from "./features/ui-fixes/filter-default";
 import {initLocationPickerResize} from "./features/ui-fixes/location-picker-resize";
 import {injectMoleculeLinksStyles} from "./features/ui-fixes/molecule-links-fixes";
 import {watchDepletedSamples} from "./features/ui-fixes/depleted-samples-collapse";
+import {watchConsumedBatches} from "./features/ui-fixes/consumed-batches-collapse";
 
 
 function isSupportedHost() {
@@ -95,6 +96,7 @@ function init() {
   initLocationPickerResize();
   injectMoleculeLinksStyles();
   watchDepletedSamples();
+  watchConsumedBatches();
 }
 
 init();

@@ -3,7 +3,6 @@ let observerStarted = false;
 
 const WRAPPER_ID = "cdd-consumed-batches-wrapper";
 const CONSUMED_CLASS = "cdd-consumed-batch-block";
-const HIDDEN_CLASS = "cdd-consumed-batch-hidden";
 
 function isMoleculeBatchesPage() {
     return (
@@ -19,63 +18,58 @@ export function injectConsumedBatchStyles() {
     const style = document.createElement("style");
     style.id = "cdd-consumed-batches-collapse-style";
     style.textContent = `
-    #${WRAPPER_ID} {
-        margin: 16px 0 0;
-        border: 1px solid #d0d7de;
-        border-radius: 6px;
-        background: #f6f8fa;
-    }
+        #${WRAPPER_ID} {
+            margin: 16px 0 0;
+            border: 1px solid #d0d7de;
+            border-radius: 6px;
+            background: #f6f8fa;
+        }
 
-    #${WRAPPER_ID} > summary {
-        cursor: pointer;
-        padding: 10px 14px;
-        font-weight: 600;
-        user-select: none;
-    }
+        #${WRAPPER_ID} .cdd-consumed-batches-header {
+            cursor: pointer;
+            padding: 10px 14px;
+            font-weight: 600;
+            user-select: none;
+        }
 
-    .${HIDDEN_CLASS} {
-        display: none !important;
-    }
+        #${WRAPPER_ID} .cdd-consumed-batches-body {
+            display: none;
+        }
 
-.${CONSUMED_CLASS} {
-    margin: 0 !important;
-    padding: 12px 14px !important;
-    border-left: 1px solid #d0d7de !important;
-    border-right: 1px solid #d0d7de !important;
-    background: #fff !important;
-}
+        #${WRAPPER_ID}[data-open="true"] .cdd-consumed-batches-body {
+            display: block;
+        }
 
-.${CONSUMED_CLASS} > * {
-    background: #f6f6f6 !important;
-    border: 1px solid #e1e4e8 !important;
-    padding: 12px 14px !important;
-}
+        .${CONSUMED_CLASS} {
+            margin: 0 !important;
+            padding: 12px 14px !important;
+            border-left: 1px solid #d0d7de !important;
+            border-right: 1px solid #d0d7de !important;
+            background: #fff !important;
+        }
 
-    .${CONSUMED_CLASS}:last-of-type {
-        border-bottom: 1px solid #d0d7de !important;
-        border-radius: 0 0 6px 6px !important;
-        margin-bottom: 16px !important;
-    }
-    
+        .${CONSUMED_CLASS} > * {
+            background: #f6f6f6 !important;
+            border: 1px solid #e1e4e8 !important;
+            padding: 12px 14px !important;
+        }
 
-
-    #${WRAPPER_ID}:not([open]) {
-        margin-bottom: 16px;
-    }
-
-    #${WRAPPER_ID}[open] {
-        border-radius: 6px 6px 0 0;
-        border-bottom: none;
-    }
-`;
+        .${CONSUMED_CLASS}:last-of-type {
+            border-bottom: 1px solid #d0d7de !important;
+            border-radius: 0 0 6px 6px !important;
+            margin-bottom: 16px !important;
+        }
+    `;
 
     document.head.appendChild(style);
 }
 
+function getBatchContainer() {
+    return document.getElementById("molecule-batches-container");
+}
+
 function getBatchBlockFromConsumedCell(cell) {
-    return cell.closest(
-        '.editableData.subcontainer[id^="list-batch-"]'
-    );
+    return cell.closest('.editableData.subcontainer[id^="list-batch-"]');
 }
 
 function getConsumedBatchBlocks() {
@@ -104,47 +98,61 @@ function cleanupOldMarks(currentBlocks) {
     document.querySelectorAll(`.${CONSUMED_CLASS}`).forEach((block) => {
         if (!currentSet.has(block)) {
             block.classList.remove(CONSUMED_CLASS);
-            block.classList.remove(HIDDEN_CLASS);
         }
     });
 }
 
 function createWrapper() {
-    const wrapper = document.createElement("details");
+    const wrapper = document.createElement("div");
     wrapper.id = WRAPPER_ID;
-    wrapper.open = false;
+    wrapper.dataset.open = "false";
 
-    const summary = document.createElement("summary");
-    summary.textContent = "Consumed batches (0)";
+    const header = document.createElement("div");
+    header.className = "cdd-consumed-batches-header";
 
-    wrapper.appendChild(summary);
+    const body = document.createElement("div");
+    body.className = "cdd-consumed-batches-body";
 
-    wrapper.addEventListener("toggle", updateHiddenState);
+    header.addEventListener("click", () => {
+        const isOpen = wrapper.dataset.open === "true";
+        wrapper.dataset.open = String(!isOpen);
+        updateHeaderText(wrapper);
+    });
+
+    wrapper.appendChild(header);
+    wrapper.appendChild(body);
 
     return wrapper;
 }
 
-function updateHiddenState() {
-    const wrapper = document.getElementById(WRAPPER_ID);
+function updateHeaderText(wrapper) {
+    const header = wrapper.querySelector(".cdd-consumed-batches-header");
+    if (!header) return;
 
-    const shouldHide = wrapper && !wrapper.open;
+    const title = header.dataset.title || "Consumed batches (0)";
+    const arrow = wrapper.dataset.open === "true" ? "▾" : "▸";
 
-    document.querySelectorAll(`.${CONSUMED_CLASS}`).forEach((block) => {
-        block.classList.toggle(HIDDEN_CLASS, shouldHide);
-    });
+    header.textContent = `${arrow} ${title}`;
 }
 
-function placeWrapperBeforeFirstConsumedBlock(wrapper, firstBlock) {
-    if (!firstBlock?.parentNode) return;
+function placeWrapperAtEndOfBatchContainer(wrapper) {
+    const container = getBatchContainer();
+    if (!container) return;
 
-    if (wrapper.parentNode !== firstBlock.parentNode) {
-        firstBlock.parentNode.insertBefore(wrapper, firstBlock);
-        return;
+    if (wrapper.parentNode !== container) {
+        container.appendChild(wrapper);
     }
+}
 
-    if (wrapper.nextElementSibling !== firstBlock) {
-        firstBlock.parentNode.insertBefore(wrapper, firstBlock);
-    }
+function moveConsumedBlocksIntoWrapper(wrapper, blocks) {
+    const body = wrapper.querySelector(".cdd-consumed-batches-body");
+    if (!body) return;
+
+    blocks.forEach((block) => {
+        if (block.parentNode !== body) {
+            body.appendChild(block);
+        }
+    });
 }
 
 export function collapseConsumedBatches() {
@@ -156,7 +164,6 @@ export function collapseConsumedBatches() {
     injectConsumedBatchStyles();
 
     const consumedBlocks = getConsumedBatchBlocks();
-
     cleanupOldMarks(consumedBlocks);
 
     let wrapper = document.getElementById(WRAPPER_ID);
@@ -170,26 +177,22 @@ export function collapseConsumedBatches() {
         wrapper = createWrapper();
     }
 
-    placeWrapperBeforeFirstConsumedBlock(
-        wrapper,
-        consumedBlocks[0]
-    );
-
-    const summary = wrapper.querySelector("summary");
-
-    summary.textContent =
-        `Consumed batches (${consumedBlocks.length})`;
+    placeWrapperAtEndOfBatchContainer(wrapper);
 
     consumedBlocks.forEach((block) => {
         block.classList.add(CONSUMED_CLASS);
     });
 
-    updateHiddenState();
+    moveConsumedBlocksIntoWrapper(wrapper, consumedBlocks);
+
+    const header = wrapper.querySelector(".cdd-consumed-batches-header");
+    header.dataset.title = `Consumed batches (${consumedBlocks.length})`;
+
+    updateHeaderText(wrapper);
 }
 
 export function watchConsumedBatches() {
     if (observerStarted) return;
-
     observerStarted = true;
 
     let scheduled = false;

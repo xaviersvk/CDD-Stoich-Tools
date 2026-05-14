@@ -24,6 +24,7 @@ import {initLocationPickerResize} from "./features/ui-fixes/location-picker-resi
 import {injectMoleculeLinksStyles} from "./features/ui-fixes/molecule-links-fixes";
 import {watchDepletedSamples} from "./features/ui-fixes/depleted-samples-collapse";
 import {watchConsumedBatches} from "./features/ui-fixes/consumed-batches-collapse";
+import {initSavedSearchCopyLinks} from "./features/savedSearchCopyLinks/savedSearchCopyLinks";
 
 
 function isSupportedHost() {
@@ -97,6 +98,7 @@ function init() {
   injectMoleculeLinksStyles();
   watchDepletedSamples();
   watchConsumedBatches();
+  initSavedSearchCopyLinks();
 }
 
 init();

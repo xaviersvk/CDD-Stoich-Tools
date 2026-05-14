@@ -5,6 +5,29 @@ import { PANEL_ID, REACTION_COLORS } from "../../shared/plugin-constants.js";
 import { updatePanelVisibilityForOverlays } from "../overlay-watcher.js";
 import { printPanel } from "./panel-print.js";
 
+const PANEL_STORAGE_KEY = "cdd-stoich-panel-state";
+
+function loadPanelState() {
+    try {
+        return JSON.parse(localStorage.getItem(PANEL_STORAGE_KEY) || "{}");
+    } catch {
+        return {};
+    }
+}
+
+function savePanelState(partialState) {
+    const currentState = loadPanelState();
+
+    localStorage.setItem(
+        PANEL_STORAGE_KEY,
+        JSON.stringify({
+            ...currentState,
+            ...partialState,
+        })
+    );
+}
+
+
 export function makePanelDraggable(panel) {
     const header = panel.querySelector(".cdd-stoich-header");
     if (!header) return;
@@ -55,8 +78,15 @@ export function makePanelDraggable(panel) {
 
     document.addEventListener("mouseup", () => {
         if (!isDragging) return;
+
         isDragging = false;
         document.body.style.userSelect = "";
+
+        savePanelState({
+            left: panel.style.left,
+            top: panel.style.top,
+            right: "auto",
+        });
     });
 }
 
@@ -66,11 +96,20 @@ export function ensurePanel() {
     let panel = document.getElementById(PANEL_ID);
     if (panel) return panel;
 
+    const savedPanelState = loadPanelState();
+
     panel = document.createElement("div");
     panel.id = PANEL_ID;
-    panel.style.top = "16px";
-    panel.style.right = "16px";
-    panel.style.left = "auto";
+
+    if (savedPanelState.left && savedPanelState.top) {
+        panel.style.left = savedPanelState.left;
+        panel.style.top = savedPanelState.top;
+        panel.style.right = "auto";
+    } else {
+        panel.style.top = "16px";
+        panel.style.right = "16px";
+        panel.style.left = "auto";
+    }
 
     const header = document.createElement("div");
     header.className = "cdd-stoich-header";
@@ -96,6 +135,11 @@ export function ensurePanel() {
     toggleBtn.id = `${PANEL_ID}-toggle`;
     toggleBtn.type = "button";
     toggleBtn.textContent = "−";
+
+    if (savedPanelState.collapsed) {
+        panel.classList.add("collapsed");
+        toggleBtn.textContent = "+";
+    }
 
     actions.appendChild(refreshBtn);
     actions.appendChild(printBtn);
@@ -312,8 +356,12 @@ export function ensurePanel() {
     });
 
     toggleBtn.addEventListener("click", () => {
-        panel.classList.toggle("collapsed");
-        toggleBtn.textContent = panel.classList.contains("collapsed") ? "+" : "−";
+        const collapsed = panel.classList.toggle("collapsed");
+        toggleBtn.textContent = collapsed ? "+" : "−";
+
+        savePanelState({
+            collapsed,
+        });
     });
 
     updatePanelVisibilityForOverlays();

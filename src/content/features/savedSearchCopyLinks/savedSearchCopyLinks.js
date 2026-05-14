@@ -91,13 +91,19 @@ function injectSavedSearchCopyLinkStyles() {
     style.id = "cdd-copy-search-link-style";
     style.textContent = `
     td.actions {
-        display: flex;
-        align-items: center;
-        gap: 14px;
         white-space: nowrap;
+        vertical-align: middle !important;
+    }
+
+    td.actions a {
+        display: inline-flex;
+        align-items: center;
+        vertical-align: middle;
+        line-height: 1;
     }
 
     .cdd-copy-search-link {
+        margin-left: 14px;
         color: #0074d9;
         cursor: pointer;
         text-decoration: none;

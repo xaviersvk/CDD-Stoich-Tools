@@ -11,6 +11,22 @@ function isMoleculeBatchesPage() {
     );
 }
 
+function restoreConsumedBlocks() {
+    const wrapper = document.getElementById(WRAPPER_ID);
+    if (!wrapper) return;
+
+    const container = getBatchContainer();
+    const body = wrapper.querySelector(".cdd-consumed-batches-body");
+    const blocks = Array.from(body?.querySelectorAll(`.${CONSUMED_CLASS}`) || []);
+
+    blocks.forEach((block) => {
+        block.classList.remove(CONSUMED_CLASS);
+        container?.appendChild(block);
+    });
+
+    wrapper.remove();
+}
+
 export function injectConsumedBatchStyles() {
     if (stylesInjected) return;
     stylesInjected = true;
@@ -157,7 +173,7 @@ function moveConsumedBlocksIntoWrapper(wrapper, blocks) {
 
 export function collapseConsumedBatches() {
     if (!isMoleculeBatchesPage()) {
-        document.getElementById(WRAPPER_ID)?.remove();
+        restoreConsumedBlocks();
         return;
     }
 
@@ -218,7 +234,16 @@ export function watchConsumedBatches() {
         attributeFilter: ["class"],
     });
 
-    window.addEventListener("hashchange", run);
+    window.addEventListener("hashchange", () => {
+        if (!isMoleculeBatchesPage()) {
+            restoreConsumedBlocks();
+            return;
+        }
+
+        setTimeout(run, 100);
+        setTimeout(run, 500);
+        setTimeout(run, 1200);
+    });
 
     run();
 }

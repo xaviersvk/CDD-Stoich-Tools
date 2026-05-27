@@ -25,7 +25,7 @@ import {injectMoleculeLinksStyles} from "./features/ui-fixes/molecule-links-fixe
 import {watchDepletedSamples} from "./features/ui-fixes/depleted-samples-collapse";
 import {watchConsumedBatches} from "./features/ui-fixes/consumed-batches-collapse";
 import {initSavedSearchCopyLinks} from "./features/savedSearchCopyLinks/savedSearchCopyLinks";
-
+import { setupDockedLayout } from "./features/panel-layout.js";
 
 function isSupportedHost() {
   return /collaborativedrug\.com/i.test(location.hostname);
@@ -54,7 +54,8 @@ function init() {
 
   window.addEventListener("message", handleMessage);
 
-  ensurePanel();
+  const panel = ensurePanel();
+  setupDockedLayout(panel);
   ensureDepletedStyle();
   startDepletedMarkerObserver();
 
@@ -64,6 +65,7 @@ function init() {
   applyFileDialogFixes();
   injectAssociateFileBarStyles()
   watchFileDialog();
+
 
   const fileDialogObserver = new MutationObserver(() => {
     applyFileDialogFixes();

@@ -4,6 +4,7 @@ import { isElnEntryPage } from "../../shared/page-detection.js";
 import { PANEL_ID, REACTION_COLORS } from "../../shared/plugin-constants.js";
 import { updatePanelVisibilityForOverlays } from "../overlay-watcher.js";
 import { printPanel } from "./panel-print.js";
+import {setupDockedLayout} from "./panel-layout";
 
 const PANEL_STORAGE_KEY = "cdd-stoich-panel-state";
 
@@ -166,186 +167,148 @@ export function ensurePanel() {
 
     const style = document.createElement("style");
     style.textContent = `
-  #${PANEL_ID} {
-    position: fixed;
+#${PANEL_ID} {
+    position: sticky;
     top: 16px;
-    right: 16px;
-    width: 300px;
-    max-height: calc(100vh - 32px);
-    background: #111827;
-    color: #f9fafb;
-    border: 1px solid #374151;
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    width: 320px;
+    background: #ffffff;
+    color: #202124;
+    border: 1px solid #b8c7d9;
+    border-radius: 4px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.14);
     z-index: 2147483647;
     font-family: Arial, sans-serif;
     overflow: hidden;
-  }
+}
 
-  #${PANEL_ID} .cdd-stoich-header {
+#${PANEL_ID} .cdd-stoich-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 12px;
-    background: #1f2937;
-    border-bottom: 1px solid #374151;
-    cursor: move;
-    user-select: none;
-  }
+    padding: 7px 10px;
+    background: #1976c9;
+    border-bottom: 1px solid #0f5ea8;
+}
 
-  #${PANEL_ID} .cdd-stoich-title {
-    font-size: 14px;
+#${PANEL_ID} .cdd-stoich-title {
+    font-size: 13px;
     font-weight: 700;
-  }
+    color: #ffffff;
+}
 
-  #${PANEL_ID} .cdd-stoich-actions {
-    display: flex;
-    gap: 6px;
-  }
-
-  #${PANEL_ID} button {
-    background: #374151;
-    color: #f9fafb;
-    border: 1px solid #4b5563;
-    border-radius: 6px;
-    padding: 4px 8px;
-    font-size: 12px;
-    cursor: pointer;
-  }
-
-  #${PANEL_ID} button:hover {
-    background: #4b5563;
-  }
-
-  #${PANEL_ID} .cdd-stoich-body {
-    padding: 10px;
-    overflow: auto;
-    max-height: calc(100vh - 90px);
-  }
-
-  #${PANEL_ID} .cdd-stoich-status {
-    font-size: 12px;
-    color: #cbd5e1;
-    margin-bottom: 10px;
-  }
-
-  #${PANEL_ID} .cdd-stoich-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  #${PANEL_ID} .cdd-stoich-group {
-    border: 1px solid #374151;
-    border-radius: 12px;
-    overflow: hidden;
-    background: #0b1220;
-  }
-
-  #${PANEL_ID} .cdd-stoich-group-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 10px;
-    font-size: 12px;
-    font-weight: 700;
-    border-bottom: 1px solid rgba(255,255,255,0.06);
-  }
-
-  #${PANEL_ID} .cdd-stoich-group-count {
+#${PANEL_ID} button {
+    background: #ffffff;
+    color: #1976c9;
+    border: 1px solid #b8d2ea;
+    border-radius: 3px;
+    padding: 2px 7px;
     font-size: 11px;
-    opacity: 0.85;
-  }
+    cursor: pointer;
+}
 
-  #${PANEL_ID} .cdd-stoich-group-body {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 8px;
-  }
+#${PANEL_ID} button:hover {
+    background: #e9f3fc;
+}
 
-  #${PANEL_ID} .cdd-stoich-card {
-    border: 1px solid #374151;
-    border-left-width: 4px;
-    border-radius: 10px;
-    padding: 10px;
-    background: #0f172a;
-  }
+#${PANEL_ID} .cdd-stoich-body {
+    padding: 9px;
+    background: #f8fafc;
+}
 
-  #${PANEL_ID} .cdd-stoich-card-top {
+#${PANEL_ID} .cdd-stoich-status {
+    font-size: 12px;
+    color: #202124;
+    margin-bottom: 8px;
+}
+
+#${PANEL_ID} .cdd-stoich-group {
+    border: 1px solid #1e9af0;
+    border-radius: 4px;
+    background: #ffffff;
+    overflow: hidden;
+}
+
+#${PANEL_ID} .cdd-stoich-group-header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
-    gap: 8px;
-    margin-bottom: 6px;
-  }
+    align-items: center;
+    padding: 5px 8px;
+    background: #e5f3ff !important;
+    color: #005fae !important;
+    font-size: 11px;
+    font-weight: 700;
+    border-bottom: 1px solid #9dccf2;
+}
 
-  #${PANEL_ID} .cdd-stoich-reaction-badge {
+#${PANEL_ID} .cdd-stoich-group-count {
+    font-size: 11px;
+    color: #005fae;
+}
+
+#${PANEL_ID} .cdd-stoich-group-body {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 7px;
+}
+
+#${PANEL_ID} .cdd-stoich-card {
+    border: 1px solid #c5d7e8;
+    border-left: 4px solid #1976c9;
+    border-radius: 3px;
+    padding: 7px;
+    background: #ffffff;
+    box-shadow: none;
+}
+
+#${PANEL_ID} .cdd-stoich-row-copyable {
+    font-size: 12px;
+    margin-bottom: 4px;
+    line-height: 1.35;
+}
+
+#${PANEL_ID} .cdd-stoich-label {
+    color: #005fae;
+    font-weight: 700;
+}
+
+#${PANEL_ID} .cdd-stoich-copy-value {
+    color: #202124;
+    cursor: pointer;
+    margin-left: 4px;
+    padding: 1px 3px;
+    border-radius: 2px;
+}
+
+#${PANEL_ID} .cdd-stoich-copy-value:hover {
+    background: #e5f3ff;
+}
+
+#${PANEL_ID} .cdd-stoich-reaction-badge {
     display: inline-block;
     font-size: 10px;
     font-weight: 700;
-    padding: 2px 6px;
-    border-radius: 999px;
-  }
+    padding: 1px 5px;
+    border-radius: 2px;
+    background: #1976c9 !important;
+    color: #ffffff !important;
+}
 
-  #${PANEL_ID} .cdd-stoich-row {
-    margin-bottom: 4px;
-    font-size: 12px;
-    line-height: 1.4;
-    word-break: break-word;
-  }
-
-  #${PANEL_ID} .cdd-stoich-row:last-child {
-    margin-bottom: 0;
-  }
-
-  #${PANEL_ID} .cdd-stoich-label {
-    color: #93c5fd;
-    font-weight: 700;
-  }
-
-  #${PANEL_ID} .cdd-stoich-row-copyable {
-    font-size: 12px;
-    margin-bottom: 6px;
-    line-height: 1.4;
-    word-break: break-word;
-  }
-
-  #${PANEL_ID} .cdd-stoich-copy-value {
-    cursor: pointer;
-    margin-left: 6px;
-    color: #f9fafb;
-    padding: 1px 4px;
-    border-radius: 4px;
-  }
-
-  #${PANEL_ID} .cdd-stoich-copy-value:hover {
-    background: rgba(255,255,255,0.08);
-  }
-
-  #${PANEL_ID} .cdd-copy-flash {
-    background: rgba(52, 211, 153, 0.35);
-  }
-
-  #${PANEL_ID}.collapsed .cdd-stoich-body {
-    display: none;
-  }
-
-  #${PANEL_ID} .cdd-low-purity-badge {
-    background: rgba(239, 68, 68, 0.15);
-    color: #ef4444;
+#${PANEL_ID} .cdd-low-purity-badge {
+    background: #fff1f1;
+    color: #c62828;
+    border: 1px solid #ef9a9a;
     font-weight: 700;
     font-size: 10px;
-    padding: 2px 6px;
-    border-radius: 999px;
-    border: 1px solid rgba(239, 68, 68, 0.35);
-  }
+    padding: 1px 5px;
+    border-radius: 2px;
+}
 `;
 
     document.documentElement.appendChild(style);
     document.documentElement.appendChild(panel);
 
-    makePanelDraggable(panel);
+    // makePanelDraggable(panel);
 
     refreshBtn.addEventListener("click", () => {
         renderFromState();
@@ -698,13 +661,13 @@ export function renderSamples(payload) {
         list.appendChild(groupEl);
     }
 }
-
 export function renderFromState() {
     if (!isElnEntryPage()) return;
     if (!STATE.hasReactionFeature) return;
     if (STATE.isKetcherOpen) return;
 
-    ensurePanel();
+    const panel = ensurePanel();
+    setupDockedLayout(panel);
 
     if (!STATE.lastPayload) {
         setStatus("No reaction data captured yet. Wait for page API response.");

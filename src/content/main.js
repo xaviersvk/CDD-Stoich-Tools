@@ -25,6 +25,7 @@ import {injectMoleculeLinksStyles} from "./features/ui-fixes/molecule-links-fixe
 import {watchDepletedSamples} from "./features/ui-fixes/depleted-samples-collapse";
 import {watchConsumedBatches} from "./features/ui-fixes/consumed-batches-collapse";
 import {initSavedSearchCopyLinks} from "./features/savedSearchCopyLinks/savedSearchCopyLinks";
+import {initElnTitle} from "./features/eln-title";
 
 
 function isSupportedHost() {
@@ -99,6 +100,7 @@ function init() {
   watchDepletedSamples();
   watchConsumedBatches();
   initSavedSearchCopyLinks();
+  initElnTitle();
 }
 
 init();

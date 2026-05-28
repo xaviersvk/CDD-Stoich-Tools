@@ -1,0 +1,36 @@
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #ffffff;
+    color: #1f2933;
+}
+
+.popup {
+    width: 260px;
+    padding: 14px;
+}
+
+h1 {
+    margin: 0 0 14px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+select {
+    width: 100%;
+    padding: 7px;
+    font-size: 13px;
+}
+
+.hint {
+    margin: 10px 0 0;
+    font-size: 12px;
+    color: #6b7280;
+}

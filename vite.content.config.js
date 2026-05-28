@@ -1,6 +1,6 @@
 import { defineConfig } from "vite";
 import { resolve } from "path";
-import { mkdirSync, copyFileSync, cpSync, existsSync } from "fs";
+import { mkdirSync, copyFileSync, cpSync, existsSync, rmSync } from "fs";
 
 function copyExtensionAssets() {
     return {
@@ -17,6 +17,16 @@ function copyExtensionAssets() {
 
             if (existsSync(resolve(__dirname, "icons"))) {
                 cpSync(resolve(__dirname, "icons"), resolve(distDir, "icons"), {
+                    recursive: true
+                });
+            }
+
+            const popupSrc = resolve(__dirname, "src/popup");
+            const popupDist = resolve(distDir, "popup");
+
+            if (existsSync(popupSrc)) {
+                rmSync(popupDist, { recursive: true, force: true });
+                cpSync(popupSrc, popupDist, {
                     recursive: true
                 });
             }

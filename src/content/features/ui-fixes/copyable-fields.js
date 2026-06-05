@@ -1,3 +1,5 @@
+import { copyText } from "../../utils/clipboard.js";
+
 let stylesInjected = false;
 
 const DEBUG = false
@@ -47,26 +49,6 @@ function injectCopyableFieldStyles() {
     `;
 
     document.head.appendChild(style);
-}
-
-async function copyText(text) {
-    if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
-        return;
-    }
-
-    const textarea = document.createElement("textarea");
-    textarea.value = text;
-    textarea.style.position = "fixed";
-    textarea.style.left = "-9999px";
-    textarea.style.top = "-9999px";
-
-    document.body.appendChild(textarea);
-    textarea.focus();
-    textarea.select();
-
-    document.execCommand("copy");
-    textarea.remove();
 }
 
 function markCopied(element) {
@@ -154,13 +136,11 @@ export function enhanceCopyableFields() {
             const currentText = getCopyableText(node);
             if (!currentText) return;
 
-            try {
-                await copyText(currentText);
+            const ok = await copyText(currentText);
+            if (ok) {
                 markCopied(node);
-
-            } catch (error) {
+            } else {
                 markCopyError(node);
-                console.warn("[COPYABLE-FIELDS] Copy failed:", error);
             }
         });
 

@@ -1,4 +1,5 @@
 import { post } from "./bus.js";
+import { EVENTS } from "../shared/event-types.js";
 import {
   isElnPayload,
   hasAnyReactionFeature,
@@ -17,7 +18,7 @@ function processJsonPayload(data) {
 
   const hasReaction = hasAnyReactionFeature(data);
 
-  post("REACTION_VISIBILITY", {
+  post(EVENTS.REACTION_VISIBILITY, {
     visible: hasReaction,
   });
 
@@ -26,7 +27,7 @@ function processJsonPayload(data) {
   try {
     const sampleResult = extractAllReactionRows(data);
     if (sampleResult?.samples?.length) {
-      post("SAMPLE_DATA", sampleResult);
+      post(EVENTS.SAMPLE_DATA, sampleResult);
     }
   } catch (err) {
     console.warn("[CDD Stoich Tools] sample parse failed", err);
@@ -34,7 +35,7 @@ function processJsonPayload(data) {
 
   try {
     const printResult = extractPrintData(data);
-    post("PRINT_DATA", printResult);
+    post(EVENTS.PRINT_DATA, printResult);
   } catch (err) {
     console.warn("[CDD Stoich Tools] print parse failed", err);
   }

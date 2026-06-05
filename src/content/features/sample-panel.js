@@ -1,4 +1,5 @@
 import { copyTextWithFeedback } from "../utils/clipboard.js";
+import { normalizeValue } from "../utils/format.js";
 import { STATE } from "../state.js";
 import { isElnEntryPage } from "../../shared/page-detection.js";
 import { PANEL_ID, REACTION_COLORS } from "../../shared/plugin-constants.js";
@@ -561,12 +562,6 @@ export function initSamplePanelFields() {
             });
         });
     }
-}
-
-function normalizeValue(value) {
-    return String(value || "")
-        .replace(/\s+/g, " ")
-        .trim();
 }
 
 function isSampleDepleted(sample) {

@@ -3,7 +3,7 @@ import { STATE } from "./state.js";
 import { renderFromState, removePanel } from "./features/sample-panel.js";
 import { ensurePrintButtons } from "./features/print-buttons.js";
 import { markDepletedSamplesInSelector } from "./features/depleted-marker.js";
-import {EVENT_SOURCE} from "../shared/event-types";
+import {EVENT_SOURCE, EVENTS} from "../shared/event-types";
 
 
 
@@ -14,7 +14,7 @@ export function handleMessage(event) {
     if (!data || data.source !== EVENT_SOURCE) return;
 
     switch (data.type) {
-        case "REACTION_VISIBILITY": {
+        case EVENTS.REACTION_VISIBILITY: {
             STATE.hasReactionFeature = !!data.payload?.visible;
 
             if (!STATE.hasReactionFeature) {
@@ -25,13 +25,13 @@ export function handleMessage(event) {
             break;
         }
 
-        case "SAMPLE_DATA": {
+        case EVENTS.SAMPLE_DATA: {
             STATE.lastPayload = data.payload || null;
             renderFromState();
             break;
         }
 
-        case "PRINT_DATA": {
+        case EVENTS.PRINT_DATA: {
             STATE.reactionPayloads = Array.isArray(data.payload?.reactionPayloads)
                 ? data.payload.reactionPayloads
                 : [];

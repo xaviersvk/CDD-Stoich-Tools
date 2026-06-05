@@ -1,3 +1,5 @@
+import { copyText } from "../../utils/clipboard.js";
+
 let savedSearchCopyLinksInitialized = false;
 
 export function initSavedSearchCopyLinks() {
@@ -42,13 +44,8 @@ function addCopyLinksToSavedSearches() {
 
             const absoluteUrl = new URL(searchButton.getAttribute("href"), window.location.origin).href;
 
-            try {
-                await navigator.clipboard.writeText(absoluteUrl);
-                showCopySuccess(copyLink);
-            } catch (error) {
-                fallbackCopyText(absoluteUrl);
-                showCopySuccess(copyLink);
-            }
+            await copyText(absoluteUrl);
+            showCopySuccess(copyLink);
         });
 
         const deleteLink = actionsCell.querySelector("a");
@@ -70,18 +67,6 @@ function showCopySuccess(element) {
         element.textContent = originalText;
         element.classList.remove("copied");
     }, 1200);
-}
-
-function fallbackCopyText(text) {
-    const textarea = document.createElement("textarea");
-    textarea.value = text;
-    textarea.style.position = "fixed";
-    textarea.style.left = "-9999px";
-    document.body.appendChild(textarea);
-    textarea.focus();
-    textarea.select();
-    document.execCommand("copy");
-    textarea.remove();
 }
 
 function injectSavedSearchCopyLinkStyles() {

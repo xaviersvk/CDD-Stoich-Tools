@@ -1,7 +1,7 @@
 // content/features/print-buttons.js
 import { STATE } from "../state.js";
 import { escapeHtml } from "../utils/dom.js";
-import {EVENT_SOURCE} from "../../shared/event-types";
+import {EVENT_SOURCE, EVENTS} from "../../shared/event-types";
 
 const BTN_CLASS = "cdd-stoich-print-button";
 const BTN_ATTR = "data-cdd-stoich-print-button";
@@ -511,7 +511,7 @@ export function printStoichiometrySheet(reactionIndex) {
 
     window.postMessage({
         source: EVENT_SOURCE,
-        type: "PRINT_REQUEST",
+        type: EVENTS.PRINT_REQUEST,
         payload: { html }
     }, "*");
 }

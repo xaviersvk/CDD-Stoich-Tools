@@ -534,24 +534,29 @@ Most important files:
 
 ### Potential Cleanup
 
-Dead / unused / duplicated code found during the latest audit:
+Resolved in the latest cleanup pass:
 
-- **Empty files (delete):** `src/inject/constants.js`, `src/content/utils/format.js`.
-- **Unused legacy build config:** root `vite.config.js` is not referenced by any
-  npm script (and unlike `vite.content.config.js` it does not copy `popup/` or
-  `shared/`).
-- **Unused function:** `isCddHost()` in `src/shared/page-detection.js` is never
-  imported, and its condition is redundant (`/…com$/ || /…com/`).
+- ~~Empty `src/inject/constants.js`~~ — deleted.
+- ~~Empty `src/content/utils/format.js`~~ — repurposed to host the shared
+  `normalizeValue` helper.
+- ~~Unused root `vite.config.js`~~ — deleted (the build uses
+  `vite.content.config.js` + `vite.inject.config.js`).
+- ~~Unused `isCddHost()`~~ — removed from `shared/page-detection.js`.
+- ~~Three clipboard implementations~~ — unified into `utils/clipboard.js`
+  (`copyText` now has the execCommand fallback); `copyable-fields.js` and
+  `savedSearchCopyLinks.js` import it.
+- ~~Duplicate `normalizeValue`~~ — single copy in `utils/format.js`, imported by
+  `depleted-marker.js` and `sample-panel.js`.
+- ~~Inconsistent event names~~ — all sides now use `EVENTS.*` from
+  `shared/event-types.js` (no raw string literals).
+
+Still open:
+
 - **Duplicate `isElnEntryPage`:** one in `shared/page-detection.js` (loose
   regex, used by the panel) and a stricter one inline in `eln-title.js`. They
-  disagree on what counts as an ELN entry page.
-- **Three clipboard implementations:** `utils/clipboard.js`, a local `copyText`
-  in `ui-fixes/copyable-fields.js`, and `fallbackCopyText` in
-  `savedSearchCopyLinks.js`.
-- **Duplicate `normalizeValue`** in `depleted-marker.js` and `sample-panel.js`.
-- **Inconsistent event names:** `event-types.js` exports an `EVENTS` map but only
-  `dispatcher.js` uses it; `message-router.js` uses raw string literals.
+  disagree on what counts as an ELN entry page. Not unified yet because the
+  panel relies on the loose regex and it needs verification.
 - **Hard-coded id:** `overlay-watcher.js` uses `"cdd-stoich-panel"` instead of
   importing `PANEL_ID` from `plugin-constants.js`.
 - **Version drift:** `manifest.json` is `7.6.2` while the latest commit message
-  says it was bumped to `8.0.0`.
+  says it was bumped to `8.0.0`; `package.json` is a separate `1.0.0`.

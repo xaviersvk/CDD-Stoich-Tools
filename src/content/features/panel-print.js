@@ -1,7 +1,7 @@
 // content/features/panel-print.js
 import { STATE } from "../state.js";
 import { escapeHtml } from "../utils/dom.js";
-import { EVENT_SOURCE } from "../../shared/event-types";
+import { EVENT_SOURCE, EVENTS } from "../../shared/event-types";
 import {
     SAMPLE_PANEL_FIELDS,
     resolveFieldValue,
@@ -127,7 +127,7 @@ export function printPanel(visibleFields = {}) {
 
     window.postMessage({
         source: EVENT_SOURCE,
-        type: "PRINT_REQUEST",
+        type: EVENTS.PRINT_REQUEST,
         payload: { html }
     }, "*");
 }

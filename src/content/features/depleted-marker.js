@@ -1,14 +1,9 @@
 const OBSERVER_KEY = "__CDD_DEPLETED_OBSERVER__";
 
 import { STATE } from "../state.js";
+import { normalizeValue } from "../utils/format.js";
 
 const STYLE_ID = "cdd-depleted-style";
-
-function normalizeValue(value) {
-    return String(value || "")
-        .replace(/\s+/g, " ")
-        .trim();
-}
 
 function getDepletedSet() {
     const raw =

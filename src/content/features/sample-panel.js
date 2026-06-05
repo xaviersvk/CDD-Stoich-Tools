@@ -4,6 +4,25 @@ import { isElnEntryPage } from "../../shared/page-detection.js";
 import { PANEL_ID, REACTION_COLORS } from "../../shared/plugin-constants.js";
 import { updatePanelVisibilityForOverlays } from "../overlay-watcher.js";
 import { printPanel } from "./panel-print.js";
+import {
+    SAMPLE_PANEL_FIELDS,
+    SAMPLE_PANEL_SETTINGS_KEY,
+    resolveFieldValue,
+    getDefaultVisibleFields,
+    getSamplePanelSettings,
+    getCustomFieldsFromSample,
+    discoverCustomFields,
+    getDiscoveredCustomFields,
+    saveDiscoveredCustomFields,
+    touchSeenCustomFields,
+    pruneExpiredCustomFields,
+    parsePurity,
+} from "../../shared/sample-panel-fields.js";
+
+// Visible-field map, kept in sync with chrome.storage by initSamplePanelFields().
+// Starts from the registry defaults so the first paint is correct even before
+// the async storage read resolves.
+let visibleFields = getDefaultVisibleFields();
 
 const PANEL_STORAGE_KEY = "cdd-stoich-panel-state";
 
@@ -390,69 +409,6 @@ export function getPanelParts() {
     };
 }
 
-export function parsePurity(value) {
-    if (value == null || value === "") return NaN;
-    return parseFloat(String(value).replace(",", "."));
-}
-
-function formatClipboardNumber(value) {
-    if (!Number.isFinite(value)) return null;
-
-    const rounded = Number(value.toFixed(12));
-    if (Object.is(rounded, -0)) return "0";
-
-    return String(rounded);
-}
-
-function normalizeConcentrationUnit(unit) {
-    return String(unit || "")
-        .trim()
-        .replace(/\s+/g, "")
-        .replace(/μ/g, "u")
-        .replace(/µ/g, "u")
-        .toLowerCase();
-}
-
-function getCddCompatibleConcentrationCopyValue(sample) {
-    const rawValue = sample?.concentration;
-    const rawUnits = sample?.concentrationUnits;
-
-    if (rawValue == null || rawValue === "") return null;
-
-    const numericValue = parseFloat(String(rawValue).replace(",", "."));
-    if (!Number.isFinite(numericValue)) {
-        return rawUnits ? `${rawValue} ${rawUnits}` : String(rawValue);
-    }
-
-    const unit = normalizeConcentrationUnit(rawUnits);
-
-    if (!unit) {
-        return String(rawValue);
-    }
-
-    if (unit === "m" || unit === "mol/l") {
-        return `${formatClipboardNumber(numericValue)} mol/L`;
-    }
-
-    if (unit === "mm" || unit === "mmol/l") {
-        return `${formatClipboardNumber(numericValue)} mmol/L`;
-    }
-
-    if (unit === "um" || unit === "umol/l") {
-        return `${formatClipboardNumber(numericValue / 1000)} mmol/L`;
-    }
-
-    if (unit === "nm" || unit === "nmol/l") {
-        return `${formatClipboardNumber(numericValue / 1000000)} mmol/L`;
-    }
-
-    if (unit === "mol/ml") {
-        return `${formatClipboardNumber(numericValue)} mol/mL`;
-    }
-
-    return rawUnits ? `${rawValue} ${rawUnits}` : String(rawValue);
-}
-
 function createCopyableRow(label, value, options = {}) {
     if (value == null || value === "") return null;
 
@@ -518,39 +474,93 @@ export function groupSamplesByReaction(samples) {
     return [...groups.values()].sort((a, b) => a.reactionIndex - b.reactionIndex);
 }
 
-export function formatConcentration(sample) {
-    if (sample.concentration == null || sample.concentration === "") return null;
-    if (sample.concentrationUnits) {
-        return `${sample.concentration} ${sample.concentrationUnits}`;
-    }
-    return String(sample.concentration);
+/* ------------------------------------------------------------------ *
+ * Configurable field rendering
+ * ------------------------------------------------------------------ */
+
+// Build a single panel row from a registry field, or null when the sample has
+// no value for it. All value/format logic lives in the shared registry.
+function renderFieldRow(field, sample) {
+    const resolved = resolveFieldValue(field, sample);
+    if (!resolved) return null;
+
+    return createCopyableRow(field.label, resolved.text, {
+        copyValue: resolved.copyValue,
+        highlight: resolved.highlight,
+    });
 }
 
-function isRenderableTextValue(value) {
-    // console.log("[CDD panel][location check] raw value =", value);
-    // console.log("[CDD panel][location check] type =", typeof value);
+// Build the rows for one sample: enabled static registry fields first, then
+// any enabled dynamic custom fields that this sample actually carries.
+function renderConfiguredFields(sample) {
+    const rows = [];
 
-    if (value == null) {
-        // console.log("[CDD panel][location check] → NULL/undefined → skip");
-        return false;
+    for (const field of SAMPLE_PANEL_FIELDS) {
+        if (!visibleFields[field.key]) continue;
+        const row = renderFieldRow(field, sample);
+        if (row) rows.push(row);
     }
 
-    if (typeof value === "object") {
-        // console.log("[CDD panel][location check] → OBJECT → skip", JSON.stringify(value, null, 2));
-        return false;
+    for (const field of getCustomFieldsFromSample(sample)) {
+        if (!visibleFields[field.key]) continue;
+        const row = createCopyableRow(field.label, field.value);
+        if (row) rows.push(row);
     }
 
-    const text = String(value).trim();
+    return rows;
+}
 
-    // console.log("[CDD panel][location check] normalized text =", text);
+// Custom-field options we have already refreshed this session, so repeated
+// renders don't churn chrome.storage.
+const persistedCustomFieldKeys = new Set();
+let prunedCustomFieldsThisSession = false;
 
-    if (text === "") {
-        // console.log("[CDD panel][location check] → empty string → skip");
-        return false;
+// Maintain the discovered-custom-field list: refresh `lastSeen` for fields seen
+// now, and drop fields unseen for longer than the TTL (keeping enabled ones).
+// Runs at most once per session unless a new field appears. Writes a different
+// storage key than the settings, so it never re-triggers the settings listener.
+function persistDiscoveredCustomFields(samples) {
+    const found = discoverCustomFields(samples);
+    const hasUnseen = found.some((field) => !persistedCustomFieldKeys.has(field.key));
+    if (!hasUnseen && prunedCustomFieldsThisSession) return;
+
+    getDiscoveredCustomFields().then((existing) => {
+        const now = Date.now();
+
+        const touched = touchSeenCustomFields(existing, found, now);
+        const pruned = pruneExpiredCustomFields(touched.list, visibleFields, now);
+
+        found.forEach((field) => persistedCustomFieldKeys.add(field.key));
+        prunedCustomFieldsThisSession = true;
+
+        if (touched.changed || pruned.changed) {
+            saveDiscoveredCustomFields(pruned.list);
+        }
+    });
+}
+
+// Load the saved field visibility and keep it live across popup changes.
+// Safe to call once at content-script startup.
+export function initSamplePanelFields() {
+    getSamplePanelSettings()
+        .then((map) => {
+            visibleFields = map;
+            renderFromState();
+        })
+        .catch(() => {
+            /* keep registry defaults */
+        });
+
+    if (chrome?.storage?.onChanged) {
+        chrome.storage.onChanged.addListener((changes, areaName) => {
+            if (areaName !== "local" || !changes[SAMPLE_PANEL_SETTINGS_KEY]) return;
+
+            getSamplePanelSettings().then((map) => {
+                visibleFields = map;
+                renderFromState();
+            });
+        });
     }
-
-    // console.log("[CDD panel][location check] → OK render");
-    return true;
 }
 
 function normalizeValue(value) {
@@ -596,6 +606,8 @@ export function renderSamples(payload) {
         return;
     }
 
+    persistDiscoveredCustomFields(samples);
+
     const groups = groupSamplesByReaction(samples);
 
     for (const group of groups) {
@@ -630,11 +642,9 @@ export function renderSamples(payload) {
             card.style.borderLeftColor = color.border;
             card.style.boxShadow = `0 0 0 1px ${color.glow} inset`;
 
-            const concentrationText = formatConcentration(sample);
             const purityValue = parsePurity(sample.purity);
             const lowPurity = !isNaN(purityValue) && purityValue <= 93;
             const depletedSample = isSampleDepleted(sample);
-            const { internalID, solvent } = sample;
 
             if (lowPurity || depletedSample) {
                 card.style.borderLeftColor = "#ef4444";
@@ -668,25 +678,7 @@ export function renderSamples(payload) {
 
             card.appendChild(cardTop);
 
-            const purityRow = lowPurity
-                ? createCopyableRow("Purity [%]", sample.purity, { highlight: true })
-                : null;
-
-            const rows = [
-                createCopyableRow("Name", sample.name || "—"),
-                isRenderableTextValue(sample.location)
-                    ? createCopyableRow("Location", sample.location)
-                    : null,
-                purityRow,
-                createCopyableRow("Internal ID", internalID),
-                createCopyableRow("Density [g/mL]", sample.density),
-                createCopyableRow("Concentration", concentrationText, {
-                    copyValue: getCddCompatibleConcentrationCopyValue(sample),
-                }),
-                createCopyableRow("Solvent", solvent),
-            ].filter(Boolean);
-
-            for (const rowEl of rows) {
+            for (const rowEl of renderConfiguredFields(sample)) {
                 card.appendChild(rowEl);
             }
 

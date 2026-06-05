@@ -3,7 +3,7 @@ import { injectPageScript } from "./inject-loader.js";
 import { handleMessage } from "./message-router.js";
 import { watchUrlChanges } from "./url-watcher.js";
 import { watchKetcherDialog } from "./overlay-watcher.js";
-import { ensurePanel, renderFromState } from "./features/sample-panel.js";
+import { ensurePanel, renderFromState, initSamplePanelFields } from "./features/sample-panel.js";
 import { ensurePrintButtons } from "./features/print-buttons.js";
 import {
   ensureDepletedStyle,
@@ -52,6 +52,7 @@ function init() {
 
   injectPageScript();
   initDoseResponseOverride();
+  initSamplePanelFields();
 
   window.addEventListener("message", handleMessage);
 

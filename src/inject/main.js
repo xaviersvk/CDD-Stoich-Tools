@@ -10,6 +10,7 @@ import { installFetchHook } from "./hooks/fetch-hook.js";
 import { installXhrHook } from "./hooks/xhr-hook.js";
 import { installPrintDispatcher } from "./print/dispatcher.js";
 
+
 function processJsonPayload(data) {
   if (!data || typeof data !== "object") return;
   if (!isElnPayload(data)) return;

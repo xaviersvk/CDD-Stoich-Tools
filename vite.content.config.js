@@ -31,6 +31,18 @@ function copyExtensionAssets() {
                 });
             }
 
+            // The popup loads as an ES module and imports the shared field
+            // registry at runtime, so the shared sources must ship in dist too.
+            const sharedSrc = resolve(__dirname, "src/shared");
+            const sharedDist = resolve(distDir, "shared");
+
+            if (existsSync(sharedSrc)) {
+                rmSync(sharedDist, { recursive: true, force: true });
+                cpSync(sharedSrc, sharedDist, {
+                    recursive: true
+                });
+            }
+
             if (existsSync(resolve(__dirname, "README.txt"))) {
                 copyFileSync(
                     resolve(__dirname, "README.txt"),

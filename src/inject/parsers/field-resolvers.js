@@ -16,6 +16,29 @@ export function normalizeFieldMap(fieldMap) {
     return fieldMap;
 }
 
+// Reduce a CDD field value to a primitive, unwrapping { value } wrappers.
+// Returns null for objects/empty so they are never rendered as "[object]".
+function toScalarFieldValue(value) {
+    if (value && typeof value === "object") {
+        return "value" in value ? toScalarFieldValue(value.value) : null;
+    }
+    if (value == null || value === "") return null;
+    return value;
+}
+
+// Turn an arbitrary custom-field map (batch_fields / sample fields) into a
+// flat name → primitive map, dropping empty and non-primitive entries.
+export function collectCustomFields(fieldMap) {
+    const map = normalizeFieldMap(fieldMap);
+    const out = {};
+    for (const [name, raw] of Object.entries(map)) {
+        const scalar = toScalarFieldValue(raw);
+        if (scalar == null || scalar === "") continue;
+        out[name] = scalar;
+    }
+    return out;
+}
+
 export function getFieldValueCaseInsensitive(fieldMap, candidateNames = []) {
     const map = normalizeFieldMap(fieldMap);
     const entries = Object.entries(map);
@@ -75,13 +98,30 @@ export function resolveRowLocation(row) {
 
     return shortenLocation(normalized);
 }
-export function resolveBatchFields(row) {
-    const batchFields =
+// Locate the batch-level custom field map regardless of where CDD nests it.
+export function getBatchFields(row) {
+    return (
         row?.sample?.batch_fields ||
         row?.batch_fields ||
         row?.batch?.batch_fields ||
         row?.sample?.batch?.batch_fields ||
-        {};
+        {}
+    );
+}
+
+// Locate the sample-level custom field map regardless of where CDD nests it.
+export function getSampleFields(row) {
+    return (
+        row?.sample?.inventory_sample_fields ||
+        row?.sample?.sample_fields ||
+        row?.sample?.fields ||
+        row?.sample_fields ||
+        {}
+    );
+}
+
+export function resolveBatchFields(row) {
+    const batchFields = getBatchFields(row);
 
     const purity = getFieldValueCaseInsensitive(batchFields, [
         "Purity (%)",
@@ -115,12 +155,7 @@ export function resolveBatchFields(row) {
 }
 
 export function resolveSampleFields(row) {
-    const sampleFields =
-        row?.sample?.inventory_sample_fields ||
-        row?.sample?.sample_fields ||
-        row?.sample?.fields ||
-        row?.sample_fields ||
-        {};
+    const sampleFields = getSampleFields(row);
 
     const concentration = getFieldValueCaseInsensitive(sampleFields, [
         "Concentration",
@@ -156,5 +191,84 @@ export function resolveSampleFields(row) {
         concentration,
         concentrationUnits,
         solvent,
+    };
+}
+
+/* ------------------------------------------------------------------ *
+ * Optional fields (best-effort).
+ *
+ * The exact CDD shape for these varies, so every resolver probes a few
+ * likely paths / field-name candidates and returns null when absent.
+ * Missing data simply means the corresponding panel row is skipped.
+ * ------------------------------------------------------------------ */
+
+function getMolecule(row) {
+    return (
+        row?.molecule ||
+        row?.sample?.molecule ||
+        row?.sample?.batch?.molecule ||
+        row?.batch?.molecule ||
+        null
+    );
+}
+
+export function resolveMoleculeFields(row) {
+    const molecule = getMolecule(row) || {};
+
+    return {
+        // The stoich row carries the molecule identity directly.
+        moleculeName: row?.moleculeName || molecule.name || row?.iupacName || null,
+        moleculeId: row?.moleculeId ?? molecule.id ?? molecule.molecule_id ?? null,
+        molecularFormula:
+            row?.formula || molecule.molecular_formula || molecule.formula || null,
+        smiles: molecule.smiles || molecule.structure_smiles || row?.smiles || null,
+        inchiKey: molecule.inchi_key || molecule.inchikey || row?.inchiKey || null,
+        molecularWeight: row?.molecularWeight ?? molecule.molecular_weight ?? null,
+        formulaWeight:
+            row?.formulaWeight ??
+            row?.batch?.formulaWeight ??
+            row?.sample?.batch?.formula_weight ??
+            molecule.formula_weight ??
+            null,
+    };
+}
+
+export function resolveIdentityFields(row) {
+    const batch = row?.sample?.batch || row?.batch || {};
+    const mergedFields = { ...getSampleFields(row), ...getBatchFields(row) };
+
+    return {
+        batchName: batch.name || row?.sample?.batch_name || batch.batch_identifier || null,
+        batchId: row?.batchId ?? batch.id ?? row?.sample?.batch_id ?? null,
+        vendorId: getFieldValueCaseInsensitive(getBatchFields(row), [
+            "Vendor ID",
+            "*Vendor ID",
+            "Vendor Id",
+            "Supplier ID",
+        ]),
+        project:
+            getFieldValueCaseInsensitive(mergedFields, ["Project", "*Project", "Projects"]) ||
+            row?.sample?.project?.name ||
+            null,
+        owner:
+            getFieldValueCaseInsensitive(mergedFields, [
+                "Owner",
+                "*Owner",
+                "Created by",
+                "Created By",
+            ]) ||
+            row?.sample?.created_by_user_full_name ||
+            row?.sample?.created_by ||
+            row?.sample?.owner?.name ||
+            null,
+    };
+}
+
+export function resolveQuantityFields(row) {
+    return {
+        amount: row?.amount ?? row?.sample?.current_amount ?? null,
+        amountUnit: row?.amountUnit ?? row?.sample?.units ?? row?.unit ?? row?.units ?? null,
+        volume: row?.volume ?? null,
+        mass: row?.mass ?? null,
     };
 }

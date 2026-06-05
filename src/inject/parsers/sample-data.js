@@ -3,8 +3,14 @@ import { getReactionFeatures } from "./common.js";
 import {
     resolveBatchFields,
     resolveSampleFields,
+    resolveMoleculeFields,
+    resolveIdentityFields,
+    resolveQuantityFields,
     resolveRowName,
-    resolveRowLocation
+    resolveRowLocation,
+    collectCustomFields,
+    getBatchFields,
+    getSampleFields
 } from "./field-resolvers.js";
 
 export function extractRowsFromReactionFeature(feature, reactionIndex) {
@@ -27,8 +33,11 @@ export function extractRowsFromReactionFeature(feature, reactionIndex) {
         if (seen.has(dedupeKey)) continue;
         seen.add(dedupeKey);
 
-        const { purity, density, internalID } = resolveBatchFields(row);
-        const { concentration, concentrationUnits, solvent } = resolveSampleFields(row);
+        const batchFields = resolveBatchFields(row);
+        const sampleFields = resolveSampleFields(row);
+        const moleculeFields = resolveMoleculeFields(row);
+        const identityFields = resolveIdentityFields(row);
+        const quantityFields = resolveQuantityFields(row);
 
         output.push({
             reactionIndex,
@@ -39,12 +48,16 @@ export function extractRowsFromReactionFeature(feature, reactionIndex) {
             sampleId,
             name: resolveRowName(row),
             location: resolveRowLocation(row),
-            purity,
-            density,
-            concentration,
-            concentrationUnits,
-            internalID,
-            solvent,
+            ...batchFields,      // purity, density, internalID
+            ...sampleFields,     // concentration, concentrationUnits, solvent
+            ...moleculeFields,   // moleculeName/Id, molecularFormula, smiles, inchiKey, molecular/formulaWeight
+            ...identityFields,   // batchName/Id, vendorId, project, owner
+            ...quantityFields,   // amount(+amountUnit), volume, mass
+
+            // Raw per-vault custom field maps, kept whole so the panel can
+            // render (and the popup can discover) any of them dynamically.
+            customBatchFields: collectCustomFields(getBatchFields(row)),
+            customSampleFields: collectCustomFields(getSampleFields(row)),
         });
     }
 

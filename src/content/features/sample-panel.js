@@ -371,7 +371,7 @@ export function ensurePanel() {
     });
 
     printBtn.addEventListener("click", () => {
-        printPanel();
+        printPanel(visibleFields);
     });
 
     toggleBtn.addEventListener("click", () => {

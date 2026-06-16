@@ -1,421 +1,229 @@
-# CDD Stoich Tools
+# CDD Stoichiometric Table Tools
 
-A browser extension that adds quality-of-life tooling on top of the
-**Collaborative Drug Discovery (CDD) Vault** web app
-(`*.collaborativedrug.com`).
+A **Manifest V3 browser extension** that adds quality-of-life tooling on top of
+the **Collaborative Drug Discovery (CDD) Vault** web app
+(`*.collaborativedrug.com`). It runs only on CDD pages, has **no backend**, and
+executes **no remote code** — all logic is bundled locally with Vite.
 
-It is a **Manifest V3** extension that runs only on CDD pages. Its biggest
-feature is a floating **ELN Sample Panel** that reads the stoichiometry data CDD
-loads in the background and shows the relevant sample / batch / molecule
-attributes in one draggable box — with configurable columns and a print view.
-Around that it bundles a set of smaller fixes and shortcuts for everyday CDD
-work (dose-response overrides, print sheets, depleted-sample marking, saved
-search copy links, and various DOM/CSS fixes).
+- **Runtime version:** `8.0.0` (from `manifest.json`)
+- **Latest release:** `8.0.0` (see [CHANGELOG](./CHANGELOG.md))
+- **Targets:** Chrome (MV3) + Firefox (Gecko `strict_min_version: 142.0`)
+- **License:** MIT
 
-**Main functionality at a glance**
-
-- Floating ELN sample panel with configurable fields + print.
-- Per-reaction stoichiometry print sheets.
-- ELN browser-tab title override.
-- "Easy Override" actions for dose-response plots.
-- Depleted-sample highlighting in sample selectors.
-- "Copy link" buttons on saved searches.
-- A collection of CSS/DOM UI fixes.
-
-> Target system: CDD Vault (`collaborativedrug.com`). Built for Chrome
-> (Manifest V3) with a Firefox-compatible manifest block.
-
-### Availability
-
-Published builds (may be ahead of / behind this source):
-
-- Chrome Web Store: <https://chromewebstore.google.com/detail/cdd-stoichiometric-table/ghbhjmmmgejokgekdcbcmgcfaoddlffg>
-- Firefox Add-ons: <https://addons.mozilla.org/en-GB/firefox/addon/cdd-stoichiometric-table-tools/>
-
-No remote code is executed; all logic is bundled locally with Vite.
+> This README is written for three audiences at once: **new users** (what it
+> does, how to install), **new developers** (architecture, setup, how to extend),
+> and **AI agents** (precise file paths, data flow, and explicit "what is NOT in
+> the project" notes so you don't hallucinate functionality).
 
 ---
 
-## Features
+## Project Overview
 
-Every feature is a content-script module under `src/content/features/`. Some
-features need data from CDD's own API responses; that data is captured by the
-**inject** script (see [Architecture](#architecture)).
+### What it solves
 
-### Floating ELN Sample Panel
+CDD Vault is a powerful but generic ELN / registration / inventory system.
+Day-to-day medicinal-chemistry work on it involves a lot of manual copying,
+re-typing of stoichiometry values, and fighting with default UI behaviours. This
+extension layers small, targeted helpers directly onto the CDD pages so common
+tasks become one click instead of several.
 
-- **What it does:** On an ELN entry page that contains a reaction /
-  stoichiometry table, it shows a draggable, collapsible panel listing each
-  sample grouped by reaction. Each card shows the configured attributes
-  (concentration, purity, density, …), copy-on-click values, and warning badges
-  for low purity / depleted samples.
-- **Main files:**
-  - `src/content/features/sample-panel.js` — panel DOM, drag, collapse,
-    rendering.
-  - `src/shared/sample-panel-fields.js` — the field **registry**, value
-    resolution, and settings (shared with the popup).
-  - `src/content/features/panel-print.js` — "Print" button → printable table.
-- Deep-dived below in [Sample Panel Deep Dive](#sample-panel-deep-dive).
+Its flagship feature is a floating **ELN Sample Panel** that reads the
+stoichiometry data CDD loads in the background and surfaces the relevant
+sample / batch / molecule attributes in one draggable, configurable box with
+copy-on-click values and a print view.
 
-### Configurable Sample Panel Fields
+### Who it is for
 
-- **What it does:** The popup lets you choose which attributes the panel shows.
-  There are two kinds of fields: a fixed **static registry** (Name, Location,
-  Purity, Concentration, …) and **dynamic custom fields** discovered from the
-  vault's own `batch_fields` / sample fields (e.g. `*Hygroscopic`). Custom
-  fields have a 120-day "last seen" lifecycle.
-- **Main files:** `src/shared/sample-panel-fields.js` (registry + storage),
-  `src/popup/popup.js` (checkboxes), `src/content/features/sample-panel.js`
-  (discovery + rendering).
+- **Bench chemists / ELN users** on CDD Vault who want faster copy/paste, clearer
+  sample data, and printable stoichiometry sheets.
+- **Lab data managers** who deal with depleted samples, saved searches, and
+  dose-response curve overrides.
+- **Developers / AI agents** maintaining or extending the extension.
 
-### Stoichiometry Print Buttons
+### Main use cases
 
-- **What it does:** Adds a small print icon to each reaction block on an ELN
-  page. Clicking it generates a formatted A4 stoichiometry sheet (name,
-  FW/exact mass/density, mass/volume, equivalents/mole/yield, reaction scheme
-  image) and prints it.
-- **Main files:**
-  - `src/content/features/print-buttons.js` — button injection + print HTML.
-  - `src/inject/parsers/print-data.js` — extracts per-reaction rows from the
-    CDD payload.
-  - `src/inject/print/dispatcher.js` — performs the actual print via a hidden
-    iframe (runs in the page context).
+- See every sample in an ELN reaction table at a glance, grouped by reaction,
+  with low-purity / depleted warnings.
+- Copy a **paste-ready, normalised concentration** straight back into CDD.
+- Print a per-reaction A4 stoichiometry sheet (with the reaction scheme image).
+- Override dose-response curve calculations in bulk from the search results.
+- Avoid picking depleted samples; collapse consumed batches; copy saved-search
+  links; and smooth over a set of CDD DOM/CSS rough edges.
 
-### ELN Tab Title Override
+---
 
-- **What it does:** Rewrites the browser tab title on ELN entry pages. Three
-  modes: original CDD title, ELN title only, or `EntryID - ELN title`
-  (default). Configurable in the popup.
-- **Main files:** `src/content/features/eln-title.js`, `src/popup/*`.
+## Key Features
 
-### Dose Response Override ("Easy Override")
+Every feature is a content-script module under `src/content/features/`. Features
+that need data from CDD's API responses get it from the **inject** script (see
+[Architecture](#architecture)).
 
-- **What it does:** Adds an "Easy Override: ON/OFF" toggle to the search-results
-  action bar. When ON, each dose-response plot gets an inline action menu
-  (`> Max`, `< Min`, `Do not calculate`, `Do not overwrite`) that PUTs the
-  corresponding intercept-override payload back to CDD via its API.
-- **Main files:** `src/content/features/dose-response-override/` (see
-  [Feature Structure](#feature-structure)) and `src/content/api/cdd-api.js`.
+### Sample Panel
 
-### Depleted Sample Marker
+| Feature | What it does | Main files |
+| --- | --- | --- |
+| **Floating ELN Sample Panel** | Draggable, collapsible panel listing every sample in the ELN reaction/stoichiometry tables, grouped by reaction, with copy-on-click values. | `features/sample-panel.js`, `shared/sample-panel-fields.js` |
+| **Configurable fields** | Popup lets you choose which attributes show (Name, Location, Purity, Internal ID, Density, Concentration, Solvent, Molecular/Formula weight, Batch name, Vendor ID, Owner, Amount, Volume). | `shared/sample-panel-fields.js`, `popup/popup.js` |
+| **Custom-field discovery** | Vault-specific batch/sample fields (e.g. `*Hygroscopic`) are auto-discovered from CDD's data and offered as checkboxes; unused custom fields expire after a 120-day "last seen" lifecycle. | `shared/sample-panel-fields.js`, `features/sample-panel.js` |
+| **Card warnings** | Low-purity badge, depleted badge, and red border, computed independently of the field config. | `features/sample-panel.js` |
+| **Panel state persistence** | Position + collapsed state remembered between visits. | `features/sample-panel.js` |
+| **Normalised concentration copy** | Clicking a concentration copies a CDD-ready value (µM/nM converted to mmol/L, etc.). | `shared/sample-panel-fields.js` |
 
-- **What it does:** When the inject script reports depleted sample identifiers,
-  this greys out and strikes through matching options in radio-button sample
-  selectors so you don't pick a depleted sample.
-- **Main files:** `src/content/features/depleted-marker.js`. Depleted IDs come
-  from `src/inject/parsers/print-data.js` via the `PRINT_DATA` message.
+### ELN enhancements
 
-### Saved Search Copy Links
+| Feature | What it does | Main files |
+| --- | --- | --- |
+| **ELN tab-title override** | Rewrites the browser tab title on ELN pages. Three modes: original, ELN title only, or `EntryID - ELN title` (default). | `features/eln-title.js` |
+| **Depleted-sample marker** | Greys out / strikes through depleted samples in radio-button sample selectors. | `features/depleted-marker.js` |
+| **Depleted-samples collapse** | Collapses depleted samples into a `<details>` block on the sample data view. | `features/ui-fixes/depleted-samples-collapse.js` |
 
-- **What it does:** On the `/searches` page, adds a "Copy Link" action to each
-  saved-search row that copies the absolute search URL to the clipboard.
-- **Main files:**
-  `src/content/features/savedSearchCopyLinks/savedSearchCopyLinks.js`.
+### Printing
 
-### UI Fixes
+| Feature | What it does | Main files |
+| --- | --- | --- |
+| **Per-reaction stoichiometry sheet** | Print icon on each reaction block → formatted A4 sheet (FW/exact mass/density, mass/volume, equivalents/mole/yield, scheme image). | `features/print-buttons.js`, `inject/parsers/print-data.js`, `inject/print/dispatcher.js` |
+| **Panel print** | Panel's "Print" button builds a table from exactly the enabled columns (skipping empty ones). | `features/panel-print.js` |
 
-A bundle of small, mostly CSS-injection fixes under
-`src/content/features/ui-fixes/`:
+### Dose-response tools
+
+| Feature | What it does | Main files |
+| --- | --- | --- |
+| **Easy Override** | "Easy Override: ON/OFF" toggle in the search-results bar; each plot gets an inline menu (`> Max`, `< Min`, `Do not calculate`, `Do not overwrite`) that PUTs an intercept-override payload back to CDD. | `features/dose-response-override/`, `content/api/cdd-api.js` |
+
+### Saved searches
+
+| Feature | What it does | Main files |
+| --- | --- | --- |
+| **Copy Link** | Adds a "Copy Link" action to each saved-search row on `/searches`. | `features/savedSearchCopyLinks/savedSearchCopyLinks.js` |
+
+### UI fixes (CSS/DOM)
 
 | Module | What it fixes |
 | --- | --- |
 | `file-dialog-fixes.js` | Wraps long file-preview links; widens the file dialog; pins the "associate file" button bar. |
 | `copyable-fields.js` | Makes molecule overview/property/batch field values click-to-copy. |
 | `left-ellipsis-locations.js` | Left-truncates long location strings (RTL trick) in sample tables. |
-| `filter-default.js` | Auto-selects the second filter operator instead of "Any value" (ELN + Inventory filters). |
-| `location-picker-resize.js` | Adds a draggable resizer to the location-picker tree panel (width saved in `localStorage`). |
+| `filter-default.js` | Auto-selects the second filter operator instead of "Any value" (ELN + Inventory). |
+| `location-picker-resize.js` | Draggable resizer on the location-picker tree (width saved in `localStorage`). |
 | `molecule-links-fixes.js` | Lays out `#molecule-links` as a responsive multi-column grid. |
-| `depleted-samples-collapse.js` | Collapses depleted samples into a `<details>` block on the sample data view. |
-| `consumed-batches-collapse.js` | Collapses consumed batches into a togglable block on the molecule batches page. |
+| `consumed-batches-collapse.js` | Collapses consumed batches on the molecule batches page. |
 
 ---
 
 ## Architecture
 
+This is a **two-world** browser extension with **no backend, no service worker,
+and no database**. The complexity lives in how the two in-browser worlds
+cooperate.
+
+### Frontend
+
+There is no separate "frontend app" — the UI is injected directly into CDD's
+pages by the **content script** (isolated world) plus the extension **popup**.
+
 ```
 src/
-├── content/     content script  – isolated world, owns the DOM & UI
+├── content/     content script  – isolated world, owns the DOM & extension UI
 │   ├── features/    one folder/file per feature
-│   ├── api/         authenticated fetch helper (cdd-api.js)
-│   ├── utils/       clipboard, dom, url, log helpers
-│   ├── main.js          entry point: init() wires everything
-│   ├── message-router.js  receives inject→content messages
-│   ├── state.js         in-memory STATE (last payload, flags)
-│   ├── inject-loader.js   injects the page script
+│   ├── api/         cdd-api.js – authenticated fetch helper (CSRF + credentials)
+│   ├── utils/       clipboard, dom, url, format, log helpers
+│   ├── main.js          entry point: init() wires every feature
+│   ├── message-router.js  receives inject→content messages into STATE
+│   ├── state.js         in-memory STATE (last payload, flags, depleted IDs)
+│   ├── inject-loader.js   injects the page script into the MAIN world
 │   ├── url-watcher.js     SPA navigation detection
 │   └── overlay-watcher.js Ketcher dialog detection
 │
-├── inject/      page script – MAIN world, hooks network & prints
-│   ├── hooks/       fetch-hook.js, xhr-hook.js
+├── inject/      page script – MAIN world, hooks network & performs printing
+│   ├── hooks/       fetch-hook.js, xhr-hook.js (monkey-patch network)
 │   ├── parsers/     sample-data.js, print-data.js, field-resolvers.js, common.js
 │   ├── print/       dispatcher.js (hidden-iframe printing)
 │   ├── bus.js       post() → window.postMessage
 │   └── main.js      installs hooks, parses payloads, posts results
 │
-├── popup/       extension popup (settings UI)
-│   ├── popup.html / popup.js / popup.css
+├── popup/       extension popup (settings UI) – plain ES module, not bundled
+│   └── popup.html / popup.js / popup.css
 │
 └── shared/      code used by content, inject AND popup
-    ├── sample-panel-fields.js  field registry + settings
-    ├── event-types.js          EVENT_SOURCE constant
-    ├── plugin-constants.js     PANEL_ID, colors, paths
+    ├── sample-panel-fields.js  field registry + settings + lifecycle
+    ├── event-types.js          EVENT_SOURCE / EVENTS message tags
+    ├── plugin-constants.js     PANEL_ID, reaction colors, inject path
     └── page-detection.js       page predicates
 ```
 
-### Content script
+**Content script (isolated world):** declared in `manifest.json` under
+`content_scripts → assets/content.js`, injected at `document_idle` on
+`*://*.collaborativedrug.com/*`. It can read/modify the DOM and use `chrome.*`
+APIs, but it **cannot** see the page's own JS objects or its `window.fetch`.
 
-Declared in `manifest.json` under `content_scripts` → `assets/content.js`,
-injected at `document_idle` on `*://*.collaborativedrug.com/*`. It runs in the
-**isolated world**: it can read and modify the DOM and use `chrome.*` APIs, but
-it **cannot** see the page's own JavaScript objects or its `window.fetch`.
-`main.js` `init()` is the single entry point that wires up every feature.
+**Inject script (MAIN world):** `assets/inject.js` is listed under
+`web_accessible_resources`; the content script injects it as a `<script src>` so
+it runs in the page's own JS context. This is the only place that can
+monkey-patch `window.fetch` / `XMLHttpRequest` to observe CDD's API responses,
+parse them, and post the results back.
 
-### Inject script
-
-`assets/inject.js` is listed under `web_accessible_resources`. The content
-script injects it as a `<script src>` (see `inject-loader.js`) so it runs in the
-page's **MAIN world**. This is the whole reason the inject script exists: only
-code in the page context can monkey-patch `window.fetch` and
-`XMLHttpRequest.prototype` to observe CDD's API responses. It parses those
-responses and posts the results back to the content script.
-
-### Why some things live in inject and not content
-
-- **Network interception** (`hooks/`): the content script's `fetch` is a
-  different object than the page's. To read CDD's ELN/reaction JSON you must
-  patch the page's `fetch`/`XHR` — only possible from the MAIN world.
-- **Parsing** (`parsers/`): kept next to the hooks so the heavy CDD-shape
-  knowledge stays in one world; the content side receives a small, flat object.
-- **Printing** (`print/dispatcher.js`): the content side builds the HTML string,
-  but the actual `document.write` + `window.print()` into a hidden iframe is
-  done in the page context to keep all window-level print side effects there.
-
-### Data flow
+The two halves communicate **only** through `window.postMessage` objects tagged
+`source: "CDD_STOICH_TOOLS"` (`EVENT_SOURCE`). Either side ignores any message
+without that tag.
 
 ```
-        CDD server
-            │  (JSON responses)
-            ▼
-┌─────────────────────────── PAGE / MAIN world ───────────────────────────┐
-│  fetch-hook.js / xhr-hook.js                                             │
-│        │ response text/json                                             │
-│        ▼                                                                │
-│  inject/main.js  processJsonPayload()                                   │
-│        ├── isElnPayload? → hasReaction?                                  │
-│        ├── extractAllReactionRows() ─┐  (sample-data.js)                 │
-│        └── extractPrintData()  ──────┤  (print-data.js)                  │
-│                                      ▼                                   │
-│                          bus.post(type, payload)                        │
-│                          window.postMessage({source:"CDD_STOICH_TOOLS"})│
-└───────────────────────────────│─────────────────────────────────────────┘
-                                 │  REACTION_VISIBILITY / SAMPLE_DATA / PRINT_DATA
-┌───────────────────────────────▼──── CONTENT / isolated world ───────────┐
-│  message-router.js  handleMessage()                                     │
-│        ├── STATE.hasReactionFeature / STATE.lastPayload / …             │
-│        └── renderFromState() ; ensurePrintButtons() ; markDepleted()    │
-│                                      │                                   │
-│                       sample-panel.js renders the panel                 │
-└───────────────────────────────│─────────────────────────────────────────┘
-                                 │  PRINT_REQUEST { html }   (content → page)
-┌───────────────────────────────▼──── PAGE / MAIN world ──────────────────┐
-│  inject/print/dispatcher.js  → hidden iframe → window.print()           │
-└─────────────────────────────────────────────────────────────────────────┘
+   CDD server ──JSON──▶ [MAIN] fetch/xhr hooks ──▶ inject/main.js processJsonPayload()
+                                                      ├─ REACTION_VISIBILITY
+                                                      ├─ SAMPLE_DATA   ──postMessage──▶
+                                                      └─ PRINT_DATA                    │
+   [ISOLATED] message-router.js ◀──────────────────────────────────────────────────────┘
+        └─ STATE ─▶ sample-panel.js renders panel / print buttons / depleted marks
+        └─ PRINT_REQUEST {html} ──postMessage──▶ [MAIN] print/dispatcher.js → hidden iframe → print()
 ```
 
-All messages are plain `window.postMessage` objects tagged with
-`source: "CDD_STOICH_TOOLS"` (`EVENT_SOURCE` in `shared/event-types.js`). Both
-sides ignore any message without that tag.
+### Backend
 
----
+**None.** The extension has no server component. The closest thing is
+`src/content/api/cdd-api.js`, an authenticated `fetchJson` helper that talks to
+**CDD's own API** (reusing the logged-in session) to PUT dose-response override
+payloads.
 
-## Feature Structure
+### Database / storage
 
-How each feature is registered and initialized (all from
-`src/content/main.js` `init()` unless noted).
+No database. Persistence uses browser storage only:
 
-| Feature | Entry point | Registered / initialized by | Main functions |
-| --- | --- | --- | --- |
-| Sample panel | `sample-panel.js` | `ensurePanel()`, `initSamplePanelFields()`, `renderFromState()`; re-rendered from `message-router.js` on `SAMPLE_DATA` | `ensurePanel`, `renderSamples`, `renderConfiguredFields`, `makePanelDraggable` |
-| Panel print | `panel-print.js` | `printPanel(visibleFields)` from the panel's Print button | `buildPrintColumns`, `printPanel` |
-| Print buttons | `print-buttons.js` | `ensurePrintButtons()` + re-run on `PRINT_DATA` | `ensurePrintButtons`, `buildPrintHtml`, `printStoichiometrySheet` |
-| ELN title | `eln-title.js` | `initElnTitle()` | `updateElnTabTitle`, `loadElnTitleMode` |
-| Dose response | `dose-response-override/init.js` | `initDoseResponseOverride()` | `scanDoseResponseOverride`, `enhancePlot`, `createActionMenu` |
-| Depleted marker | `depleted-marker.js` | `ensureDepletedStyle()`, `startDepletedMarkerObserver()`, `markDepletedSamplesInSelector()` | `markDepletedSamplesInSelector` |
-| Saved search links | `savedSearchCopyLinks/…` | `initSavedSearchCopyLinks()` | `addCopyLinksToSavedSearches` |
-| File dialog fixes | `ui-fixes/file-dialog-fixes.js` | `applyFileDialogFixes()`, `injectAssociateFileBarStyles()`, `watchFileDialog()` | `enhanceFileDialogLinks`, `fixAssociateFileBar` |
-| Copyable fields | `ui-fixes/copyable-fields.js` | `observeCopyableFields()` | `enhanceCopyableFields` |
-| Left ellipsis | `ui-fixes/left-ellipsis-locations.js` | `injectLeftEllipsisForLocations()` | (CSS only) |
-| Filter default | `ui-fixes/filter-default.js` | `initFilterDefaultFix()` | `fixElnFilters`, `fixInventoryFilters` |
-| Location picker resize | `ui-fixes/location-picker-resize.js` | `initLocationPickerResize()` | `enhanceTreeContainer` |
-| Molecule links | `ui-fixes/molecule-links-fixes.js` | `injectMoleculeLinksStyles()` | (CSS only) |
-| Depleted collapse | `ui-fixes/depleted-samples-collapse.js` | `watchDepletedSamples()` | `collapseDepletedSamples` |
-| Consumed collapse | `ui-fixes/consumed-batches-collapse.js` | `watchConsumedBatches()` | `collapseConsumedBatches` |
-| Ketcher overlay | `overlay-watcher.js` | `watchKetcherDialog()` | `updatePanelVisibilityForOverlays` |
-
-Common pattern: most features expose an `initX()` / `watchX()` that injects a
-`<style>` once and starts a `MutationObserver` (usually debounced via
-`requestAnimationFrame` or a `setTimeout`) to re-apply on DOM changes.
-
-### Dose Response Override sub-modules
-
-`src/content/features/dose-response-override/`:
-
-| File | Responsibility |
+| Data | Mechanism |
 | --- | --- |
-| `init.js` | Entry point; injects styles, ensures the toggle, starts the observer. |
-| `state.js` | Shared config + mutable state (`easyOverrideEnabled`, `selectedAction`). |
-| `dom.js` | DOM helpers: find plot roots, extract edit URL, the ON/OFF toggle. |
-| `scanner.js` | Finds plots and inserts the action menu when enabled. |
-| `menu.js` | Builds the `<select>` + Apply button and runs the chosen action. |
-| `actions.js` | Maps each action to a payload builder + PUT via `cdd-api.js`. |
-| `payload.js` | Builds CDD intercept-override request bodies. |
-| `styles.js` | Injected CSS for the action bar/toggle. |
+| Field selection, ELN-title mode, discovered custom fields | `chrome.storage.local` (async) |
+| Panel position / collapsed state, location-tree width | `localStorage` (page origin) |
+| Last captured payload, runtime flags | in-memory `STATE` (lost on reload) |
+
+### Authentication
+
+No custom auth. Dose-response writes reuse **CDD's existing session cookies and
+CSRF token** via `cdd-api.js` (`credentials: 'include'`). The extension never
+stores credentials; it only acts within an already-authenticated CDD session.
+
+### Deployment
+
+Packaged as a static MV3 bundle (`dist/`) and distributed through browser stores
+(see [Deployment](#deployment)). No servers to deploy.
+
+> Deeper architecture: [`docs/ARCHITECTURE_REVIEW.md`](./docs/ARCHITECTURE_REVIEW.md)
+> and [`docs/DATA_FLOW_DIAGRAMS.md`](./docs/DATA_FLOW_DIAGRAMS.md).
 
 ---
 
-## Sample Panel Deep Dive
+## Development Setup
 
-This is the most important feature. It lives in
-`src/content/features/sample-panel.js` plus the shared registry
-`src/shared/sample-panel-fields.js`.
+### Required services
 
-### How the current sample is determined
+**None.** There is no server, database, or external service to run locally. You
+only need a CDD Vault account and a CDD page open in the browser to exercise the
+extension against real data.
 
-There is no "selected sample" — the panel shows **all** samples from the ELN
-entry's reaction/stoichiometry tables. The inject parser walks every reaction
-feature's `stoichiometryTable.rows`, keeps rows that have a `sample`, and
-deduplicates by `reactionIndex::rowUid::sampleId`
-(`inject/parsers/sample-data.js`). The content side groups them by reaction for
-display (`groupSamplesByReaction`).
+### Prerequisites
 
-### Where the data comes from
+- **Node.js** (reference env: 22.13.1) and **npm** (reference: 10.8.3)
+- A Chromium browser (or Firefox `≥ 142.0`)
+- The only build dependency is **Vite**.
 
-```
-CDD JSON (eln_entry.feature_map[*].data.stoichiometryTable.rows[*])
-   └─ inject/parsers/sample-data.js  extractRowsFromReactionFeature()
-        ├─ field-resolvers.js  resolveBatchFields()    → purity, density, internalID
-        ├─ field-resolvers.js  resolveSampleFields()   → concentration, units, solvent
-        ├─ field-resolvers.js  resolveMoleculeFields() → formula, MW, FW, names
-        ├─ field-resolvers.js  resolveIdentityFields() → batchName, vendorId, owner
-        ├─ field-resolvers.js  resolveQuantityFields() → amount, volume
-        └─ collectCustomFields(getBatchFields/getSampleFields) → customBatchFields/customSampleFields
-   →  flat sample object  ──post("SAMPLE_DATA")──►  STATE.lastPayload
-```
-
-Each `sample` reaching the content side is a **flat object** (e.g.
-`{ name, location, purity, density, concentration, concentrationUnits, solvent,
-moleculeName, molecularFormula, molecularWeight, formulaWeight, batchName,
-vendorId, owner, amount, amountUnit, volume, customBatchFields,
-customSampleFields, reactionIndex, reactionLabel, … }`). Resolvers are
-**best-effort**: unknown fields are `null` and simply not rendered.
-
-### How rendering works
-
-1. `renderFromState()` guards (`isElnEntryPage`, `hasReactionFeature`, not
-   Ketcher) and calls `renderSamples(STATE.lastPayload)`.
-2. `renderSamples` groups samples by reaction, draws a coloured group box per
-   reaction and a card per sample.
-3. Per card, `renderConfiguredFields(sample)`:
-   - iterates the **static registry** (`SAMPLE_PANEL_FIELDS`) in order, keeping
-     only fields whose key is enabled in `visibleFields`;
-   - then iterates the sample's **custom fields**, keeping enabled ones;
-   - for each, `resolveFieldValue(field, sample)` returns
-     `{ text, copyValue, highlight }` or `null` (→ row skipped);
-   - `createCopyableRow(label, text, …)` builds a click-to-copy row.
-4. Card decoration (low-purity badge, depleted badge, red border) is computed
-   separately from field config using `parsePurity` + `isSampleDepleted`.
-
-```
-STATE.lastPayload.samples
-      │ groupSamplesByReaction
-      ▼
- [reaction group] → [sample card]
-                         │ renderConfiguredFields
-                         ├─ static fields  (SAMPLE_PANEL_FIELDS ∩ visibleFields)
-                         └─ custom fields  (getCustomFieldsFromSample ∩ visibleFields)
-                                  │ resolveFieldValue → {text,copyValue,highlight}
-                                  ▼
-                            createCopyableRow → DOM
-```
-
-### Drag & drop
-
-`makePanelDraggable(panel)` listens on the header: `mousedown` records the start
-position, a document-level `mousemove` updates `left/top` (clamped to the
-viewport), and `mouseup` persists the position. Clicks on `<button>`s inside the
-header are ignored so the action buttons still work.
-
-### Minimization (collapse)
-
-The header `−/+` button toggles a `collapsed` class on the panel; the CSS hides
-`.cdd-stoich-body` when collapsed. The collapsed flag is persisted.
-
-### Local storage
-
-Panel **position and collapsed state** are stored in `localStorage` under
-`cdd-stoich-panel-state` (`loadPanelState` / `savePanelState`). This is distinct
-from the **field settings**, which live in `chrome.storage.local` (see below).
-The location-picker resizer also uses `localStorage`
-(`cdd-location-picker-tree-width`).
-
-### Refresh
-
-- **Automatic:** every captured `SAMPLE_DATA` message replaces
-  `STATE.lastPayload` and calls `renderFromState()`.
-- **Manual:** the header "Refresh" button calls `renderFromState()` again.
-- **SPA navigation:** `url-watcher.js` resets state and re-renders on URL change.
-- **Settings change:** `initSamplePanelFields()` listens to
-  `chrome.storage.onChanged` and re-renders when the field selection changes.
-
----
-
-## Popup Settings
-
-The popup (`src/popup/popup.html`) is a plain page loaded as an ES module
-(`<script type="module">`). It is **copied verbatim** into `dist/popup/` by the
-content build and imports the shared registry from `../shared/…` at runtime.
-
-### Settings that exist
-
-| Setting | Storage key | Storage area | Where used |
-| --- | --- | --- | --- |
-| ELN tab title mode | `cddPluginElnTitleMode` | `chrome.storage.local` | `eln-title.js` |
-| Sample panel visible fields | `cddSamplePanelVisibleFields` | `chrome.storage.local` | `sample-panel.js` |
-| Discovered custom fields (+`lastSeen`) | `cddSamplePanelCustomFields` | `chrome.storage.local` | popup + `sample-panel.js` |
-| Panel position / collapsed | `cdd-stoich-panel-state` | `localStorage` | `sample-panel.js` |
-| Location tree width | `cdd-location-picker-tree-width` | `localStorage` | `location-picker-resize.js` |
-
-`cddSamplePanelVisibleFields` is a `{ key: boolean }` map. On read it is merged
-over the registry defaults so newly added static fields appear automatically and
-dynamic custom-field keys are preserved (`getSamplePanelSettings`).
-
-### How to add a new setting
-
-Example: a checkbox in the popup that some feature reads.
-
-1. **Pick a key** and a default, e.g. `const MY_KEY = "cddMyFeatureEnabled";`.
-2. **Popup UI** (`src/popup/popup.html`): add the control
-   (`<input type="checkbox" id="myFeature">`).
-3. **Popup logic** (`src/popup/popup.js`): load it with
-   `chrome.storage.local.get({ [MY_KEY]: false })` and save it on `change`
-   with `chrome.storage.local.set({ [MY_KEY]: el.checked })`.
-4. **Consume it** in the feature: read with `chrome.storage.local.get`, and
-   optionally react live via
-   `chrome.storage.onChanged.addListener((c, area) => …)` (see `eln-title.js`).
-5. If the feature lives in **inject**, it cannot read `chrome.storage`; pass the
-   value from the content script via `postMessage`, or gate the behaviour on the
-   content side.
-
----
-
-## Development
-
-> There is currently **no `dev`/watch script and no test/lint setup** — only
-> production builds. Iterating means: rebuild, then reload the unpacked
-> extension in the browser.
-
-Reference environment (from the maintainer's setup): Windows 11, Node.js
-22.13.1, npm 10.8.3. The only dependency is Vite.
+### Local development
 
 ```bash
 npm install          # installs vite (the only dependency)
@@ -425,26 +233,25 @@ npm run build:content
 npm run build:inject
 ```
 
-`build` runs `build:content` then `build:inject`. Order matters:
-`build:content` empties `dist/` and copies the static assets; `build:inject`
-has `emptyOutDir: false` so it adds `inject.js` without wiping the rest.
+`build` runs `build:content` then `build:inject`. **Order matters:**
+`build:content` empties `dist/` and copies the static assets; `build:inject` has
+`emptyOutDir: false`, so it adds `inject.js` without wiping the rest.
 
-### Loading the extension in Chrome
+> There is **no `dev`/watch script and no test/lint/CI setup** — only production
+> builds. Iterating means: rebuild, then reload the unpacked extension.
 
-1. Run `npm run build`.
+### Loading the extension (Chrome)
+
+1. `npm run build`
 2. Open `chrome://extensions`, enable **Developer mode**.
 3. **Load unpacked** → select the `dist/` folder.
-4. After code changes: `npm run build`, then click the **reload** icon on the
-   extension card, and refresh the CDD page.
+4. After code changes: `npm run build`, click the **reload** icon on the
+   extension card, then refresh the CDD page.
 
-(The manifest also has a `browser_specific_settings.gecko` block, so the same
-`dist/` can be loaded as a temporary add-on in Firefox.)
+The manifest's `browser_specific_settings.gecko` block means the same `dist/`
+loads as a temporary add-on in Firefox.
 
----
-
-## Build Output
-
-`dist/` after `npm run build`:
+### Build output
 
 ```
 dist/
@@ -452,111 +259,168 @@ dist/
 ├── assets/
 │   ├── content.js         bundled content script (entry: src/content/main.js)
 │   └── inject.js          bundled page script   (entry: src/inject/main.js)
-├── popup/                 copied verbatim from src/popup/
-│   ├── popup.html / popup.js / popup.css
+├── popup/                 copied verbatim from src/popup/  (real ES module at runtime)
 ├── shared/                copied verbatim from src/shared/ (popup imports it)
-└── icons/                 copied from icons/ (if present)
+└── icons/                 copied from icons/
 ```
 
-- Both bundles use `inlineDynamicImports: true` and `minify: false` (readable
-  output).
-- The popup is **not bundled** — it is a real ES module at runtime, which is why
-  `src/shared/` is copied into `dist/shared/` so the popup's
-  `import "../shared/sample-panel-fields.js"` resolves.
-- **Packaging:** zip the contents of `dist/` for the Chrome Web Store / Firefox
-  AMO. (There is no packaging script in `package.json`.)
+Both bundles use `inlineDynamicImports: true` and `minify: false` (readable
+output). The popup is **not bundled** — that is why `src/shared/` is copied into
+`dist/shared/` so the popup's `import "../shared/sample-panel-fields.js"`
+resolves.
+
+> See also: [`docs/LEARNING_GUIDE.md`](./docs/LEARNING_GUIDE.md) for the
+> extension concepts, and [`docs/ADDING_NEW_FIELDS.md`](./docs/ADDING_NEW_FIELDS.md)
+> for the most common change (adding a panel field).
 
 ---
 
-## How to Add a New Feature
+## Configuration
 
-1. **Create the module**
-   `src/content/features/my-feature/my-feature.js` (or a single file for small
-   features). Export an `initMyFeature()` (and a `watchMyFeature()` if it needs
-   a `MutationObserver`). Inject any CSS once via a guarded `<style>` element.
-2. **Register it** by importing into `src/content/main.js` and calling it inside
-   `init()`. Keep DOM-dependent calls after `document_idle` (init already runs
-   then).
-3. **Initialize / observe:** if the feature must survive SPA navigation or
-   re-renders, start a debounced `MutationObserver` (mirror
-   `filter-default.js` / `depleted-samples-collapse.js`). Guard observers with a
-   module-level "started" flag.
-4. **Need CDD API data?** Add a parser under `src/inject/parsers/`, post a new
-   message type from `src/inject/main.js`, and handle it in
-   `src/content/message-router.js` → `STATE`. Add the message name to
-   `src/shared/event-types.js`.
-5. **Need a setting?** Follow [How to add a new setting](#how-to-add-a-new-setting).
-6. `npm run build` and reload.
+### Runtime settings (user-facing, via the popup)
 
----
+| Setting | Storage key | Storage area | Used by |
+| --- | --- | --- | --- |
+| ELN tab title mode | `cddPluginElnTitleMode` | `chrome.storage.local` | `eln-title.js` |
+| Sample-panel visible fields | `cddSamplePanelVisibleFields` | `chrome.storage.local` | `sample-panel.js` |
+| Discovered custom fields (+`lastSeen`) | `cddSamplePanelCustomFields` | `chrome.storage.local` | popup + `sample-panel.js` |
+| Panel position / collapsed | `cdd-stoich-panel-state` | `localStorage` | `sample-panel.js` |
+| Location-tree width | `cdd-location-picker-tree-width` | `localStorage` | `location-picker-resize.js` |
 
-## Troubleshooting
+`cddSamplePanelVisibleFields` is a `{ key: boolean }` map; on read it is merged
+over the registry defaults so new static fields appear automatically and custom
+keys are preserved.
 
-| Symptom | Likely cause / check |
-| --- | --- |
-| **Content script doesn't run** | Host not matched — must be `*.collaborativedrug.com` (`isSupportedHost()` in `main.js`). Confirm `assets/content.js` exists in `dist/` and the extension is reloaded. The `__CDD_STOICH_TOOLS_CONTENT__` guard prevents double-init. |
-| **Inject script doesn't load** | `injectPageScript()` adds `<script src=runtime.getURL("assets/inject.js")>`. Ensure `inject.js` is in `web_accessible_resources` (it is) and present in `dist/assets/`. Look for `"[CDD Stoich Tools] inject main loaded"` in the page console. |
-| **MutationObserver not firing** | Most observers watch `document.body`/`documentElement` with `childList+subtree`; if a feature targets attributes, confirm the right `attributeFilter`. CDD is an SPA — features that only run once miss later renders; use the observer pattern. |
-| **Storage doesn't update** | `chrome.storage.local` is async. The popup writes; the content side only reacts if it has an `onChanged` listener. Inject code **cannot** read `chrome.storage` at all. |
-| **Panel doesn't show** | Needs all of: ELN entry page (`isElnEntryPage`), a reaction feature in the payload (`STATE.hasReactionFeature`, set by `REACTION_VISIBILITY`), and no open Ketcher dialog (`overlay-watcher.js` hides it). Without captured data it shows "Waiting for reaction data…". |
-| **Panel empty / no fields** | Data captured but all chosen fields resolve to `null`, or the field isn't in CDD's payload. Verify in the popup which fields are enabled; remember a field can be listed but have no data. |
+### Manifest configuration (`manifest.json`)
 
----
-
-## Code Map
-
-Most important files:
-
-| File | Purpose | Used where |
+| Key | Value | Meaning |
 | --- | --- | --- |
-| `manifest.json` | MV3 manifest: content script, web-accessible inject, popup, permissions. | Browser |
-| `src/content/main.js` | Content entry point; `init()` wires every feature. | Loaded as `assets/content.js` |
-| `src/content/message-router.js` | Routes inject→content messages into `STATE` + triggers renders. | `main.js` |
-| `src/content/state.js` | In-memory `STATE` (lastPayload, flags, depleted IDs). | All content features |
-| `src/content/inject-loader.js` | Injects the page script into the MAIN world. | `main.js` |
-| `src/content/features/sample-panel.js` | Floating panel: DOM, drag, collapse, rendering, field settings. | `main.js`, router |
-| `src/content/features/panel-print.js` | Builds the panel's printable table from enabled columns. | Panel Print button |
-| `src/content/features/print-buttons.js` | Per-reaction print buttons + full stoichiometry print sheet. | `main.js`, router |
-| `src/content/features/eln-title.js` | ELN tab-title override. | `main.js` |
-| `src/content/features/depleted-marker.js` | Marks depleted samples in selectors. | `main.js`, router |
-| `src/content/api/cdd-api.js` | Authenticated `fetchJson` (CSRF, credentials). | Dose-response actions |
-| `src/inject/main.js` | Inject entry point; installs hooks, parses, posts results. | Loaded as `assets/inject.js` |
-| `src/inject/hooks/fetch-hook.js`, `xhr-hook.js` | Monkey-patch `fetch`/`XHR` to read CDD responses. | `inject/main.js` |
-| `src/inject/parsers/sample-data.js` | Builds the flat sample objects for the panel. | `inject/main.js` |
-| `src/inject/parsers/field-resolvers.js` | Best-effort field/value resolvers + custom-field collection. | `sample-data.js` |
-| `src/inject/parsers/print-data.js` | Per-reaction print rows + depleted identifiers. | `inject/main.js` |
-| `src/inject/print/dispatcher.js` | Hidden-iframe printing in the page context. | `PRINT_REQUEST` messages |
-| `src/shared/sample-panel-fields.js` | Field registry, value resolution, field settings + lifecycle. | content, popup |
-| `src/shared/event-types.js` | `EVENT_SOURCE` message tag. | inject + content |
-| `src/shared/plugin-constants.js` | `PANEL_ID`, reaction colors, inject path. | content |
-| `src/popup/popup.js` | Settings UI (ELN title + sample-panel fields). | Popup |
-| `vite.content.config.js`, `vite.inject.config.js` | The two real build configs. | `npm run build` |
+| `permissions` | `["storage"]` | Only `chrome.storage` — no host/tabs/scripting permissions. |
+| `content_scripts.matches` | `*://*.collaborativedrug.com/*` | The extension runs **only** on CDD. |
+| `web_accessible_resources` | `assets/inject.js` | The page script the content side injects. |
+| `gecko.strict_min_version` | `142.0` | Minimum Firefox version. |
+| `data_collection_permissions.required` | `["none"]` | No data collection / telemetry. |
 
-### Potential Cleanup
+### Environment variables
 
-Resolved in the latest cleanup pass:
+**None.** The extension has no environment variables, `.env` files, or runtime
+configuration beyond the manifest and the browser-storage settings above. There
+is no remote endpoint to configure — it always talks to the CDD origin the user
+is already on.
 
-- ~~Empty `src/inject/constants.js`~~ — deleted.
-- ~~Empty `src/content/utils/format.js`~~ — repurposed to host the shared
-  `normalizeValue` helper.
-- ~~Unused root `vite.config.js`~~ — deleted (the build uses
-  `vite.content.config.js` + `vite.inject.config.js`).
-- ~~Unused `isCddHost()`~~ — removed from `shared/page-detection.js`.
-- ~~Three clipboard implementations~~ — unified into `utils/clipboard.js`
-  (`copyText` now has the execCommand fallback); `copyable-fields.js` and
-  `savedSearchCopyLinks.js` import it.
-- ~~Duplicate `normalizeValue`~~ — single copy in `utils/format.js`, imported by
-  `depleted-marker.js` and `sample-panel.js`.
-- ~~Inconsistent event names~~ — all sides now use `EVENTS.*` from
-  `shared/event-types.js` (no raw string literals).
+### Adding a new setting
 
-Still open:
+1. Pick a key + default, e.g. `const MY_KEY = "cddMyFeatureEnabled";`.
+2. Add the control to `src/popup/popup.html`.
+3. In `src/popup/popup.js`, load with
+   `chrome.storage.local.get({ [MY_KEY]: false })` and save on `change`.
+4. Consume it in the feature (optionally react live via
+   `chrome.storage.onChanged`).
+5. **Inject code cannot read `chrome.storage`** — pass values from the content
+   side via `postMessage`, or gate the behaviour on the content side.
 
-- **Duplicate `isElnEntryPage`:** one in `shared/page-detection.js` (loose
-  regex, used by the panel) and a stricter one inline in `eln-title.js`. They
-  disagree on what counts as an ELN entry page. Not unified yet because the
-  panel relies on the loose regex and it needs verification.
-- **Hard-coded id:** `overlay-watcher.js` uses `"cdd-stoich-panel"` instead of
-  importing `PANEL_ID` from `plugin-constants.js`.
-- **Version drift:** `manifest.json` is `7.6.2` while the latest commit message
-  says it was bumped to `8.0.0`; `package.json` is a separate `1.0.0`.
+---
+
+## Deployment
+
+There are no servers; "deployment" means publishing the packaged extension.
+
+### DEV (local / unpacked)
+
+- `npm run build` → **Load unpacked** `dist/` in `chrome://extensions`, or load
+  `dist/` as a temporary add-on in Firefox.
+- Iterate by rebuilding and reloading. No staging server, no environment config.
+
+### PROD (store releases)
+
+1. `npm run build`.
+2. **Bump `manifest.json`** to the release version (see the version note below).
+3. Zip the **contents of `dist/`** (there is no packaging script in
+   `package.json`).
+4. Upload to the stores:
+   - **Chrome Web Store:** <https://chromewebstore.google.com/detail/cdd-stoichiometric-table/ghbhjmmmgejokgekdcbcmgcfaoddlffg>
+   - **Firefox Add-ons (AMO):** <https://addons.mozilla.org/en-GB/firefox/addon/cdd-stoichiometric-table-tools/>
+
+> **Version note:** `manifest.json` is now `8.0.0` (see
+> [`docs/RELEASE_NOTES.md`](./docs/RELEASE_NOTES.md) and the
+> [CHANGELOG](./CHANGELOG.md)). `package.json` carries an unrelated `1.0.0` and is
+> not used for the extension version. Published store builds may be ahead of or
+> behind this source.
+
+---
+
+## Documentation Index
+
+| Document | What it's for |
+| --- | --- |
+| [`README.md`](./README.md) | This file — overview, features, architecture, setup, deployment. |
+| [`CHANGELOG.md`](./CHANGELOG.md) | Full historical changelog reconstructed from git/tags/release notes. |
+| [`DOCUMENTATION_AUDIT.md`](./DOCUMENTATION_AUDIT.md) | Audit of information sources, contradictions, and stale-doc recommendations. |
+| [`docs/README.md`](./docs/README.md) | Documentation hub / reading order. |
+| [`docs/ARCHITECTURE_REVIEW.md`](./docs/ARCHITECTURE_REVIEW.md) | Full architectural audit: boot sequence, two-world model, every significant file. |
+| [`docs/DATA_FLOW_DIAGRAMS.md`](./docs/DATA_FLOW_DIAGRAMS.md) | Mermaid sequence + dependency diagrams of one CDD response → rendered panel. |
+| [`docs/FEATURE_CATALOG.md`](./docs/FEATURE_CATALOG.md) | Complete feature inventory with value, data source, and regression risk. |
+| [`docs/ADDING_NEW_FIELDS.md`](./docs/ADDING_NEW_FIELDS.md) | Step-by-step guide to adding a Sample-Panel field. |
+| [`docs/LEARNING_GUIDE.md`](./docs/LEARNING_GUIDE.md) | Concepts course on browser-extension architecture, taught with this code. |
+| [`docs/RELEASE_NOTES.md`](./docs/RELEASE_NOTES.md) | User-facing notes for the prepared `8.0.0` release. |
+
+---
+
+## Current Project Status
+
+### Done (in the current `8.0.0` build)
+
+- Floating, draggable, configurable **Sample Panel** with custom-field discovery,
+  card warnings, and state persistence.
+- Per-reaction **stoichiometry print sheets** and **panel print**.
+- **ELN tab-title** override with three modes + popup UI.
+- **Dose-response "Easy Override"** writing back through CDD's API.
+- **Depleted-sample** marking + collapse; **consumed-batches** collapse.
+- **Saved-search Copy Link**; the full bundle of CSS/DOM **UI fixes**.
+- Shared field registry, unified clipboard helper, and standardised `EVENTS`
+  message names (the `8.0.0` clean-up — see CHANGELOG).
+
+### In progress / follow-ups
+
+- **`8.0.0` is bumped in `manifest.json`** and documented in
+  `docs/RELEASE_NOTES.md`; the source is release-ready. A clean git tag should
+  still be cut for it.
+- The legacy `v7.7.0` tag points at a **non-building** commit (missing
+  `shared/sample-panel-fields.js`); re-tag from a building commit (`b1c9f3c` or
+  later) before relying on it.
+
+### Known limitations
+
+- **Settings apply after a page refresh**, not instantly in an open tab.
+- **Custom fields appear only after data loads** — a vault field is discovered
+  only once you open an ELN reaction containing it.
+- **Panel needs captured data** — it shows on ELN entry pages with a reaction
+  table once CDD's data has loaded; otherwise "Waiting for reaction data…". It is
+  hidden while the Ketcher structure editor is open.
+- **Field detection is best-effort** — values are read by known field
+  names/locations; an unexpectedly named/nested field is simply not shown.
+- **No automated tests** — CDD-shape changes may need a manual check.
+- **Version metadata split** — `manifest.json` is `8.0.0` while `package.json`
+  remains an unrelated `1.0.0` (build-only metadata), and the legacy
+  `7.7.0`/`v7.7.0` tags remain in git history — see
+  [`DOCUMENTATION_AUDIT.md`](./DOCUMENTATION_AUDIT.md) §3.
+- **Observer sprawl** — ~10 always-on `MutationObserver`s on `document.body`
+  (`subtree: true`) across features, with no central manager or teardown — a
+  standing CPU cost on a busy SPA.
+
+> Resolved 2026-06-16: the duplicate `isElnEntryPage` (unified on the strict
+> regex in `shared/page-detection.js`), the hard-coded panel id in
+> `overlay-watcher.js` (now uses `PANEL_ID`), and a redundant file-dialog
+> observer in `main.js` (removed).
+
+### Privacy & security
+
+No remote code is executed; all logic is bundled locally with Vite. The manifest
+declares `data_collection → none` and requests only the `storage` permission. The
+extension acts strictly within the user's existing CDD session.
+
+---
+
+## License
+
+[MIT](./LICENSE).

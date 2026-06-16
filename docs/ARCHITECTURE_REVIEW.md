@@ -310,13 +310,14 @@ For each: **why it exists / who uses it / what it exports / what breaks if remov
 #### `src/shared/page-detection.js`
 - **Why:** a single predicate for "are we on an ELN entry page?" used to gate
   panel rendering.
-- **Used by:** `sample-panel.js`.
-- **Exports:** `isElnEntryPage()` — **loose** regex (`/eln/i` or `/entry/i` in
-  the path).
+- **Used by:** `sample-panel.js` **and** `eln-title.js`.
+- **Exports:** `isElnEntryPage()` — **strict** regex
+  (`/^\/vaults\/\d+\/eln\/entries\/\d+/`).
 - **If removed:** the panel would try to render on every page.
-- **⚠ Duplication:** `eln-title.js` defines its **own, stricter**
-  `isElnEntryPage()` (`/^\/vaults\/\d+\/eln\/entries\/\d+/`). The two disagree on
-  what counts as an ELN page (see §8).
+- **Resolved (2026-06-16):** this is now the single source of truth.
+  `eln-title.js` previously defined its own stricter copy; it now imports this
+  one, and the panel's old loose regex was replaced by this strict version (see
+  §8 #1).
 
 #### `src/shared/sample-panel-fields.js`  ← the most important shared file
 - **Why:** the **central field registry**. It is the one place that defines
@@ -457,8 +458,9 @@ For each: **why it exists / who uses it / what it exports / what breaks if remov
 - **Why:** rewrites the browser tab title on ELN entry pages (3 modes).
 - **Used by:** `main.js` (`initElnTitle`).
 - **Exports:** `initElnTitle`.
-- **Note:** has its **own** strict `isElnEntryPage()` (duplicate, §8) and starts
-  **two** `MutationObserver`s.
+- **Note:** imports the shared strict `isElnEntryPage()` from
+  `shared/page-detection.js` (the local duplicate was removed 2026-06-16) and
+  starts **two** `MutationObserver`s.
 - **If removed:** tab titles stay as CDD's default.
 
 #### `src/content/features/savedSearchCopyLinks/savedSearchCopyLinks.js`
@@ -589,17 +591,17 @@ For each: **why it exists / who uses it / what it exports / what breaks if remov
 
 | # | Issue | Evidence | Impact |
 | --- | --- | --- | --- |
-| 1 | **Duplicate `isElnEntryPage`** with different behaviour | loose `shared/page-detection.js` vs strict `eln-title.js:59` | Panel and title feature disagree about what an ELN page is. |
-| 2 | **Hardcoded panel id** | `overlay-watcher.js:5` uses `"cdd-stoich-panel"` not `PANEL_ID` | If `PANEL_ID` ever changes, overlay hiding silently breaks. |
-| 3 | **Observer sprawl, no central manager** | ~12 separate `MutationObserver`s on `document.body`/`documentElement` `subtree:true` (main.js ×2, depleted-marker, url-watcher, overlay-watcher, eln-title ×2, dose-response, copyable-fields, depleted/consumed collapse, filter-default…) | Permanent CPU cost on a busy SPA; no teardown. |
-| 4 | **Redundant file-dialog observers** | `main.js` `watchFileDialog()` already calls `applyFileDialogFixes()`, then a second `fileDialogObserver` calls it again | Duplicate work on every mutation. |
+| 1 | ✅ **Resolved (2026-06-16)** — was: duplicate `isElnEntryPage` with different behaviour | Unified on the strict regex in `shared/page-detection.js`; `eln-title.js` and the panel both import it. | — |
+| 2 | ✅ **Resolved (2026-06-16)** — was: hardcoded panel id | `overlay-watcher.js` now imports and uses `PANEL_ID`. | — |
+| 3 | **Observer sprawl, no central manager** | ~10 separate `MutationObserver`s on `document.body`/`documentElement` `subtree:true` (main.js, depleted-marker, url-watcher, overlay-watcher, eln-title ×2, dose-response, copyable-fields, depleted/consumed collapse, filter-default…) | Permanent CPU cost on a busy SPA; no teardown. |
+| 4 | ✅ **Resolved (2026-06-16)** — was: redundant file-dialog observers | The duplicate `fileDialogObserver` in `main.js` was removed; `watchFileDialog()` is the only one. | — |
 | 5 | **`url-watcher` double-watches** | `MutationObserver` **and** `setInterval(700ms)` | Belt-and-braces, but the interval runs forever. |
 | 6 | **Dead/commented debug code** | `print-data.js:107–145` block of commented `console.log` | Noise; obscures the actual logic. |
 | 7 | **Stray always-on log** | `left-ellipsis-locations.js:30` logs unconditionally (others use a `DEBUG` flag) | Console noise in production. |
 | 8 | **Inject memo can go stale** | `print-data.js` `PRINT_STATE.lastNonEmpty…` never resets across SPA navigations | Print/depleted data from a previous entry can linger. |
 | 9 | **Depleted matching is text-containment** | `depleted-marker.js wrapperMatchesDepleted` uses `text.includes(id)` | Fragile; a substring collision could mismark. |
 | 10 | **No tests / no lint / no dev script** | `package.json` has only build scripts | The riskiest code (`field-resolvers.js`, `print-data.js`) is unverified. |
-| 11 | **Version chaos** | `manifest.json` = `7.7.0`, `package.json` = `1.0.0`, commit messages claim `8.0.0`, latest tag `v7.7.0` points at a **non-building** commit (§9) | Release management is untrustworthy. |
+| 11 | **Version partially reconciled (2026-06-16)** | `manifest.json` now `8.0.0`; `package.json` still `1.0.0` (build-only); the legacy `v7.7.0` tag still points at a **non-building** commit (§9) and no clean `8.0.0` tag exists yet | Improved, but a clean tag is still needed. |
 | 12 | **No teardown anywhere** | observers/listeners are never disconnected | Acceptable for a page-lifetime script, but leaks if the host ever re-inits. |
 
 ---
@@ -622,13 +624,12 @@ green build as the gate for a release tag.
 
 **Quick wins (low risk):**
 1. Delete the commented debug block in `print-data.js` and the stray
-   `console.log` in `left-ellipsis-locations.js`.
-2. Replace `"cdd-stoich-panel"` in `overlay-watcher.js` with `PANEL_ID`.
-3. Unify `isElnEntryPage` — keep the strict version in `shared/page-detection.js`
-   and have both the panel and `eln-title.js` import it (verify the panel still
-   shows where expected before switching).
-4. Fix the version mess: pick one number (the commit history intends **8.0.0**),
-   set it in `manifest.json`, align `package.json`, and only then tag.
+   `console.log` in `left-ellipsis-locations.js`. *(still open)*
+2. ✅ **Done (2026-06-16):** `overlay-watcher.js` now uses `PANEL_ID`.
+3. ✅ **Done (2026-06-16):** `isElnEntryPage` unified on the strict version in
+   `shared/page-detection.js`; the panel and `eln-title.js` both import it.
+4. **Partially done (2026-06-16):** `manifest.json` set to **8.0.0**. Still to do:
+   align (or formally decouple) `package.json`, and cut a clean `8.0.0` tag.
 
 **Structural (medium):**
 5. Introduce a tiny **observer registry** util: a single

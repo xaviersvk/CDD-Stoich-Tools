@@ -1,8 +1,9 @@
 // content/overlay-watcher.js
 import { STATE } from "./state.js";
+import { PANEL_ID } from "../shared/plugin-constants.js";
 
 function getPanel() {
-    return document.getElementById("cdd-stoich-panel");
+    return document.getElementById(PANEL_ID);
 }
 
 export function isKetcherDialogOpen() {

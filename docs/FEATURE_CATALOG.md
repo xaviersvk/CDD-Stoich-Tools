@@ -130,7 +130,8 @@ Improvements that target ELN entry and sample-data pages.
   `chrome.storage.local["cddPluginElnTitleMode"]`.
 - **Dependencies:** `chrome.storage.local`.
 - **Maintenance difficulty:** **medium** — relies on specific CDD DOM hooks and
-  has its own (stricter) `isElnEntryPage` + two `MutationObserver`s.
+  starts two `MutationObserver`s. It imports the shared strict `isElnEntryPage`
+  from `shared/page-detection.js` (the local duplicate was removed 2026-06-16).
 - **Regression risk:** **medium** — isolated from other features, but **fragile to
   CDD DOM changes** (selectors and the "ID:" text scan can break).
 

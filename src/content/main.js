@@ -64,20 +64,8 @@ function init() {
   ensurePrintButtons();
   markDepletedSamplesInSelector();
   applyFileDialogFixes();
-  injectAssociateFileBarStyles()
+  injectAssociateFileBarStyles();
   watchFileDialog();
-
-  const fileDialogObserver = new MutationObserver(() => {
-    applyFileDialogFixes();
-  });
-
-  fileDialogObserver.observe(document.body, {
-    childList: true,
-    subtree: true
-  });
-
-
-
 
   watchUrlChanges(() => {
     resetState();

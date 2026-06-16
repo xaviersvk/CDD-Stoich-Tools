@@ -1,3 +1,5 @@
+import { isElnEntryPage } from "../../shared/page-detection.js";
+
 let observer = null;
 let currentElnTitleMode = "id-title";
 let originalDocumentTitle = null;
@@ -54,10 +56,6 @@ function runOnlyOnElnEntryPage() {
 
     startTitleObserver();
     updateElnTabTitle();
-}
-
-function isElnEntryPage() {
-    return /^\/vaults\/\d+\/eln\/entries\/\d+/.test(location.pathname);
 }
 
 function getEntryId() {

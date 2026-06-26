@@ -3,6 +3,7 @@ import { STATE } from "./state.js";
 import { renderFromState, removePanel } from "./features/sample-panel.js";
 import { ensurePrintButtons } from "./features/print-buttons.js";
 import { markDepletedSamplesInSelector } from "./features/depleted-marker.js";
+import { prefetchMolecules } from "./api/molecule-image.js";
 import {EVENT_SOURCE, EVENTS} from "../shared/event-types";
 
 
@@ -53,6 +54,14 @@ export function handleMessage(event) {
                 ensurePrintButtons();
                 markDepletedSamplesInSelector();
             }, 50);
+            break;
+        }
+
+        case EVENTS.INVENTORY_MOLECULES: {
+            const ids = Array.isArray(data.payload?.moleculeIds)
+                ? data.payload.moleculeIds
+                : [];
+            if (ids.length) prefetchMolecules(ids);
             break;
         }
 

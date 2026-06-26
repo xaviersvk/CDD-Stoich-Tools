@@ -66,8 +66,11 @@ function extractSynonym(doc) {
         const label = field.querySelector("dt")?.textContent?.trim().toLowerCase();
         if (label === "synonyms" || label === "synonym") {
             const value = field.querySelector("dd")?.textContent?.trim();
-            // Only the first synonym (CDD lists several comma/semicolon separated).
-            if (value) return value.split(/[,;]/)[0].trim();
+            // Only the first synonym. CDD joins multiple synonyms with ", " /
+            // "; ", so split on a separator (comma/semicolon followed by
+            // whitespace) -- NOT a bare comma, which would mangle names that
+            // contain one, e.g. "N,N-diethylhydroxylamine".
+            if (value) return value.split(/\s*[,;]\s+/)[0].trim();
         }
     }
     return null;
@@ -130,4 +133,49 @@ export function getMoleculeData(vaultId, moleculeId) {
     const promise = fetchMoleculeData(vaultId, moleculeId);
     moleculeCache.set(cacheKey, promise);
     return promise;
+}
+
+function scheduleIdle(fn) {
+    if (typeof window.requestIdleCallback === "function") {
+        window.requestIdleCallback(fn, { timeout: 2000 });
+    } else {
+        setTimeout(fn, 200);
+    }
+}
+
+// Pre-warm the cache for a list of molecule ids (e.g. every molecule in the box
+// the user just opened) so subsequent hovers are instant. Runs in the background
+// on idle, with a small concurrency cap so we don't hammer CDD or spike the CPU.
+// Already-cached molecules are skipped; this only ever fills the same cache that
+// getMoleculeData() reads, so it is purely additive and safe to call repeatedly.
+export function prefetchMolecules(moleculeIds, { concurrency = 3 } = {}) {
+    const vaultId = detectVaultId();
+    if (!vaultId || !Array.isArray(moleculeIds)) return;
+
+    const queue = [];
+    const queued = new Set();
+    for (const raw of moleculeIds) {
+        if (raw == null) continue;
+        const id = String(raw);
+        const cacheKey = `${vaultId}:${id}`;
+        if (moleculeCache.has(cacheKey) || queued.has(id)) continue;
+        queued.add(id);
+        queue.push(id);
+    }
+
+    if (!queue.length) return;
+
+    let active = 0;
+    const pump = () => {
+        while (active < concurrency && queue.length) {
+            const id = queue.shift();
+            active += 1;
+            getMoleculeData(vaultId, id).finally(() => {
+                active -= 1;
+                if (queue.length) scheduleIdle(pump);
+            });
+        }
+    };
+
+    scheduleIdle(pump);
 }

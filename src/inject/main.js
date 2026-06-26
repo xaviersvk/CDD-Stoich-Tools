@@ -12,8 +12,37 @@ import { installXhrHook } from "./hooks/xhr-hook.js";
 import { installPrintDispatcher } from "./print/dispatcher.js";
 
 
+// Inventory "Pick Location" box contents come back as an array of location
+// entries carrying `molecule_id` + `inventory_location_id`. Detect that shape
+// (no URL needed) and forward the unique molecule ids so the content side can
+// pre-warm the structure cache.
+function maybePostInventoryMolecules(data) {
+  if (!Array.isArray(data)) return;
+
+  const seen = new Set();
+  const moleculeIds = [];
+
+  for (const item of data) {
+    if (!item || typeof item !== "object") continue;
+    const hasLocation =
+      "inventory_location_id" in item || "inventory_location_position" in item;
+    const id = item.molecule_id;
+    if (hasLocation && id != null && !seen.has(id)) {
+      seen.add(id);
+      moleculeIds.push(id);
+    }
+  }
+
+  if (moleculeIds.length) {
+    post(EVENTS.INVENTORY_MOLECULES, { moleculeIds });
+  }
+}
+
 function processJsonPayload(data) {
   if (!data || typeof data !== "object") return;
+
+  maybePostInventoryMolecules(data);
+
   if (!isElnPayload(data)) return;
 
   const hasReaction = hasAnyReactionFeature(data);

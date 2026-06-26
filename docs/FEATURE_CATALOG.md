@@ -19,7 +19,7 @@ All paths are relative to the repository root. Every feature is registered from
 | Group | Features |
 | --- | --- |
 | [Sample Panel](#1-sample-panel) | Floating panel · Configurable fields · Custom-field discovery · Card warnings · Panel state persistence |
-| [ELN Enhancements](#2-eln-enhancements) | Tab-title override · Reaction detection · Depleted-sample marker · Depleted-samples collapse |
+| [ELN Enhancements](#2-eln-enhancements) | Tab-title override · Reaction detection · Depleted-sample marker |
 | [Printing](#3-printing) | Per-reaction stoichiometry sheet · Panel print · Print dispatcher |
 | [Dose Response Tools](#4-dose-response-tools) | Easy Override toggle + action menu |
 | [Saved Searches](#5-saved-searches) | Copy Link buttons |
@@ -163,19 +163,6 @@ Improvements that target ELN entry and sample-data pages.
   several wrapper-selector fallbacks.
 - **Regression risk:** **medium** — fuzzy `text.includes(id)` matching could
   mis-mark on substring collisions; runs on a broad `document` observer.
-
-### 2.4 Depleted-Samples Collapse (Sample Data View)
-- **User value:** On the sample-data view, depleted samples are folded into a
-  collapsible `<details>` block ("Depleted samples (N)") to reduce clutter.
-- **Entry point:** `src/content/features/ui-fixes/depleted-samples-collapse.js`
-  (`watchDepletedSamples`, `collapseDepletedSamples`).
-- **Data source:** live DOM — "Restore sample" buttons
-  (`[aria-label="Restore sample"]`) identify depleted blocks.
-- **Dependencies:** none beyond the DOM.
-- **Maintenance difficulty:** **medium** — DOM-structure-dependent (climbs to
-  `.MuiCollapse-root` / `.MuiPaper-root` / `.SampleDataView`).
-- **Regression risk:** **medium** — depends on CDD's sample-view markup; a layout
-  change can break grouping.
 
 ---
 
@@ -482,7 +469,6 @@ Copy-to-clipboard behaviour shared across the extension.
 | ELN tab-title override | medium | medium |
 | Reaction detection | low | medium |
 | Depleted marker (selectors) | medium | medium |
-| Depleted-samples collapse | medium | medium |
 | Per-reaction print sheet | high | medium-high |
 | Panel print | low-medium | low |
 | Print dispatcher | low | low |

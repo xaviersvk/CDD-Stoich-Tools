@@ -75,7 +75,6 @@ that need data from CDD's API responses get it from the **inject** script (see
 | --- | --- | --- |
 | **ELN tab-title override** | Rewrites the browser tab title on ELN pages. Three modes: original, ELN title only, or `EntryID - ELN title` (default). | `features/eln-title.js` |
 | **Depleted-sample marker** | Greys out / strikes through depleted samples in radio-button sample selectors. | `features/depleted-marker.js` |
-| **Depleted-samples collapse** | Collapses depleted samples into a `<details>` block on the sample data view. | `features/ui-fixes/depleted-samples-collapse.js` |
 
 ### Printing
 
@@ -375,7 +374,7 @@ There are no servers; "deployment" means publishing the packaged extension.
 - Per-reaction **stoichiometry print sheets** and **panel print**.
 - **ELN tab-title** override with three modes + popup UI.
 - **Dose-response "Easy Override"** writing back through CDD's API.
-- **Depleted-sample** marking + collapse; **consumed-batches** collapse.
+- **Depleted-sample** marking; **consumed-batches** collapse.
 - **Saved-search Copy Link**; the full bundle of CSS/DOM **UI fixes**.
 - Shared field registry, unified clipboard helper, and standardised `EVENTS`
   message names (the `8.0.0` clean-up — see CHANGELOG).

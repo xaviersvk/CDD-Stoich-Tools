@@ -22,7 +22,6 @@ import {injectLeftEllipsisForLocations} from "./features/ui-fixes/left-ellipsis-
 import {initFilterDefaultFix} from "./features/ui-fixes/filter-default";
 import {initLocationPickerResize} from "./features/ui-fixes/location-picker-resize";
 import {injectMoleculeLinksStyles} from "./features/ui-fixes/molecule-links-fixes";
-import {watchDepletedSamples} from "./features/ui-fixes/depleted-samples-collapse";
 import {watchConsumedBatches} from "./features/ui-fixes/consumed-batches-collapse";
 import {initSavedSearchCopyLinks} from "./features/savedSearchCopyLinks/savedSearchCopyLinks";
 import {initElnTitle} from "./features/eln-title";
@@ -86,7 +85,6 @@ function init() {
   initFilterDefaultFix();
   initLocationPickerResize();
   injectMoleculeLinksStyles();
-  watchDepletedSamples();
   watchConsumedBatches();
   initSavedSearchCopyLinks();
   initElnTitle();

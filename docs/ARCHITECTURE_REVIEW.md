@@ -593,7 +593,7 @@ For each: **why it exists / who uses it / what it exports / what breaks if remov
 | --- | --- | --- | --- |
 | 1 | ✅ **Resolved (2026-06-16)** — was: duplicate `isElnEntryPage` with different behaviour | Unified on the strict regex in `shared/page-detection.js`; `eln-title.js` and the panel both import it. | — |
 | 2 | ✅ **Resolved (2026-06-16)** — was: hardcoded panel id | `overlay-watcher.js` now imports and uses `PANEL_ID`. | — |
-| 3 | **Observer sprawl, no central manager** | ~10 separate `MutationObserver`s on `document.body`/`documentElement` `subtree:true` (main.js, depleted-marker, url-watcher, overlay-watcher, eln-title ×2, dose-response, copyable-fields, depleted/consumed collapse, filter-default…) | Permanent CPU cost on a busy SPA; no teardown. |
+| 3 | **Observer sprawl, no central manager** | ~10 separate `MutationObserver`s on `document.body`/`documentElement` `subtree:true` (main.js, depleted-marker, url-watcher, overlay-watcher, eln-title ×2, dose-response, copyable-fields, consumed-batches collapse, filter-default…) | Permanent CPU cost on a busy SPA; no teardown. |
 | 4 | ✅ **Resolved (2026-06-16)** — was: redundant file-dialog observers | The duplicate `fileDialogObserver` in `main.js` was removed; `watchFileDialog()` is the only one. | — |
 | 5 | **`url-watcher` double-watches** | `MutationObserver` **and** `setInterval(700ms)` | Belt-and-braces, but the interval runs forever. |
 | 6 | **Dead/commented debug code** | `print-data.js:107–145` block of commented `console.log` | Noise; obscures the actual logic. |

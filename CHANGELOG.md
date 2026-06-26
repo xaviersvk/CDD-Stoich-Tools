@@ -16,6 +16,17 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [8.1.0] — 2026-06-26
+
+### Removed
+- **Depleted-samples collapse** UI fix
+  (`src/content/features/ui-fixes/depleted-samples-collapse.js`). CDD now hides /
+  collapses depleted samples natively on the sample data view, so the extension's
+  `<details>` grouping is redundant. The **depleted-sample marker** (strike-through
+  in selectors) and the separate **consumed-batches collapse** are unaffected.
+
+---
+
 ## [8.0.0] — 2026-06-16
 
 > `manifest.json` bumped to `8.0.0`. Makes the customizable Sample Panel fully

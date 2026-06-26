@@ -7,12 +7,33 @@ project loosely follows [Semantic Versioning](https://semver.org/). Versions are
 taken from `manifest.json` bumps in the git history; dates are commit dates
 (UTC, `YYYY-MM-DD`).
 
-> **Version reconciliation:** `manifest.json` is now `8.0.0`. `package.json`
+> **Version reconciliation:** `manifest.json` is now `8.2.0`. `package.json`
 > carries an unrelated `1.0.0` (build-only metadata). Two legacy git tags exist —
 > `7.7.0` (commit `b1c9f3c`) and `v7.7.0` (commit `6f8a861`, a **non-building**
 > checkout); a clean `8.0.0` tag should still be cut. See
 > [`DOCUMENTATION_AUDIT.md`](./DOCUMENTATION_AUDIT.md) §3 for the full version
 > analysis.
+
+---
+
+## [8.2.0] — 2026-06-26
+
+### Added
+- **Inventory well structure tooltip.** In the "Pick Location" box view, hovering
+  an occupied well now adds the molecule structure image + first synonym to CDD's
+  native tooltip.
+  - The molecule id and vault id are read straight from the tooltip's molecule
+    link (`a[href*="/molecules/"]`) — no inventory-payload correlation needed.
+  - The SMILES is pulled from the molecule page's `react_props` and rendered to
+    inline SVG client-side via **`smiles-drawer`** (new dependency, bundled by
+    Vite). CDD's own `imgUrl` is not reusable cross-page, hence local rendering.
+  - Results are cached per molecule (negative results included) with a token
+    race-guard so a delayed response never lands in the wrong/closed tooltip.
+  - Opening a box pre-warms every well's structure in the background on
+    `requestIdleCallback`, capped at 3 concurrent fetches, via a new
+    `INVENTORY_MOLECULES` event from the inject hook.
+  - New: `src/content/features/ui-fixes/inventory-well-structure.js`,
+    `src/content/api/molecule-image.js`, `src/content/api/structure-render.js`.
 
 ---
 

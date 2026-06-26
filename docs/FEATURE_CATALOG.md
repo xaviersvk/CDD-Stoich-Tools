@@ -26,6 +26,7 @@ All paths are relative to the repository root. Every feature is registered from
 | [UI Improvements](#6-ui-improvements) | File-dialog fixes · Left-ellipsis locations · Filter default operator · Location-picker resize · Molecule-links grid · Consumed-batches collapse |
 | [Data Extraction](#7-data-extraction) | fetch/XHR hooks · Payload detection · flatSample builder · Field resolvers · Print-data extractor · Messaging bus |
 | [Clipboard Features](#8-clipboard-features) | Unified clipboard helper · CDD-ready concentration copy · Click-to-copy fields |
+| [Inventory](#9-inventory) | Well structure tooltip (structure + synonym, idle prefetch) |
 
 ---
 
@@ -457,6 +458,30 @@ Copy-to-clipboard behaviour shared across the extension.
 
 ---
 
+## 9. Inventory
+
+### 9.1 Well Structure Tooltip (Pick Location)
+- **User value:** When picking an inventory location, hovering an occupied well
+  shows the molecule structure image + first synonym right inside CDD's native
+  tooltip — visual confirmation of what you're reaching for, no extra clicks.
+- **Entry point:** `src/content/features/ui-fixes/inventory-well-structure.js`
+  (`watchInventoryWellStructure`).
+- **Related files:** `content/api/molecule-image.js` (`getMoleculeData`,
+  `prefetchMolecules`, `detectVaultId`), `content/api/structure-render.js`
+  (`renderSmilesToSvg`, via `smiles-drawer`), `inject/main.js`
+  (`maybePostInventoryMolecules`), `message-router.js`.
+- **Data source:** the tooltip's molecule link (`a[href*="/molecules/"]`) for the
+  vault + molecule id; the molecule page's `react_props` for SMILES + synonym;
+  the `inventory_locations/.../contents.json` array for the prefetch id list.
+- **Dependencies:** `smiles-drawer` (client-side SVG render); the fetch/XHR hook
+  + messaging bus for the idle prefetch.
+- **Maintenance difficulty:** **medium** — depends on CDD's tooltip markup and the
+  molecule-page `react_props` keys; rendering is self-contained.
+- **Regression risk:** **low** — additive overlay only; every failure path falls
+  back to the plain text tooltip. Never touches the move-location workflow.
+
+---
+
 ## Maintenance & risk summary
 
 | Feature | Maint. | Regression |
@@ -480,6 +505,7 @@ Copy-to-clipboard behaviour shared across the extension.
 | Location-picker resize | medium | low-medium |
 | Molecule-links grid | low | low |
 | Consumed-batches collapse | medium-high | medium |
+| Inventory well structure tooltip | medium | low |
 | Network hooks | medium | **high (everything)** |
 | Payload detection | low | medium |
 | flatSample builder | medium | high |

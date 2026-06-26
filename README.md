@@ -5,8 +5,8 @@ the **Collaborative Drug Discovery (CDD) Vault** web app
 (`*.collaborativedrug.com`). It runs only on CDD pages, has **no backend**, and
 executes **no remote code** — all logic is bundled locally with Vite.
 
-- **Runtime version:** `8.0.0` (from `manifest.json`)
-- **Latest release:** `8.0.0` (see [CHANGELOG](./CHANGELOG.md))
+- **Runtime version:** `8.2.0` (from `manifest.json`)
+- **Latest release:** `8.2.0` (see [CHANGELOG](./CHANGELOG.md))
 - **Targets:** Chrome (MV3) + Firefox (Gecko `strict_min_version: 142.0`)
 - **License:** MIT
 
@@ -47,6 +47,7 @@ copy-on-click values and a print view.
 - Copy a **paste-ready, normalised concentration** straight back into CDD.
 - Print a per-reaction A4 stoichiometry sheet (with the reaction scheme image).
 - Override dose-response curve calculations in bulk from the search results.
+- Preview the **molecule structure + synonym** when picking an inventory location.
 - Avoid picking depleted samples; collapse consumed batches; copy saved-search
   links; and smooth over a set of CDD DOM/CSS rough edges.
 
@@ -94,6 +95,12 @@ that need data from CDD's API responses get it from the **inject** script (see
 | Feature | What it does | Main files |
 | --- | --- | --- |
 | **Copy Link** | Adds a "Copy Link" action to each saved-search row on `/searches`. | `features/savedSearchCopyLinks/savedSearchCopyLinks.js` |
+
+### Inventory
+
+| Feature | What it does | Main files |
+| --- | --- | --- |
+| **Well structure tooltip** | In the "Pick Location" box view, hovering an occupied well adds the molecule structure image + first synonym to CDD's native tooltip. The molecule/vault id is read from the tooltip's molecule link; the SMILES is pulled from the molecule page and rendered to inline SVG client-side (`smiles-drawer`). Cached per molecule (incl. negatives) with a token race-guard; opening a box pre-warms every well's structure on idle (concurrency-capped). | `features/ui-fixes/inventory-well-structure.js`, `api/molecule-image.js`, `api/structure-render.js`, `inject/main.js` |
 
 ### UI fixes (CSS/DOM)
 
@@ -367,13 +374,15 @@ There are no servers; "deployment" means publishing the packaged extension.
 
 ## Current Project Status
 
-### Done (in the current `8.0.0` build)
+### Done (in the current `8.2.0` build)
 
 - Floating, draggable, configurable **Sample Panel** with custom-field discovery,
   card warnings, and state persistence.
 - Per-reaction **stoichiometry print sheets** and **panel print**.
 - **ELN tab-title** override with three modes + popup UI.
 - **Dose-response "Easy Override"** writing back through CDD's API.
+- **Inventory well structure tooltip** — molecule structure + synonym on hover in
+  the Pick Location box, with per-molecule caching and idle prefetch.
 - **Depleted-sample** marking; **consumed-batches** collapse.
 - **Saved-search Copy Link**; the full bundle of CSS/DOM **UI fixes**.
 - Shared field registry, unified clipboard helper, and standardised `EVENTS`

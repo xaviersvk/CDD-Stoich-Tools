@@ -34,25 +34,33 @@ export function detectVaultId() {
     return fromMeta ? fromMeta[1] : null;
 }
 
-// Pull a SMILES string out of the molecule page. CDD exposes it in a couple of
-// React components' `react_props`; we probe them in order of reliability.
+// Pull a SMILES string out of the molecule page. CDD exposes it in a few React
+// components' `react_props`; we probe them in order of reliability. `formatSMILES`
+// can be empty when structure representations aren't computed yet, so we fall
+// back to ModelPredictionsView's `smiles` and to CXSMILES (cleaned of its
+// `|...|` extension block). Structureless entities legitimately have none.
 function extractSmiles(doc) {
     const candidates = [
         ['[component_class="DownloadMoleculeImage"]', "formatSMILES"],
         ['[component_class="ModelPredictionsView"]', "smiles"],
+        ['[component_class="ChemistryImage"]', "smiles"],
+        ['[component_class="DownloadMoleculeImage"]', "formatCXSMILES"],
     ];
 
     for (const [selector, key] of candidates) {
-        const raw = doc.querySelector(selector)?.getAttribute("react_props");
-        if (!raw) continue;
+        for (const el of doc.querySelectorAll(selector)) {
+            const raw = el.getAttribute("react_props");
+            if (!raw) continue;
 
-        try {
-            const smiles = JSON.parse(raw)?.[key];
-            if (typeof smiles === "string" && smiles.trim()) {
-                return smiles.trim();
+            try {
+                const value = JSON.parse(raw)?.[key];
+                if (typeof value === "string" && value.trim()) {
+                    // CXSMILES is "SMILES |extensions|" -- keep the SMILES core.
+                    return value.trim().split(/\s/)[0];
+                }
+            } catch {
+                // Try the next candidate.
             }
-        } catch {
-            // Try the next candidate.
         }
     }
 
@@ -97,7 +105,9 @@ async function fetchMoleculeData(vaultId, moleculeId) {
         const smiles = extractSmiles(doc);
 
         if (!smiles) {
-            console.warn(`${LOG_PREFIX} no SMILES on molecule page`, {
+            // Expected for structureless entities (reagents, oligos, mixtures...):
+            // the tooltip just keeps text + synonym, no error.
+            console.debug(`${LOG_PREFIX} no structure for molecule`, {
                 vaultId,
                 moleculeId,
             });

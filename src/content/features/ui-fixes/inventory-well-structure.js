@@ -172,11 +172,13 @@ export function watchInventoryWellStructure() {
         });
     };
 
+    // Observe <html>, not <body>: Turbo Drive replaces the whole <body> on in-app
+    // navigation, which would detach a body-scoped observer.
     // childList: catches the tooltip popper being added/removed.
     // attributes(href): catches MUI swapping the link when hovering a new well
     // while reusing the same tooltip node.
     const observer = new MutationObserver(run);
-    observer.observe(document.body, {
+    observer.observe(document.documentElement, {
         childList: true,
         subtree: true,
         attributes: true,

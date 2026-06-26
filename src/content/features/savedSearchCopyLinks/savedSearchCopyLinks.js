@@ -25,8 +25,11 @@ export function initSavedSearchCopyLinks() {
         });
     };
 
+    // Observe <html>, not <body>: Turbo Drive replaces the whole <body> element
+    // on in-app navigation, which would detach a body-scoped observer (the page
+    // then only worked on a full refresh). documentElement survives the swap.
     const observer = new MutationObserver(run);
-    observer.observe(document.body, {
+    observer.observe(document.documentElement, {
         childList: true,
         subtree: true,
     });

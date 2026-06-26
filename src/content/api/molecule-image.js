@@ -47,20 +47,43 @@ function extractSmiles(doc) {
         ['[component_class="DownloadMoleculeImage"]', "formatCXSMILES"],
     ];
 
+    const clean = (value) =>
+        // CXSMILES is "SMILES |extensions|" -- keep the SMILES core; reject InChI.
+        typeof value === "string" && value.trim() && !/^InChI/i.test(value.trim())
+            ? value.trim().split(/\s/)[0]
+            : null;
+
     for (const [selector, key] of candidates) {
         for (const el of doc.querySelectorAll(selector)) {
             const raw = el.getAttribute("react_props");
             if (!raw) continue;
 
             try {
-                const value = JSON.parse(raw)?.[key];
-                if (typeof value === "string" && value.trim()) {
-                    // CXSMILES is "SMILES |extensions|" -- keep the SMILES core.
-                    return value.trim().split(/\s/)[0];
-                }
+                const value = clean(JSON.parse(raw)?.[key]);
+                if (value) return value;
             } catch {
                 // Try the next candidate.
             }
+        }
+    }
+
+    // Last resort: scan any react_props that mentions a smiles-like key. Covers
+    // component/markup differences across CDD instances. The cheap string
+    // pre-filter keeps us from JSON-parsing every (often huge) props blob.
+    for (const el of doc.querySelectorAll("[react_props]")) {
+        const raw = el.getAttribute("react_props");
+        if (!raw || !/smiles/i.test(raw)) continue;
+
+        try {
+            const props = JSON.parse(raw);
+            for (const [key, value] of Object.entries(props)) {
+                if (/smiles/i.test(key)) {
+                    const smiles = clean(value);
+                    if (smiles) return smiles;
+                }
+            }
+        } catch {
+            // Ignore and keep scanning.
         }
     }
 

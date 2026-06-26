@@ -5,8 +5,8 @@ the **Collaborative Drug Discovery (CDD) Vault** web app
 (`*.collaborativedrug.com`). It runs only on CDD pages, has **no backend**, and
 executes **no remote code** — all logic is bundled locally with Vite.
 
-- **Runtime version:** `8.2.0` (from `manifest.json`)
-- **Latest release:** `8.2.0` (see [CHANGELOG](./CHANGELOG.md))
+- **Runtime version:** `8.2.1` (from `manifest.json`)
+- **Latest release:** `8.2.1` (see [CHANGELOG](./CHANGELOG.md))
 - **Targets:** Chrome (MV3) + Firefox (Gecko `strict_min_version: 142.0`)
 - **License:** MIT
 
@@ -374,7 +374,7 @@ There are no servers; "deployment" means publishing the packaged extension.
 
 ## Current Project Status
 
-### Done (in the current `8.2.0` build)
+### Done (in the current `8.2.1` build)
 
 - Floating, draggable, configurable **Sample Panel** with custom-field discovery,
   card warnings, and state persistence.

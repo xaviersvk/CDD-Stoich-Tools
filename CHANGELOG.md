@@ -7,12 +7,24 @@ project loosely follows [Semantic Versioning](https://semver.org/). Versions are
 taken from `manifest.json` bumps in the git history; dates are commit dates
 (UTC, `YYYY-MM-DD`).
 
-> **Version reconciliation:** `manifest.json` is now `8.2.0`. `package.json`
+> **Version reconciliation:** `manifest.json` is now `8.2.1`. `package.json`
 > carries an unrelated `1.0.0` (build-only metadata). Two legacy git tags exist —
 > `7.7.0` (commit `b1c9f3c`) and `v7.7.0` (commit `6f8a861`, a **non-building**
 > checkout); a clean `8.0.0` tag should still be cut. See
 > [`DOCUMENTATION_AUDIT.md`](./DOCUMENTATION_AUDIT.md) §3 for the full version
 > analysis.
+
+---
+
+## [8.2.1] — 2026-06-26
+
+### Changed
+- **Removed all `innerHTML` assignments** (AMO add-on validation flagged them).
+  - The inventory tooltip now inserts the structure as a cloned `SVGElement`
+    (`renderSmilesToSvg` returns a DOM node) and clears via `replaceChildren()`.
+  - A Vite build transform (`patchSmilesDrawerInnerHtml`) rewrites the one
+    `innerHTML` in `smiles-drawer`'s unused `PixelsToSvg` to a `DOMParser` parse.
+  - Result: zero `innerHTML` in the built `content.js`.
 
 ---
 

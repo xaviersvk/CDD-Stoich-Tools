@@ -51,9 +51,10 @@ function getDrawer() {
     return drawer;
 }
 
-// Returns a Promise<string | null> resolving to inline `<svg>...</svg>` markup.
-// Never rejects: any parse/render failure resolves to null so callers can show
-// a quiet fallback.
+// Returns a Promise<SVGElement | null> resolving to a detached SVG element.
+// Returning a DOM node (not an HTML string) lets callers insert it without
+// innerHTML. Never rejects: any parse/render failure resolves to null so
+// callers can show a quiet fallback.
 export function renderSmilesToSvg(smiles) {
     return new Promise((resolve) => {
         if (!smiles || typeof smiles !== "string") {
@@ -67,8 +68,8 @@ export function renderSmilesToSvg(smiles) {
             // Keep the SVG target bare (no preset width/height/style): SmilesDrawer
             // sets the viewBox + size itself, and attributes added up front throw
             // off its sizing and produce an empty drawing. Move it offscreen via a
-            // wrapper so the serialized SVG stays clean, while still being laid out
-            // for accurate text measurement.
+            // wrapper so it stays laid out for accurate text measurement while
+            // rendering, then detach it and hand the element back.
             container = document.createElement("div");
             container.style.cssText =
                 "position:absolute;left:-99999px;top:0;width:0;height:0;overflow:hidden;";
@@ -82,9 +83,15 @@ export function renderSmilesToSvg(smiles) {
             return;
         }
 
-        const done = (result) => {
+        const fail = () => {
             container.remove();
-            resolve(result);
+            resolve(null);
+        };
+
+        const succeed = () => {
+            container.removeChild(svg); // keep the drawn element, drop the wrapper
+            container.remove();
+            resolve(svg);
         };
 
         try {
@@ -92,28 +99,18 @@ export function renderSmilesToSvg(smiles) {
                 smiles,
                 svg,
                 THEME,
-                () => {
-                    try {
-                        done(new XMLSerializer().serializeToString(svg));
-                    } catch (err) {
-                        console.warn(`${LOG_PREFIX} SMILES serialize failed`, {
-                            smiles,
-                            err,
-                        });
-                        done(null);
-                    }
-                },
+                () => succeed(),
                 (err) => {
-                    console.warn(`${LOG_PREFIX} SMILES parse failed`, {
+                    console.debug(`${LOG_PREFIX} SMILES parse failed`, {
                         smiles,
                         err,
                     });
-                    done(null);
+                    fail();
                 }
             );
         } catch (err) {
             console.warn(`${LOG_PREFIX} SMILES render threw`, { smiles, err });
-            done(null);
+            fail();
         }
     });
 }

@@ -75,21 +75,20 @@ function parseMoleculeFromTooltip(tooltipEl) {
 }
 
 function setState(holder, text) {
-    holder.innerHTML = "";
     const el = document.createElement("div");
     el.className = `${HOLDER_CLASS}-state`;
     el.textContent = text;
-    holder.appendChild(el);
+    holder.replaceChildren(el);
 }
 
+// `svg` is a detached SVGElement (or null) from structure-render. We clone it so
+// the cached element is never moved into the DOM, and we never touch innerHTML.
 function renderStructure(holder, svg) {
-    holder.innerHTML = "";
-
     if (svg) {
         const box = document.createElement("div");
         box.className = `${HOLDER_CLASS}-img`;
-        box.innerHTML = svg; // trusted: SVG we generated from CDD's SMILES
-        holder.appendChild(box);
+        box.appendChild(svg.cloneNode(true));
+        holder.replaceChildren(box);
     } else {
         setState(holder, "Structure unavailable");
     }

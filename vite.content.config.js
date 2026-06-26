@@ -2,6 +2,30 @@ import { defineConfig } from "vite";
 import { resolve } from "path";
 import { mkdirSync, copyFileSync, cpSync, existsSync, rmSync } from "fs";
 
+// smiles-drawer's PixelsToSvg (used only by GaussDrawer, which we never call)
+// builds an SVG via `div.innerHTML = svgString`. AMO's linter flags any
+// innerHTML assignment, so rewrite that one spot to a DOMParser-based parse at
+// build time. Pattern: `return d.innerHTML=c,d.firstElementChild`.
+function patchSmilesDrawerInnerHtml() {
+    const PATTERN =
+        /return (\w+)\.innerHTML\s*=\s*(\w+),\1\.firstElementChild/;
+
+    return {
+        name: "patch-smiles-drawer-innerhtml",
+        enforce: "pre",
+        transform(code, id) {
+            if (!id.includes("smiles-drawer") || !PATTERN.test(code)) return null;
+            return {
+                code: code.replace(
+                    PATTERN,
+                    'return new DOMParser().parseFromString($2,"image/svg+xml").documentElement'
+                ),
+                map: null,
+            };
+        },
+    };
+}
+
 function copyExtensionAssets() {
     return {
         name: "copy-extension-assets",
@@ -67,5 +91,5 @@ export default defineConfig({
             }
         }
     },
-    plugins: [copyExtensionAssets()]
+    plugins: [patchSmilesDrawerInnerHtml(), copyExtensionAssets()]
 });

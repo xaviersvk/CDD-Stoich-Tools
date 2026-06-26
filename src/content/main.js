@@ -23,6 +23,7 @@ import {initFilterDefaultFix} from "./features/ui-fixes/filter-default";
 import {initLocationPickerResize} from "./features/ui-fixes/location-picker-resize";
 import {injectMoleculeLinksStyles} from "./features/ui-fixes/molecule-links-fixes";
 import {watchConsumedBatches} from "./features/ui-fixes/consumed-batches-collapse";
+import {watchInventoryWellStructure} from "./features/ui-fixes/inventory-well-structure";
 import {initSavedSearchCopyLinks} from "./features/savedSearchCopyLinks/savedSearchCopyLinks";
 import {initElnTitle} from "./features/eln-title";
 
@@ -86,6 +87,7 @@ function init() {
   initLocationPickerResize();
   injectMoleculeLinksStyles();
   watchConsumedBatches();
+  watchInventoryWellStructure();
   initSavedSearchCopyLinks();
   initElnTitle();
 }

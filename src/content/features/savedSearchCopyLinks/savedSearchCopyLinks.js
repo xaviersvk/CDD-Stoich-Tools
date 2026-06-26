@@ -3,26 +3,40 @@ import { copyText } from "../../utils/clipboard.js";
 let savedSearchCopyLinksInitialized = false;
 
 export function initSavedSearchCopyLinks() {
-    if (!location.pathname.endsWith("/searches")) return;
-
     injectSavedSearchCopyLinkStyles();
-    addCopyLinksToSavedSearches();
 
-    if (savedSearchCopyLinksInitialized) return;
+    // Always set up the observer, regardless of the current path: the user may
+    // arrive at /searches later via in-app (Turbo) navigation, not just on a
+    // direct load. The path check lives in addCopyLinksToSavedSearches so every
+    // entry point is covered.
+    if (savedSearchCopyLinksInitialized) {
+        addCopyLinksToSavedSearches();
+        return;
+    }
     savedSearchCopyLinksInitialized = true;
 
-    const observer = new MutationObserver(() => {
-        if (!location.pathname.endsWith("/searches")) return;
-        addCopyLinksToSavedSearches();
-    });
+    let scheduled = false;
+    const run = () => {
+        if (scheduled) return;
+        scheduled = true;
+        requestAnimationFrame(() => {
+            scheduled = false;
+            addCopyLinksToSavedSearches();
+        });
+    };
 
+    const observer = new MutationObserver(run);
     observer.observe(document.body, {
         childList: true,
         subtree: true,
     });
+
+    run();
 }
 
 function addCopyLinksToSavedSearches() {
+    if (!location.pathname.endsWith("/searches")) return;
+
     const rows = document.querySelectorAll("tr.mainRow[id^='saved_search_session-']");
 
     rows.forEach((row) => {

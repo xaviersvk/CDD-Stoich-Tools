@@ -7,12 +7,36 @@ project loosely follows [Semantic Versioning](https://semver.org/). Versions are
 taken from `manifest.json` bumps in the git history; dates are commit dates
 (UTC, `YYYY-MM-DD`).
 
-> **Version reconciliation:** `manifest.json` is now `8.3.0`. `package.json`
+> **Version reconciliation:** `manifest.json` is now `8.4.0`. `package.json`
 > carries an unrelated `1.0.0` (build-only metadata). Two legacy git tags exist —
 > `7.7.0` (commit `b1c9f3c`) and `v7.7.0` (commit `6f8a861`, a **non-building**
 > checkout); a clean `8.0.0` tag should still be cut. See
 > [`DOCUMENTATION_AUDIT.md`](./DOCUMENTATION_AUDIT.md) §3 for the full version
 > analysis.
+
+---
+
+## [8.4.0] — 2026-06-27
+
+### Added
+- **Export Plate Locations (CSV).** A collapsed "Plate locations (experimental)"
+  section in CDD's native Export dialog downloads a CSV of every plate in the
+  current search results paired with its **Inventory Location** — so a plate
+  list can be walked in the lab.
+  - Gathers plates across the *whole* result set, not just the loaded page, via
+    the per-render `search_results` endpoint (the one "Load next 100 results" and
+    sorting use): a `PUT` with sort + limit/offset form data. The rows come back
+    wrapped in `<template name="ujs-replace-content">`, so they are read from the
+    template's `.content` fragment (a plain document query does not see them).
+  - Pages by **distinct entity count** (CDD's limit/offset count results, not
+    table rows — one entity spans several readout `<tr>`s in Details view), so no
+    rows are skipped; deduped by plate id (`api/search-plates.js`).
+  - Each plate's location is resolved from its plate page
+    (`api/plate-info.js`, fetch-once-and-cached), max 4 concurrent.
+  - Large sets are guarded: a confirm prompt above a threshold, live progress on
+    the button (results scanned, plates found, locations resolved), and a
+    **Cancel** (AbortController). CSV is one row per unique plate, sorted by name,
+    UTF-8 BOM for Excel.
 
 ---
 

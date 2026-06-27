@@ -25,6 +25,7 @@ import {injectMoleculeLinksStyles} from "./features/ui-fixes/molecule-links-fixe
 import {watchConsumedBatches} from "./features/ui-fixes/consumed-batches-collapse";
 import {watchInventoryWellStructure} from "./features/ui-fixes/inventory-well-structure";
 import {initPlateLocationTooltip} from "./features/ui-fixes/plate-location-tooltip";
+import {initPlateLocationExport} from "./features/ui-fixes/plate-location-export";
 import {initSavedSearchCopyLinks} from "./features/savedSearchCopyLinks/savedSearchCopyLinks";
 import {initElnTitle} from "./features/eln-title";
 
@@ -90,6 +91,7 @@ function init() {
   watchConsumedBatches();
   watchInventoryWellStructure();
   initPlateLocationTooltip();
+  initPlateLocationExport();
   initSavedSearchCopyLinks();
   initElnTitle();
 }

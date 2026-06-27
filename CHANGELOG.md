@@ -7,12 +7,33 @@ project loosely follows [Semantic Versioning](https://semver.org/). Versions are
 taken from `manifest.json` bumps in the git history; dates are commit dates
 (UTC, `YYYY-MM-DD`).
 
-> **Version reconciliation:** `manifest.json` is now `8.2.1`. `package.json`
+> **Version reconciliation:** `manifest.json` is now `8.3.0`. `package.json`
 > carries an unrelated `1.0.0` (build-only metadata). Two legacy git tags exist —
 > `7.7.0` (commit `b1c9f3c`) and `v7.7.0` (commit `6f8a861`, a **non-building**
 > checkout); a clean `8.0.0` tag should still be cut. See
 > [`DOCUMENTATION_AUDIT.md`](./DOCUMENTATION_AUDIT.md) §3 for the full version
 > analysis.
+
+---
+
+## [8.3.0] — 2026-06-27
+
+### Added
+- **Plate Inventory Location hover tooltip.** On the search results table,
+  hovering a plate link in the "Plate Fields → Name" column
+  (`.plate_name a[href*="/plates/"]`) now shows a small bubble with that plate's
+  **Inventory Location** (e.g. `Lab 2 > Fridge 2`).
+  - The value lives only on the plate page, so it is fetched from there once and
+    parsed from `#plate_data_table_inventory_location` (new
+    `api/plate-info.js`, mirroring the fetch-once-and-cache approach of
+    `api/molecule-image.js`; failures are cached too, so repeat hovers are free).
+  - The bubble is owned end to end (CDD renders none for these links): one
+    delegated `mouseover` listener on `document` — surviving Turbo `<body>`
+    swaps and covering rows added by "Load next 100 results…" — plus one reused
+    floating `<div>` that tracks the cursor.
+  - A delayed fetch result is dropped unless the pointer is still on the plate it
+    was requested for, so a slow response never paints into the wrong (or hidden)
+    bubble. Empty locations show "No inventory location set".
 
 ---
 

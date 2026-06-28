@@ -28,7 +28,7 @@
 
 import { injectBoxSelectionStyles } from "./styles.js";
 import { attachBoxSelection } from "./overlay.js";
-import { GRID_SELECTOR } from "./box-grid.js";
+import { GRID_ANY_SELECTOR, isBoxGrid } from "./box-grid.js";
 
 let stylesReady = false;
 
@@ -49,7 +49,8 @@ export function observeBoxGrids(handler) {
     let scheduled = false;
     function scan() {
         scheduled = false;
-        for (const grid of document.querySelectorAll(GRID_SELECTOR)) {
+        for (const grid of document.querySelectorAll(GRID_ANY_SELECTOR)) {
+            if (!isBoxGrid(grid)) continue;
             if (seen.has(grid)) continue;
             seen.add(grid);
             try {

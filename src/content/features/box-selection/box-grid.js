@@ -42,10 +42,25 @@
 //   - `data-nodeid` no longer the box id -> `getSelectedBoxId()` returns the
 //     wrong id; this is why box id is treated as best-effort and cross-checked.
 
+// Inventory "Pick Location" view grid (used by the colour feature). Kept for
+// backward compatibility; the create-sample dialog grid does NOT have a
+// `.LocationBoxPicker` ancestor (it sits in a bare MUI card), so discovery uses
+// the ancestor-agnostic predicate `isBoxGrid()` below instead of this selector.
 export const GRID_SELECTOR = ".LocationBoxPicker .positions";
+// Ancestor-agnostic: any `.positions` container. Always pair with isBoxGrid() so
+// we only treat it as a box grid when it actually holds box cells.
+export const GRID_ANY_SELECTOR = ".positions";
 export const CELL_SELECTOR = ".box-position-element";
 export const FILLED_CLASS = "box-position-filled";
 export const EMPTY_CLASS = "box-position-empty";
+
+// A `.positions` element is a real box grid only if it contains box cells. This
+// matches both the inventory view and the create-sample dialog while ignoring
+// any unrelated `.positions` element CDD might use elsewhere.
+export function isBoxGrid(el) {
+    return !!el && typeof el.matches === "function" &&
+        el.matches(GRID_ANY_SELECTOR) && !!el.querySelector(CELL_SELECTOR);
+}
 
 // True if the grid uses an explicit empty class on at least one cell. When it
 // does, callers may tighten "empty" to "has EMPTY_CLASS"; when it doesn't, the

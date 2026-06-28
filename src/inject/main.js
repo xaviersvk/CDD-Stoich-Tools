@@ -9,6 +9,7 @@ import { extractAllReactionRows } from "./parsers/sample-data.js";
 import { extractPrintData } from "./parsers/print-data.js";
 import { installFetchHook } from "./hooks/fetch-hook.js";
 import { installXhrHook } from "./hooks/xhr-hook.js";
+import { installCreateRequestCapture } from "./hooks/create-request-capture.js";
 import { installPrintDispatcher } from "./print/dispatcher.js";
 
 
@@ -113,4 +114,14 @@ const tryParseText = createTextParser(processJsonPayload);
   installPrintDispatcher();
   installFetchHook(processJsonPayload, tryParseText);
   installXhrHook(tryParseText);
+
+  // Snapshot outgoing create-sample requests (read-only) so the content side has
+  // a faithful payload template for the multi-position feature.
+  installCreateRequestCapture((record) => {
+    try {
+      post(EVENTS.CREATE_SAMPLE_CAPTURED, record);
+    } catch (err) {
+      console.debug("[CDD Stoich Tools] create capture post failed", err);
+    }
+  });
 })();

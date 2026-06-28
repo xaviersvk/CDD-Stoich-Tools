@@ -30,6 +30,7 @@ import {initPlateLocationExport} from "./features/ui-fixes/plate-location-export
 import {initSavedSearchCopyLinks} from "./features/savedSearchCopyLinks/savedSearchCopyLinks";
 import {initElnTitle} from "./features/eln-title";
 import {initBoxSelection} from "./features/box-selection/init";
+import {initMultiPositionSampleCreate} from "./features/multi-position-sample-create/init";
 import {initPrefixColorCache} from "../shared/prefix-colors.js";
 
 
@@ -103,6 +104,11 @@ function init() {
   // Attaches no selection UI by itself — a consumer (e.g. multi-position sample
   // create, Phase 2) calls observeBoxGrids() to opt a grid into selection.
   initBoxSelection();
+
+  // Multi-position sample create (Phase 2): M2 dry-run + guarded single live
+  // test. Consumes the Box Selection SelectionContext; never touches CDD's
+  // native Save flow.
+  initMultiPositionSampleCreate();
 
   // Load the prefix->colour map into the in-memory cache and keep it live.
   // Called LAST so every feature that subscribed via onPrefixColorsChanged()

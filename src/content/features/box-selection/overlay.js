@@ -55,8 +55,9 @@
 // styles.js (the classes used here). init.js calls this per discovered grid.
 
 import {
-    GRID_SELECTOR,
+    GRID_ANY_SELECTOR,
     CELL_SELECTOR,
+    isBoxGrid,
     isFilledCell,
     readCellPosition,
     readGridPositions,
@@ -72,12 +73,15 @@ const CLS_OCCUPIED = "cdd-box-pos-occupied";
 const CLS_SELECTED = "cdd-box-pos-selected";
 const CLS_DENIED = "cdd-box-pos-denied";
 
-// Resolve the actual `.positions` grid from whatever the caller passed (the grid
-// itself, or a containing picker/dialog element).
+// Resolve the actual box grid from whatever the caller passed (the grid itself,
+// or a containing picker/dialog element). Ancestor-agnostic via isBoxGrid().
 function resolveGrid(target) {
     if (!target || !target.querySelector) return null;
-    if (target.matches?.(GRID_SELECTOR)) return target;
-    return target.querySelector(GRID_SELECTOR);
+    if (isBoxGrid(target)) return target;
+    for (const el of target.querySelectorAll(GRID_ANY_SELECTOR)) {
+        if (isBoxGrid(el)) return el;
+    }
+    return null;
 }
 
 export function attachBoxSelection(gridOrPicker, options = {}) {

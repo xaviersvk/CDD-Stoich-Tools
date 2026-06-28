@@ -52,39 +52,49 @@ New events to add (mirrors existing `EVENTS`): a content→inject
 `REPLAY_CREATE_SAMPLE { boxId, positions }` and inject→content progress
 `REPLAY_PROGRESS { position, ok, status, sampleId?, sampleIdentifier?, errorText? }`.
 
-## 2. fetch vs XHR — ⛔ MUST VERIFY
+## 2. fetch vs XHR — ✅ CONFIRMED: `fetch`, multipart
 
-The create form is Rails `data-remote="true"`. Depending on CDD's stack this is
-either:
+The captured request is **`fetch(...)`**, `method:"POST"`, `credentials:"include"`,
+`x-requested-with:"XMLHttpRequest"`, `x-csrf-token:<token>`, body
+`multipart/form-data` (boundary `----WebKitFormBoundary…`). It is **not** a
+classic Rails-UJS XHR form submit — the **"Create a New Sample" dialog is a React
+component** (MUI; the title carries a React `useId` artefact `id="«r66»"`), which
+builds and sends the request itself. The existing `hooks/fetch-hook.js` already
+sees this call; capture rides on it. (XHR hook stays as a safety net.)
 
-- **rails-ujs** → `XMLHttpRequest` (body = `FormData`), or
-- **Turbo** → `fetch` (body = `FormData`).
+## 3. The value to change — ✅ CONFIRMED from a real request
 
-The page loads Turbo (`turbo-*` meta tags) *and* legacy `application.js`, so we
-cannot assume. The existing inject layer already hooks **both** `fetch`
-(`hooks/fetch-hook.js`) and `XHR` (`hooks/xhr-hook.js`) — so capture can cover
-both with one code path per hook. **Determine which one fires** for this exact
-form using the probe in §7, and confirm the body type.
-
-## 3. The two values to change — ⛔ CONFIRM EXACT KEYS
-
-From the pasted single-sample response, the location is echoed as
-`location.id` / `location.position` and lives on the inventory **event**. In the
-request body the expected keys (array indices to confirm) are:
+Location is **one composite field value**, not two keys. The real multipart body
+(`POST /vaults/{vault}/molecules/{molecule}/inventory_samples`) encodes the
+inventory event's *Location* field (field-definition id `1000001955`) as a single
+value `"<boxId>,<position>"`:
 
 ```
-inventory_sample[inventory_events_attributes][0][fields_attributes][N][inventory_location_id]
-inventory_sample[inventory_events_attributes][0][fields_attributes][N][inventory_location_position]
+inventory_sample[units]                                                            = kg
+inventory_sample[batch_id]                                                         = 1000561471
+…[inventory_events_attributes][0][fields_attributes][0][field_definition_id]       = 1000001953   (Credit)
+…[inventory_events_attributes][0][fields_attributes][0][value]                     = 10
+…[inventory_events_attributes][0][fields_attributes][1][field_definition_id]       = 1000001954   (Debit)
+…[inventory_events_attributes][0][fields_attributes][1][value]                     = 0
+…[inventory_events_attributes][0][fields_attributes][2][field_definition_id]       = 1000001955   (Location)
+…[inventory_events_attributes][0][fields_attributes][2][value]                     = 1000001682,43
 ```
 
-(The "Add a sample" form for an existing batch posts to
-`POST /vaults/{vault}/molecules/{molecule}/inventory_samples`; the "Add batch +
-create sample" form posts to `…/specified_batches` and nests the same keys under
-`new_specified_batch[inventory_samples_attributes][0]…`.)
+`1000001682` = box (inventory_location_id), `43` = inventory_location_position;
+the response echoes them as `location.id` / `location.position`.
 
-The replay finds these keys **by suffix** (`endsWith("[inventory_location_id]")`
-/ `endsWith("[inventory_location_position]")`) — **not** by a hardcoded index —
-so it works for either form and survives index changes.
+**Replacement strategy (M3):** locate the `[fields_attributes][K][value]` whose
+*sibling* `[fields_attributes][K][field_definition_id]` equals the Location
+field-definition id, and rewrite it to `${keepBoxId},${newPosition}` — keep the
+box id from the request (§6), vary only the position. Locate the entry by sibling
+field_definition_id (preferred); fallback: the only value shaped `^\d+,\d+$`.
+**Never** assume index `[2]`. The earlier "two suffix keys" plan is retracted.
+
+> Note: this body is minimal — the user only set amount + location, so it carries
+> no `*Sample ID` (server-assigned: `next_identifier` → `SM003064`) and no
+> Barcode. If a future create includes a **unique** field (Sample ID/Barcode with
+> a concrete value), replays would collide; M5 must detect and warn. For the
+> amount/location-only case shown, replays are safe.
 
 ## 4. Body type, cloning & reuse limitations
 
@@ -132,18 +142,20 @@ To capture, **one native create must fire** (that request is the template). So:
    inject hook captures it, and **on success** replays for the remaining
    positions (sequential).
 
-⛔ Open decisions to confirm from real data:
+Resolved / open:
 
-- **Box id source.** Is the selected tree node's `data-nodeid` equal to
-  `inventory_location_id` (`1000001682` in the sample)? If yes, the framework's
-  `getBoxId()` is usable directly. If not, take the id from the **captured
-  request body** (the value CDD itself wrote) and only vary `position` — safer,
-  and the recommended default regardless. **On any detected mismatch: hard
-  stop, do not guess.**
-- **Unique fields.** Does the body carry a concrete `*Sample ID` / `Barcode`, or
-  are they blank/server-assigned (`next_identifier` suggests server-assigned)?
-  If a concrete unique value is present, replays will collide after #1 — M5 must
-  warn before POSTing. ⛔ confirm from the cURL.
+- ✅ **Box id source — RESOLVED.** Take the box id from the **captured request's
+  composite location value** (the digits before the comma). No dependency on the
+  tree `data-nodeid` at all, which removes that uncertainty. `SelectionContext`
+  only needs to supply the *positions*; the box id rides along in the captured
+  payload. (If a future need requires cross-box, revisit.)
+- ✅ **Unique fields — clarified.** Sample ID is server-assigned (not in the
+  body). Only a user-entered Barcode/Sample ID would collide; M5 warns if any
+  unique field with a concrete value is present in the captured body.
+- ⛔ **Empty/occupied position semantics across boxes:** positions are
+  box-relative row-major indices; a replay must pair the kept box id with
+  positions from *that same box's* grid. The create dialog shows one box at a
+  time, so this holds; document the single-box assumption.
 
 ## 7. Verification probe (run once, on the real create form)
 
@@ -177,17 +189,87 @@ changing behaviour. This is how we replace guesses with facts for §2/§3/§4.
 })();
 ```
 
-## 8. Still-required real-CDD data (gates M3)
+## 8. Real-CDD data status
 
-1. Copy-as-cURL / Copy-as-fetch of one real create request.
-2. The serialized body (or the probe output from §7).
-3. outerHTML of the create form containing the picker.
-4. outerHTML of: one empty `.box-position-element`, one filled one, and the
-   `.LocationBoxPicker .positions` parent.
-5. Confirm `data-nodeid` == `inventory_location_id` (or decide to take id from
-   the captured body, §6).
-6. Box-occupancy request/response (for the empty-vs-filled cross-check).
-7. Screenshot of the create form + picker placement.
+1. ✅ Copy-as-fetch of a real create request — received.
+2. ✅ Serialized multipart body — received (see §3).
+3. ✅ Box grid outerHTML (create dialog) — received (see §10).
+4. ✅ Empty + filled cell markup — received; `.box-position-empty` /
+   `.box-position-filled` both confirmed (§10).
+5. ✅ Box id source — resolved without `data-nodeid` (§6: taken from the request).
+6. ⛔ Box-occupancy request/response — still useful for the API↔DOM cross-check,
+   but the DOM already encodes occupancy via `.box-position-empty/-filled`, so
+   it is no longer a blocker.
+7. ⬜ Screenshot of dialog + picker placement — nice-to-have for bar placement.
 
-Until 1–5 are answered, **stop after M2** (capture + dry-run preview); do not
-ship replay/POST.
+## 9. `FormData(form)` vs request capture — ⛔ ONE probe decides
+
+You asked whether `new FormData(button.closest("form"))` can reproduce the body,
+so we can delete interception entirely. **I cannot prove it from the cURL alone**,
+and here is the precise tension:
+
+- *Argument it might work:* the body uses clean Rails-style nested names
+  (`inventory_sample[inventory_events_attributes][0][fields_attributes][2][value]`)
+  with sequential indices — exactly what `new FormData(formEl)` produces **if**
+  the dialog renders real inputs with those `name=` attributes.
+- *Argument it won't:* the dialog is **React/MUI** (`«r66»` useId). React dialogs
+  commonly build `FormData` programmatically (`.append(...)`) from component
+  state and render no serialisable `<form>`. Decisively, the **Location** is a
+  *composed* value `"<boxId>,<position>"` assembled in JS from the tree selection
+  + the clicked well — that string is unlikely to exist as a single input value;
+  it's the field most likely to be missing/empty in `new FormData(form)`.
+
+So the question is empirical and must be answered against the **live dialog**.
+Run this with the "Create a New Sample" dialog open and a location picked:
+
+```js
+(() => {
+  const forms = [...document.querySelectorAll("form")];
+  let hit = false;
+  forms.forEach((f, i) => {
+    const fd = new FormData(f);
+    const keys = [...fd.keys()];
+    if (keys.some((k) => k.includes("inventory_sample"))) {
+      hit = true;
+      console.log(`[probe] form#${i} reproduces inventory_sample keys:`);
+      for (const [k, v] of fd.entries()) console.log("   ", k, "=", v);
+      const loc = [...fd.entries()].find(([k]) => /\[value\]$/.test(k) && /^\d+,\d+$/.test(String(fd.get(k))));
+      console.log("[probe] composite location value present:", loc || "NO — capture required");
+    }
+  });
+  if (!hit) console.log("[probe] NO <form> serialises inventory_sample[...] -> React-built body -> capture required");
+})();
+```
+
+**Decision rule:**
+- If a form's `FormData` reproduces *all* body keys **including** the composite
+  `…[value] = boxId,position`, then **delete interception**: read `FormData(form)`,
+  clone, rewrite the location value, POST N times (`cdd-form-data.js` +
+  `inventory-samples.js`, content world). Simpler, no page-world coupling.
+- Otherwise (no form, or the location value isn't serialised), **keep capture**:
+  the React-built request is the only faithful source of truth.
+
+Either way the **mutation is identical** (swap the one composite location value),
+so `cdd-form-data.js` is built first and is reused by whichever source wins.
+
+## 10. Grid DOM confirmations (create dialog)
+
+From the pasted dialog markup:
+
+- Grid: `<div class="positions">` → rows `<div class="row">` → cells
+  `<div class="box-position-element  box-position-empty|box-position-filled">`,
+  each with `<label>`=row-major position (e.g. `43`). **9×9 = 81**; position 43 =
+  row E, col 7 = (5−1)·9+7 ✓ (row-major confirmed).
+- ✅ `.box-position-empty` exists explicitly → the framework's
+  `gridTagsEmpties()` path is exact (selectable = `.box-position-empty` and not
+  `.box-position-filled`).
+- ⚠️ **Grid-selector gap:** in this dialog the grid has **no `.LocationBoxPicker`
+  ancestor** (it sits in a bare `.MuiCard-root`). The framework's
+  `GRID_SELECTOR = ".LocationBoxPicker .positions"` will **not** match here. The
+  consumer/discovery must match the grid ancestor-agnostically — e.g. a
+  `.positions` element that contains `.box-position-element`. This is a correctness
+  fix to `box-grid.js` discovery (not a capability broadening); make it when
+  wiring the consumer.
+
+Until §9 is answered, **stop after M2** (capture/serialise + dry-run preview); do
+not ship replay/POST.

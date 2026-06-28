@@ -83,17 +83,15 @@ export function initMultiPositionSampleCreate() {
 
 function watchPickerGrids() {
     observeBoxGrids((grid) => {
-        // The framework discovers every box grid; only treat it as our picker
-        // when the create-sample flow is active (the create dialog is mounted).
-        const inCreateFlow = isCreateSampleDialogOpen();
-        dbg(
-            "box grid detected | pickLocationDialog:",
-            isPickLocationDialogOpen(),
-            "| createSampleDialog:",
-            inCreateFlow
-        );
-        if (!inCreateFlow) {
-            dbg("grid not part of create-sample flow -> ignoring for store");
+        // The framework discovers every box grid; treat it as our picker when
+        // EITHER the Pick Location dialog is open (the grid only exists then) OR
+        // the create-sample flow is active. Gating on pickLocation too makes this
+        // robust if the create dialog's heading flickers while the picker mounts.
+        const inPicker = isPickLocationDialogOpen();
+        const inCreate = isCreateSampleDialogOpen();
+        dbg("box grid detected | pickLocationDialog:", inPicker, "| createSampleDialog:", inCreate);
+        if (!inPicker && !inCreate) {
+            dbg("grid not part of create-sample flow -> ignoring");
             return;
         }
 
@@ -217,25 +215,28 @@ function insertActionBar(dialog) {
     dbg("action bar inserted:", where);
 
     function refresh() {
-        const { count, positions } = store.getState();
+        const { count, positions, boxId } = store.getState();
         counter.textContent = `Selected positions: ${count}`;
         dryBtn.disabled = count < 2;
         if (liveBtn.dataset.busy !== "1") liveBtn.disabled = count < 1;
-        dbg("action bar refresh -> count:", count, "| positions:", positions.join(", ") || "(none)");
+        dbg(
+            "action bar refresh <- store | count:",
+            count,
+            "| positions:",
+            positions.join(", ") || "(none)",
+            "| boxId:",
+            boxId
+        );
     }
 
-    const unsubscribe = store.onChange(refresh);
+    // Subscribe for the lifetime of the page. We intentionally do NOT auto-
+    // unsubscribe on dialog detach: a MutationObserver-based cleanup fired on
+    // transient detaches (MUI mounting the picker over the dialog) and
+    // permanently killed this subscription, freezing the counter at 0. A leaked
+    // subscriber on a detached bar is harmless (it just updates a hidden node).
+    store.onChange(refresh);
     refresh();
-
-    // If the dialog node is removed, stop listening (avoid a leaked subscriber).
-    const cleanupObserver = new MutationObserver(() => {
-        if (!dialog.isConnected) {
-            unsubscribe();
-            cleanupObserver.disconnect();
-            dbg("action bar dialog removed -> unsubscribed");
-        }
-    });
-    cleanupObserver.observe(document.documentElement, { childList: true, subtree: true });
+    dbg("action bar subscribed to store");
 
     dryBtn.addEventListener("click", () => runDryRun(dialog, result));
     liveBtn.addEventListener("click", () => runLiveTest(dialog, result, liveBtn));

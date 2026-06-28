@@ -13,6 +13,9 @@
 //
 // What it must NOT do: DOM, network, payload mutation. Pure state + pub/sub.
 
+const LOG = "[CDD multi-position store]";
+const DEBUG = true; // temporary propagation diagnostics
+
 let positions = [];
 let boxId = null;
 const listeners = new Set();
@@ -44,6 +47,12 @@ export function setPositions(next) {
     const arr = (next || []).map(String);
     const same =
         arr.length === positions.length && arr.every((p, i) => p === positions[i]);
+    if (DEBUG) {
+        console.log(
+            `${LOG} setPositions(${arr.join(", ") || "(none)"})`,
+            same ? "-> unchanged (no emit)" : `-> stored ${arr.length}, emitting to ${listeners.size} listener(s)`
+        );
+    }
     if (same) return;
     positions = arr;
     emit();
@@ -52,11 +61,15 @@ export function setPositions(next) {
 // Box id is advisory (the real box id rides in the payload's composite value).
 // Stored for debugging/cross-check; no emit (it doesn't change the action UI).
 export function setBoxId(id) {
-    if (id != null && String(id) !== String(boxId)) boxId = String(id);
+    if (id != null && String(id) !== String(boxId)) {
+        boxId = String(id);
+        if (DEBUG) console.log(`${LOG} setBoxId(${boxId})`);
+    }
 }
 
 export function clear() {
     if (positions.length === 0 && boxId == null) return;
+    if (DEBUG) console.log(`${LOG} clear()`);
     positions = [];
     boxId = null;
     emit();

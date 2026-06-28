@@ -46,6 +46,28 @@ const DEBUG = true; // temporary wiring diagnostics; flip off once verified
 const DIALOG_FLAG = "cddMpBar";
 const SELECTION_CONTEXT_PROP = "__cddSelectionContext"; // set by overlay.js
 
+// Module-level debug state — written by picker events (which live outside the
+// action bar closure) and read by the in-page debug panel.
+const _dbg = {
+    lastGridDetect: "—",
+    lastWellClick: "—",
+    lastCtxOnChange: "—",
+    lastBarRefresh: "—",
+};
+let _dbgSpans = null; // set once insertActionBar runs
+
+function _refreshDbgPanel() {
+    if (!_dbgSpans) return;
+    const st = store.getState();
+    _dbgSpans.store.textContent =
+        `count=${st.count}  boxId=${st.boxId ?? "null"}  positions=[${st.positions.join(", ")}]`;
+    _dbgSpans.listeners.textContent = String(store.getListenerCount());
+    _dbgSpans.gridDetect.textContent = _dbg.lastGridDetect;
+    _dbgSpans.wellClick.textContent = _dbg.lastWellClick;
+    _dbgSpans.ctxOnChange.textContent = _dbg.lastCtxOnChange;
+    _dbgSpans.barRefresh.textContent = _dbg.lastBarRefresh;
+}
+
 function dbg(...args) {
     if (DEBUG) console.log(LOG, ...args);
 }
@@ -91,26 +113,43 @@ export function initMultiPositionSampleCreate() {
 
 function watchPickerGrids() {
     observeBoxGrids((grid) => {
-        const inPicker = isPickLocationDialogOpen();
-        const inCreate = isCreateSampleDialogOpen();
+        console.log("[CDD mp] GRID FOUND", grid);
+        // MUI portals render picker content as a direct child of <body>, so
+        // grid.closest('[role="dialog"]') returns null even when the picker is
+        // visually open. Gate on observable facts instead:
+        //   1. Create Sample dialog is open (confirmed by heading text), OR
+        //   2. A LocationBoxPicker ancestor or peer dialog exists in the document.
+        const createOpen = isCreateSampleDialogOpen();
+        const pickerLike =
+            !!grid.closest('.LocationBoxPicker, [class*="LocationBoxPicker"], [class*="LocationPicker"]') ||
+            !!document.querySelector('[class*="LocationPickerDialog"], [class*="LocationBoxPicker"], [class*="LocationPicker"]');
 
-        if (inPicker) dbg("(4) Pick Location dialog detected | headings:", headings());
-        dbg("(5) grid detected | isBoxGrid:", isBoxGrid(grid), "| pick:", inPicker, "| create:", inCreate, grid);
+        dbg("(4/5) grid detected | isBoxGrid:", isBoxGrid(grid),
+            "| createOpen:", createOpen, "| pickerLike:", pickerLike,
+            "| headings:", headings(), grid);
 
-        // Always attach a passive click logger so we can see clicks even if the
-        // gate below skips overlay attachment (purely diagnostic, no behavior).
         attachClickLogger(grid);
         watchPickerClose(grid);
 
-        if (!inPicker && !inCreate) {
-            dbg("(5a) grid IGNORED by gate (neither Pick Location nor Create open) — selection will NOT propagate");
+        if (!createOpen && !pickerLike) {
+            _dbg.lastGridDetect = "skipped (Create not open, no picker ancestor)";
+            _refreshDbgPanel();
+            dbg("(5a) grid IGNORED by gate (Create dialog not open and no picker-like ancestor)");
             return;
         }
+        _dbg.lastGridDetect = `attaching | createOpen=${createOpen} pickerLike=${pickerLike} [${headings().join(" | ")}]`;
+        _refreshDbgPanel();
 
+        console.log("[CDD mp] GATE PASSED — calling attachBoxSelection on", grid);
         dbg("(6) attachBoxSelection called");
         const ctx = attachBoxSelection(grid, { showCounter: false });
+        console.log("[CDD mp] CTX result:", ctx);
         dbg("(6a) attachBoxSelection result:", ctx ? "SelectionContext ok" : "NULL");
-        if (!ctx) return;
+        if (!ctx) {
+            console.error("[CDD mp] CTX IS NULL — attachBoxSelection returned null", grid);
+            return;
+        }
+        console.log("[CDD mp] CTX OK");
 
         // Restore any previous selection so reopening the picker shows it.
         const prev = store.getPositions();
@@ -122,12 +161,14 @@ function watchPickerGrids() {
                 /* escape hatch; ignore if unavailable */
             }
         }
-        store.setBoxId(ctx.getBoxId());
+        store.setBoxId(ctx.boxId);
 
         // Mirror picker selection into the persistent store.
         ctx.onChange((c) => {
-            const selectedPositions = c.getSelectedPositions();
-            const boxId = c.getBoxId();
+            const selectedPositions = c.selectedPositions;
+            const boxId = c.boxId;
+            _dbg.lastCtxOnChange = `positions=[${selectedPositions.join(",")}] boxId=${boxId}`;
+            _refreshDbgPanel();
             dbg("(8) SelectionContext onChange fired", {
                 selectedPositions,
                 count: selectedPositions.length,
@@ -136,6 +177,7 @@ function watchPickerGrids() {
             store.setBoxId(boxId);
             store.setPositions(selectedPositions);
         });
+        ctx.onChange(() => console.log("[CDD mp] CTX CHANGED (raw onChange)"));
         dbg("(6c) ctx.onChange wired -> store; store listener count now:", store.getListenerCount());
 
         // Best-effort "OK clicked" log: the picker dialog's confirm button.
@@ -166,11 +208,16 @@ function attachClickLogger(grid) {
             const cell = e.target.closest(CELL_SELECTOR);
             if (!cell || !grid.contains(cell)) return;
             const isFilled = isFilledCell(cell);
+            const _pos = readCellPosition(cell);
+            const _isEmpty = cell.classList.contains(EMPTY_CLASS) || !isFilled;
+            const _bId = getSelectedBoxId();
+            _dbg.lastWellClick = `pos=${_pos} isEmpty=${_isEmpty} boxId=${_bId}`;
+            _refreshDbgPanel();
             dbg("(7) well click detected", {
-                position: readCellPosition(cell),
-                isEmpty: cell.classList.contains(EMPTY_CLASS) || !isFilled,
+                position: _pos,
+                isEmpty: _isEmpty,
                 isFilled,
-                boxId: getSelectedBoxId(),
+                boxId: _bId,
             });
         },
         true
@@ -235,7 +282,34 @@ function insertActionBar(dialog) {
     const result = document.createElement("div");
     result.className = "cdd-mp-result";
 
-    panel.append(counter, dryBtn, liveBtn, clearBtn, result);
+    // In-page debug panel — visible without DevTools console access.
+    const dbgPanel = document.createElement("div");
+    dbgPanel.className = "cdd-mp-debug";
+
+    function makeDbgRow(label) {
+        const row = document.createElement("div");
+        const lbl = document.createElement("b");
+        lbl.textContent = label + ": ";
+        const val = document.createElement("span");
+        row.append(lbl, val);
+        dbgPanel.appendChild(row);
+        return val;
+    }
+
+    _dbgSpans = {
+        store:       makeDbgRow("Store"),
+        listeners:   makeDbgRow("Listeners"),
+        gridDetect:  makeDbgRow("Last grid detect"),
+        wellClick:   makeDbgRow("Last well click"),
+        ctxOnChange: makeDbgRow("Last ctx.onChange"),
+        barRefresh:  makeDbgRow("Last bar refresh"),
+    };
+
+    const refreshDbgBtn = makeButton("Refresh debug", "cdd-mp-clear");
+    refreshDbgBtn.addEventListener("click", _refreshDbgPanel);
+    dbgPanel.appendChild(refreshDbgBtn);
+
+    panel.append(counter, dryBtn, liveBtn, clearBtn, result, dbgPanel);
 
     const actions = dialog.querySelector(".MuiDialogActions-root");
     let where;
@@ -253,6 +327,8 @@ function insertActionBar(dialog) {
         counter.textContent = `Selected positions: ${count}`;
         dryBtn.disabled = count < 2;
         if (liveBtn.dataset.busy !== "1") liveBtn.disabled = count < 1;
+        _dbg.lastBarRefresh = `count=${count} positions=[${positions.join(",")}]`;
+        _refreshDbgPanel();
         dbg("(11/14) action bar subscription fired / refreshed", {
             displayedCount: count,
             storeCount: store.getState().count,
@@ -297,8 +373,8 @@ function installDebugHelpers() {
                         index: i,
                         connected: g.isConnected,
                         hasContext: !!ctx,
-                        selected: ctx ? ctx.getSelectedPositions() : null,
-                        boxId: ctx ? ctx.getBoxId() : null,
+                        selected: ctx ? ctx.selectedPositions : null,
+                        boxId: ctx ? ctx.boxId : null,
                         clickLoggerAttached: g.dataset.cddMpClickLog === "1",
                     };
                 }),

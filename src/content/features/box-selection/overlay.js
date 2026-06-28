@@ -85,11 +85,18 @@ function resolveGrid(target) {
 }
 
 export function attachBoxSelection(gridOrPicker, options = {}) {
+    console.log("[CDD overlay] attachBoxSelection() called", gridOrPicker);
     const grid = resolveGrid(gridOrPicker);
-    if (!grid) return null;
+    if (!grid) {
+        console.log("[CDD overlay] resolveGrid returned null — cannot attach");
+        return null;
+    }
 
     // Idempotent: never stack two overlays on one grid.
-    if (grid[CONTEXT_PROP]) return grid[CONTEXT_PROP];
+    if (grid[CONTEXT_PROP]) {
+        console.log("[CDD overlay] returning existing context (idempotent)");
+        return grid[CONTEXT_PROP];
+    }
 
     const opts = {
         allowFilled: false,
@@ -190,10 +197,21 @@ export function attachBoxSelection(gridOrPicker, options = {}) {
 
     // ----- click handling (delegated, survives cell re-render) -------------
     function onClick(event) {
+        console.log("[CDD overlay] onClick fired | target:", event.target, "| phase:", event.eventPhase);
         const cell = event.target.closest(CELL_SELECTOR);
+        console.log("[CDD overlay]   cell:", cell, "| grid.contains:", cell && grid.contains(cell));
         if (!cell || !grid.contains(cell)) return;
 
-        if (!isSelectable(cell)) {
+        const filled = isFilledCell(cell);
+        const hasEmptyCls = cell.classList.contains("box-position-empty");
+        const selectable = isSelectable(cell);
+        console.log("[CDD overlay]   selectable:", selectable,
+            "| filled:", filled,
+            "| usesEmptyClass:", usesEmptyClass,
+            "| hasEmptyCls:", hasEmptyCls,
+            "| cell.className:", cell.className);
+
+        if (!selectable) {
             // Make the refusal visible instead of silently ignoring the click.
             cell.classList.add(CLS_DENIED);
             setTimeout(() => cell.classList.remove(CLS_DENIED), 300);
@@ -201,11 +219,15 @@ export function attachBoxSelection(gridOrPicker, options = {}) {
         }
 
         const pos = readCellPosition(cell);
+        console.log("[CDD overlay]   pos:", pos, "| before:", model.getSelectedPositions());
         if (pos == null) return;
         model.toggle(pos); // -> model emits -> our onChange -> render()
+        console.log("[CDD overlay]   after toggle:", model.getSelectedPositions());
     }
 
-    grid.addEventListener("click", onClick);
+    // Capture phase so the handler fires even when CDD calls stopPropagation()
+    // at the target level (which would otherwise swallow the bubble phase).
+    grid.addEventListener("click", onClick, true);
 
     // Repaint when MUI replaces the grid's cells (e.g. box switch) so our
     // selected/occupied classes are re-applied to the fresh nodes.
@@ -214,6 +236,7 @@ export function attachBoxSelection(gridOrPicker, options = {}) {
 
     // Selection changes -> repaint + tell the consumer (with the context).
     const unsubscribeModel = model.onChange(() => {
+        console.log("[CDD overlay] model.onChange fired | model positions:", model.getSelectedPositions());
         scheduleRender();
         try {
             opts.onChange?.(context);
@@ -269,7 +292,7 @@ export function attachBoxSelection(gridOrPicker, options = {}) {
             });
         },
         destroy() {
-            grid.removeEventListener("click", onClick);
+            grid.removeEventListener("click", onClick, true);
             gridObserver.disconnect();
             unsubscribeModel();
             bar?.remove();
@@ -298,5 +321,6 @@ export function attachBoxSelection(gridOrPicker, options = {}) {
     buildBar();
     render();
 
+    console.log("[CDD overlay] returning new context", context);
     return context;
 }

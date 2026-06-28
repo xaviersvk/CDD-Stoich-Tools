@@ -70,6 +70,23 @@ export function injectMultiPositionStyles() {
         color: #b00020;
         opacity: 1;
     }
+    .cdd-mp-debug {
+        flex-basis: 100%;
+        margin-top: 6px;
+        padding: 6px 8px;
+        border: 1px solid rgba(0,0,0,0.12);
+        border-radius: 4px;
+        background: rgba(0,0,0,0.03);
+        font-family: monospace;
+        font-size: 11px;
+        line-height: 1.7;
+    }
+    .cdd-mp-debug b {
+        color: #555;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
     `;
 
     document.head.appendChild(style);

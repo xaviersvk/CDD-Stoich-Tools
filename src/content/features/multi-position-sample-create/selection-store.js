@@ -71,12 +71,11 @@ export function setPositions(next) {
     emit();
 }
 
-// Box id is advisory (the real box id rides in the payload's composite value).
-// Stored for debugging/cross-check; no emit (it doesn't change the action UI).
 export function setBoxId(id) {
     if (id != null && String(id) !== String(boxId)) {
         boxId = String(id);
         if (DEBUG) console.log(`${LOG} setBoxId(${boxId})`);
+        emit();
     }
 }
 

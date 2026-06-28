@@ -1,8 +1,8 @@
 # M0 — Multi-position Sample Create: Request-Replay Contract
 
-> Status: **DRAFT — not yet verified against real CDD traffic.** Items marked
-> ⛔ MUST be confirmed from a real create request before any POST code (M3) is
-> written. This document is the "lock the contract" deliverable for M0.
+> Status: **M2 DRY-RUN ✅ · M3 LIVE TEST ✅ · Production N-create: in progress**
+> Debug session 2026-06-28 resolved the picker→store→action-bar propagation chain.
+> All confirmed facts are marked ✅; open items ⛔; architecture decisions ⚠️.
 
 ## 0. The governing principle
 
@@ -273,3 +273,133 @@ From the pasted dialog markup:
 
 Until §9 is answered, **stop after M2** (capture/serialise + dry-run preview); do
 not ship replay/POST.
+
+---
+
+## 11. Debug session findings — 2026-06-28
+
+### 11a. FormData(form) answer — ✅ RESOLVED
+
+`new FormData(form)` **does NOT work** for the Create Sample dialog. The dialog is
+React/MUI and builds the multipart body programmatically. The `FormData(form)` probe
+finds no form with `inventory_sample[...]` keys. **Captured request is required as the
+payload template.** §9 answer: keep capture.
+
+### 11b. Root causes fixed (picker → store → action bar chain)
+
+The chain `well click → SelectionContext.onChange → selection-store → action bar refresh`
+was broken by **three independent bugs**:
+
+**Bug 1 — Wrong gate (skipped attachment)**
+`watchPickerGrids` gated overlay attachment on `isPickLocationDialogOpen()` (heading
+text match). MUI portals render the picker grid at `document.body` level — the grid
+element has no `[role="dialog"]` ancestor. When the observer fired, the heading text
+check returned false and `attachBoxSelection` was never called.
+
+Fix: gate on `isCreateSampleDialogOpen()` (heading match is reliable for the Create
+dialog which is always present when the picker opens) OR on a `LocationBoxPicker`
+class selector anywhere in the document. Either condition is sufficient to pass.
+
+**Bug 2 — SelectionContext API mismatch (crash before onChange wired)**
+`multi-position-sample-create/init.js` called `ctx.getBoxId()` and `ctx.getSelectedPositions()`
+— methods that do not exist. The `SelectionContext` exposes these as **getter properties**:
+`ctx.boxId`, `ctx.selectedPositions`. The handler crashed before `ctx.onChange` was ever
+registered, so the store was never updated.
+
+Fix: replace all `ctx.getBoxId()` → `ctx.boxId`, `ctx.getSelectedPositions()` → `ctx.selectedPositions`.
+
+**Canonical SelectionContext API** (getters, not methods):
+```
+ctx.boxId               string | null  (getter — live)
+ctx.selectedPositions   string[]       (getter — live, sorted)
+ctx.occupiedPositions   string[]       (getter — live)
+ctx.emptyPositions      string[]       (getter — live)
+ctx.allPositions        string[]       (getter — live)
+ctx.count()             number         (method)
+ctx.has(pos)            boolean        (method)
+ctx.isOccupied(pos)     boolean        (method)
+ctx.isEmpty(pos)        boolean        (method)
+ctx.clear()             void           (method)
+ctx.onChange(cb)        unsubscribe    (method — cb receives ctx)
+ctx.destroy()           void           (method)
+ctx._model              internal       (escape hatch for advanced consumers)
+```
+
+**Bug 3 — Click events swallowed by CDD (bubble phase)**
+The overlay's `onClick` handler was registered in the **bubble phase**
+(`grid.addEventListener("click", onClick)`). CDD's native well-click handler calls
+`event.stopPropagation()` at the target, preventing the event from bubbling up to our
+grid listener. Our **passive capture-phase logger** still fired (it ran on the way
+down), which is why `LAST WELL CLICK` showed `pos=58 isEmpty=true` but `LAST CTX.ONCHANGE`
+was empty — the overlay never saw the click.
+
+Fix: register the overlay click handler in **capture phase**:
+```js
+grid.addEventListener("click", onClick, true);   // capture = true
+// destroy() must match:
+grid.removeEventListener("click", onClick, true);
+```
+Capture phase runs during the descending pass, before CDD's target-level handler has any
+chance to stop propagation.
+
+### 11c. What is working now (commit c431773)
+
+- ✅ Box grid detection: ancestor-agnostic via `isBoxGrid()` + LocationBoxPicker class fallback
+- ✅ SelectionContext attaches in capture phase; clicks on empty wells toggle selection
+- ✅ Occupied wells blocked (isSelectable guard): clicking one flashes `.cdd-box-pos-denied`
+- ✅ picker selection → `selection-store` → action bar counter refresh working end-to-end
+- ✅ `selection-store.setBoxId()` emits so action bar refreshes immediately when box id arrives
+- ✅ In-page debug panel: store count / listeners / last grid-detect / last well click / last onChange / last refresh — all live without DevTools
+- ✅ M2 dry-run: resolves payload from captured request, swaps location, previews all N payloads in console, nothing sent
+- ✅ M3 single guarded live test: one POST to real vault (guarded by `confirm()`), shows ✓/✗ result
+
+### 11d. Architecture: replay stays in content world
+
+§1 and §5 recommended replay in the inject (page) world to avoid cross-world body
+serialisation. **This was reconsidered.** The `FormData` snapshot is serialised to
+`entries: [[k,v],...]` on capture and reconstructed with `formDataFromEntries()` in
+the content world — File/Blob fields are flagged (`hadNonString=true`) and the live
+test blocks if any are present. For the location-only payloads used so far, the round
+trip is lossless. Replay in the content world is simpler (no content→inject protocol
+needed) and confirmed working with M3.
+
+### 11e. Production M3/M4 — design (not yet implemented)
+
+**Requirement**: User clicks "Create N Samples" once — no manual preliminary native
+save required. First selected position is created by CDD natively; remaining N-1 are
+replayed by the plugin.
+
+**Flow**:
+1. User fills Create Sample dialog, selects N positions in picker.
+2. Clicks "Create N Samples" → confirmation dialog.
+3. Plugin clicks the native Save button programmatically (position p1 = whatever
+   CDD's form has = the last-selected native position in the picker).
+4. CDD's fetch fires → inject hook captures the request body (template for p2..pN)
+   AND awaits the response, then posts `CREATE_SAMPLE_RESPONDED` to content world.
+5. Plugin awaits the `CREATE_SAMPLE_RESPONDED` message (30s timeout).
+6. If p1 **failed** → show error, do NOT replay, abort.
+7. If p1 **succeeded** → show ✓ in floating results panel.
+8. Determine `nativePosition` from `findLocationField(capturedFormData).position`.
+9. `replayPositions = selectedPositions.filter(p => p !== nativePosition)`.
+10. For each position in `replayPositions` sequentially:
+    a. Swap location in capturedFormData via `withReplacedPosition`.
+    b. POST via `createInventorySample`.
+    c. Append ✓/✗ row to floating results panel.
+11. After all: show summary line + "Retry failed (N)" button if any failures.
+12. Retry reruns only the failed positions (same flow, no native save).
+
+**Why floating panel (not action bar)**: clicking native Save closes the Create Sample
+dialog, destroying the action bar. Results must live in a `position:fixed` overlay
+appended to `document.body`.
+
+**New files/changes needed**:
+- `event-types.js` — add `CREATE_SAMPLE_RESPONDED`
+- `inject/hooks/create-request-capture.js` — make fetch wrapper async; after
+  response, call `onResponse({correlationId, ok, status, bodyText})`
+- `inject/main.js` — pass `onResponse` callback to `installCreateRequestCapture`
+- `content/message-router.js` — route `CREATE_SAMPLE_RESPONDED` → `notifyCreateResponse()`
+- `content/features/multi-position-sample-create/response-store.js` (new) —
+  `waitForNextResponse(timeoutMs)` / `notifyCreateResponse(record)` (Promise-based, single pending slot)
+- `content/features/multi-position-sample-create/init.js` — replace `runLiveTest` with `runCreateN`;
+  add `findNativeSaveButton(dialog)`; floating results panel DOM
+- `styles.js` — `.cdd-mp-float`, `.cdd-mp-result-row`, `.cdd-mp-ok/err`, `.cdd-mp-retry`

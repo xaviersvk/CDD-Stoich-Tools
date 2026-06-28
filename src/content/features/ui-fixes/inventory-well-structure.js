@@ -14,6 +14,7 @@
 // resolve, so a delayed response can never land in the wrong (or closed) tooltip.
 
 import { getMoleculeData } from "../../api/molecule-image.js";
+import { recordSampleIdPrefix } from "../../../shared/prefix-colors.js";
 
 const LOG_PREFIX = "[CDD inventory plugin]";
 
@@ -147,8 +148,19 @@ async function augmentTooltip(tooltipEl) {
     applySynonym(tooltipEl, data.synonym);
 }
 
+// Register the Sample ID's prefix so it shows up in the popup for the user to
+// colour. The Sample ID is the TEXT of the molecule link, e.g.
+//     <a href="/vaults/6884/molecules/164033088#...">PHA-0334477-001-S003467</a>
+// We only DISCOVER the prefix here; we never tint the identifier text itself
+// (it stays the native colour). The actual colouring happens on the grid wells.
+function recordTooltipPrefix(tooltipEl) {
+    const link = tooltipEl.querySelector('a[href*="/molecules/"]');
+    if (link) recordSampleIdPrefix(link.textContent);
+}
+
 function scan() {
     document.querySelectorAll(TOOLTIP_SELECTOR).forEach((el) => {
+        recordTooltipPrefix(el);
         augmentTooltip(el).catch((err) =>
             console.warn(`${LOG_PREFIX} tooltip augment failed`, err)
         );

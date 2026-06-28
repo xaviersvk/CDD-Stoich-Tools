@@ -70,3 +70,86 @@ label.field-item input {
     font-weight: 600;
     color: #374151;
 }
+
+.hint code {
+    font-family: "SFMono-Regular", Consolas, monospace;
+    font-size: 11px;
+    background: #f3f4f6;
+    padding: 1px 3px;
+    border-radius: 3px;
+}
+
+/* Prefix colours editor */
+.prefix-color-list {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.prefix-color-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.prefix-color-prefix {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 6px 7px;
+    font-size: 13px;
+}
+
+/* Native colour picker, trimmed to a small square swatch. */
+.prefix-color-swatch {
+    flex: 0 0 auto;
+    width: 32px;
+    height: 30px;
+    padding: 0;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    background: none;
+    cursor: pointer;
+}
+
+/* Auto-discovered prefix with no colour assigned yet. */
+.prefix-color-swatch--unset {
+    border-style: dashed;
+    border-color: #9ca3af;
+    opacity: 0.65;
+}
+
+.prefix-color-delete {
+    flex: 0 0 auto;
+    width: 28px;
+    height: 28px;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    background: #fff;
+    color: #6b7280;
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.prefix-color-delete:hover {
+    background: #fef2f2;
+    border-color: #fecaca;
+    color: #dc2626;
+}
+
+.prefix-color-add {
+    margin-top: 8px;
+    padding: 6px 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1976d2;
+    background: #fff;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.prefix-color-add:hover {
+    background: #f3f4f6;
+}

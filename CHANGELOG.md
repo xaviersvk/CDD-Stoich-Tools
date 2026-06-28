@@ -7,12 +7,47 @@ project loosely follows [Semantic Versioning](https://semver.org/). Versions are
 taken from `manifest.json` bumps in the git history; dates are commit dates
 (UTC, `YYYY-MM-DD`).
 
-> **Version reconciliation:** `manifest.json` is now `8.4.0`. `package.json`
+> **Version reconciliation:** `manifest.json` is now `8.5.0`. `package.json`
 > carries an unrelated `1.0.0` (build-only metadata). Two legacy git tags exist —
 > `7.7.0` (commit `b1c9f3c`) and `v7.7.0` (commit `6f8a861`, a **non-building**
 > checkout); a clean `8.0.0` tag should still be cut. See
 > [`DOCUMENTATION_AUDIT.md`](./DOCUMENTATION_AUDIT.md) §3 for the full version
 > analysis.
+
+---
+
+## [8.5.0] — 2026-06-28
+
+### Added
+- **Prefix-based visualization colours.** Sample IDs are grouped by a *prefix*
+  (everything before the second dash, e.g. `IXX-DEMO` in
+  `IXX-DEMO-0000048-001-SM000025`) and each prefix can be given a user-chosen
+  colour, used consistently across the plugin's visualizations.
+  - **Inventory box grid.** Each occupied well in the "Pick Location" / Location
+    Tree box view (`.LocationBoxPicker .positions .box-position-filled`) is
+    tinted by the prefix colour of the compound in it. Wells whose prefix has no
+    colour yet fall back to a default (`rgb(10, 98, 230)`); empty wells keep
+    their native look.
+  - **No DOM text scraping for the mapping.** The well→compound data comes from
+    the box-contents API response already intercepted on the page
+    (`inject/main.js`), now forwarded as `EVENTS.INVENTORY_BOX` with one record
+    per occupied well (`{ position, moleculeId, name }`).
+  - **Per-box cache.** Position `1` is a different compound in every box and CDD
+    serves a re-opened box from its own client cache (no new fetch), so records
+    are cached by the selected tree node's `data-nodeid` and recolour always
+    uses the box currently shown — re-selecting a box keeps the right colours.
+  - **Settings → Visualization → Prefix Colors** (extension popup): add / edit /
+    delete a prefix and pick its colour. Stored in `chrome.storage.local` as a
+    `Record<prefix, hexColor>` (O(1) lookup); changes propagate live to the page
+    via `chrome.storage.onChanged`.
+  - **Auto-discovery.** Prefixes seen in the data (well tooltip, ELN sample
+    panel, box grid) are saved automatically **without a colour** so they appear
+    in the popup for the user to colour; an existing prefix's colour is never
+    changed automatically.
+  - All prefix parsing is centralised in `src/shared/prefix-colors.js`
+    (`extractPrefix` / `getColorForSampleId`) — the single source of truth, so
+    the matching rule can be changed in one place. No colours are hardcoded in
+    the visualizations.
 
 ---
 

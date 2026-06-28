@@ -24,10 +24,12 @@ import {initLocationPickerResize} from "./features/ui-fixes/location-picker-resi
 import {injectMoleculeLinksStyles} from "./features/ui-fixes/molecule-links-fixes";
 import {watchConsumedBatches} from "./features/ui-fixes/consumed-batches-collapse";
 import {watchInventoryWellStructure} from "./features/ui-fixes/inventory-well-structure";
+import {initInventoryGridColors} from "./features/ui-fixes/inventory-grid-colors";
 import {initPlateLocationTooltip} from "./features/ui-fixes/plate-location-tooltip";
 import {initPlateLocationExport} from "./features/ui-fixes/plate-location-export";
 import {initSavedSearchCopyLinks} from "./features/savedSearchCopyLinks/savedSearchCopyLinks";
 import {initElnTitle} from "./features/eln-title";
+import {initPrefixColorCache} from "../shared/prefix-colors.js";
 
 
 function isSupportedHost() {
@@ -90,10 +92,18 @@ function init() {
   injectMoleculeLinksStyles();
   watchConsumedBatches();
   watchInventoryWellStructure();
+  initInventoryGridColors();
   initPlateLocationTooltip();
   initPlateLocationExport();
   initSavedSearchCopyLinks();
   initElnTitle();
+
+  // Load the prefix->colour map into the in-memory cache and keep it live.
+  // Called LAST so every feature that subscribed via onPrefixColorsChanged()
+  // above gets notified once the initial map resolves, and again on any later
+  // popup edit. Fire-and-forget: features render with the default look until the
+  // (fast) storage read completes.
+  initPrefixColorCache();
 }
 
 init();

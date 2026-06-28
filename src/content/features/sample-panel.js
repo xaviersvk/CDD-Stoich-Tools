@@ -19,6 +19,7 @@ import {
     pruneExpiredCustomFields,
     parsePurity,
 } from "../../shared/sample-panel-fields.js";
+import { recordSampleIdPrefix } from "../../shared/prefix-colors.js";
 
 // Visible-field map, kept in sync with chrome.storage by initSamplePanelFields().
 // Starts from the registry defaults so the first paint is correct even before
@@ -485,10 +486,19 @@ function renderFieldRow(field, sample) {
     const resolved = resolveFieldValue(field, sample);
     if (!resolved) return null;
 
-    return createCopyableRow(field.label, resolved.text, {
+    const row = createCopyableRow(field.label, resolved.text, {
         copyValue: resolved.copyValue,
         highlight: resolved.highlight,
     });
+
+    // The "Name" field IS the Sample ID. We only DISCOVER its prefix (so it
+    // appears in the popup); we do NOT tint the identifier text — colouring
+    // happens on the grid wells, not here.
+    if (row && field.key === "name") {
+        recordSampleIdPrefix(resolved.text);
+    }
+
+    return row;
 }
 
 // Build the rows for one sample: enabled static registry fields first, then

@@ -12,29 +12,61 @@ import { installXhrHook } from "./hooks/xhr-hook.js";
 import { installPrintDispatcher } from "./print/dispatcher.js";
 
 
+// Best-effort Sample ID / name for a box-contents entry, mirroring the field
+// fallbacks used elsewhere (see parsers/field-resolvers.js resolveRowName).
+// Returns a string or null. The grid colouring derives the prefix from this.
+function pickInventoryName(item) {
+  const candidate =
+    item.sample_identifier ||
+    item.name ||
+    item.sample_name ||
+    item.molecule_name ||
+    item.identifier ||
+    (item.sample && (item.sample.sample_identifier || item.sample.name)) ||
+    null;
+  return candidate ? String(candidate).trim() : null;
+}
+
 // Inventory "Pick Location" box contents come back as an array of location
-// entries carrying `molecule_id` + `inventory_location_id`. Detect that shape
-// (no URL needed) and forward the unique molecule ids so the content side can
-// pre-warm the structure cache.
+// entries carrying `molecule_id` + `inventory_location_id` /
+// `inventory_location_position`. Detect that shape (no URL needed) and forward:
+//   - INVENTORY_MOLECULES: unique molecule ids, to pre-warm the structure cache;
+//   - INVENTORY_BOX: one record per occupied well { position, moleculeId, name },
+//     so the content side can tint each filled grid cell by its prefix colour.
 function maybePostInventoryMolecules(data) {
   if (!Array.isArray(data)) return;
 
   const seen = new Set();
   const moleculeIds = [];
+  const positions = [];
 
   for (const item of data) {
     if (!item || typeof item !== "object") continue;
     const hasLocation =
       "inventory_location_id" in item || "inventory_location_position" in item;
     const id = item.molecule_id;
-    if (hasLocation && id != null && !seen.has(id)) {
+    if (!hasLocation || id == null) continue;
+
+    if (!seen.has(id)) {
       seen.add(id);
       moleculeIds.push(id);
+    }
+
+    const position = item.inventory_location_position;
+    if (position != null && position !== "") {
+      positions.push({
+        position,
+        moleculeId: id,
+        name: pickInventoryName(item),
+      });
     }
   }
 
   if (moleculeIds.length) {
     post(EVENTS.INVENTORY_MOLECULES, { moleculeIds });
+  }
+  if (positions.length) {
+    post(EVENTS.INVENTORY_BOX, { positions });
   }
 }
 

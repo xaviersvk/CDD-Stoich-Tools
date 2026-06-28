@@ -1,33 +1,32 @@
 // content/features/multi-position-sample-create/init.js
 //
-// First consumer of the Box Selection Framework. It consumes a SelectionContext
-// (never reads grid DOM) and adds two explicit buttons to the create-sample
-// dialog:
+// First consumer of the Box Selection Framework. Two INDEPENDENT lifecycles:
 //
-//   "Dry-run Create N Samples"      (enabled with >=2 selected)
-//     -> builds N cloned payloads with only the location position swapped and
-//        logs them. Sends NOTHING.
+//   A) Pick Location dialog (transient): the box grid lives here. We attach the
+//      SelectionContext for multi-select only, and mirror the selected positions
+//      into a persistent store. NO buttons here — this dialog comes and goes.
 //
-//   "Live test: create 1 extra sample"  (enabled with >=1 selected)
-//     -> guarded single POST: dry-run preview first, confirm() with full detail,
-//        then ONE create at the FIRST selected position. No batch, no parallel,
-//        no retry, native CDD Save untouched.
+//   B) Create a New Sample dialog (persistent across the picker opening/closing):
+//      we insert the action bar (counter + Dry-run + Live-test) into its footer,
+//      next to Cancel/Save. It reads the store, so the selection SURVIVES the
+//      picker closing.
 //
-// Boundaries this file respects:
-//   - It NEVER touches CDD's native Save button or submit flow.
-//   - Capture/replay mechanics are private to this feature (payload-source.js +
-//     capture-store.js); the framework and other features don't know about them.
-//   - The only payload mutation is via shared/cdd-form-data.js (swap location).
+// The store (selection-store.js) is the bridge: the grid/SelectionContext is
+// destroyed when the picker closes, but the chosen positions persist there.
 //
-// Assumptions about CDD: the create dialog shows a heading "Create a New Sample";
-// the location field is the composite "<boxId>,<position>" value (contract §3).
-// If CDD changes the dialog title, the gate in isCreateSampleDialogOpen() must be
-// updated; if it changes the location encoding, only cdd-form-data.js changes.
+// Boundaries: never touches CDD's native Save/submit; capture/replay is private
+// to this feature; the only payload mutation is via cdd-form-data.js.
+//
+// CDD assumptions: the create dialog has a heading "Create a New Sample"; the
+// picker has a heading "Pick Location"; the location is the composite
+// "<boxId>,<position>" value (contract §3). If a heading changes, update the
+// detectors below; if the location encoding changes, only cdd-form-data.js.
 
 import { observeBoxGrids } from "../box-selection/init.js";
 import { attachBoxSelection } from "../box-selection/overlay.js";
 import { injectMultiPositionStyles } from "./styles.js";
 import { resolvePayloadSource } from "./payload-source.js";
+import * as store from "./selection-store.js";
 import {
     findLocationField,
     withReplacedPosition,
@@ -36,72 +35,215 @@ import {
 import { createInventorySample } from "../../api/inventory-samples.js";
 
 const LOG = "[CDD multi-position]";
-const PANEL_FLAG = "cddMpPanel";
+const DEBUG = true; // temporary wiring diagnostics; flip off once verified
+const DIALOG_FLAG = "cddMpBar";
 
-// Only act inside the create-sample dialog (not the inventory Pick-Location view,
-// which also renders a box grid).
+function dbg(...args) {
+    if (DEBUG) console.log(LOG, ...args);
+}
+
+/* --------------------------- dialog detectors --------------------------- */
+
+function headings() {
+    return [...document.querySelectorAll("h1,h2,h3,.MuiDialogTitle-root")]
+        .map((h) => (h.textContent || "").trim())
+        .filter(Boolean);
+}
+
 function isCreateSampleDialogOpen() {
-    return [...document.querySelectorAll("h1,h2,h3,.MuiDialogTitle-root")].some(
-        (h) => /create a new sample/i.test(h.textContent || "")
+    return headings().some((t) => /create a new sample/i.test(t));
+}
+
+function isPickLocationDialogOpen() {
+    return headings().some((t) => /pick location/i.test(t));
+}
+
+// The Create Sample dialog's root element (for footer placement + form scope).
+function findCreateDialogRoot() {
+    const h = [...document.querySelectorAll("h1,h2,h3,.MuiDialogTitle-root")].find((e) =>
+        /create a new sample/i.test(e.textContent || "")
+    );
+    if (!h) return null;
+    return (
+        h.closest('[role="dialog"], .MuiDialog-paper, .MuiPaper-root, .MuiDialog-root') ||
+        h.parentElement
     );
 }
 
+/* ------------------------------- entry ------------------------------- */
+
 export function initMultiPositionSampleCreate() {
+    dbg("initMultiPositionSampleCreate() running");
     injectMultiPositionStyles();
+    watchPickerGrids();
+    watchCreateDialog();
+}
 
+/* ---------------- lifecycle A: picker grid -> store ---------------- */
+
+function watchPickerGrids() {
     observeBoxGrids((grid) => {
-        // Gate: the framework discovers every box grid; we attach our buttons
-        // only when the create-sample dialog is the one on screen.
-        if (!isCreateSampleDialogOpen()) return;
+        // The framework discovers every box grid; only treat it as our picker
+        // when the create-sample flow is active (the create dialog is mounted).
+        const inCreateFlow = isCreateSampleDialogOpen();
+        dbg(
+            "box grid detected | pickLocationDialog:",
+            isPickLocationDialogOpen(),
+            "| createSampleDialog:",
+            inCreateFlow
+        );
+        if (!inCreateFlow) {
+            dbg("grid not part of create-sample flow -> ignoring for store");
+            return;
+        }
 
-        const ctx = attachBoxSelection(grid, { showCounter: true });
-        if (!ctx) return;
+        // Multi-select only; no counter bar inside the (clipped, transient) card.
+        const ctx = attachBoxSelection(grid, { showCounter: false });
+        if (!ctx) {
+            dbg("attachBoxSelection returned null");
+            return;
+        }
+        dbg("SelectionContext created for Pick Location grid");
 
-        buildPanel(grid, ctx);
+        // Restore any previous selection so reopening the picker shows it.
+        const prev = store.getPositions();
+        if (prev.length) {
+            try {
+                ctx._model.replaceSelection(prev);
+                dbg("restored previous selection into picker:", prev.join(", "));
+            } catch {
+                /* escape hatch; ignore if unavailable */
+            }
+        }
+        store.setBoxId(ctx.getBoxId());
+
+        // Mirror picker selection into the persistent store.
+        ctx.onChange((c) => {
+            store.setBoxId(c.getBoxId());
+            store.setPositions(c.getSelectedPositions());
+            dbg(
+                "picker selection changed ->",
+                c.getSelectedPositions().join(", ") || "(none)",
+                "| boxId:",
+                c.getBoxId()
+            );
+        });
+
+        // Best-effort "OK clicked" log: the picker dialog's confirm button.
+        const pickerRoot = grid.closest('[role="dialog"], .MuiDialog-root, .MuiPaper-root');
+        if (pickerRoot && pickerRoot.dataset.cddMpOkLog !== "1") {
+            pickerRoot.dataset.cddMpOkLog = "1";
+            pickerRoot.addEventListener(
+                "click",
+                (e) => {
+                    const btn = e.target.closest("button");
+                    if (btn && /\b(ok|done|apply|select)\b/i.test(btn.textContent || "")) {
+                        dbg("Pick Location confirm clicked:", (btn.textContent || "").trim());
+                    }
+                },
+                true
+            );
+        }
     });
 }
 
-function buildPanel(grid, ctx) {
-    if (grid.dataset[PANEL_FLAG] === "1") return;
-    grid.dataset[PANEL_FLAG] = "1";
+/* ---------------- lifecycle B: create dialog -> action bar ---------------- */
 
+function watchCreateDialog() {
+    let scheduled = false;
+
+    function scan() {
+        scheduled = false;
+        if (!isCreateSampleDialogOpen()) return;
+
+        const dialog = findCreateDialogRoot();
+        if (!dialog) return;
+
+        // Per-node guard: a brand-new dialog node = a fresh create session. We
+        // flag the node and clear the store exactly once, when the node first
+        // appears (before the user can open the picker), so a later heading
+        // flicker while the picker is layered on top can never wipe a live
+        // selection. The same node never clears again.
+        if (dialog.dataset[DIALOG_FLAG] === "1") return;
+        dialog.dataset[DIALOG_FLAG] = "1";
+        store.clear();
+
+        dbg("Create Sample dialog detected (fresh session) -> inserting action bar");
+        insertActionBar(dialog);
+    }
+
+    function schedule() {
+        if (scheduled) return;
+        scheduled = true;
+        requestAnimationFrame(scan);
+    }
+
+    const observer = new MutationObserver(schedule);
+    observer.observe(document.documentElement, { childList: true, subtree: true });
+    schedule();
+}
+
+function insertActionBar(dialog) {
     const panel = document.createElement("div");
     panel.className = "cdd-mp-panel";
+
+    const counter = document.createElement("span");
+    counter.className = "cdd-mp-count";
 
     const dryBtn = makeButton("Dry-run Create N Samples", "cdd-mp-btn");
     const liveBtn = makeButton("Live test: create 1 extra sample", "cdd-mp-btn cdd-mp-live");
     const result = document.createElement("div");
     result.className = "cdd-mp-result";
 
-    panel.append(dryBtn, liveBtn, result);
+    panel.append(counter, dryBtn, liveBtn, result);
 
-    // Place after the framework's counter bar if present, else after the grid.
-    const after =
-        grid.nextElementSibling &&
-        grid.nextElementSibling.classList?.contains("cdd-box-selection-bar")
-            ? grid.nextElementSibling
-            : grid;
-    after.insertAdjacentElement("afterend", panel);
+    // Place above the dialog's action buttons (Cancel/Save) if present.
+    const actions = dialog.querySelector(".MuiDialogActions-root");
+    let where;
+    if (actions) {
+        actions.insertAdjacentElement("beforebegin", panel);
+        where = "above .MuiDialogActions-root";
+    } else {
+        dialog.appendChild(panel);
+        where = "appended to dialog";
+    }
+    dbg("action bar inserted:", where);
 
     function refresh() {
-        const n = ctx.count();
-        dryBtn.disabled = n < 2;
-        // Live test stays disabled while a request is in flight.
-        if (liveBtn.dataset.busy !== "1") liveBtn.disabled = n < 1;
+        const { count, positions } = store.getState();
+        counter.textContent = `Selected positions: ${count}`;
+        dryBtn.disabled = count < 2;
+        if (liveBtn.dataset.busy !== "1") liveBtn.disabled = count < 1;
+        dbg("action bar refresh -> count:", count, "| positions:", positions.join(", ") || "(none)");
     }
-    ctx.onChange(refresh);
+
+    const unsubscribe = store.onChange(refresh);
     refresh();
 
-    dryBtn.addEventListener("click", () => runDryRun(grid, ctx, result));
-    liveBtn.addEventListener("click", () => runLiveTest(grid, ctx, result, liveBtn));
+    // If the dialog node is removed, stop listening (avoid a leaked subscriber).
+    const cleanupObserver = new MutationObserver(() => {
+        if (!dialog.isConnected) {
+            unsubscribe();
+            cleanupObserver.disconnect();
+            dbg("action bar dialog removed -> unsubscribed");
+        }
+    });
+    cleanupObserver.observe(document.documentElement, { childList: true, subtree: true });
+
+    dryBtn.addEventListener("click", () => runDryRun(dialog, result));
+    liveBtn.addEventListener("click", () => runLiveTest(dialog, result, liveBtn));
 }
 
 /* ----------------------------- M2: dry-run ----------------------------- */
 
-function runDryRun(grid, ctx, result) {
-    const positions = ctx.selectedPositions;
-    const src = resolvePayloadSource(grid);
+function runDryRun(dialog, result) {
+    const positions = store.getPositions();
+    if (positions.length < 2) {
+        setResult(result, "Select 2+ positions in Pick Location first.", true);
+        return;
+    }
 
+    const src = resolvePayloadSource(dialog);
     if (!src) {
         setResult(
             result,
@@ -120,7 +262,9 @@ function runDryRun(grid, ctx, result) {
     if (src.capturedAt) console.log("captured at:", new Date(src.capturedAt).toISOString());
     console.log(
         "original location value:",
-        loc ? `${loc.raw}  (boxId=${loc.boxId}, position=${loc.position}${loc.viaFallback ? ", via fallback match" : ""})` : "(not found)"
+        loc
+            ? `${loc.raw}  (boxId=${loc.boxId}, position=${loc.position}${loc.viaFallback ? ", via fallback match" : ""})`
+            : "(not found)"
     );
     console.log("selected positions:", positions.join(", "));
 
@@ -136,9 +280,7 @@ function runDryRun(grid, ctx, result) {
         try {
             const built = withReplacedPosition(src.formData, pos);
             okCount++;
-            console.groupCollapsed(
-                `#${i + 1} position ${pos}:  ${built.before}  ->  ${built.after}`
-            );
+            console.groupCollapsed(`#${i + 1} position ${pos}:  ${built.before}  ->  ${built.after}`);
             console.log(previewFormData(built.formData));
             console.groupEnd();
         } catch (err) {
@@ -151,19 +293,18 @@ function runDryRun(grid, ctx, result) {
 }
 
 /* --------------------- M3 (minimal): guarded live test --------------------- *
- * Creates exactly ONE extra sample at the FIRST selected position. Always shows
- * the dry-run preview first, then a confirm() with full before/after, then a
- * single sequential POST. No batch, no parallel, no retry, native Save left
- * alone.                                                                       */
+ * Creates exactly ONE extra sample at the FIRST selected position. Dry-run
+ * preview first, then confirm(), then a single sequential POST. No batch, no
+ * parallel, no retry, native Save left alone.                                  */
 
-async function runLiveTest(grid, ctx, result, liveBtn) {
+async function runLiveTest(dialog, result, liveBtn) {
     if (liveBtn.dataset.busy === "1") return; // double-click guard
 
-    const positions = ctx.selectedPositions;
+    const positions = store.getPositions();
     if (positions.length < 1) return;
     const target = positions[0]; // ONLY the first selected position
 
-    const src = resolvePayloadSource(grid);
+    const src = resolvePayloadSource(dialog);
     if (!src) {
         setResult(result, "No payload source (see dry-run message).", true);
         return;
@@ -189,7 +330,6 @@ async function runLiveTest(grid, ctx, result, liveBtn) {
         return;
     }
 
-    // Always log the dry-run preview of exactly what we will send.
     console.group(`${LOG} LIVE TEST — single POST (1 record)`);
     console.log("payload source:", src.source);
     console.log("POST", src.url);
@@ -239,7 +379,7 @@ async function runLiveTest(grid, ctx, result, liveBtn) {
     } finally {
         console.groupEnd();
         liveBtn.dataset.busy = "0";
-        liveBtn.disabled = ctx.count() < 1;
+        liveBtn.disabled = store.getPositions().length < 1;
     }
 }
 

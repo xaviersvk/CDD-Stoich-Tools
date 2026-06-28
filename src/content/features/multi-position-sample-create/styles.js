@@ -1,8 +1,9 @@
 // content/features/multi-position-sample-create/styles.js
 //
-// CSS injection only for the multi-position panel (dry-run + guarded live-test
-// buttons + result line). The live-test button is visually distinct (amber) to
-// signal that it writes a real record. One <style>, injected once.
+// CSS injection only for the multi-position action bar (counter + Dry-run +
+// guarded Live-test + result line), inserted into the Create Sample dialog
+// footer (above Cancel/Save). The live-test button is amber to signal it writes
+// a real record. One <style>, injected once.
 
 const STYLE_ID = "cdd-mp-style";
 
@@ -17,8 +18,20 @@ export function injectMultiPositionStyles() {
         flex-wrap: wrap;
         align-items: center;
         gap: 8px;
-        margin: 6px 0 10px;
+        /* Sit as a full-width strip above the dialog's action row. */
+        flex-basis: 100%;
+        width: 100%;
+        box-sizing: border-box;
+        margin: 4px 0 8px;
+        padding: 8px 10px;
+        border: 1px solid rgba(10, 98, 230, 0.35);
+        border-radius: 6px;
+        background: rgba(10, 98, 230, 0.06);
         font-size: 13px;
+    }
+    .cdd-mp-count {
+        font-weight: 600;
+        margin-right: 4px;
     }
     .cdd-mp-btn {
         border-radius: 4px;

@@ -28,9 +28,26 @@ function deriveCreateUrl() {
     return m ? `${location.origin}${m[0]}/inventory_samples` : null;
 }
 
-export function resolvePayloadSource(grid) {
-    // 1) FormData(form)
-    const form = grid.closest("form");
+// Find any <form> on the page whose FormData carries inventory_sample[...] keys.
+function findInventorySampleForm() {
+    for (const form of document.querySelectorAll("form")) {
+        try {
+            if (hasInventorySampleKeys(new FormData(form))) return form;
+        } catch {
+            /* ignore unreadable form */
+        }
+    }
+    return null;
+}
+
+// `root` is optional (e.g. the Create Sample dialog) to scope the form search;
+// falls back to a document-wide search, then to the captured request.
+export function resolvePayloadSource(root) {
+    // 1) FormData(form): a form in/around `root`, else anywhere on the page.
+    const form =
+        root?.closest?.("form") ||
+        root?.querySelector?.("form") ||
+        findInventorySampleForm();
     if (form) {
         try {
             const fd = new FormData(form);

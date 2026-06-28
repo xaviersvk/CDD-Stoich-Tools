@@ -159,16 +159,18 @@ function watchCreateDialog() {
         const dialog = findCreateDialogRoot();
         if (!dialog) return;
 
-        // Per-node guard: a brand-new dialog node = a fresh create session. We
-        // flag the node and clear the store exactly once, when the node first
-        // appears (before the user can open the picker), so a later heading
-        // flicker while the picker is layered on top can never wipe a live
-        // selection. The same node never clears again.
+        // Per-node guard: insert the bar once per dialog node.
+        //
+        // We deliberately DO NOT auto-clear the store here. If CDD remounts the
+        // Create dialog as a new node when the picker closes, clearing on a new
+        // node would wipe the selection the user just made in the picker. So the
+        // selection persists until the user opens the picker and changes it, or
+        // hits the explicit Clear button. (Cost: a brand-new create session may
+        // show a stale count until the picker is reopened — acceptable for now.)
         if (dialog.dataset[DIALOG_FLAG] === "1") return;
         dialog.dataset[DIALOG_FLAG] = "1";
-        store.clear();
 
-        dbg("Create Sample dialog detected (fresh session) -> inserting action bar");
+        dbg("Create Sample dialog detected -> inserting action bar");
         insertActionBar(dialog);
     }
 
@@ -192,10 +194,15 @@ function insertActionBar(dialog) {
 
     const dryBtn = makeButton("Dry-run Create N Samples", "cdd-mp-btn");
     const liveBtn = makeButton("Live test: create 1 extra sample", "cdd-mp-btn cdd-mp-live");
+    const clearBtn = makeButton("Clear", "cdd-mp-clear");
+    clearBtn.addEventListener("click", () => {
+        store.clear();
+        dbg("selection cleared via action bar");
+    });
     const result = document.createElement("div");
     result.className = "cdd-mp-result";
 
-    panel.append(counter, dryBtn, liveBtn, result);
+    panel.append(counter, dryBtn, liveBtn, clearBtn, result);
 
     // Place above the dialog's action buttons (Cancel/Save) if present.
     const actions = dialog.querySelector(".MuiDialogActions-root");

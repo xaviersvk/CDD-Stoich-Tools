@@ -52,6 +52,15 @@ export function injectMultiPositionStyles() {
         background: #f59e0b;
         color: #1a1a1a;
     }
+    .cdd-mp-clear {
+        border-radius: 4px;
+        padding: 5px 9px;
+        font-size: 12px;
+        cursor: pointer;
+        border: 1px solid #888;
+        background: none;
+        color: #444;
+    }
     .cdd-mp-result {
         flex-basis: 100%;
         font-size: 12px;

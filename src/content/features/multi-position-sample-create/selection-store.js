@@ -22,6 +22,12 @@ const listeners = new Set();
 
 function emit() {
     const snap = getState();
+    if (DEBUG) {
+        console.log(
+            `[CDD multi-position] (10) selection-store emit -> ${listeners.size} listener(s)`,
+            snap
+        );
+    }
     for (const cb of listeners) {
         try {
             cb(snap);
@@ -29,6 +35,10 @@ function emit() {
             console.warn("[CDD multi-position] store listener failed", err);
         }
     }
+}
+
+export function getListenerCount() {
+    return listeners.size;
 }
 
 export function getState() {
@@ -48,10 +58,13 @@ export function setPositions(next) {
     const same =
         arr.length === positions.length && arr.every((p, i) => p === positions[i]);
     if (DEBUG) {
-        console.log(
-            `${LOG} setPositions(${arr.join(", ") || "(none)"})`,
-            same ? "-> unchanged (no emit)" : `-> stored ${arr.length}, emitting to ${listeners.size} listener(s)`
-        );
+        console.log("[CDD multi-position] (9) selection-store setPositions", {
+            selectedPositions: arr,
+            count: arr.length,
+            boxId,
+            listenerCount: listeners.size,
+            changed: !same,
+        });
     }
     if (same) return;
     positions = arr;

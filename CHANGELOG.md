@@ -16,6 +16,68 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [8.6.0] — 2026-06-29
+
+### Added
+- **Production batch sample creation.** Select multiple empty wells in the
+  "Pick Location" box grid, then click **Create N Samples** in the Create Sample
+  dialog footer — the extension creates all samples with one click.
+  - Arm → click CDD's native Save once → capture the outgoing request as a
+    replay template → tap the response; **hard gate**: nothing replays unless
+    CDD's own first save succeeded (HTTP 2xx).
+  - Remaining positions replayed sequentially via the inventory-samples API
+    (`POST /vaults/…/inventory_samples`); only the location field is swapped,
+    box ID and all form fields are preserved from the captured payload.
+  - **Floating results panel** (`position: fixed`) survives the dialog closing
+    on native Save; shows ✓/✗ per position with a "Retry failed (N)" button.
+  - **Auto page-refresh** on full success — uses `Turbo.visit` (soft nav) when
+    available, falls back to `location.reload()`.
+  - Architecture: inject hook (`create-request-capture.js`) wraps `fetch` /
+    `XMLHttpRequest` once and forwards captured body + tapped response via
+    `postMessage`; `response-store.js` bridges the async gate.
+
+- **Spreadsheet-style well selection** in the "Pick Location" box grid.
+  - **Normal click** — clear previous selection, select the clicked well, set
+    the shift-anchor.
+  - **Ctrl / Cmd click** — toggle one well, keep the rest; anchor unchanged.
+  - **Shift-click** — rectangle from anchor → clicked well (inclusive); only
+    empty wells inside the rect are selected (occupied wells silently skipped);
+    anchor unchanged so repeated Shift-clicks extend from the same origin.
+  - **Deselection priority** — clicking an already-selected well always removes
+    it, regardless of modifier key or occupancy change since selection.
+  - **Occupancy validation** on every grid repaint: selected positions that have
+    since become occupied are automatically evicted from the model.
+  - **Toast** after rect selection: "N positions selected" pill at the bottom of
+    the screen, fades out after ~2 s.
+
+### Changed
+- **Action bar redesign** (Create Sample dialog footer).
+  - No background or box border — a single top divider separates it from the
+    rest of the dialog, matching MUI's own section style.
+  - **Single well selected (N = 1):** the "Create 1 Sample" button is hidden;
+    CDD's native Save handles creation. The selected well coordinate ("D2") is
+    shown instead, with a `ⓘ` icon whose hover tooltip carries the full location
+    hierarchy (`Lab → Fridge → Box → D2`).
+  - **Multiple wells selected (N > 1):** a comma-preview of well labels
+    ("D2, D3, D4…") is shown; `ⓘ` appears only when the list is truncated
+    (> 6 wells) and reveals the complete list on hover. **Create N Samples** and
+    **Clear** buttons follow MUI contained-primary / outlined style (height 36 px,
+    font-weight 500, border-radius 4 px).
+  - **No wells selected:** placeholder text "No destination selected" (grayed,
+    italic); Clear is disabled.
+  - Position numbers are converted to well labels (A1, D3…) using the column
+    count read from the live box grid when the picker opens; the column count
+    persists after the picker closes so the action bar keeps showing labels.
+
+- **Molecule-loading error reporting** — `describeErr()` helper flattens
+  `Error`, Response-like, and plain objects into named string fields
+  (`errorName`, `errorMessage`, `errorStack`, `httpStatus`, etc.) so logs remain
+  readable both in DevTools (expandable object) and in CDD's own error panel
+  (which stringifies its arguments). The same pattern is applied in
+  `inventory-well-structure.js`.
+
+---
+
 ## [8.5.0] — 2026-06-28
 
 ### Added

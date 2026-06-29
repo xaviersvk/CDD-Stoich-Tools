@@ -27,19 +27,18 @@ export const PREFIX_COLORS_STORAGE_KEY = "cddPrefixColors";
  * Prefix parsing — the ONE place that defines what a "prefix" is
  * ------------------------------------------------------------------ */
 
-// How many dashes the prefix spans. "prefix = everything before the Nth dash".
-// Centralised so the rule can be changed in a single line without touching any
-// caller. Today: prefix = everything before the 2nd dash.
-const PREFIX_DASH_INDEX = 2;
+// How many trailing dash-segments to strip, counting from the right.
+//   IXX-CL-0000002-001-SM003035  →  IXX-CL  (3rd dash from right)
+//   PHA-0265229-001-S001095       →  PHA     (3rd dash from right)
+const PREFIX_DASH_INDEX = 3;
 
 /**
  * extractPrefix(sampleId) — pure BUSINESS logic, no UI, no storage.
  *
- * Input : a Sample ID string, e.g. "IXX-DEMO-000048-001-SM000025".
- * Output: the prefix (everything before the 2nd dash), e.g. "IXX-DEMO",
- *         or null when the id is not a string, is blank, or has fewer than two
- *         dashes (we cannot determine a prefix reliably -> callers fall back to
- *         the default appearance).
+ * Input : a Sample ID string, e.g. "IXX-CL-0000002-001-SM003035".
+ * Output: everything before the PREFIX_DASH_INDEX-th dash from the RIGHT,
+ *         or null when the id is not a string, is blank, or has fewer dashes
+ *         than PREFIX_DASH_INDEX.
  *
  * Called by: getColorForSampleId() below, and (indirectly) every visualization.
  * Nobody should re-implement this; that is the whole point of the module.
@@ -50,10 +49,10 @@ export function extractPrefix(sampleId) {
     const trimmed = sampleId.trim();
     if (!trimmed) return null;
 
-    // Walk to the PREFIX_DASH_INDEX-th dash; the prefix is everything before it.
+    // Walk from right; cut at the PREFIX_DASH_INDEX-th dash from the end.
     let cut = -1;
     let seen = 0;
-    for (let i = 0; i < trimmed.length; i += 1) {
+    for (let i = trimmed.length - 1; i >= 0; i -= 1) {
         if (trimmed[i] !== "-") continue;
         seen += 1;
         if (seen === PREFIX_DASH_INDEX) {
@@ -62,7 +61,6 @@ export function extractPrefix(sampleId) {
         }
     }
 
-    // Not enough dashes to locate the prefix boundary.
     if (cut <= 0) return null;
 
     return trimmed.slice(0, cut);

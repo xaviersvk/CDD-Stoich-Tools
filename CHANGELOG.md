@@ -16,7 +16,7 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
-## [8.6.0] — 2026-06-29
+## [9.0.0] — 2026-06-29
 
 ### Added
 - **Production batch sample creation.** Select multiple empty wells in the

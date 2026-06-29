@@ -1,6 +1,8 @@
 # M0 — Multi-position Sample Create: Request-Replay Contract
 
-> Status: **M2 DRY-RUN ✅ · M3 LIVE TEST ✅ · Production N-create: in progress**
+> Status: **PRODUCTION N-CREATE ✅ SHIPPED (v8.6.0)** — one dialog, one click,
+> N samples. Native first save + sequential replay of the rest; replay is gated
+> on the native save succeeding. M2 dry-run / M3 live-test scaffolding removed.
 > Debug session 2026-06-28 resolved the picker→store→action-bar propagation chain.
 > All confirmed facts are marked ✅; open items ⛔; architecture decisions ⚠️.
 
@@ -363,11 +365,60 @@ test blocks if any are present. For the location-only payloads used so far, the 
 trip is lossless. Replay in the content world is simpler (no content→inject protocol
 needed) and confirmed working with M3.
 
-### 11e. Production M3/M4 — design (not yet implemented)
+### 11e. Production batch create — ✅ IMPLEMENTED (v8.6.0)
 
 **Requirement**: User clicks "Create N Samples" once — no manual preliminary native
 save required. First selected position is created by CDD natively; remaining N-1 are
 replayed by the plugin.
+
+**UX decisions (confirmed with the user, 2026-06-29):**
+- **Pure one-click. No confirmation dialog** (no `confirm()`, no two-step arm, no
+  modal). The explicit click on a button that reads the live count is the consent.
+- **Dynamic button label** reflects the count: `Create 2 Samples` / `Create 14
+  Samples` — the count itself is the misclick guard.
+- During the run the bar is **disabled** (no double-click); the native dialog
+  unmounts on Save anyway, so progress lives in the floating panel.
+- **The only hard safety rule: never start replay unless the native first save
+  succeeded.** Implemented as a gate on the captured response's `ok`.
+- **Dry-run and Live-test buttons + the in-page debug panel were removed.** The
+  `FormData(form)` source and `payload-source.js` (the two-source decision) are
+  deleted — capture is the sole, settled payload source.
+
+**Implemented flow** (see `init.js#runCreateN`):
+1. User fills Create Sample dialog, selects N positions in picker.
+2. Clicks "Create N Samples" (no confirmation).
+3. `armResponseWaiter()` then click the native Save button **exactly once**.
+4. Inject `create-request-capture.js` captures the request body (template) and
+   taps the response via a CLONE; posts `CREATE_SAMPLE_CAPTURED` +
+   `CREATE_SAMPLE_RESPONDED` (paired by a `correlationId`).
+5. `waitForNextResponse(30s)` resolves with the native response.
+6. If it **failed / timed out** → show error, replay NOTHING, abort.
+7. If it **succeeded** → first ✓ row in the floating panel.
+8. `nativePosition = findLocationField(capturedTemplate).position`.
+9. `replayPositions = selectedPositions.filter(p => p !== nativePosition)`.
+10. Sequentially: `withReplacedPosition` (box kept, position swapped) →
+    `createInventorySample` → append ✓/✗ row.
+11. Summary line + "Retry failed (N)" button (retries only failures, no native
+    save; re-wires itself after each retry round).
+12. Selection cleared on completion so a reopened dialog can't re-create it.
+    File/Blob payloads abort replay after the native one (can't be replayed).
+
+**Files (as built):**
+- `event-types.js` — `CREATE_SAMPLE_RESPONDED` ✅
+- `inject/hooks/create-request-capture.js` — `correlationId`; fetch/XHR response
+  tap via clone; `onResponse` callback ✅
+- `inject/main.js` — passes `onResponse` → posts `CREATE_SAMPLE_RESPONDED` ✅
+- `content/message-router.js` — routes it → `notifyCreateResponse` ✅
+- `content/features/multi-position-sample-create/response-store.js` (new) —
+  `armResponseWaiter` / `waitForNextResponse(timeout)` / `notifyCreateResponse` ✅
+- `.../init.js` — `runCreateN` orchestrator, `findNativeSaveButton`,
+  `replaySequential`, `wireRetry`; dry-run/live-test/debug-panel removed ✅
+- `.../results-panel.js` (new) — floating `position:fixed` results panel ✅
+- `.../styles.js` — `.cdd-mp-create` button + `.cdd-mp-float*` panel styles ✅
+
+---
+
+#### Original design notes (kept for reference)
 
 **Flow**:
 1. User fills Create Sample dialog, selects N positions in picker.

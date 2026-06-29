@@ -1,72 +1,55 @@
 // content/features/multi-position-sample-create/init.js
 //
-// First consumer of the Box Selection Framework. Two INDEPENDENT lifecycles:
+// Production batch sample creation — the first consumer of the Box Selection
+// Framework. ONE dialog, ONE click, N samples.
 //
-//   A) Pick Location dialog (transient): the box grid lives here. We attach the
-//      SelectionContext for multi-select only, and mirror the selected positions
-//      into a persistent store. NO buttons here — this dialog comes and goes.
+// Two INDEPENDENT lifecycles bridged by the persistent selection-store:
+//
+//   A) Pick Location dialog (transient): the box grid lives here. We attach a
+//      SelectionContext for multi-select and mirror the selected positions into
+//      the store. No buttons here — this dialog comes and goes.
 //
 //   B) Create a New Sample dialog (persistent across the picker opening/closing):
-//      we insert the action bar (counter + Dry-run + Live-test + Clear) into its
+//      we insert an action bar (counter + "Create N Samples" + Clear) into its
 //      footer. It reads the store, so the selection SURVIVES the picker closing.
 //
-// The store (selection-store.js) is the bridge.
+// The production flow when "Create N Samples" is clicked (no preliminary save,
+// no manual capture, no confirm dialog — the explicit click IS the consent):
 //
-// This revision is heavily INSTRUMENTED (DEBUG): every node of the chain
-//   well click -> SelectionContext -> store -> action bar
-// logs under the single prefix "[CDD multi-position]" with a numbered event, and
-// window.__CDD_MULTI_POSITION_DEBUG__ exposes live inspectors. Diagnostics only —
-// no behavior / POST / dry-run / live changes.
+//   1. Arm the response waiter, then click CDD's native Save EXACTLY once.
+//   2. CDD creates the first sample natively; the inject hook captures its
+//      request (the replay template) and taps its response.
+//   3. HARD GATE: replay nothing unless that native first save succeeded.
+//   4. Derive the native position from the captured payload; replay the
+//      remaining selected positions sequentially (location swapped, box kept).
+//   5. Show per-position results in a floating panel (the native Save closed the
+//      dialog, so results can't live in the action bar). Retry only failures.
 //
-// Boundaries: never touches CDD's native Save/submit; capture/replay is private
-// to this feature; the only payload mutation is via cdd-form-data.js.
+// Boundaries: CDD's native Save is untouched outside batch mode; the only
+// payload mutation is via shared/cdd-form-data.js (position only, box id kept).
 
 import { observeBoxGrids } from "../box-selection/init.js";
 import { attachBoxSelection } from "../box-selection/overlay.js";
-import {
-    CELL_SELECTOR,
-    EMPTY_CLASS,
-    isBoxGrid,
-    isFilledCell,
-    readCellPosition,
-    getSelectedBoxId,
-} from "../box-selection/box-grid.js";
+import { isBoxGrid } from "../box-selection/box-grid.js";
 import { injectMultiPositionStyles } from "./styles.js";
-import { resolvePayloadSource } from "./payload-source.js";
 import * as store from "./selection-store.js";
+import { getCapturedCreate } from "./capture-store.js";
+import { armResponseWaiter, waitForNextResponse } from "./response-store.js";
 import {
     findLocationField,
     withReplacedPosition,
-    previewFormData,
+    formDataFromEntries,
 } from "../../../shared/cdd-form-data.js";
 import { createInventorySample } from "../../api/inventory-samples.js";
+import { createResultsPanel } from "./results-panel.js";
 
 const LOG = "[CDD multi-position]";
-const DEBUG = true; // temporary wiring diagnostics; flip off once verified
+const DEBUG = true; // verbose tracing ON for testing; flip off for production
 const DIALOG_FLAG = "cddMpBar";
 const SELECTION_CONTEXT_PROP = "__cddSelectionContext"; // set by overlay.js
+const RESPONSE_TIMEOUT_MS = 30000;
 
-// Module-level debug state — written by picker events (which live outside the
-// action bar closure) and read by the in-page debug panel.
-const _dbg = {
-    lastGridDetect: "—",
-    lastWellClick: "—",
-    lastCtxOnChange: "—",
-    lastBarRefresh: "—",
-};
-let _dbgSpans = null; // set once insertActionBar runs
-
-function _refreshDbgPanel() {
-    if (!_dbgSpans) return;
-    const st = store.getState();
-    _dbgSpans.store.textContent =
-        `count=${st.count}  boxId=${st.boxId ?? "null"}  positions=[${st.positions.join(", ")}]`;
-    _dbgSpans.listeners.textContent = String(store.getListenerCount());
-    _dbgSpans.gridDetect.textContent = _dbg.lastGridDetect;
-    _dbgSpans.wellClick.textContent = _dbg.lastWellClick;
-    _dbgSpans.ctxOnChange.textContent = _dbg.lastCtxOnChange;
-    _dbgSpans.barRefresh.textContent = _dbg.lastBarRefresh;
-}
+let batchRunning = false; // single-flight guard for the whole batch
 
 function dbg(...args) {
     if (DEBUG) console.log(LOG, ...args);
@@ -99,10 +82,27 @@ function findCreateDialogRoot() {
     );
 }
 
+// Find CDD's own primary submit ("Save") button in the dialog actions, never our
+// own buttons and never Cancel/Close. Prefer an exact "Save", then other commit
+// verbs as a fallback in case CDD relabels it.
+function findNativeSaveButton(dialog) {
+    const scope = dialog.querySelector(".MuiDialogActions-root") || dialog;
+    const text = (b) => (b.textContent || "").trim();
+    const buttons = [...scope.querySelectorAll("button")].filter(
+        (b) => !b.className.includes("cdd-mp-") && !b.disabled
+    );
+    const candidates = buttons.filter((b) => !/\b(cancel|close|back|discard)\b/i.test(text(b)));
+    return (
+        candidates.find((b) => /^save$/i.test(text(b))) ||
+        candidates.find((b) => /\bsave\b/i.test(text(b))) ||
+        candidates.find((b) => /\b(create|add|submit|ok|done|apply)\b/i.test(text(b))) ||
+        null
+    );
+}
+
 /* ------------------------------- entry ------------------------------- */
 
 export function initMultiPositionSampleCreate() {
-    dbg("(1) initMultiPositionSampleCreate started");
     injectMultiPositionStyles();
     installDebugHelpers();
     watchPickerGrids();
@@ -113,126 +113,36 @@ export function initMultiPositionSampleCreate() {
 
 function watchPickerGrids() {
     observeBoxGrids((grid) => {
-        console.log("[CDD mp] GRID FOUND", grid);
-        // MUI portals render picker content as a direct child of <body>, so
-        // grid.closest('[role="dialog"]') returns null even when the picker is
-        // visually open. Gate on observable facts instead:
-        //   1. Create Sample dialog is open (confirmed by heading text), OR
-        //   2. A LocationBoxPicker ancestor or peer dialog exists in the document.
+        // MUI portals render the picker grid at <body> level, so it has no
+        // [role="dialog"] ancestor. Gate on observable facts instead: the Create
+        // dialog is open, or a LocationPicker ancestor/peer exists.
         const createOpen = isCreateSampleDialogOpen();
         const pickerLike =
             !!grid.closest('.LocationBoxPicker, [class*="LocationBoxPicker"], [class*="LocationPicker"]') ||
             !!document.querySelector('[class*="LocationPickerDialog"], [class*="LocationBoxPicker"], [class*="LocationPicker"]');
+        if (!createOpen && !pickerLike) return;
 
-        dbg("(4/5) grid detected | isBoxGrid:", isBoxGrid(grid),
-            "| createOpen:", createOpen, "| pickerLike:", pickerLike,
-            "| headings:", headings(), grid);
-
-        attachClickLogger(grid);
-        watchPickerClose(grid);
-
-        if (!createOpen && !pickerLike) {
-            _dbg.lastGridDetect = "skipped (Create not open, no picker ancestor)";
-            _refreshDbgPanel();
-            dbg("(5a) grid IGNORED by gate (Create dialog not open and no picker-like ancestor)");
-            return;
-        }
-        _dbg.lastGridDetect = `attaching | createOpen=${createOpen} pickerLike=${pickerLike} [${headings().join(" | ")}]`;
-        _refreshDbgPanel();
-
-        console.log("[CDD mp] GATE PASSED — calling attachBoxSelection on", grid);
-        dbg("(6) attachBoxSelection called");
         const ctx = attachBoxSelection(grid, { showCounter: false });
-        console.log("[CDD mp] CTX result:", ctx);
-        dbg("(6a) attachBoxSelection result:", ctx ? "SelectionContext ok" : "NULL");
-        if (!ctx) {
-            console.error("[CDD mp] CTX IS NULL — attachBoxSelection returned null", grid);
-            return;
-        }
-        console.log("[CDD mp] CTX OK");
+        if (!ctx) return;
 
         // Restore any previous selection so reopening the picker shows it.
         const prev = store.getPositions();
         if (prev.length) {
             try {
                 ctx._model.replaceSelection(prev);
-                dbg("(6b) restored previous selection into picker:", prev.join(", "));
             } catch {
                 /* escape hatch; ignore if unavailable */
             }
         }
         store.setBoxId(ctx.boxId);
 
-        // Mirror picker selection into the persistent store.
+        // Mirror picker selection into the persistent store on every change.
         ctx.onChange((c) => {
-            const selectedPositions = c.selectedPositions;
-            const boxId = c.boxId;
-            _dbg.lastCtxOnChange = `positions=[${selectedPositions.join(",")}] boxId=${boxId}`;
-            _refreshDbgPanel();
-            dbg("(8) SelectionContext onChange fired", {
-                selectedPositions,
-                count: selectedPositions.length,
-                boxId,
-            });
-            store.setBoxId(boxId);
-            store.setPositions(selectedPositions);
+            store.setBoxId(c.boxId);
+            store.setPositions(c.selectedPositions);
         });
-        ctx.onChange(() => console.log("[CDD mp] CTX CHANGED (raw onChange)"));
-        dbg("(6c) ctx.onChange wired -> store; store listener count now:", store.getListenerCount());
-
-        // Best-effort "OK clicked" log: the picker dialog's confirm button.
-        const pickerRoot = grid.closest('[role="dialog"], .MuiDialog-root, .MuiPaper-root');
-        if (pickerRoot && pickerRoot.dataset.cddMpOkLog !== "1") {
-            pickerRoot.dataset.cddMpOkLog = "1";
-            pickerRoot.addEventListener(
-                "click",
-                (e) => {
-                    const btn = e.target.closest("button");
-                    if (btn && /\b(ok|done|apply|select|save)\b/i.test(btn.textContent || "")) {
-                        dbg("(12) Pick Location OK clicked:", (btn.textContent || "").trim(), "| store:", store.getState());
-                    }
-                },
-                true
-            );
-        }
+        dbg("picker grid attached; selection mirrored to store");
     });
-}
-
-// Passive, capture-phase logger for EVERY well click (incl. blocked occupied).
-function attachClickLogger(grid) {
-    if (grid.dataset.cddMpClickLog === "1") return;
-    grid.dataset.cddMpClickLog = "1";
-    grid.addEventListener(
-        "click",
-        (e) => {
-            const cell = e.target.closest(CELL_SELECTOR);
-            if (!cell || !grid.contains(cell)) return;
-            const isFilled = isFilledCell(cell);
-            const _pos = readCellPosition(cell);
-            const _isEmpty = cell.classList.contains(EMPTY_CLASS) || !isFilled;
-            const _bId = getSelectedBoxId();
-            _dbg.lastWellClick = `pos=${_pos} isEmpty=${_isEmpty} boxId=${_bId}`;
-            _refreshDbgPanel();
-            dbg("(7) well click detected", {
-                position: _pos,
-                isEmpty: _isEmpty,
-                isFilled,
-                boxId: _bId,
-            });
-        },
-        true
-    );
-}
-
-// Log when a picker grid is removed from the DOM (picker closed).
-function watchPickerClose(grid) {
-    const obs = new MutationObserver(() => {
-        if (!grid.isConnected) {
-            dbg("(13) Pick Location closed (grid removed) | store still holds:", store.getState());
-            obs.disconnect();
-        }
-    });
-    obs.observe(document.documentElement, { childList: true, subtree: true });
 }
 
 /* ---------------- lifecycle B: create dialog -> action bar ---------------- */
@@ -246,11 +156,9 @@ function watchCreateDialog() {
 
         const dialog = findCreateDialogRoot();
         if (!dialog) return;
-
         if (dialog.dataset[DIALOG_FLAG] === "1") return;
         dialog.dataset[DIALOG_FLAG] = "1";
 
-        dbg("(2) Create Sample dialog detected | headings:", headings());
         insertActionBar(dialog);
     }
 
@@ -272,77 +180,260 @@ function insertActionBar(dialog) {
     const counter = document.createElement("span");
     counter.className = "cdd-mp-count";
 
-    const dryBtn = makeButton("Dry-run Create N Samples", "cdd-mp-btn");
-    const liveBtn = makeButton("Live test: create 1 extra sample", "cdd-mp-btn cdd-mp-live");
+    const createBtn = makeButton("Create Samples", "cdd-mp-btn cdd-mp-create");
     const clearBtn = makeButton("Clear", "cdd-mp-clear");
-    clearBtn.addEventListener("click", () => {
-        store.clear();
-        dbg("selection cleared via action bar");
-    });
+    clearBtn.addEventListener("click", () => store.clear());
+
     const result = document.createElement("div");
     result.className = "cdd-mp-result";
 
-    // In-page debug panel — visible without DevTools console access.
-    const dbgPanel = document.createElement("div");
-    dbgPanel.className = "cdd-mp-debug";
-
-    function makeDbgRow(label) {
-        const row = document.createElement("div");
-        const lbl = document.createElement("b");
-        lbl.textContent = label + ": ";
-        const val = document.createElement("span");
-        row.append(lbl, val);
-        dbgPanel.appendChild(row);
-        return val;
-    }
-
-    _dbgSpans = {
-        store:       makeDbgRow("Store"),
-        listeners:   makeDbgRow("Listeners"),
-        gridDetect:  makeDbgRow("Last grid detect"),
-        wellClick:   makeDbgRow("Last well click"),
-        ctxOnChange: makeDbgRow("Last ctx.onChange"),
-        barRefresh:  makeDbgRow("Last bar refresh"),
-    };
-
-    const refreshDbgBtn = makeButton("Refresh debug", "cdd-mp-clear");
-    refreshDbgBtn.addEventListener("click", _refreshDbgPanel);
-    dbgPanel.appendChild(refreshDbgBtn);
-
-    panel.append(counter, dryBtn, liveBtn, clearBtn, result, dbgPanel);
+    panel.append(counter, createBtn, clearBtn, result);
 
     const actions = dialog.querySelector(".MuiDialogActions-root");
-    let where;
-    if (actions) {
-        actions.insertAdjacentElement("beforebegin", panel);
-        where = "above .MuiDialogActions-root";
-    } else {
-        dialog.appendChild(panel);
-        where = "appended to dialog";
-    }
-    dbg("(3) action bar inserted:", where);
+    if (actions) actions.insertAdjacentElement("beforebegin", panel);
+    else dialog.appendChild(panel);
+
+    const bar = { panel, createBtn, clearBtn, result };
 
     function refresh() {
-        const { count, positions, boxId } = store.getState();
-        counter.textContent = `Selected positions: ${count}`;
-        dryBtn.disabled = count < 2;
-        if (liveBtn.dataset.busy !== "1") liveBtn.disabled = count < 1;
-        _dbg.lastBarRefresh = `count=${count} positions=[${positions.join(",")}]`;
-        _refreshDbgPanel();
-        dbg("(11/14) action bar subscription fired / refreshed", {
-            displayedCount: count,
-            storeCount: store.getState().count,
-            positions,
-            boxId,
-        });
+        const { count } = store.getState();
+        counter.textContent =
+            count === 1 ? "1 position selected" : `${count} positions selected`;
+        createBtn.textContent = count === 1 ? "Create 1 Sample" : `Create ${count} Samples`;
+        if (createBtn.dataset.busy !== "1") createBtn.disabled = count < 1 || batchRunning;
     }
 
     store.onChange(refresh);
     refresh();
-    dbg("(3a) action bar subscribed to store; store listener count now:", store.getListenerCount());
 
-    dryBtn.addEventListener("click", () => runDryRun(dialog, result));
-    liveBtn.addEventListener("click", () => runLiveTest(dialog, result, liveBtn));
+    createBtn.addEventListener("click", () => runCreateN(dialog, bar));
+}
+
+/* --------------------------- the batch orchestrator --------------------------- */
+
+async function runCreateN(dialog, bar) {
+    if (batchRunning) return;
+
+    const positions = store.getPositions();
+    if (positions.length < 1) return;
+
+    const saveBtn = findNativeSaveButton(dialog);
+    if (!saveBtn) {
+        setResult(bar.result, "Couldn't find CDD's native Save button — aborting.", true);
+        return;
+    }
+
+    // Lock the bar (the dialog itself unmounts the moment Save succeeds).
+    batchRunning = true;
+    bar.createBtn.dataset.busy = "1";
+    bar.createBtn.disabled = true;
+    bar.clearBtn.disabled = true;
+    setResult(bar.result, "Creating…", false);
+
+    const panel = createResultsPanel(positions.length);
+    panel.setBusy(true);
+    panel.setStatus("Creating the first sample via CDD…");
+
+    dbg("runCreateN: start", { positions, boxId: store.getBoxId(), saveBtn: (saveBtn.textContent || "").trim() });
+
+    // Arm BEFORE clicking so the native response can't be missed.
+    armResponseWaiter();
+    const respPromise = waitForNextResponse(RESPONSE_TIMEOUT_MS);
+
+    // Trigger exactly one native save.
+    dbg("clicking native Save once");
+    try {
+        saveBtn.click();
+    } catch (err) {
+        panel.setStatus("Couldn't trigger CDD's Save button — nothing was created.");
+        panel.setError(String(err?.message || err));
+        panel.setBusy(false);
+        finishBatch(bar);
+        return;
+    }
+
+    const resp = await respPromise;
+    dbg("native response", { ok: resp?.ok, status: resp?.status, timedOut: resp?.timedOut, correlationId: resp?.correlationId });
+
+    // HARD SAFETY GATE: never replay unless the native first save succeeded.
+    if (!resp || !resp.ok) {
+        const detail = resp?.timedOut
+            ? resp.errorText
+            : resp?.networkError
+                ? `Network error: ${resp.bodyText || "request failed"}.`
+                : `CDD returned HTTP ${resp?.status || 0}.`;
+        panel.setStatus("First sample was NOT created — nothing else was sent.");
+        panel.setError(`${detail} Fix the form and try again.`);
+        panel.setBusy(false);
+        finishBatch(bar);
+        return;
+    }
+
+    // Native first save succeeded — pull the captured request as the template.
+    const cap = getCapturedCreate();
+    if (resp.correlationId != null && cap?.correlationId != null && resp.correlationId !== cap.correlationId) {
+        dbg("warning: response/capture correlationId mismatch", resp.correlationId, cap?.correlationId);
+    }
+
+    const template = buildTemplateFormData(cap);
+    if (!template) {
+        panel.setStatus("First sample created, but its request wasn't captured — cannot replay.");
+        panel.setError("No usable payload template. The remaining positions were not created.");
+        panel.setBusy(false);
+        store.clear();
+        finishBatch(bar);
+        return;
+    }
+
+    const loc = findLocationField(template);
+    const nativePosition = loc?.position ?? null;
+
+    // Record the native first sample as the first result row.
+    panel.addRow({ position: nativePosition ?? "?", ok: true, label: parseCreatedLabel(resp) });
+
+    // If we can't read the native location from the captured payload, we can't
+    // tell which selected position CDD just created — replaying would risk an
+    // extra record (and every replay would fail to find the field anyway). Stop.
+    if (nativePosition == null) {
+        panel.setStatus("First sample created. Remaining positions skipped.");
+        panel.setError("Couldn't read the location field from CDD's captured request, so the rest were not created.");
+        panel.setBusy(false);
+        store.clear();
+        finishBatch(bar);
+        return;
+    }
+
+    // File/Blob fields can't be faithfully replayed — stop after the native one.
+    if (cap?.body?.kind === "formdata" && cap.body.hadNonString) {
+        panel.setStatus("First sample created. Remaining positions skipped.");
+        panel.setError("The request carries file/blob fields that can't be replayed safely.");
+        panel.setBusy(false);
+        store.clear();
+        finishBatch(bar);
+        return;
+    }
+
+    // Replay every selected position EXCEPT the one CDD just created natively.
+    // (If the native position somehow wasn't in the selection, nothing is
+    // dropped — we still create exactly the selected set.)
+    const replayPositions = positions.filter((p) => String(p) !== String(nativePosition));
+    panel.setTotal(1 + replayPositions.length);
+    dbg("native created", { nativePosition, replayPositions, url: cap.url });
+
+    const url = cap.url;
+    const failed = await replaySequential(replayPositions, template, url, panel);
+
+    const okCount = 1 + replayPositions.length - failed.length;
+    panel.setBusy(false);
+    if (failed.length === 0) {
+        panel.setStatus(`Done. ${okCount} sample${okCount === 1 ? "" : "s"} created. Refreshing page…`);
+        schedulePageRefresh(1500);
+    } else {
+        panel.setStatus(`Done. ${okCount} created, ${failed.length} failed.`);
+        wireRetry(panel, failed, template, url);
+    }
+
+    // Selection is consumed — clear so a reopened dialog can't re-create it.
+    store.clear();
+    finishBatch(bar);
+}
+
+// Replay a list of positions sequentially. Returns the positions that failed.
+async function replaySequential(positions, template, url, panel) {
+    const failed = [];
+    for (const pos of positions) {
+        panel.setStatus(`Creating sample at position ${pos}…`);
+
+        let built;
+        try {
+            built = withReplacedPosition(template, pos);
+        } catch (err) {
+            panel.addRow({ position: pos, ok: false, label: `payload error: ${err.message}` });
+            failed.push(pos);
+            continue;
+        }
+
+        let res;
+        try {
+            res = await createInventorySample(url, built.formData);
+        } catch (err) {
+            panel.addRow({ position: pos, ok: false, label: `error: ${err.message}` });
+            failed.push(pos);
+            continue;
+        }
+
+        if (res.ok) {
+            const label =
+                res.sampleIdentifier || (res.sampleId != null ? `id ${res.sampleId}` : "created");
+            panel.addRow({ position: pos, ok: true, label });
+        } else {
+            panel.addRow({
+                position: pos,
+                ok: false,
+                label: `HTTP ${res.status}: ${truncate(res.errorText, 120)}`,
+            });
+            failed.push(pos);
+        }
+    }
+    return failed;
+}
+
+// Wire (and re-wire after each retry) the "Retry failed (N)" button.
+function wireRetry(panel, failed, template, url) {
+    if (!failed.length) return;
+    panel.showRetry(failed.length, async () => {
+        panel.hideRetry();
+        panel.setBusy(true);
+        panel.setStatus(`Retrying ${failed.length} failed position${failed.length === 1 ? "" : "s"}…`);
+        const stillFailed = await replaySequential(failed, template, url, panel);
+        const recovered = failed.length - stillFailed.length;
+        panel.setBusy(false);
+        panel.setStatus(
+            stillFailed.length === 0
+                ? `Retry complete — ${recovered} created. All positions done.`
+                : `Retry — ${recovered} created, ${stillFailed.length} still failing.`
+        );
+        wireRetry(panel, stillFailed, template, url);
+    });
+}
+
+function finishBatch(bar) {
+    batchRunning = false;
+    // The dialog (and this bar) is usually gone after a successful Save; these
+    // writes are harmless no-ops in that case, and restore the bar otherwise.
+    if (bar?.createBtn) {
+        bar.createBtn.dataset.busy = "0";
+        bar.createBtn.disabled = store.getPositions().length < 1;
+    }
+    if (bar?.clearBtn) bar.clearBtn.disabled = false;
+    setResult(bar?.result, "", false);
+}
+
+/* ------------------------------ payload helpers ------------------------------ */
+
+// Rebuild a replayable FormData from the captured request record, or null if the
+// body kind can't be faithfully mutated/replayed.
+function buildTemplateFormData(cap) {
+    const kind = cap?.body?.kind;
+    if (kind === "formdata") return formDataFromEntries(cap.body.entries);
+    if (kind === "urlencoded") {
+        const fd = new FormData();
+        for (const [k, v] of new URLSearchParams(cap.body.text)) fd.append(k, v);
+        return fd;
+    }
+    return null; // raw string / unknown — cannot reliably swap the location field
+}
+
+// Best-effort human label for the natively-created sample from its response body.
+function parseCreatedLabel(resp) {
+    try {
+        const j = JSON.parse(resp.bodyText || "");
+        const id = j?.sample_identifier || (j?.id != null ? `id ${j.id}` : null);
+        const locPos = j?.location?.position;
+        return id ? `${id}${locPos != null ? ` @ ${locPos}` : ""} (native)` : "created (native)";
+    } catch {
+        return "created (native)";
+    }
 }
 
 /* --------------------------- window debug helpers --------------------------- */
@@ -352,6 +443,7 @@ function installDebugHelpers() {
     window.__CDD_MULTI_POSITION_DEBUG__ = {
         getStore: () => store.getState(),
         getListenersCount: () => store.getListenerCount(),
+        isBatchRunning: () => batchRunning,
         dumpDialogs: () => ({
             headings: headings(),
             createOpen: isCreateSampleDialogOpen(),
@@ -375,157 +467,9 @@ function installDebugHelpers() {
                         hasContext: !!ctx,
                         selected: ctx ? ctx.selectedPositions : null,
                         boxId: ctx ? ctx.boxId : null,
-                        clickLoggerAttached: g.dataset.cddMpClickLog === "1",
                     };
                 }),
     };
-    dbg("debug helpers installed: window.__CDD_MULTI_POSITION_DEBUG__");
-}
-
-/* ----------------------------- M2: dry-run ----------------------------- */
-
-function runDryRun(dialog, result) {
-    const positions = store.getPositions();
-    if (positions.length < 2) {
-        setResult(result, "Select 2+ positions in Pick Location first.", true);
-        return;
-    }
-
-    const src = resolvePayloadSource(dialog);
-    if (!src) {
-        setResult(
-            result,
-            "No payload source. FormData(form) had no inventory_sample keys and no create request was captured yet — create one sample natively first, then retry.",
-            true
-        );
-        console.warn(`${LOG} dry-run: no payload source`);
-        return;
-    }
-
-    const loc = findLocationField(src.formData);
-
-    console.group(`${LOG} DRY-RUN — nothing will be sent`);
-    console.log("payload source:", src.source);
-    console.log("target URL:", src.url);
-    if (src.capturedAt) console.log("captured at:", new Date(src.capturedAt).toISOString());
-    console.log(
-        "original location value:",
-        loc
-            ? `${loc.raw}  (boxId=${loc.boxId}, position=${loc.position}${loc.viaFallback ? ", via fallback match" : ""})`
-            : "(not found)"
-    );
-    console.log("selected positions:", positions.join(", "));
-
-    if (!loc) {
-        console.warn("  Location field not found — cannot generate payloads.");
-        console.groupEnd();
-        setResult(result, "Location field not found in payload (see console).", true);
-        return;
-    }
-
-    let okCount = 0;
-    positions.forEach((pos, i) => {
-        try {
-            const built = withReplacedPosition(src.formData, pos);
-            okCount++;
-            console.groupCollapsed(`#${i + 1} position ${pos}:  ${built.before}  ->  ${built.after}`);
-            console.log(previewFormData(built.formData));
-            console.groupEnd();
-        } catch (err) {
-            console.warn(`  position ${pos} failed:`, err.message);
-        }
-    });
-    console.groupEnd();
-
-    setResult(result, `Dry-run generated ${okCount} payloads. Nothing was sent.`, false);
-}
-
-/* --------------------- M3 (minimal): guarded live test --------------------- */
-
-async function runLiveTest(dialog, result, liveBtn) {
-    if (liveBtn.dataset.busy === "1") return; // double-click guard
-
-    const positions = store.getPositions();
-    if (positions.length < 1) return;
-    const target = positions[0]; // ONLY the first selected position
-
-    const src = resolvePayloadSource(dialog);
-    if (!src) {
-        setResult(result, "No payload source (see dry-run message).", true);
-        return;
-    }
-    if (src.hadNonString) {
-        setResult(
-            result,
-            "Captured payload contains file/blob fields that can't be faithfully replayed — aborting live test.",
-            true
-        );
-        return;
-    }
-    if (!src.url) {
-        setResult(result, "No target URL resolved — aborting live test.", true);
-        return;
-    }
-
-    let built;
-    try {
-        built = withReplacedPosition(src.formData, target);
-    } catch (err) {
-        setResult(result, `Location field not found: ${err.message}`, true);
-        return;
-    }
-
-    console.group(`${LOG} LIVE TEST — single POST (1 record)`);
-    console.log("payload source:", src.source);
-    console.log("POST", src.url);
-    console.log("box id:", built.boxId, "| target position:", target);
-    console.log("location:", built.before, "->", built.after);
-    console.log(previewFormData(built.formData));
-
-    const proceed = window.confirm(
-        "LIVE TEST — create ONE extra sample?\n\n" +
-            `Source:        ${src.source}\n` +
-            `URL:           ${src.url}\n` +
-            `Box id:        ${built.boxId}\n` +
-            `Target pos:    ${target}\n` +
-            `Original loc:  ${built.before}\n` +
-            `New loc:       ${built.after}\n\n` +
-            "This creates 1 REAL record (test vault). Proceed?"
-    );
-    if (!proceed) {
-        console.log("cancelled by user");
-        console.groupEnd();
-        setResult(result, "Live test cancelled.", false);
-        return;
-    }
-
-    liveBtn.dataset.busy = "1";
-    liveBtn.disabled = true;
-    setResult(result, `Live test: creating 1 sample at position ${target}…`, false);
-
-    try {
-        const res = await createInventorySample(src.url, built.formData);
-        console.log("response:", res);
-        if (res.ok) {
-            const locValue =
-                res.location?.value ||
-                (res.location ? `${res.location.id},${res.location.position}` : built.after);
-            setResult(
-                result,
-                `✓ Created ${res.sampleIdentifier ?? "(id " + res.sampleId + ")"} at ${locValue}. 1 record created.`,
-                false
-            );
-        } else {
-            setResult(result, `✗ Failed (HTTP ${res.status}): ${res.errorText}`, true);
-        }
-    } catch (err) {
-        console.error(`${LOG} live test error`, err);
-        setResult(result, `✗ Error: ${err.message}`, true);
-    } finally {
-        console.groupEnd();
-        liveBtn.dataset.busy = "0";
-        liveBtn.disabled = store.getPositions().length < 1;
-    }
 }
 
 /* ------------------------------- helpers ------------------------------- */
@@ -539,6 +483,30 @@ function makeButton(label, className) {
 }
 
 function setResult(el, text, isError) {
-    el.textContent = text;
+    if (!el) return;
+    el.textContent = text || "";
     el.classList.toggle("cdd-mp-error", !!isError);
+}
+
+function truncate(s, max) {
+    const str = String(s ?? "");
+    return str.length > max ? `${str.slice(0, max)}…` : str;
+}
+
+// Navigate to the current URL using CDD's own Turbo router when available
+// (avoids a full browser reload and keeps the Turbo session alive), or fall
+// back to a hard reload. Called only on a fully successful batch so the user
+// sees the new samples without a manual refresh.
+function schedulePageRefresh(delayMs) {
+    setTimeout(() => {
+        try {
+            if (typeof window.Turbo?.visit === "function") {
+                window.Turbo.visit(location.href, { action: "replace" });
+            } else {
+                location.reload();
+            }
+        } catch {
+            location.reload();
+        }
+    }, delayMs);
 }

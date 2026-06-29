@@ -27,7 +27,6 @@ export function createSelectionModel() {
     }
 
     function emit() {
-        console.log("[CDD model] emit() — listeners:", listeners.size, "| positions:", getSelectedPositions());
         const snapshot = getSelectedPositions();
         for (const cb of listeners) {
             // Never let one bad listener break the others or the caller.
@@ -59,10 +58,7 @@ export function createSelectionModel() {
     }
 
     function toggle(position) {
-        console.log("[CDD model] toggle(", position, ") — before:", getSelectedPositions(), "| listeners:", listeners.size);
-        const result = has(position) ? (deselect(position), false) : (select(position), true);
-        console.log("[CDD model] toggle after:", getSelectedPositions());
-        return result;
+        return has(position) ? (deselect(position), false) : (select(position), true);
     }
 
     function clear() {

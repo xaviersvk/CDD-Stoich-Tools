@@ -116,12 +116,22 @@ const tryParseText = createTextParser(processJsonPayload);
   installXhrHook(tryParseText);
 
   // Snapshot outgoing create-sample requests (read-only) so the content side has
-  // a faithful payload template for the multi-position feature.
-  installCreateRequestCapture((record) => {
-    try {
-      post(EVENTS.CREATE_SAMPLE_CAPTURED, record);
-    } catch (err) {
-      console.debug("[CDD Stoich Tools] create capture post failed", err);
+  // a faithful payload template, AND tap their responses so the batch
+  // orchestrator can confirm the native first save succeeded before replaying.
+  installCreateRequestCapture(
+    (record) => {
+      try {
+        post(EVENTS.CREATE_SAMPLE_CAPTURED, record);
+      } catch (err) {
+        console.debug("[CDD Stoich Tools] create capture post failed", err);
+      }
+    },
+    (record) => {
+      try {
+        post(EVENTS.CREATE_SAMPLE_RESPONDED, record);
+      } catch (err) {
+        console.debug("[CDD Stoich Tools] create response post failed", err);
+      }
     }
-  });
+  );
 })();

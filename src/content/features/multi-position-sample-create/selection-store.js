@@ -14,7 +14,7 @@
 // What it must NOT do: DOM, network, payload mutation. Pure state + pub/sub.
 
 const LOG = "[CDD multi-position store]";
-const DEBUG = true; // temporary propagation diagnostics
+const DEBUG = true; // propagation diagnostics ON for testing; flip off for production
 
 let positions = [];
 let boxId = null;

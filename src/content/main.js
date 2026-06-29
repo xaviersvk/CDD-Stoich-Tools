@@ -105,9 +105,10 @@ function init() {
   // create, Phase 2) calls observeBoxGrids() to opt a grid into selection.
   initBoxSelection();
 
-  // Multi-position sample create (Phase 2): M2 dry-run + guarded single live
-  // test. Consumes the Box Selection SelectionContext; never touches CDD's
-  // native Save flow.
+  // Multi-position sample create (Phase 3): production batch create — one click
+  // creates N samples (native first save + sequential replay of the rest).
+  // Consumes the Box Selection SelectionContext; CDD's native Save is untouched
+  // outside batch mode.
   initMultiPositionSampleCreate();
 
   // Load the prefix->colour map into the in-memory cache and keep it live.

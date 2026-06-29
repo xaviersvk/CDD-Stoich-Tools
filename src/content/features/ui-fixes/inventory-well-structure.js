@@ -161,9 +161,15 @@ function recordTooltipPrefix(tooltipEl) {
 function scan() {
     document.querySelectorAll(TOOLTIP_SELECTOR).forEach((el) => {
         recordTooltipPrefix(el);
-        augmentTooltip(el).catch((err) =>
-            console.warn(`${LOG_PREFIX} tooltip augment failed`, err)
-        );
+        augmentTooltip(el).catch((err) => {
+            const mol = parseMoleculeFromTooltip(el) ?? {};
+            console.error(LOG_PREFIX, "Tooltip augment failed", {
+                ...mol,
+                errorName: err instanceof Error ? err.name : undefined,
+                errorMessage: err instanceof Error ? err.message : String(err),
+                errorStack: err instanceof Error ? err.stack : undefined,
+            });
+        });
     });
 }
 

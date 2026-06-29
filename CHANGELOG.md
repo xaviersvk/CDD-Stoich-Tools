@@ -76,6 +76,17 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   (which stringifies its arguments). The same pattern is applied in
   `inventory-well-structure.js`.
 
+### Fixed
+- **Prefix extraction counts dashes from the right, not the left.**
+  The previous algorithm found the 2nd dash from the left, which worked for
+  short codes (`IXX-SM-…` → `IXX-SM`) but misidentified the prefix for longer
+  compound codes where the project identifier itself contains dashes
+  (`PHA-0265229-001-S001095` was yielding `PHA-0265229` instead of `PHA`;
+  `IXX-CL-0000002-001-SM003035` was yielding `IXX-CL-0000002` instead of
+  `IXX-CL`). The fixed rule cuts at the **3rd dash from the right**, which
+  always strips the trailing `{compound}-{batch}-{sample}` suffix regardless
+  of how many segments the project prefix contains.
+
 ---
 
 ## [8.5.0] — 2026-06-28

@@ -177,17 +177,25 @@ function insertActionBar(dialog) {
     const panel = document.createElement("div");
     panel.className = "cdd-mp-panel";
 
+    // Row 1: selection counter (label)
     const counter = document.createElement("span");
     counter.className = "cdd-mp-count";
 
-    const createBtn = makeButton("Create Samples", "cdd-mp-btn cdd-mp-create");
+    // Row 2: [Clear] ··· [Create N Samples]
+    const actionsRow = document.createElement("div");
+    actionsRow.className = "cdd-mp-actions";
+
     const clearBtn = makeButton("Clear", "cdd-mp-clear");
     clearBtn.addEventListener("click", () => store.clear());
 
+    const createBtn = makeButton("Create Samples", "cdd-mp-btn");
+    actionsRow.append(clearBtn, createBtn);
+
+    // Error/status line — hidden unless needed (e.g. native Save not found)
     const result = document.createElement("div");
     result.className = "cdd-mp-result";
 
-    panel.append(counter, createBtn, clearBtn, result);
+    panel.append(counter, actionsRow, result);
 
     const actions = dialog.querySelector(".MuiDialogActions-root");
     if (actions) actions.insertAdjacentElement("beforebegin", panel);

@@ -15,64 +15,105 @@ export function injectMultiPositionStyles() {
     style.id = STYLE_ID;
     style.textContent = `
     /* ---------- action bar (inside the Create Sample dialog) ---------- */
+
+    /* Sits above .MuiDialogActions-root; blends in as a native dialog section.
+       No background or border box — a top divider is the only separator. */
     .cdd-mp-panel {
         display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 8px;
-        flex-basis: 100%;
+        flex-direction: column;
+        gap: 6px;
         width: 100%;
         box-sizing: border-box;
-        margin: 4px 0 8px;
-        padding: 8px 10px;
-        border: 1px solid rgba(10, 98, 230, 0.35);
-        border-radius: 6px;
-        background: rgba(10, 98, 230, 0.06);
-        font-size: 13px;
+        padding: 12px 24px 4px;
+        border-top: 1px solid rgba(0, 0, 0, 0.12);
+        font-family: inherit;
+        font-size: 0.875rem;
     }
+
+    /* "N positions selected" — MUI caption style */
     .cdd-mp-count {
-        font-weight: 600;
-        margin-right: 4px;
+        font-size: 0.75rem;
+        line-height: 1.66;
+        letter-spacing: 0.03333em;
+        color: rgba(0, 0, 0, 0.6);
+        user-select: none;
     }
-    .cdd-mp-btn {
-        border-radius: 4px;
-        padding: 6px 14px;
-        font-size: 13px;
-        font-weight: 600;
-        cursor: pointer;
-        border: 1px solid #0a62e6;
-        background: #0a62e6;
-        color: #fff;
+
+    /* Button row: Clear left, Create N Samples right */
+    .cdd-mp-actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        flex-wrap: wrap;
     }
-    .cdd-mp-btn:hover:not([disabled]) {
-        background: #0950bd;
-        border-color: #0950bd;
-    }
-    .cdd-mp-btn[disabled] {
-        opacity: 0.45;
-        cursor: default;
-    }
+
+    /* Clear — MUI outlined secondary */
     .cdd-mp-clear {
+        height: 36px;
+        padding: 0 15px;
+        font-family: inherit;
+        font-size: 0.875rem;
+        font-weight: 500;
+        letter-spacing: 0.02857em;
         border-radius: 4px;
-        padding: 5px 9px;
-        font-size: 12px;
+        border: 1px solid rgba(0, 0, 0, 0.23);
+        background: transparent;
+        color: rgba(0, 0, 0, 0.87);
         cursor: pointer;
-        border: 1px solid #888;
-        background: none;
-        color: #444;
+        transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .cdd-mp-clear:hover:not([disabled]) {
+        background: rgba(0, 0, 0, 0.04);
+        border-color: rgba(0, 0, 0, 0.87);
     }
     .cdd-mp-clear[disabled] {
-        opacity: 0.45;
+        border-color: rgba(0, 0, 0, 0.12);
+        color: rgba(0, 0, 0, 0.26);
         cursor: default;
     }
-    .cdd-mp-result {
-        flex-basis: 100%;
-        font-size: 12px;
-        opacity: 0.9;
+
+    /* Create N Samples — MUI contained primary */
+    .cdd-mp-btn {
+        height: 36px;
+        padding: 0 16px;
+        font-family: inherit;
+        font-size: 0.875rem;
+        font-weight: 500;
+        letter-spacing: 0.02857em;
+        border-radius: 4px;
+        border: none;
+        background: #1565c0;
+        color: #fff;
+        cursor: pointer;
+        box-shadow: 0 3px 1px -2px rgba(0,0,0,.2),
+                    0 2px 2px 0   rgba(0,0,0,.14),
+                    0 1px 5px 0   rgba(0,0,0,.12);
+        transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1),
+                    box-shadow     150ms cubic-bezier(0.4, 0, 0.2, 1);
     }
+    .cdd-mp-btn:hover:not([disabled]) {
+        background: #0d47a1;
+        box-shadow: 0 2px 4px -1px rgba(0,0,0,.2),
+                    0 4px 5px  0   rgba(0,0,0,.14),
+                    0 1px 10px 0   rgba(0,0,0,.12);
+    }
+    .cdd-mp-btn[disabled] {
+        background: rgba(0, 0, 0, 0.12);
+        color: rgba(0, 0, 0, 0.26);
+        box-shadow: none;
+        cursor: default;
+    }
+
+    /* Error/status line — shown only when needed */
+    .cdd-mp-result {
+        font-size: 0.75rem;
+        line-height: 1.66;
+        min-height: 0;
+    }
+    .cdd-mp-result:empty { display: none; }
     .cdd-mp-result.cdd-mp-error {
-        color: #b00020;
-        opacity: 1;
+        color: #c62828;
     }
 
     /* ---------- floating results panel (independent of the dialog) ---------- */

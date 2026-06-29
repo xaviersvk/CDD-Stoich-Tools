@@ -30,13 +30,36 @@ export function injectMultiPositionStyles() {
         font-size: 0.875rem;
     }
 
-    /* "N positions selected" — MUI caption style */
-    .cdd-mp-count {
-        font-size: 0.75rem;
-        line-height: 1.66;
-        letter-spacing: 0.03333em;
-        color: rgba(0, 0, 0, 0.6);
+    /* Destination row: well label(s) + optional info icon */
+    .cdd-mp-dest {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        min-height: 20px;
+    }
+
+    /* Well label ("D2" for single, "D2, D3, D4…" for multi) */
+    .cdd-mp-dest__label {
+        font-size: 0.875rem;
+        line-height: 1.5;
+        color: rgba(0, 0, 0, 0.87);
+        font-weight: 500;
         user-select: none;
+    }
+    .cdd-mp-dest__label--empty {
+        color: rgba(0, 0, 0, 0.38);
+        font-weight: 400;
+        font-style: italic;
+    }
+
+    /* ⓘ icon with native title tooltip */
+    .cdd-mp-dest__info {
+        font-size: 0.8rem;
+        color: rgba(0, 0, 0, 0.45);
+        cursor: help;
+        user-select: none;
+        line-height: 1;
+        flex: 0 0 auto;
     }
 
     /* Button row: Clear left, Create N Samples right */

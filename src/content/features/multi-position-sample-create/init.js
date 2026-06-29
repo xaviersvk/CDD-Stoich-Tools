@@ -30,7 +30,7 @@
 
 import { observeBoxGrids } from "../box-selection/init.js";
 import { attachBoxSelection } from "../box-selection/overlay.js";
-import { isBoxGrid } from "../box-selection/box-grid.js";
+import { isBoxGrid, readColumnCount } from "../box-selection/box-grid.js";
 import { injectMultiPositionStyles } from "./styles.js";
 import * as store from "./selection-store.js";
 import { getCapturedCreate } from "./capture-store.js";
@@ -50,6 +50,52 @@ const SELECTION_CONTEXT_PROP = "__cddSelectionContext"; // set by overlay.js
 const RESPONSE_TIMEOUT_MS = 30000;
 
 let batchRunning = false; // single-flight guard for the whole batch
+
+// Metadata captured from the picker while its grid is live; persists after the
+// picker closes so the action bar can format positions as well labels.
+let _colCount = 0;
+let _locationPath = "";
+
+// Convert a 1-based row-major position to a well label ("A1", "D3", etc.).
+// Falls back to the raw position string if the column count is unknown.
+function positionToWell(pos, cols) {
+    const p = parseInt(pos, 10);
+    if (!Number.isFinite(p) || p < 1 || !cols || cols < 1) return String(pos);
+    const row = Math.floor((p - 1) / cols);
+    const col = (p - 1) % cols + 1;
+    return (row < 26 ? String.fromCharCode(65 + row) : `R${row + 1}`) + col;
+}
+
+// Short preview for a list of positions, truncated at maxVisible.
+// Returns { text, full } where full is the complete list when text was truncated.
+function formatWellPreview(positions, cols, maxVisible = 6) {
+    const labels = positions.map((p) => positionToWell(p, cols));
+    if (labels.length <= maxVisible) return { text: labels.join(", "), full: null };
+    return { text: labels.slice(0, maxVisible).join(", ") + "…", full: labels.join(", ") };
+}
+
+// Try to read the location hierarchy ("Lab → Fridge → Box") from the MUI
+// location tree while the picker is open. Returns "" on any failure.
+function readLocationPath() {
+    try {
+        const scope = document.querySelector(".locations-tree") || document;
+        const selected = scope.querySelector('[role="treeitem"][aria-checked="true"]');
+        if (!selected) return "";
+        const labels = [];
+        let el = selected;
+        while (el && el !== scope) {
+            if (el.getAttribute?.("role") === "treeitem") {
+                const labelEl = el.querySelector(".MuiTreeItem-label");
+                const text = (labelEl?.textContent || "").trim();
+                if (text) labels.unshift(text);
+            }
+            el = el.parentElement;
+        }
+        return labels.join(" → ");
+    } catch {
+        return "";
+    }
+}
 
 function dbg(...args) {
     if (DEBUG) console.log(LOG, ...args);
@@ -125,6 +171,10 @@ function watchPickerGrids() {
         const ctx = attachBoxSelection(grid, { showCounter: false });
         if (!ctx) return;
 
+        // Capture grid metadata while we have the live grid element.
+        _colCount = readColumnCount(grid);
+        _locationPath = readLocationPath();
+
         // Restore any previous selection so reopening the picker shows it.
         const prev = store.getPositions();
         if (prev.length) {
@@ -140,6 +190,8 @@ function watchPickerGrids() {
         ctx.onChange((c) => {
             store.setBoxId(c.boxId);
             store.setPositions(c.selectedPositions);
+            // Re-read path on each change in case the user switched boxes.
+            _locationPath = readLocationPath();
         });
         dbg("picker grid attached; selection mirrored to store");
     });
@@ -177,11 +229,25 @@ function insertActionBar(dialog) {
     const panel = document.createElement("div");
     panel.className = "cdd-mp-panel";
 
-    // Row 1: selection counter (label)
-    const counter = document.createElement("span");
-    counter.className = "cdd-mp-count";
+    // Row 1: destination info — well label(s) + optional info icon.
+    // N=0: placeholder text (grayed)
+    // N=1: well coordinate ("D2") + ⓘ with hierarchy tooltip
+    //       → CDD's own Save handles creation; no batch button needed
+    // N>1: comma-preview ("D2, D3…") + ⓘ with full list when truncated
+    const destRow = document.createElement("div");
+    destRow.className = "cdd-mp-dest";
 
-    // Row 2: [Clear] ··· [Create N Samples]
+    const destLabel = document.createElement("span");
+    destLabel.className = "cdd-mp-dest__label cdd-mp-dest__label--empty";
+
+    const infoIcon = document.createElement("span");
+    infoIcon.className = "cdd-mp-dest__info";
+    infoIcon.textContent = "ⓘ";
+    infoIcon.style.display = "none";
+
+    destRow.append(destLabel, infoIcon);
+
+    // Row 2: [Clear] ··· [Create N Samples]  (Create hidden for N ≤ 1)
     const actionsRow = document.createElement("div");
     actionsRow.className = "cdd-mp-actions";
 
@@ -189,13 +255,14 @@ function insertActionBar(dialog) {
     clearBtn.addEventListener("click", () => store.clear());
 
     const createBtn = makeButton("Create Samples", "cdd-mp-btn");
+    createBtn.style.display = "none";
     actionsRow.append(clearBtn, createBtn);
 
-    // Error/status line — hidden unless needed (e.g. native Save not found)
+    // Error/status line — hidden unless needed
     const result = document.createElement("div");
     result.className = "cdd-mp-result";
 
-    panel.append(counter, actionsRow, result);
+    panel.append(destRow, actionsRow, result);
 
     const actions = dialog.querySelector(".MuiDialogActions-root");
     if (actions) actions.insertAdjacentElement("beforebegin", panel);
@@ -204,11 +271,37 @@ function insertActionBar(dialog) {
     const bar = { panel, createBtn, clearBtn, result };
 
     function refresh() {
-        const { count } = store.getState();
-        counter.textContent =
-            count === 1 ? "1 position selected" : `${count} positions selected`;
-        createBtn.textContent = count === 1 ? "Create 1 Sample" : `Create ${count} Samples`;
-        if (createBtn.dataset.busy !== "1") createBtn.disabled = count < 1 || batchRunning;
+        const { count, positions } = store.getState();
+
+        if (count === 0) {
+            destLabel.textContent = "No destination selected";
+            destLabel.className = "cdd-mp-dest__label cdd-mp-dest__label--empty";
+            infoIcon.style.display = "none";
+            createBtn.style.display = "none";
+            clearBtn.disabled = true;
+        } else if (count === 1) {
+            const well = positionToWell(positions[0], _colCount);
+            destLabel.textContent = well;
+            destLabel.className = "cdd-mp-dest__label";
+            infoIcon.title = _locationPath ? `${_locationPath} → ${well}` : `Well ${well}`;
+            infoIcon.style.display = "";
+            createBtn.style.display = "none";
+            clearBtn.disabled = false;
+        } else {
+            const { text: preview, full } = formatWellPreview(positions, _colCount);
+            destLabel.textContent = preview;
+            destLabel.className = "cdd-mp-dest__label";
+            if (full) {
+                infoIcon.title = full;
+                infoIcon.style.display = "";
+            } else {
+                infoIcon.style.display = "none";
+            }
+            createBtn.textContent = `Create ${count} Samples`;
+            createBtn.style.display = "";
+            if (createBtn.dataset.busy !== "1") createBtn.disabled = batchRunning;
+            clearBtn.disabled = false;
+        }
     }
 
     store.onChange(refresh);

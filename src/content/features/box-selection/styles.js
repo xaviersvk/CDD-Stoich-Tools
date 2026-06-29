@@ -55,6 +55,30 @@ export function injectBoxSelectionStyles() {
         50% { box-shadow: inset 0 0 0 9999px rgba(204, 0, 0, 0.35); }
     }
 
+    /* Toast: brief "N positions selected" confirmation after rect selection. */
+    .cdd-box-selection-toast {
+        position: fixed;
+        bottom: 80px;
+        left: 50%;
+        transform: translateX(-50%) translateY(10px);
+        background: rgba(18, 18, 18, 0.88);
+        color: #fff;
+        padding: 6px 18px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 500;
+        letter-spacing: 0.01em;
+        z-index: 2147483601;
+        opacity: 0;
+        transition: opacity 0.2s ease, transform 0.2s ease;
+        pointer-events: none;
+        white-space: nowrap;
+    }
+    .cdd-box-selection-toast--visible {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+
     /* Counter / action bar under the grid. */
     .cdd-box-selection-bar {
         display: flex;

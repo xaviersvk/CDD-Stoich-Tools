@@ -32,6 +32,48 @@
 //     ctx.onChange(cb)               // cb(ctx) -> unsubscribe fn
 //     ctx.destroy()
 //
+// ── Click modes ────────────────────────────────────────────────────────────────
+//
+//   Normal click       clear previous selection; select the clicked well; set
+//                      anchor to the clicked position.
+//
+//   Ctrl / Cmd click   toggle the clicked well; keep the rest of the selection
+//                      unchanged. Anchor is NOT changed (the next Shift-click
+//                      always rectangles from the last normal-click anchor).
+//
+//   Shift-click        rectangle from anchor → clicked well (inclusive). Only
+//                      empty wells inside the rectangle are selected; occupied
+//                      ones are silently skipped. The whole selection is REPLACED
+//                      with the rectangle contents (not added to it). Anchor is
+//                      NOT changed. If there is no anchor yet, behaves like a
+//                      normal click and sets the anchor.
+//
+//   Deselection rule   if the clicked well is ALREADY in the selection set, it
+//                      is always removed — regardless of the modifier key, and
+//                      regardless of whether the well has since become occupied.
+//                      Selection state has priority over occupancy blocking.
+//
+// ── Rectangle algorithm ────────────────────────────────────────────────────────
+//
+//   CDD positions are 1-based row-major integers (e.g. position 43 in a 9-col
+//   grid = row 5 col 7). Given anchor A and clicked position B:
+//
+//     rowA = ⌊(A−1)/cols⌋    colA = (A−1) mod cols
+//     rowB = ⌊(B−1)/cols⌋    colB = (B−1) mod cols
+//     rect = all (r,c) with min(rowA,rowB) ≤ r ≤ max(rowA,rowB)
+//                         and min(colA,colB) ≤ c ≤ max(colA,colB)
+//
+//   Each (r,c) → position = r*cols + c + 1. Only positions whose DOM cell
+//   passes isSelectable() are included; occupied ones are dropped silently.
+//   A toast shows the final count once after the selection is applied.
+//
+// ── Occupancy validation ───────────────────────────────────────────────────────
+//
+//   On every grid repaint (MUI may re-render cells when a box is switched),
+//   validateSelection() compares the model's selected positions against the live
+//   DOM. Any position that is now occupied is removed from the model. The
+//   consumer's onChange fires so the action bar counter updates in sync.
+//
 // Why getters (not frozen fields): occupancy and selection change over time
 // (box switch, user clicks). A getter always reflects the live grid; a snapshot
 // field would go stale. Consumers read them on demand.
@@ -41,15 +83,6 @@
 //   - Never let a filled/occupied well enter the selection (fail-safe).
 //   - Never mutate CDD's own markup beyond adding/removing our own classes and
 //     appending our own bar (fully reversible in destroy()).
-//
-// How the MutationObserver attaches safely
-//   - Discovery is init.js's job; this overlay observes only ITS OWN grid
-//     subtree, because MUI re-renders the grid's cells (e.g. switching boxes)
-//     which would otherwise drop our classes. On any child mutation we repaint
-//     (debounced via rAF). destroy() disconnects it. Toggling a class does not
-//     retrigger us: we watch childList/subtree, not attributes.
-//   - Double-attach guard: the context is stored on the grid node, so calling
-//     attachBoxSelection twice on the same grid returns the SAME context.
 //
 // Connects to: box-grid.js (all DOM reading), selection-model.js (pure state),
 // styles.js (the classes used here). init.js calls this per discovered grid.
@@ -61,6 +94,7 @@ import {
     isFilledCell,
     readCellPosition,
     readGridPositions,
+    readColumnCount,
     gridTagsEmpties,
     getSelectedBoxId,
 } from "./box-grid.js";
@@ -107,17 +141,110 @@ export function attachBoxSelection(gridOrPicker, options = {}) {
     // if it does, "selectable" tightens to "explicitly empty AND not filled".
     const usesEmptyClass = gridTagsEmpties(grid);
 
-    // ----- selectability (the fail-safe core) -----------------------------
+    // Anchor position for shift-click rectangle selection. Set by normal clicks;
+    // NOT changed by Ctrl-click or Shift-click (so Shift always rects from the
+    // last unmodified click, matching spreadsheet behaviour).
+    let anchor = null;
+
+    // ----- selectability (the fail-safe core) --------------------------------
     function isSelectable(cell) {
-        if (isFilledCell(cell)) return false;          // occupied: never
-        if (opts.allowFilled) return true;             // (still not filled)
+        if (isFilledCell(cell)) return false;
+        if (opts.allowFilled) return true;
         if (usesEmptyClass && !cell.classList.contains("box-position-empty")) {
-            return false;                              // grid tags empties, this isn't one
+            return false;
         }
         return true;
     }
 
-    // ----- the counter / action bar ---------------------------------------
+    // ----- rectangle helpers -------------------------------------------------
+
+    // All row-major position strings in the rectangle defined by two corners.
+    // Falls back to just [clickedPos] when column count is unavailable or
+    // positions are not pure integers.
+    function computeRectPositions(anchorPos, clickedPos) {
+        const cols = readColumnCount(grid);
+        const a = parseInt(anchorPos, 10);
+        const b = parseInt(clickedPos, 10);
+        if (cols <= 0 || !Number.isFinite(a) || !Number.isFinite(b)) {
+            return [clickedPos];
+        }
+        const aRow = Math.floor((a - 1) / cols);
+        const aCol = (a - 1) % cols;
+        const bRow = Math.floor((b - 1) / cols);
+        const bCol = (b - 1) % cols;
+        const minRow = Math.min(aRow, bRow), maxRow = Math.max(aRow, bRow);
+        const minCol = Math.min(aCol, bCol), maxCol = Math.max(aCol, bCol);
+        const result = [];
+        for (let r = minRow; r <= maxRow; r++) {
+            for (let c = minCol; c <= maxCol; c++) {
+                result.push(String(r * cols + c + 1));
+            }
+        }
+        return result;
+    }
+
+    // From a list of candidate position strings, return only those whose DOM
+    // cell currently passes isSelectable(). Iterates the live grid so it's
+    // always accurate even after a box switch.
+    function selectableSubset(positions) {
+        const inSet = new Set(positions);
+        const result = [];
+        for (const cell of grid.querySelectorAll(CELL_SELECTOR)) {
+            const p = readCellPosition(cell);
+            if (p && inSet.has(p) && isSelectable(cell)) result.push(p);
+        }
+        return result;
+    }
+
+    // ----- occupancy validation ----------------------------------------------
+
+    // Remove any selected positions that have since become occupied. Called on
+    // every grid repaint so the store never silently holds occupied wells.
+    function validateSelection() {
+        const selected = model.getSelectedPositions();
+        if (!selected.length) return;
+        const cellMap = new Map();
+        for (const cell of grid.querySelectorAll(CELL_SELECTOR)) {
+            const p = readCellPosition(cell);
+            if (p) cellMap.set(p, cell);
+        }
+        const valid = [];
+        const removed = [];
+        for (const pos of selected) {
+            const cell = cellMap.get(pos);
+            if (cell && isFilledCell(cell)) {
+                removed.push(pos);
+            } else {
+                valid.push(pos);
+            }
+        }
+        if (removed.length) {
+            console.debug("[CDD box-selection] validateSelection: removed occupied", removed);
+            model.replaceSelection(valid);
+        }
+    }
+
+    // ----- toast feedback ----------------------------------------------------
+
+    function showToast(msg) {
+        const existing = document.getElementById("cdd-box-selection-toast");
+        if (existing) existing.remove();
+        const toast = document.createElement("div");
+        toast.id = "cdd-box-selection-toast";
+        toast.className = "cdd-box-selection-toast";
+        toast.textContent = msg;
+        document.body.appendChild(toast);
+        // Animate in, then out
+        requestAnimationFrame(() => {
+            toast.classList.add("cdd-box-selection-toast--visible");
+            setTimeout(() => {
+                toast.classList.remove("cdd-box-selection-toast--visible");
+                setTimeout(() => toast.remove(), 350);
+            }, 2200);
+        });
+    }
+
+    // ----- the counter / action bar ------------------------------------------
     let bar = null;
     let countEl = null;
     let actionBtn = null;
@@ -157,8 +284,12 @@ export function attachBoxSelection(gridOrPicker, options = {}) {
         grid.insertAdjacentElement("afterend", bar);
     }
 
-    // ----- painting --------------------------------------------------------
+    // ----- painting ----------------------------------------------------------
     function render() {
+        // Validate first: remove selected positions that became occupied since
+        // the last render (e.g. after a box switch in the picker).
+        validateSelection();
+
         for (const cell of grid.querySelectorAll(CELL_SELECTOR)) {
             const filled = isFilledCell(cell);
             const selectable = isSelectable(cell);
@@ -188,21 +319,48 @@ export function attachBoxSelection(gridOrPicker, options = {}) {
         });
     }
 
-    // ----- click handling (delegated, survives cell re-render) -------------
+    // ----- click handling (delegated, survives cell re-render) ---------------
     function onClick(event) {
         const cell = event.target.closest(CELL_SELECTOR);
         if (!cell || !grid.contains(cell)) return;
 
+        const pos = readCellPosition(cell);
+        if (pos == null) return;
+
+        // Deselection always wins — even if the well has since become occupied,
+        // the user must be able to remove it from the selection set.
+        if (model.has(pos)) {
+            model.deselect(pos);
+            return; // anchor unchanged: a deselect doesn't reset the origin point
+        }
+
+        // At this point the cell is not selected. Block occupied wells.
         if (!isSelectable(cell)) {
-            // Make the refusal visible instead of silently ignoring the click.
             cell.classList.add(CLS_DENIED);
             setTimeout(() => cell.classList.remove(CLS_DENIED), 300);
             return;
         }
 
-        const pos = readCellPosition(cell);
-        if (pos == null) return;
-        model.toggle(pos); // -> model emits -> our onChange -> render()
+        const shiftKey = event.shiftKey;
+        const ctrlKey = event.ctrlKey || event.metaKey;
+
+        if (shiftKey && anchor != null) {
+            // Rectangle: replace selection with all empty wells inside rect.
+            const allInRect = computeRectPositions(anchor, pos);
+            const empties = selectableSubset(allInRect);
+            model.replaceSelection(empties);
+            // Anchor stays — repeated Shift-clicks keep the same origin.
+            const n = model.count();
+            showToast(`${n} position${n === 1 ? "" : "s"} selected`);
+        } else if (ctrlKey) {
+            // Toggle this well, keep everything else.
+            model.toggle(pos);
+            // Anchor NOT changed: Ctrl-clicks don't reset the rectangle origin.
+        } else {
+            // Normal click: clear and select just this one; become the new anchor.
+            model.replaceSelection([pos]);
+            anchor = pos;
+        }
     }
 
     // Capture phase so the handler fires even when CDD calls stopPropagation()
@@ -210,7 +368,8 @@ export function attachBoxSelection(gridOrPicker, options = {}) {
     grid.addEventListener("click", onClick, true);
 
     // Repaint when MUI replaces the grid's cells (e.g. box switch) so our
-    // selected/occupied classes are re-applied to the fresh nodes.
+    // selected/occupied classes are re-applied to the fresh nodes. Validation
+    // runs inside render() so occupied wells are also evicted from the model.
     const gridObserver = new MutationObserver(scheduleRender);
     gridObserver.observe(grid, { childList: true, subtree: true });
 
@@ -224,7 +383,7 @@ export function attachBoxSelection(gridOrPicker, options = {}) {
         }
     });
 
-    // ----- SelectionContext (the one public abstraction) -------------------
+    // ----- SelectionContext (the one public abstraction) ---------------------
     const context = {
         // Best-effort box id. Treated as advisory: a consumer that creates
         // records must cross-check it and hard-stop on mismatch, never guess.
@@ -259,6 +418,7 @@ export function attachBoxSelection(gridOrPicker, options = {}) {
 
         clear() {
             model.clear();
+            anchor = null;
         },
         onChange(cb) {
             // Adapt the model's (positions) signature to (ctx) for consumers.
@@ -275,6 +435,8 @@ export function attachBoxSelection(gridOrPicker, options = {}) {
             gridObserver.disconnect();
             unsubscribeModel();
             bar?.remove();
+            const toast = document.getElementById("cdd-box-selection-toast");
+            toast?.remove();
             for (const cell of grid.querySelectorAll(CELL_SELECTOR)) {
                 cell.classList.remove(
                     CLS_OCCUPIED,

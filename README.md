@@ -1,118 +1,111 @@
 # CDD Stoichiometric Table Tools
 
-A **Manifest V3 browser extension** that adds quality-of-life tooling on top of
-the **Collaborative Drug Discovery (CDD) Vault** web app
-(`*.collaborativedrug.com`). It runs only on CDD pages, has **no backend**, and
-executes **no remote code** — all logic is bundled locally with Vite.
+A free browser extension that makes everyday work in **CDD Vault** faster and
+less fiddly. It adds small, practical helpers right onto the CDD pages you
+already use — one-click copying, clearer sample data, printable stoichiometry
+sheets, structure previews, batch sample creation, and more.
 
-- **Runtime version:** `8.4.0` (from `manifest.json`)
-- **Latest release:** `8.4.0` (see [CHANGELOG](./CHANGELOG.md))
-- **Targets:** Chrome (MV3) + Firefox (Gecko `strict_min_version: 142.0`)
-- **License:** MIT
+Everything happens **locally in your browser**: it runs only on CDD pages, has
+no backend, collects no data, and never sends anything anywhere.
 
-> This README is written for three audiences at once: **new users** (what it
-> does, how to install), **new developers** (architecture, setup, how to extend),
-> and **AI agents** (precise file paths, data flow, and explicit "what is NOT in
-> the project" notes so you don't hallucinate functionality).
+- 🧪 Built for medicinal-chemistry / ELN work on CDD Vault
+- 🔒 No tracking, no accounts, no remote code
+- 🌐 Works in Chrome and Firefox (142+)
+- 📦 Current version **9.0.0** — see [what's new](./RELEASES.md)
 
----
-
-## Project Overview
-
-### What it solves
-
-CDD Vault is a powerful but generic ELN / registration / inventory system.
-Day-to-day medicinal-chemistry work on it involves a lot of manual copying,
-re-typing of stoichiometry values, and fighting with default UI behaviours. This
-extension layers small, targeted helpers directly onto the CDD pages so common
-tasks become one click instead of several.
-
-Its flagship feature is a floating **ELN Sample Panel** that reads the
-stoichiometry data CDD loads in the background and surfaces the relevant
-sample / batch / molecule attributes in one draggable, configurable box with
-copy-on-click values and a print view.
-
-### Who it is for
-
-- **Bench chemists / ELN users** on CDD Vault who want faster copy/paste, clearer
-  sample data, and printable stoichiometry sheets.
-- **Lab data managers** who deal with depleted samples, saved searches, and
-  dose-response curve overrides.
-- **Developers / AI agents** maintaining or extending the extension.
-
-### Main use cases
-
-- See every sample in an ELN reaction table at a glance, grouped by reaction,
-  with low-purity / depleted warnings.
-- Copy a **paste-ready, normalised concentration** straight back into CDD.
-- Print a per-reaction A4 stoichiometry sheet (with the reaction scheme image).
-- Override dose-response curve calculations in bulk from the search results.
-- Preview the **molecule structure + synonym** when picking an inventory location.
-- Avoid picking depleted samples; collapse consumed batches; copy saved-search
-  links; and smooth over a set of CDD DOM/CSS rough edges.
+**Install:**
+[Chrome Web Store](https://chromewebstore.google.com/detail/cdd-stoichiometric-table/ghbhjmmmgejokgekdcbcmgcfaoddlffg)
+· [Firefox Add-ons](https://addons.mozilla.org/en-GB/firefox/addon/cdd-stoichiometric-table-tools/)
 
 ---
 
-## Key Features
+## What it does
 
-Every feature is a content-script module under `src/content/features/`. Features
-that need data from CDD's API responses get it from the **inject** script (see
-[Architecture](#architecture)).
+CDD Vault is powerful but generic, so routine lab work means a lot of manual
+copying, re-typing stoichiometry values, and fighting default UI behaviour. This
+extension layers small, targeted helpers onto the pages so the common things take
+one click instead of several.
 
-### Sample Panel
+Here's the short version of everything it adds:
 
-| Feature | What it does | Main files |
-| --- | --- | --- |
-| **Floating ELN Sample Panel** | Draggable, collapsible panel listing every sample in the ELN reaction/stoichiometry tables, grouped by reaction, with copy-on-click values. | `features/sample-panel.js`, `shared/sample-panel-fields.js` |
-| **Configurable fields** | Popup lets you choose which attributes show (Name, Location, Purity, Internal ID, Density, Concentration, Solvent, Molecular/Formula weight, Batch name, Vendor ID, Owner, Amount, Volume). | `shared/sample-panel-fields.js`, `popup/popup.js` |
-| **Custom-field discovery** | Vault-specific batch/sample fields (e.g. `*Hygroscopic`) are auto-discovered from CDD's data and offered as checkboxes; unused custom fields expire after a 120-day "last seen" lifecycle. | `shared/sample-panel-fields.js`, `features/sample-panel.js` |
-| **Card warnings** | Low-purity badge, depleted badge, and red border, computed independently of the field config. | `features/sample-panel.js` |
-| **Panel state persistence** | Position + collapsed state remembered between visits. | `features/sample-panel.js` |
-| **Normalised concentration copy** | Clicking a concentration copies a CDD-ready value (µM/nM converted to mmol/L, etc.). | `shared/sample-panel-fields.js` |
+### 📋 Sample panel
+- A floating, draggable panel that shows every sample in your ELN reaction table
+  at a glance, grouped by reaction.
+- **Click any value to copy it.** Concentrations are copied in a paste-ready,
+  CDD-friendly format (e.g. µM/nM converted to mmol/L).
+- Choose exactly which fields you want to see (name, location, purity, density,
+  molecular weight, batch, owner, …) in the extension's settings.
+- Automatically spots vault-specific custom fields and offers them too.
+- Highlights low-purity and depleted samples, and remembers where you put the
+  panel.
 
-### ELN enhancements
+### 🖨️ Printing
+- A print button on each reaction gives you a clean A4 stoichiometry sheet
+  (masses, volumes, equivalents, yield, plus the reaction scheme).
+- The sample panel can also print exactly the columns you've chosen.
 
-| Feature | What it does | Main files |
-| --- | --- | --- |
-| **ELN tab-title override** | Rewrites the browser tab title on ELN pages. Three modes: original, ELN title only, or `EntryID - ELN title` (default). | `features/eln-title.js` |
-| **Depleted-sample marker** | Greys out / strikes through depleted samples in radio-button sample selectors. | `features/depleted-marker.js` |
+### 🧫 Inventory & locations
+- **Batch sample creation** — select several empty wells in the "Pick Location"
+  grid and create all the samples at once, with a results panel showing what
+  succeeded.
+- **Structure preview** — hover an occupied well to see the molecule's structure
+  and name.
+- **Colour by prefix** — colour-code wells by sample-ID prefix so you can spot
+  groups at a glance (colours chosen in settings).
+- **Plate location tooltip** — hover a plate link to see where it physically
+  lives (e.g. `Lab 2 > Fridge 2`).
+- **Export plate locations** — download a CSV of every plate in your search
+  together with its inventory location.
 
-### Printing
+### 📈 Dose-response
+- An "Easy Override" toggle in the search results lets you bulk-adjust
+  dose-response curve calculations (set to max/min, skip, or don't overwrite) and
+  writes the change straight back to CDD.
 
-| Feature | What it does | Main files |
-| --- | --- | --- |
-| **Per-reaction stoichiometry sheet** | Print icon on each reaction block → formatted A4 sheet (FW/exact mass/density, mass/volume, equivalents/mole/yield, scheme image). | `features/print-buttons.js`, `inject/parsers/print-data.js`, `inject/print/dispatcher.js` |
-| **Panel print** | Panel's "Print" button builds a table from exactly the enabled columns (skipping empty ones). | `features/panel-print.js` |
+### ✨ Quality-of-life fixes
+- One-click copy on molecule and batch fields, "Copy Link" on saved searches,
+  smarter filter defaults, a resizable location-picker, collapsible
+  consumed/depleted batches, and a handful of layout tidy-ups.
 
-### Dose-response tools
+> For the full, detailed feature list see
+> [`docs/FEATURE_CATALOG.md`](./docs/FEATURE_CATALOG.md).
 
-| Feature | What it does | Main files |
-| --- | --- | --- |
-| **Easy Override** | "Easy Override: ON/OFF" toggle in the search-results bar; each plot gets an inline menu (`> Max`, `< Min`, `Do not calculate`, `Do not overwrite`) that PUTs an intercept-override payload back to CDD. | `features/dose-response-override/`, `content/api/cdd-api.js` |
+---
 
-### Saved searches
+## Installation
 
-| Feature | What it does | Main files |
-| --- | --- | --- |
-| **Copy Link** | Adds a "Copy Link" action to each saved-search row on `/searches`. | `features/savedSearchCopyLinks/savedSearchCopyLinks.js` |
+For most people: install from the store and you're done — open any CDD Vault page
+and the helpers appear automatically.
 
-### Inventory
+- **Chrome:** [Chrome Web Store](https://chromewebstore.google.com/detail/cdd-stoichiometric-table/ghbhjmmmgejokgekdcbcmgcfaoddlffg)
+- **Firefox:** [Firefox Add-ons](https://addons.mozilla.org/en-GB/firefox/addon/cdd-stoichiometric-table-tools/)
 
-| Feature | What it does | Main files |
-| --- | --- | --- |
-| **Well structure tooltip** | In the "Pick Location" box view, hovering an occupied well adds the molecule structure image + first synonym to CDD's native tooltip. The molecule/vault id is read from the tooltip's molecule link; the SMILES is pulled from the molecule page and rendered to inline SVG client-side (`smiles-drawer`). Cached per molecule (incl. negatives) with a token race-guard; opening a box pre-warms every well's structure on idle (concurrency-capped). | `features/ui-fixes/inventory-well-structure.js`, `api/molecule-image.js`, `api/structure-render.js`, `inject/main.js` |
+Settings (which fields show, prefix colours, tab-title mode, …) live in the
+extension's popup — click the extension icon. Most settings apply after you
+refresh the CDD page.
 
-### UI fixes (CSS/DOM)
+Developers who want to run it from source: see [For developers](#for-developers).
 
-| Module | What it fixes |
-| --- | --- |
-| `file-dialog-fixes.js` | Wraps long file-preview links; widens the file dialog; pins the "associate file" button bar. |
-| `copyable-fields.js` | Makes molecule overview/property/batch field values click-to-copy. |
-| `left-ellipsis-locations.js` | Left-truncates long location strings (RTL trick) in sample tables. |
-| `filter-default.js` | Auto-selects the second filter operator instead of "Any value" (ELN + Inventory). |
-| `location-picker-resize.js` | Draggable resizer on the location-picker tree (width saved in `localStorage`). |
-| `molecule-links-fixes.js` | Lays out `#molecule-links` as a responsive multi-column grid. |
-| `consumed-batches-collapse.js` | Collapses consumed batches on the molecule batches page. |
+---
+
+## What's new
+
+See **[`RELEASES.md`](./RELEASES.md)** for a plain-language history of each
+release — what changed and why it matters. The full technical changelog lives in
+[`CHANGELOG.md`](./CHANGELOG.md).
+
+---
+
+# For developers
+
+Everything below is for people building, maintaining, or extending the extension.
+It's deliberately precise about file paths and data flow.
+
+> **At a glance:** a **Manifest V3 browser extension** for the
+> **Collaborative Drug Discovery (CDD) Vault** web app
+> (`*.collaborativedrug.com`). No backend, no remote code — all logic is bundled
+> locally with Vite. Runtime version `9.0.0` (`manifest.json`); targets Chrome
+> (MV3) and Firefox (Gecko `strict_min_version: 142.0`); MIT licensed.
 
 ---
 
@@ -187,7 +180,7 @@ without that tag.
 **None.** The extension has no server component. The closest thing is
 `src/content/api/cdd-api.js`, an authenticated `fetchJson` helper that talks to
 **CDD's own API** (reusing the logged-in session) to PUT dose-response override
-payloads.
+payloads and POST inventory samples.
 
 ### Database / storage
 
@@ -195,15 +188,15 @@ No database. Persistence uses browser storage only:
 
 | Data | Mechanism |
 | --- | --- |
-| Field selection, ELN-title mode, discovered custom fields | `chrome.storage.local` (async) |
+| Field selection, ELN-title mode, discovered custom fields, prefix colors | `chrome.storage.local` (async) |
 | Panel position / collapsed state, location-tree width | `localStorage` (page origin) |
 | Last captured payload, runtime flags | in-memory `STATE` (lost on reload) |
 
 ### Authentication
 
-No custom auth. Dose-response writes reuse **CDD's existing session cookies and
-CSRF token** via `cdd-api.js` (`credentials: 'include'`). The extension never
-stores credentials; it only acts within an already-authenticated CDD session.
+No custom auth. Write-backs reuse **CDD's existing session cookies and CSRF
+token** via `cdd-api.js` (`credentials: 'include'`). The extension never stores
+credentials; it only acts within an already-authenticated CDD session.
 
 ### Deployment
 
@@ -290,6 +283,7 @@ resolves.
 | ELN tab title mode | `cddPluginElnTitleMode` | `chrome.storage.local` | `eln-title.js` |
 | Sample-panel visible fields | `cddSamplePanelVisibleFields` | `chrome.storage.local` | `sample-panel.js` |
 | Discovered custom fields (+`lastSeen`) | `cddSamplePanelCustomFields` | `chrome.storage.local` | popup + `sample-panel.js` |
+| Prefix colors | `chrome.storage.local` | `chrome.storage.local` | `prefix-colors.js` + visualizations |
 | Panel position / collapsed | `cdd-stoich-panel-state` | `localStorage` | `sample-panel.js` |
 | Location-tree width | `cdd-location-picker-tree-width` | `localStorage` | `location-picker-resize.js` |
 
@@ -347,11 +341,10 @@ There are no servers; "deployment" means publishing the packaged extension.
    - **Chrome Web Store:** <https://chromewebstore.google.com/detail/cdd-stoichiometric-table/ghbhjmmmgejokgekdcbcmgcfaoddlffg>
    - **Firefox Add-ons (AMO):** <https://addons.mozilla.org/en-GB/firefox/addon/cdd-stoichiometric-table-tools/>
 
-> **Version note:** `manifest.json` is now `8.0.0` (see
-> [`docs/RELEASE_NOTES.md`](./docs/RELEASE_NOTES.md) and the
-> [CHANGELOG](./CHANGELOG.md)). `package.json` carries an unrelated `1.0.0` and is
-> not used for the extension version. Published store builds may be ahead of or
-> behind this source.
+> **Version note:** `manifest.json` is now `9.0.0` (see
+> [`RELEASES.md`](./RELEASES.md) and the [CHANGELOG](./CHANGELOG.md)).
+> `package.json` carries an unrelated `1.0.0` and is not used for the extension
+> version. Published store builds may be ahead of or behind this source.
 
 ---
 
@@ -360,6 +353,7 @@ There are no servers; "deployment" means publishing the packaged extension.
 | Document | What it's for |
 | --- | --- |
 | [`README.md`](./README.md) | This file — overview, features, architecture, setup, deployment. |
+| [`RELEASES.md`](./RELEASES.md) | Plain-language, human-readable release log. |
 | [`CHANGELOG.md`](./CHANGELOG.md) | Full historical changelog reconstructed from git/tags/release notes. |
 | [`DOCUMENTATION_AUDIT.md`](./DOCUMENTATION_AUDIT.md) | Audit of information sources, contradictions, and stale-doc recommendations. |
 | [`docs/README.md`](./docs/README.md) | Documentation hub / reading order. |
@@ -374,13 +368,18 @@ There are no servers; "deployment" means publishing the packaged extension.
 
 ## Current Project Status
 
-### Done (in the current `8.4.0` build)
+### Done (in the current `9.0.0` build)
 
 - Floating, draggable, configurable **Sample Panel** with custom-field discovery,
   card warnings, and state persistence.
 - Per-reaction **stoichiometry print sheets** and **panel print**.
 - **ELN tab-title** override with three modes + popup UI.
 - **Dose-response "Easy Override"** writing back through CDD's API.
+- **Batch sample creation** — select multiple empty wells in the Pick Location
+  grid and create all samples in one click, gated behind CDD's own native save,
+  with a per-position results panel and retry.
+- **Prefix-based colors** — sample IDs grouped by prefix and colour-coded across
+  the inventory box grid and visualizations; colours managed in the popup.
 - **Inventory well structure tooltip** — molecule structure + synonym on hover in
   the Pick Location box, with per-molecule caching and idle prefetch.
 - **Plate Inventory Location tooltip** — plate's inventory location on hover over
@@ -393,15 +392,6 @@ There are no servers; "deployment" means publishing the packaged extension.
 - Shared field registry, unified clipboard helper, and standardised `EVENTS`
   message names (the `8.0.0` clean-up — see CHANGELOG).
 
-### In progress / follow-ups
-
-- **`8.0.0` is bumped in `manifest.json`** and documented in
-  `docs/RELEASE_NOTES.md`; the source is release-ready. A clean git tag should
-  still be cut for it.
-- The legacy `v7.7.0` tag points at a **non-building** commit (missing
-  `shared/sample-panel-fields.js`); re-tag from a building commit (`b1c9f3c` or
-  later) before relying on it.
-
 ### Known limitations
 
 - **Settings apply after a page refresh**, not instantly in an open tab.
@@ -413,18 +403,13 @@ There are no servers; "deployment" means publishing the packaged extension.
 - **Field detection is best-effort** — values are read by known field
   names/locations; an unexpectedly named/nested field is simply not shown.
 - **No automated tests** — CDD-shape changes may need a manual check.
-- **Version metadata split** — `manifest.json` is `8.0.0` while `package.json`
+- **Version metadata split** — `manifest.json` is `9.0.0` while `package.json`
   remains an unrelated `1.0.0` (build-only metadata), and the legacy
   `7.7.0`/`v7.7.0` tags remain in git history — see
   [`DOCUMENTATION_AUDIT.md`](./DOCUMENTATION_AUDIT.md) §3.
 - **Observer sprawl** — ~10 always-on `MutationObserver`s on `document.body`
   (`subtree: true`) across features, with no central manager or teardown — a
   standing CPU cost on a busy SPA.
-
-> Resolved 2026-06-16: the duplicate `isElnEntryPage` (unified on the strict
-> regex in `shared/page-detection.js`), the hard-coded panel id in
-> `overlay-watcher.js` (now uses `PANEL_ID`), and a redundant file-dialog
-> observer in `main.js` (removed).
 
 ### Privacy & security
 

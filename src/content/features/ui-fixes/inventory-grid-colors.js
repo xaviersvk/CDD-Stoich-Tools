@@ -17,25 +17,26 @@
 //   The grid renders one <div class="box-position-element box-position-filled">
 //   per well, each with a <label> carrying its 1-based position number (row
 //   major). We match each API record's position to that label and set the
-//   cell's inline background-color. Matching the user's target selector:
-//     .LocationPicker .LocationBoxPicker .positions .box-position-filled
+//   cell's inline background-color.
 //
-// Risk if CDD changes its DOM: this depends on `.LocationBoxPicker .positions`,
-// `.box-position-element` / `.box-position-filled`, and the numeric <label>.
-// If any of those change, recolour stops finding cells — fix the selectors /
-// label-reading in this file. The data side depends on the box payload still
-// carrying `inventory_location_position` + a name field (see inject/main.js).
+// Grid DOM knowledge (selectors, position normalisation, selected-box id) lives
+// in ../box-selection/box-grid.js and is imported here so the colour feature and
+// the Box Selection Framework can never drift apart. If CDD changes the grid
+// markup, fix box-grid.js once.
 
 import {
     getColorForSampleId,
     recordSampleIdPrefix,
     onPrefixColorsChanged,
 } from "../../../shared/prefix-colors.js";
-
-// Only ever touch wells inside the box picker, never other `.box-position-*`.
-const GRID_SELECTOR = ".LocationBoxPicker .positions";
-const CELL_SELECTOR = ".box-position-element";
-const FILLED_CLASS = "box-position-filled";
+import {
+    GRID_SELECTOR,
+    CELL_SELECTOR,
+    FILLED_CLASS,
+    getSelectedBoxId,
+    readColumnCount,
+    normalizePositionKey,
+} from "../box-selection/box-grid.js";
 
 // Background for an occupied well whose prefix has no colour assigned yet (or
 // whose substance we have no record for). Configured prefixes override this.
@@ -55,73 +56,12 @@ const boxByNodeId = new Map();
 let lastReceived = [];
 let observerStarted = false;
 
-// The id of the box whose grid is currently shown = the selected tree node's
-// `data-nodeid` (a leaf box has aria-checked="true"; parent rows are "mixed").
-function getSelectedBoxId() {
-    const scope = document.querySelector(".locations-tree") || document;
-    const node = scope.querySelector(
-        '[role="treeitem"][aria-checked="true"][data-nodeid]'
-    );
-    return node?.getAttribute("data-nodeid") || null;
-}
-
 // Positions to paint the currently-shown grid with: the selected box's cached
 // records, falling back to the most recent event if the selection is unreadable.
 function currentPositions() {
     const boxId = getSelectedBoxId();
     if (boxId && boxByNodeId.has(boxId)) return boxByNodeId.get(boxId);
     return lastReceived;
-}
-
-/* ------------------------------------------------------------------ *
- * Position normalisation
- *
- * The grid's <label> is a 1-based, row-major index (1..N). The API's
- * `inventory_location_position` may be that same number, or a "A1" well
- * coordinate, or "1/A1". We normalise every form to the row-major index string
- * so it matches the cell label. `cols` (read from the live grid) is needed to
- * convert "A1" -> index.
- * ------------------------------------------------------------------ */
-
-// "A" -> 0, "B" -> 1, ... "Z" -> 25, "AA" -> 26, ... (base-26, no DOM/clock).
-function lettersToRowIndex(letters) {
-    let n = 0;
-    for (const ch of letters.toUpperCase()) {
-        n = n * 26 + (ch.charCodeAt(0) - 64); // 'A' is 65
-    }
-    return n - 1;
-}
-
-function normalizePositionKey(raw, cols) {
-    if (raw == null) return null;
-    let s = String(raw).trim();
-    if (!s) return null;
-
-    // "1/A1" -> take the well-coordinate part after the slash.
-    if (s.includes("/")) s = s.split("/").pop().trim();
-
-    // Already a row-major number.
-    if (/^\d+$/.test(s)) return s;
-
-    // "A1" / "B12" style coordinate.
-    const m = s.match(/^([A-Za-z]+)\s*(\d+)$/);
-    if (m && cols > 0) {
-        const row = lettersToRowIndex(m[1]);
-        const col = parseInt(m[2], 10) - 1;
-        if (row >= 0 && col >= 0) return String(row * cols + col + 1);
-    }
-
-    return s;
-}
-
-// Number of columns in the live grid (cells in the first row). 0 if unknown.
-function readColumnCount(gridEl) {
-    const firstRow = gridEl.querySelector(".row");
-    if (firstRow) {
-        const n = firstRow.querySelectorAll(CELL_SELECTOR).length;
-        if (n > 0) return n;
-    }
-    return 0;
 }
 
 /* ------------------------------------------------------------------ *

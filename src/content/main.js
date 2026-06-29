@@ -29,6 +29,8 @@ import {initPlateLocationTooltip} from "./features/ui-fixes/plate-location-toolt
 import {initPlateLocationExport} from "./features/ui-fixes/plate-location-export";
 import {initSavedSearchCopyLinks} from "./features/savedSearchCopyLinks/savedSearchCopyLinks";
 import {initElnTitle} from "./features/eln-title";
+import {initBoxSelection} from "./features/box-selection/init";
+import {initMultiPositionSampleCreate} from "./features/multi-position-sample-create/init";
 import {initPrefixColorCache} from "../shared/prefix-colors.js";
 
 
@@ -97,6 +99,17 @@ function init() {
   initPlateLocationExport();
   initSavedSearchCopyLinks();
   initElnTitle();
+
+  // Box Selection Framework (Phase 1): injects styles + a console debug handle.
+  // Attaches no selection UI by itself — a consumer (e.g. multi-position sample
+  // create, Phase 2) calls observeBoxGrids() to opt a grid into selection.
+  initBoxSelection();
+
+  // Multi-position sample create (Phase 3): production batch create — one click
+  // creates N samples (native first save + sequential replay of the rest).
+  // Consumes the Box Selection SelectionContext; CDD's native Save is untouched
+  // outside batch mode.
+  initMultiPositionSampleCreate();
 
   // Load the prefix->colour map into the in-memory cache and keep it live.
   // Called LAST so every feature that subscribed via onPrefixColorsChanged()

@@ -5,6 +5,8 @@ import { ensurePrintButtons } from "./features/print-buttons.js";
 import { markDepletedSamplesInSelector } from "./features/depleted-marker.js";
 import { prefetchMolecules } from "./api/molecule-image.js";
 import { updateBoxData } from "./features/ui-fixes/inventory-grid-colors.js";
+import { setCapturedCreate } from "./features/multi-position-sample-create/capture-store.js";
+import { notifyCreateResponse } from "./features/multi-position-sample-create/response-store.js";
 import {EVENT_SOURCE, EVENTS} from "../shared/event-types";
 
 
@@ -68,6 +70,16 @@ export function handleMessage(event) {
 
         case EVENTS.INVENTORY_BOX: {
             updateBoxData(data.payload?.positions || []);
+            break;
+        }
+
+        case EVENTS.CREATE_SAMPLE_CAPTURED: {
+            setCapturedCreate(data.payload || null);
+            break;
+        }
+
+        case EVENTS.CREATE_SAMPLE_RESPONDED: {
+            notifyCreateResponse(data.payload || null);
             break;
         }
 

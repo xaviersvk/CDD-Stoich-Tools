@@ -16,6 +16,31 @@ import { renderSmilesToSvg } from "./structure-render.js";
 
 const LOG_PREFIX = "[CDD inventory plugin]";
 
+// Flatten an error into plain named fields so the log is readable even when
+// an external panel (e.g. the CDD app's own error console) stringifies the
+// whole object as "[object Object]". Fields are strings so they survive
+// JSON.stringify, .toString(), and template-literal coercion.
+function describeErr(err) {
+    if (err instanceof Error) {
+        return {
+            errorName: err.name,
+            errorMessage: err.message,
+            ...(err.stack ? { errorStack: err.stack } : {}),
+        };
+    }
+    // Response-like (fetch Response that was passed as an error)
+    if (err && typeof err === "object" && ("status" in err || "statusText" in err)) {
+        return {
+            httpStatus: err.status,
+            httpStatusText: err.statusText ?? "",
+            url: err.url ?? "",
+        };
+    }
+    // Plain object or primitive
+    if (err && typeof err === "object") return err;
+    return { errorValue: String(err) };
+}
+
 // cacheKey (`${vaultId}:${moleculeId}`) -> Promise<{ svg, synonym }>
 const moleculeCache = new Map();
 
@@ -114,9 +139,12 @@ async function fetchMoleculeData(vaultId, moleculeId) {
         });
 
         if (!res.ok) {
-            console.warn(`${LOG_PREFIX} molecule page HTTP ${res.status}`, {
+            console.error(LOG_PREFIX, "Molecule page request failed", {
                 vaultId,
                 moleculeId,
+                httpStatus: res.status,
+                httpStatusText: res.statusText,
+                url: res.url,
             });
             return EMPTY;
         }
@@ -140,10 +168,10 @@ async function fetchMoleculeData(vaultId, moleculeId) {
         const svg = await renderSmilesToSvg(smiles);
         return { svg, synonym };
     } catch (err) {
-        console.warn(`${LOG_PREFIX} failed to load molecule data`, {
+        console.error(LOG_PREFIX, "Failed to load molecule data", {
             vaultId,
             moleculeId,
-            err,
+            ...describeErr(err),
         });
         return EMPTY;
     }

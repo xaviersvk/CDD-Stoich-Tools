@@ -20,15 +20,23 @@
 // What it must NOT do: read the DOM, do network, or assume a fixed array index
 // for the location field (locate it by sibling field_definition_id, fallback by
 // value shape).
+//
+// Iterator note: all loops use formData.forEach() instead of
+// for...of formData.entries() / formData.keys(). Firefox WebExtension content
+// scripts wrap FormData iterators in Xray wrappers that lose [Symbol.iterator],
+// making for...of throw "not iterable". forEach() is callback-based and avoids
+// the iterator protocol entirely. Chrome is unaffected either way.
 
 export const LOCATION_FIELD_DEFINITION_ID = "1000001955";
 
 // True if a FormData looks like a CDD create-sample payload.
 export function hasInventorySampleKeys(formData) {
-    for (const key of formData.keys()) {
-        if (key.includes("inventory_sample")) return true;
-    }
-    return false;
+    if (!formData || typeof formData.forEach !== "function") return false;
+    let found = false;
+    formData.forEach((_v, k) => {
+        if (k.includes("inventory_sample")) found = true;
+    });
+    return found;
 }
 
 // Rebuild a FormData from captured [key, value] string entries (the page-world
@@ -43,7 +51,8 @@ export function formDataFromEntries(entries) {
 // referenced (not duplicated), which is fine because we never mutate them.
 export function cloneFormData(formData) {
     const copy = new FormData();
-    for (const [k, v] of formData.entries()) copy.append(k, v);
+    if (!formData || typeof formData.forEach !== "function") return copy;
+    formData.forEach((v, k) => copy.append(k, v));
     return copy;
 }
 
@@ -53,38 +62,40 @@ export function cloneFormData(formData) {
 // the Location field-definition id, then read its sibling [value]. Fallback:
 // the only [value] shaped "<digits>,<digits>".
 export function findLocationField(formData, locId = LOCATION_FIELD_DEFINITION_ID) {
+    if (!formData || typeof formData.forEach !== "function") {
+        console.error("[CDD cdd-form-data] findLocationField: not a FormData",
+            { type: typeof formData, ctor: formData?.constructor?.name });
+        return null;
+    }
+
     // Primary: by sibling field_definition_id.
-    for (const [k, v] of formData.entries()) {
+    let result = null;
+    formData.forEach((v, k) => {
+        if (result) return;
         if (
             /\[fields_attributes\]\[\d+\]\[field_definition_id\]$/.test(k) &&
             String(v) === String(locId)
         ) {
             const prefix = k.replace(/\[field_definition_id\]$/, "");
             const valueKey = `${prefix}[value]`;
-            if (!formData.has(valueKey)) break;
+            if (!formData.has(valueKey)) return;
             const raw = String(formData.get(valueKey));
             const [boxId, position] = splitComposite(raw);
-            return {
-                defKey: k,
-                valueKey,
-                raw,
-                boxId,
-                position,
-                viaFallback: false,
-            };
+            result = { defKey: k, valueKey, raw, boxId, position, viaFallback: false };
         }
-    }
+    });
+    if (result) return result;
 
     // Fallback: a [value] entry shaped "digits,digits".
-    for (const [k, v] of formData.entries()) {
+    formData.forEach((v, k) => {
+        if (result) return;
         if (/\[value\]$/.test(k) && /^\d+\s*,\s*\d+$/.test(String(v))) {
             const raw = String(v);
             const [boxId, position] = splitComposite(raw);
-            return { defKey: null, valueKey: k, raw, boxId, position, viaFallback: true };
+            result = { defKey: null, valueKey: k, raw, boxId, position, viaFallback: true };
         }
-    }
-
-    return null;
+    });
+    return result;
 }
 
 function splitComposite(raw) {
@@ -119,8 +130,9 @@ export function withReplacedPosition(formData, newPosition, locId = LOCATION_FIE
 
 // Human-readable, length-capped dump of a FormData for console preview.
 export function previewFormData(formData, maxValueLen = 300) {
+    if (!formData || typeof formData.forEach !== "function") return "(not a FormData)";
     const lines = [];
-    for (const [k, v] of formData.entries()) {
+    formData.forEach((v, k) => {
         let shown;
         if (typeof v === "string") {
             shown = v.length > maxValueLen ? `${v.slice(0, maxValueLen)}… (${v.length} chars)` : v;
@@ -128,6 +140,6 @@ export function previewFormData(formData, maxValueLen = 300) {
             shown = `[${v?.constructor?.name || "blob"}]`;
         }
         lines.push(`${k} = ${shown}`);
-    }
+    });
     return lines.join("\n");
 }

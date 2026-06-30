@@ -16,6 +16,19 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [9.0.1] — 2026-06-30
+
+### Fixed
+- **Firefox: batch sample creation crash.** `FormData.entries()` and
+  `FormData.keys()` return iterators that Firefox wraps in Xray wrappers inside
+  WebExtension content scripts; those wrappers strip `[Symbol.iterator]`, causing
+  `TypeError: formData.entries() is not iterable` when the extension tried to
+  build the replay payload. All iteration in `shared/cdd-form-data.js` now uses
+  `FormData.forEach()`, which is callback-based and avoids the iterator protocol
+  entirely. Chrome is unaffected.
+
+---
+
 ## [9.0.0] — 2026-06-29
 
 ### Added

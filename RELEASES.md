@@ -9,6 +9,14 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 9.0.1 — June 2026
+
+**Firefox fix: batch sample creation now works.**
+
+- Fixed a crash (`TypeError: formData.entries() is not iterable`) that occurred in Firefox when using batch sample creation. Firefox wraps FormData iterators in Xray wrappers that strip the standard iterator interface; the extension now uses `forEach` instead of `for...of` to work around this. No change in behaviour on Chrome.
+
+---
+
 ## 9.0.0 — June 2026
 
 **Create many samples at once, and colour-code your inventory.**

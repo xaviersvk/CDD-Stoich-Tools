@@ -23,6 +23,12 @@
 // migration of existing keys.
 export const PREFIX_COLORS_STORAGE_KEY = "cddPrefixColors";
 
+// Hard cap on stored prefixes. Prevents unbounded chrome.storage growth from
+// large vaults with many unique Sample ID series. When the cap is hit, new
+// auto-discovered prefixes are silently ignored (user-added ones in the popup
+// are still accepted up to this limit via sanitizePrefixColorMap).
+export const MAX_PREFIX_COUNT = 40;
+
 /* ------------------------------------------------------------------ *
  * Prefix parsing — the ONE place that defines what a "prefix" is
  * ------------------------------------------------------------------ */
@@ -98,7 +104,27 @@ export function sanitizePrefixColorMap(raw) {
         out[key] = isValidHexColor(color) ? color.trim() : "";
     }
 
-    return out;
+    return pruneToMaxPrefixes(out);
+}
+
+// Prune a sanitised map to at most MAX_PREFIX_COUNT entries.
+// Priority: (1) prefixes with a valid hex colour, (2) prefixes without a colour.
+// Both groups are sorted alphabetically so the result is stable across runs.
+function pruneToMaxPrefixes(map) {
+    if (Object.keys(map).length <= MAX_PREFIX_COUNT) return map;
+
+    const colored = [];
+    const uncolored = [];
+    for (const [prefix, color] of Object.entries(map)) {
+        (isValidHexColor(color) ? colored : uncolored).push(prefix);
+    }
+    colored.sort();
+    uncolored.sort();
+
+    const kept = [...colored, ...uncolored].slice(0, MAX_PREFIX_COUNT);
+    const pruned = {};
+    for (const prefix of kept) pruned[prefix] = map[prefix];
+    return pruned;
 }
 
 /* ------------------------------------------------------------------ *
@@ -221,6 +247,9 @@ export function recordSampleIdPrefix(sampleId) {
     // Already known (with or without a colour): leave it exactly as the user
     // left it. This is the "don't change an existing prefix's colour" rule.
     if (Object.prototype.hasOwnProperty.call(cachedMap, prefix)) return;
+
+    // Respect the hard cap — never auto-discover beyond MAX_PREFIX_COUNT.
+    if (Object.keys(cachedMap).length >= MAX_PREFIX_COUNT) return;
 
     cachedMap = { ...cachedMap, [prefix]: "" };
     schedulePersist();

@@ -37,7 +37,8 @@ export function ensureDepletedStyle() {
 }
 
 function wrapperMatchesDepleted(wrapper, depleted) {
-    const text = normalizeValue(wrapper?.innerText || wrapper?.textContent || "");
+    // textContent (not innerText) avoids forced layout reflow on every call.
+    const text = normalizeValue(wrapper?.textContent || "");
     if (!text) return false;
 
     for (const id of depleted) {
@@ -62,7 +63,7 @@ export function markDepletedSamplesInSelector() {
 
         if (!wrapper) return;
 
-        const wrapperText = normalizeValue(wrapper.innerText || wrapper.textContent || "");
+        const wrapperText = normalizeValue(wrapper.textContent || "");
         const directMatch = depleted.has(value);
         const textMatch = !directMatch && wrapperMatchesDepleted(wrapper, depleted);
         const matched = directMatch || textMatch;

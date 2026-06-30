@@ -125,21 +125,23 @@ function enhanceTreeContainer(treeContainer) {
 
         startX = event.clientX;
         startWidth = treeContainer.getBoundingClientRect().width;
+        let lastWidth = startWidth;
 
         document.body.classList.add("cdd-location-resizing");
 
         function onMouseMove(moveEvent) {
             const delta = moveEvent.clientX - startX;
-            const newWidth = clamp(startWidth + delta, MIN_WIDTH, MAX_WIDTH);
-
-            applyWidth(treeContainer, newWidth);
-            localStorage.setItem(STORAGE_KEY, String(newWidth));
+            lastWidth = clamp(startWidth + delta, MIN_WIDTH, MAX_WIDTH);
+            applyWidth(treeContainer, lastWidth);
+            // localStorage.setItem is synchronous (blocks main thread) — persist
+            // only on mouseup, not on every pixel of movement.
         }
 
         function onMouseUp() {
             document.body.classList.remove("cdd-location-resizing");
             document.removeEventListener("mousemove", onMouseMove);
             document.removeEventListener("mouseup", onMouseUp);
+            localStorage.setItem(STORAGE_KEY, String(lastWidth));
         }
 
         document.addEventListener("mousemove", onMouseMove);

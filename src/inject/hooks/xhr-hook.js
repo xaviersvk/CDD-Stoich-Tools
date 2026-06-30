@@ -19,6 +19,16 @@ export function installXhrHook(tryParseText) {
                     return;
                 }
 
+                // Skip non-JSON responses (HTML pages, CSS, JS bundles, images…)
+                // to avoid parsing megabytes of irrelevant text on every XHR.
+                const contentType = this.getResponseHeader("content-type") || "";
+                if (
+                    !contentType.includes("application/json") &&
+                    !contentType.includes("text/json")
+                ) {
+                    return;
+                }
+
                 tryParseText(this.responseText);
             } catch (err) {
                 console.debug("[CDD Stoich Tools] xhr parse failed", err);

@@ -59,14 +59,18 @@ function runOnlyOnElnEntryPage() {
 }
 
 function getEntryId() {
-    const idElement = [...document.querySelectorAll("div")]
-        .find(el => el.textContent?.trim().startsWith("ID:"));
-
-    if (!idElement) return null;
-
-    return idElement.textContent
-        .replace("ID:", "")
-        .trim();
+    // TreeWalker with early exit: avoids allocating a NodeList + heap array of
+    // every div on the page and calling .textContent on each one.
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_ELEMENT);
+    let el;
+    while ((el = walker.nextNode())) {
+        if (el.tagName !== "DIV") continue;
+        const text = el.textContent?.trim();
+        if (text?.startsWith("ID:")) {
+            return text.replace("ID:", "").trim();
+        }
+    }
+    return null;
 }
 
 function startTitleObserver() {

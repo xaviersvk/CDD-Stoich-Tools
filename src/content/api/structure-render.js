@@ -13,6 +13,12 @@ const LOG_PREFIX = "[CDD inventory plugin]";
 const SVG_NS = "http://www.w3.org/2000/svg";
 const THEME = "bw";
 
+// SmilesDrawer's ring perception can take effectively forever on very large
+// molecules (macrocycles, peptides, polymers) and it runs synchronously on the
+// main thread — one such molecule freezes the whole page. Anything above this
+// length is skipped and the tooltip shows "Structure unavailable" instead.
+const MAX_SMILES_LENGTH = 250;
+
 // All atoms black on white. Thick bonds + big fonts keep it readable when the
 // SVG is scaled down into the tooltip. We do NOT set width/height: SmilesDrawer
 // sizes the SVG + viewBox to fit the molecule; the tooltip caps display size.
@@ -58,6 +64,15 @@ function getDrawer() {
 export function renderSmilesToSvg(smiles) {
     return new Promise((resolve) => {
         if (!smiles || typeof smiles !== "string") {
+            resolve(null);
+            return;
+        }
+
+        if (smiles.length > MAX_SMILES_LENGTH) {
+            console.debug(`${LOG_PREFIX} SMILES too long to render safely`, {
+                length: smiles.length,
+                limit: MAX_SMILES_LENGTH,
+            });
             resolve(null);
             return;
         }

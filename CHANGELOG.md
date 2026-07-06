@@ -16,6 +16,20 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [9.0.2] — 2026-07-06
+
+### Fixed
+- **Page freeze in "Pick Location" with very large molecules.** The well tooltip
+  renders molecule structures with SmilesDrawer, whose ring perception runs
+  synchronously on the main thread and can take effectively forever on very
+  large molecules (macrocycles, peptides, polymers). One such molecule in a box
+  froze the whole page — no console error, just a permanently pending molecule
+  request. `renderSmilesToSvg()` now skips SMILES longer than 250 characters and
+  the tooltip shows "Structure unavailable" instead (`structure-render.js`,
+  `MAX_SMILES_LENGTH`).
+
+---
+
 ## [9.0.1] — 2026-06-30
 
 ### Fixed

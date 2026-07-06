@@ -9,6 +9,18 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 9.0.2 — July 2026
+
+**Fix: page no longer freezes in "Pick Location" boxes containing very large molecules.**
+
+- The well tooltip draws each compound's structure in the browser. For very
+  large molecules (long peptides, polymers, macrocycles) that drawing step could
+  run essentially forever and freeze the whole page. Structures with a SMILES
+  longer than 250 characters are now skipped — the tooltip simply says
+  "Structure unavailable" and everything else keeps working.
+
+---
+
 ## 9.0.1 — June 2026
 
 **Firefox fix: batch sample creation now works.**

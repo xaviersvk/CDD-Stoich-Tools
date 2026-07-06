@@ -109,17 +109,28 @@ function headings() {
         .filter(Boolean);
 }
 
-// The child-sample-from-debit dialog carries no "Create a New Sample" heading;
-// CDD marks it with this test id instead. Only trust it when it actually sits
-// inside a dialog container — the same test id on a trigger button elsewhere on
-// the page must not count as an open dialog.
-const DEBIT_DIALOG_SELECTOR = '[data-testid="createSampleFromDebit"]';
+// The child-sample-from-debit dialog carries no "Create a New Sample" heading.
+// CDD titles it "Create Sample from Debit" (an h2.MuiDialogTitle-root) and marks
+// its checkbox with data-testid=".createSampleFromDebit" (note the leading dot).
+// Detect by the title first, fall back to the checkbox marker — but only when it
+// sits inside a real dialog container, so the same marker on a trigger elsewhere
+// on the page can never count as an open dialog.
 const DIALOG_ROOT_SELECTOR =
     '[role="dialog"], .MuiDialog-paper, .MuiDialog-root';
+// Accept the marker with or without the leading dot in case CDD normalises it.
+const DEBIT_MARKER_SELECTOR =
+    '[data-testid=".createSampleFromDebit"], [data-testid="createSampleFromDebit"]';
 
 function findDebitDialogRoot() {
-    for (const el of document.querySelectorAll(DEBIT_DIALOG_SELECTOR)) {
-        const root = el.closest(DIALOG_ROOT_SELECTOR);
+    const heading = [...document.querySelectorAll(".MuiDialogTitle-root, h1, h2, h3")]
+        .find((h) => /create sample from debit/i.test(h.textContent || ""));
+    if (heading) {
+        const root = heading.closest(DIALOG_ROOT_SELECTOR);
+        if (root) return root;
+    }
+    const marker = document.querySelector(DEBIT_MARKER_SELECTOR);
+    if (marker) {
+        const root = marker.closest(DIALOG_ROOT_SELECTOR);
         if (root) return root;
     }
     return null;

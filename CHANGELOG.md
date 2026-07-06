@@ -16,6 +16,20 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [10.0.1] — 2026-07-07
+
+### Fixed
+- **Child-sample batch bar never appeared.** The v10.0.0 detection looked for
+  `[data-testid="createSampleFromDebit"]` on the dialog, but CDD's real markup
+  titles the dialog **"Create Sample from Debit"** (an `h2.MuiDialogTitle-root`)
+  and puts `data-testid=".createSampleFromDebit"` (leading dot) on a *checkbox*,
+  not the container — so nothing matched and no "Create N Samples" bar showed.
+  Detection now keys off the dialog title, with the checkbox marker (dot-prefixed
+  or not) as a fallback, still requiring a real dialog ancestor (`init.js`,
+  `findDebitDialogRoot`).
+
+---
+
 ## [10.0.0] — 2026-07-07
 
 ### Added

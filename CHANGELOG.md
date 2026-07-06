@@ -16,10 +16,10 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
-## [10.0.1] — 2026-07-07
+## [9.1.1] — 2026-07-07
 
 ### Fixed
-- **Child-sample batch bar never appeared.** The v10.0.0 detection looked for
+- **Child-sample batch bar never appeared.** The v9.1.0 detection looked for
   `[data-testid="createSampleFromDebit"]` on the dialog, but CDD's real markup
   titles the dialog **"Create Sample from Debit"** (an `h2.MuiDialogTitle-root`)
   and puts `data-testid=".createSampleFromDebit"` (leading dot) on a *checkbox*,
@@ -30,7 +30,7 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
-## [10.0.0] — 2026-07-07
+## [9.1.0] — 2026-07-07
 
 ### Added
 - **Batch creation of CHILD samples (create-from-debit).** The multi-position
@@ -40,10 +40,13 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   sample nested under `child_sample_attributes`; the extension captures it,
   swaps only the position part of the child's Location value
   (`"<boxId>,<position>"`, same `field_definition_id` 1000001955) and replays it
-  for every remaining selected position. Major bump: new CDD endpoint.
-  - The debit dialog has no "Create a New Sample" heading; it is detected via
-    `[data-testid="createSampleFromDebit"]`, accepted only inside a real dialog
-    container so a same-testid trigger button elsewhere can't match.
+  for every remaining selected position. Minor bump: it reuses the existing
+  batch-create replay mechanism on a sibling endpoint rather than adding a new
+  capability tier.
+  - The debit dialog has no "Create a New Sample" heading; it is detected by its
+    **"Create Sample from Debit"** title (with the `.createSampleFromDebit`
+    checkbox marker as a fallback), accepted only inside a real dialog container
+    so the same marker elsewhere on the page can't match.
   - The response to a debit create is the updated *parent* — the created child's
     id/name are read from the newest `inventory_events[]` entry carrying a
     `child_sample_id`.

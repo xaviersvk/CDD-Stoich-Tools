@@ -9,17 +9,17 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
-## 10.0.1 — July 2026
+## 9.1.1 — July 2026
 
 **Fix: the child-sample batch bar now actually shows up.**
 
-- In 10.0.0 the "Create N Samples" bar never appeared in the "Create Sample from
+- In 9.1.0 the "Create N Samples" bar never appeared in the "Create Sample from
   Debit" dialog because it was being detected the wrong way. It's now recognised
   correctly, so batch creation of child samples works as intended.
 
 ---
 
-## 10.0.0 — July 2026
+## 9.1.0 — July 2026
 
 **Batch creation now works for child samples too.**
 

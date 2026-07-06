@@ -416,6 +416,45 @@ replayed by the plugin.
 - `.../results-panel.js` (new) — floating `position:fixed` results panel ✅
 - `.../styles.js` — `.cdd-mp-create` button + `.cdd-mp-float*` panel styles ✅
 
+### 11f. Child samples from debit — ✅ IMPLEMENTED (v10.0.0)
+
+**Requirement**: bulk-create CHILD samples too. Creating a child (aliquot) from a
+parent sample's debit event fires a different request than the plain create:
+
+- **`PUT`** (not POST) to
+  `/vaults/<v>/molecules/<m>/inventory_samples/<parentId>/create_sample_from_debit`
+- Same multipart shape, but the new sample is nested under
+  `inventory_sample[inventory_events_attributes][0][child_sample_attributes][...]`.
+- The Location field uses the SAME `field_definition_id` (1000001955) and the same
+  composite `"<boxId>,<position>"` value — just on the child's nested event:
+  `...[child_sample_attributes][inventory_events_attributes][0][fields_attributes][N][value]`.
+- The **response is the updated PARENT sample**, not the child. The created child
+  is the newest entry in `inventory_events[]` carrying a `child_sample_id`
+  (events come back newest-first).
+- The `child_sample_attributes[name]` sent by CDD is the PARENT's name; the server
+  assigns the real child identifier itself (observed: sent `...SM003103`, created
+  `...SM003107`). Replaying an identical payload N times is therefore safe —
+  no duplicate names.
+- **Each replay debits the parent again** by the payload's Debit amount — N
+  children = N × debit. Insufficient parent amount surfaces as a per-position
+  error in the results panel.
+
+**Verified against a real request/response pair (2026-07-06, vault 1000000109).**
+
+**How it plugs into the existing flow** (no new orchestrator):
+- `create-request-capture.js`: `isCreateRequest()` now also matches
+  `PUT .../create_sample_from_debit`; the capture record's `method` is replayed
+  verbatim (`createInventorySample(url, formData, method)`).
+- `cdd-form-data.js#findLocationField`: when a payload carries multiple Location
+  fields, keys containing `[child_sample_attributes]` win (the child is the one
+  being created).
+- Dialog detection: the debit dialog has no "Create a New Sample" heading; it is
+  recognised by `[data-testid="createSampleFromDebit"]`, accepted only when that
+  element sits inside a dialog container (`[role="dialog"]`/`.MuiDialog-*`) so a
+  same-testid trigger button elsewhere can never count as an open dialog.
+- `inventory-samples.js` + `init.js#parseCreatedLabel`: on the debit endpoint the
+  created child's id/name are read from the parent response's `inventory_events[]`.
+
 ---
 
 #### Original design notes (kept for reference)

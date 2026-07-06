@@ -18,14 +18,14 @@
 
 import { getCsrfToken } from "./cdd-api.js";
 
-export async function createInventorySample(url, formData) {
+export async function createInventorySample(url, formData, method = "POST") {
     if (!url) return { ok: false, status: 0, errorText: "No target URL" };
 
     const csrf = getCsrfToken();
     let res;
     try {
         res = await fetch(url, {
-            method: "POST",
+            method,
             credentials: "include",
             headers: {
                 Accept: "application/json, text/plain, */*",
@@ -55,6 +55,26 @@ export async function createInventorySample(url, formData) {
             errorText: text || `HTTP ${res.status}`,
             raw: json,
         };
+    }
+
+    // create_sample_from_debit responds with the updated PARENT sample; the
+    // sample just created is the newest inventory event carrying a child id
+    // (events come back newest-first). The plain create responds with the new
+    // sample itself, so this only kicks in on the debit endpoint.
+    if (/create_sample_from_debit/.test(url)) {
+        const childEvent = Array.isArray(json?.inventory_events)
+            ? json.inventory_events.find((e) => e?.child_sample_id != null)
+            : null;
+        if (childEvent) {
+            return {
+                ok: true,
+                status: res.status,
+                sampleId: childEvent.child_sample_id,
+                sampleIdentifier: childEvent.child_sample_name ?? null,
+                location: null,
+                raw: json,
+            };
+        }
     }
 
     return {

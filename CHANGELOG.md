@@ -16,6 +16,34 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [10.0.0] — 2026-07-07
+
+### Added
+- **Batch creation of CHILD samples (create-from-debit).** The multi-position
+  flow now also works when creating a child sample (aliquot) from a parent
+  sample's debit event. CDD sends that create as
+  `PUT .../inventory_samples/<parentId>/create_sample_from_debit` with the new
+  sample nested under `child_sample_attributes`; the extension captures it,
+  swaps only the position part of the child's Location value
+  (`"<boxId>,<position>"`, same `field_definition_id` 1000001955) and replays it
+  for every remaining selected position. Major bump: new CDD endpoint.
+  - The debit dialog has no "Create a New Sample" heading; it is detected via
+    `[data-testid="createSampleFromDebit"]`, accepted only inside a real dialog
+    container so a same-testid trigger button elsewhere can't match.
+  - The response to a debit create is the updated *parent* — the created child's
+    id/name are read from the newest `inventory_events[]` entry carrying a
+    `child_sample_id`.
+  - CDD assigns child sample identifiers server-side, so replaying an identical
+    payload cannot produce duplicate names.
+  - Each replay debits the parent by the payload's Debit amount (N children =
+    N × debit); an insufficient parent amount shows as a per-position error in
+    the results panel with Retry.
+  - `findLocationField` now prefers Location fields under
+    `[child_sample_attributes]` when a payload carries more than one;
+    `createInventorySample` replays with the captured HTTP verb (POST or PUT).
+
+---
+
 ## [9.0.2] — 2026-07-06
 
 ### Fixed

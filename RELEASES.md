@@ -9,6 +9,23 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 10.0.0 — July 2026
+
+**Batch creation now works for child samples too.**
+
+- When you create a child sample (an aliquot) from a parent sample's debit
+  event, you can now select several positions in the "Pick Location" grid and
+  create all the children in one click — exactly like the existing batch create.
+  The first child goes through CDD's own Save; the rest are created
+  automatically at the remaining selected positions.
+- CDD numbers the child samples itself (SM003107, SM003108, …), so there are no
+  duplicate names.
+- Keep in mind each child debits the parent by the amount in the form — five
+  children at 0.05 L each take 0.25 L from the parent. If the parent runs out,
+  the affected positions show an error in the results panel and can be retried.
+
+---
+
 ## 9.0.2 — July 2026
 
 **Fix: page no longer freezes in "Pick Location" boxes containing very large molecules.**

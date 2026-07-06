@@ -21,6 +21,20 @@
 
 const CREATE_URL_RE = /\/(inventory_samples|specified_batches)(\?|$)/;
 
+// Child sample created from a parent's debit event: CDD sends a PUT to
+//   /vaults/<v>/molecules/<m>/inventory_samples/<parentId>/create_sample_from_debit
+// with the same multipart shape (nested under child_sample_attributes).
+const CREATE_FROM_DEBIT_URL_RE = /\/inventory_samples\/\d+\/create_sample_from_debit(\?|$)/;
+
+// A request whose body is worth snapshotting as a replay template: the plain
+// create (POST) or the child-sample-from-debit variant (PUT).
+function isCreateRequest(method, url) {
+    if (!url) return false;
+    if (method === "POST" && CREATE_URL_RE.test(url)) return true;
+    if (method === "PUT" && CREATE_FROM_DEBIT_URL_RE.test(url)) return true;
+    return false;
+}
+
 // Monotonic id pairing a captured request with its captured response. A single
 // native create is ever in flight at a time, but correlating removes any doubt.
 let correlationSeq = 0;
@@ -100,7 +114,7 @@ export function installCreateRequestCapture(onCapture, onResponse) {
                     (input && typeof input !== "string" && input.method) ||
                     "GET"
                 ).toUpperCase();
-                if (url && method === "POST" && CREATE_URL_RE.test(url)) {
+                if (isCreateRequest(method, url)) {
                     const body = opts.body ?? (input && typeof input !== "string" ? input.body : undefined);
                     const snap = snapshotBody(body);
                     if (snap) {
@@ -153,11 +167,11 @@ export function installCreateRequestCapture(onCapture, onResponse) {
         };
         const wrappedSend = function (body) {
             try {
-                if (this.__cddUrl && this.__cddMethod === "POST" && CREATE_URL_RE.test(this.__cddUrl)) {
+                if (isCreateRequest(this.__cddMethod, this.__cddUrl)) {
                     const snap = snapshotBody(body);
                     if (snap) {
                         const correlationId = ++correlationSeq;
-                        reportCapture({ correlationId, via: "xhr", url: this.__cddUrl, method: "POST", body: snap });
+                        reportCapture({ correlationId, via: "xhr", url: this.__cddUrl, method: this.__cddMethod, body: snap });
                         this.addEventListener("loadend", () => {
                             try {
                                 reportResponse({

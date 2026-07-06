@@ -109,8 +109,27 @@ function headings() {
         .filter(Boolean);
 }
 
+// The child-sample-from-debit dialog carries no "Create a New Sample" heading;
+// CDD marks it with this test id instead. Only trust it when it actually sits
+// inside a dialog container — the same test id on a trigger button elsewhere on
+// the page must not count as an open dialog.
+const DEBIT_DIALOG_SELECTOR = '[data-testid="createSampleFromDebit"]';
+const DIALOG_ROOT_SELECTOR =
+    '[role="dialog"], .MuiDialog-paper, .MuiDialog-root';
+
+function findDebitDialogRoot() {
+    for (const el of document.querySelectorAll(DEBIT_DIALOG_SELECTOR)) {
+        const root = el.closest(DIALOG_ROOT_SELECTOR);
+        if (root) return root;
+    }
+    return null;
+}
+
 function isCreateSampleDialogOpen() {
-    return headings().some((t) => /create a new sample/i.test(t));
+    return (
+        headings().some((t) => /create a new sample/i.test(t)) ||
+        !!findDebitDialogRoot()
+    );
 }
 
 function isPickLocationDialogOpen() {
@@ -121,11 +140,13 @@ function findCreateDialogRoot() {
     const h = [...document.querySelectorAll("h1,h2,h3,.MuiDialogTitle-root")].find((e) =>
         /create a new sample/i.test(e.textContent || "")
     );
-    if (!h) return null;
-    return (
-        h.closest('[role="dialog"], .MuiDialog-paper, .MuiPaper-root, .MuiDialog-root') ||
-        h.parentElement
-    );
+    if (h) {
+        return (
+            h.closest('[role="dialog"], .MuiDialog-paper, .MuiPaper-root, .MuiDialog-root') ||
+            h.parentElement
+        );
+    }
+    return findDebitDialogRoot();
 }
 
 // Find CDD's own primary submit ("Save") button in the dialog actions, never our
@@ -422,7 +443,10 @@ async function runCreateN(dialog, bar) {
     dbg("native created", { nativePosition, replayPositions, url: cap.url });
 
     const url = cap.url;
-    const failed = await replaySequential(replayPositions, template, url, panel);
+    // Replay with the same verb CDD used: POST for the plain create, PUT for
+    // create_sample_from_debit (child samples).
+    const method = (cap.method || "POST").toUpperCase();
+    const failed = await replaySequential(replayPositions, template, url, method, panel);
 
     const okCount = 1 + replayPositions.length - failed.length;
     panel.setBusy(false);
@@ -431,7 +455,7 @@ async function runCreateN(dialog, bar) {
         schedulePageRefresh(1500);
     } else {
         panel.setStatus(`Done. ${okCount} created, ${failed.length} failed.`);
-        wireRetry(panel, failed, template, url);
+        wireRetry(panel, failed, template, url, method);
     }
 
     // Selection is consumed — clear so a reopened dialog can't re-create it.
@@ -440,7 +464,7 @@ async function runCreateN(dialog, bar) {
 }
 
 // Replay a list of positions sequentially. Returns the positions that failed.
-async function replaySequential(positions, template, url, panel) {
+async function replaySequential(positions, template, url, method, panel) {
     const failed = [];
     for (const pos of positions) {
         panel.setStatus(`Creating sample at position ${pos}…`);
@@ -456,7 +480,7 @@ async function replaySequential(positions, template, url, panel) {
 
         let res;
         try {
-            res = await createInventorySample(url, built.formData);
+            res = await createInventorySample(url, built.formData, method);
         } catch (err) {
             panel.addRow({ position: pos, ok: false, label: `error: ${err.message}` });
             failed.push(pos);
@@ -480,13 +504,13 @@ async function replaySequential(positions, template, url, panel) {
 }
 
 // Wire (and re-wire after each retry) the "Retry failed (N)" button.
-function wireRetry(panel, failed, template, url) {
+function wireRetry(panel, failed, template, url, method) {
     if (!failed.length) return;
     panel.showRetry(failed.length, async () => {
         panel.hideRetry();
         panel.setBusy(true);
         panel.setStatus(`Retrying ${failed.length} failed position${failed.length === 1 ? "" : "s"}…`);
-        const stillFailed = await replaySequential(failed, template, url, panel);
+        const stillFailed = await replaySequential(failed, template, url, method, panel);
         const recovered = failed.length - stillFailed.length;
         panel.setBusy(false);
         panel.setStatus(
@@ -494,7 +518,7 @@ function wireRetry(panel, failed, template, url) {
                 ? `Retry complete — ${recovered} created. All positions done.`
                 : `Retry — ${recovered} created, ${stillFailed.length} still failing.`
         );
-        wireRetry(panel, stillFailed, template, url);
+        wireRetry(panel, stillFailed, template, url, method);
     });
 }
 
@@ -529,6 +553,14 @@ function buildTemplateFormData(cap) {
 function parseCreatedLabel(resp) {
     try {
         const j = JSON.parse(resp.bodyText || "");
+
+        // create_sample_from_debit responds with the updated PARENT; the newly
+        // created child is the newest event carrying a child id (newest-first).
+        const childEvent = Array.isArray(j?.inventory_events)
+            ? j.inventory_events.find((e) => e?.child_sample_id != null)
+            : null;
+        if (childEvent?.child_sample_name) return `${childEvent.child_sample_name} (native)`;
+
         const id = j?.sample_identifier || (j?.id != null ? `id ${j.id}` : null);
         const locPos = j?.location?.position;
         return id ? `${id}${locPos != null ? ` @ ${locPos}` : ""} (native)` : "created (native)";

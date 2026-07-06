@@ -68,10 +68,12 @@ export function findLocationField(formData, locId = LOCATION_FIELD_DEFINITION_ID
         return null;
     }
 
-    // Primary: by sibling field_definition_id.
-    let result = null;
+    // Primary: by sibling field_definition_id. A create_sample_from_debit
+    // payload nests the NEW sample under [child_sample_attributes]; if both the
+    // parent event and the child event carry a Location field, the child's is
+    // the one being created, so it wins over the parent's.
+    const primary = [];
     formData.forEach((v, k) => {
-        if (result) return;
         if (
             /\[fields_attributes\]\[\d+\]\[field_definition_id\]$/.test(k) &&
             String(v) === String(locId)
@@ -81,9 +83,13 @@ export function findLocationField(formData, locId = LOCATION_FIELD_DEFINITION_ID
             if (!formData.has(valueKey)) return;
             const raw = String(formData.get(valueKey));
             const [boxId, position] = splitComposite(raw);
-            result = { defKey: k, valueKey, raw, boxId, position, viaFallback: false };
+            primary.push({ defKey: k, valueKey, raw, boxId, position, viaFallback: false });
         }
     });
+    let result =
+        primary.find((m) => m.defKey.includes("[child_sample_attributes]")) ||
+        primary[0] ||
+        null;
     if (result) return result;
 
     // Fallback: a [value] entry shaped "digits,digits".

@@ -10,3 +10,7 @@ Whenever `manifest.json` version is bumped:
 5. Push commit and tag: `git push origin main && git push origin vX.Y.Z`
 
 Do all five steps without being asked — a version bump means a release.
+
+Pushing the `vX.Y.Z` tag triggers `.github/workflows/publish.yml`, which builds,
+zips `dist/`, and uploads/publishes to the Chrome Web Store. See `DEPLOYMENT.md`
+for the required GitHub secrets and one-time Google-side setup.

@@ -120,6 +120,9 @@ Notes:
   Chrome. AMO's own review is the gate before it goes live.
 - Each version can only be submitted once, so the `manifest.json` version must be
   bumped for every release (which the normal release workflow already does).
+- CI also attaches a **source code zip** to each submission (`git archive` of the
+  tagged commit — sources, configs, lockfile), which AMO reviewers require for
+  built/bundled code.
 - The build is intentionally not minified, which keeps AMO's source review
   straightforward.
 

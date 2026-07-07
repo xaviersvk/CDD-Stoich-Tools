@@ -208,12 +208,22 @@ jobs:
             echo "configured=true" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Check out
+        if: steps.check.outputs.configured == 'true'
+        uses: actions/checkout@v5
+
       - name: Download build artifact
         if: steps.check.outputs.configured == 'true'
         uses: actions/download-artifact@v7
         with:
           name: dist
           path: dist
+
+      - name: Package source code for AMO review
+        if: steps.check.outputs.configured == 'true'
+        run: |
+          git archive --format=zip --output=source.zip HEAD
+          echo "Packaged $(du -h source.zip | cut -f1) source zip"
 
       - name: Set up Node.js
         if: steps.check.outputs.configured == 'true'
@@ -229,4 +239,5 @@ jobs:
             --api-key="$AMO_JWT_ISSUER" \
             --api-secret="$AMO_JWT_SECRET" \
             --source-dir=dist \
+            --upload-source-code=source.zip \
             --artifacts-dir=web-ext-artifacts

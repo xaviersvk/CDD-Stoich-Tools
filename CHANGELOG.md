@@ -16,6 +16,23 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [9.2.0] — 2026-07-07
+
+### Added
+- **Click-to-copy now works on sample fields too.** The existing click-to-copy
+  behaviour (entity/molecule and batch fields in the Overview, Properties and
+  Batches sections) now also covers the per-sample header values in the Samples
+  tab: **Sample ID**, **Current Amount**, and **Location**. Two additive changes
+  in `copyable-fields.js`: `#molecule-inventory_samples` was added to
+  `CONTAINER_SELECTORS`, and `.value-text` to `VALUE_SELECTORS`. The event-table
+  cells below each header are deliberately left untouched (they carry no
+  `.value-text` class), and the field labels / sample name (`.label-text`) are
+  not made copyable. The existing `MutationObserver` handles collapse/expand and
+  sticky-header re-renders; re-tagging stays idempotent via
+  `data-cddCopyableBound`.
+
+---
+
 ## [9.1.1] — 2026-07-07
 
 ### Fixed

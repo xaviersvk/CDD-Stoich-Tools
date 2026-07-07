@@ -8,6 +8,7 @@ const CONTAINER_SELECTORS = [
     "#molecule-batches-container",
     "#molecule-overview",
     "#molecule-properties",
+    "#molecule-inventory_samples",
 ];
 
 const VALUE_SELECTORS = [
@@ -15,6 +16,7 @@ const VALUE_SELECTORS = [
     "td[data-editable-cell-label]",
     ".fieldValue",
     ".text-contents",
+    ".value-text",
 ];
 
 function log(...args) {

@@ -9,6 +9,19 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 9.2.0 — July 2026
+
+**Click-to-copy now works on samples too.**
+
+- You could already click an entity or batch field value to copy it. Now the
+  same works in the **Samples** tab: click a sample's **Sample ID**, **Current
+  Amount**, or **Location** in its header to copy it to the clipboard (with the
+  usual green flash to confirm).
+- Only the header values are clickable — the labels and the event rows below
+  stay as they are.
+
+---
+
 ## 9.1.1 — July 2026
 
 **Fix: the child-sample batch bar now actually shows up.**

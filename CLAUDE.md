@@ -11,6 +11,7 @@ Whenever `manifest.json` version is bumped:
 
 Do all five steps without being asked — a version bump means a release.
 
-Pushing the `vX.Y.Z` tag triggers `.github/workflows/publish.yml`, which builds,
-zips `dist/`, and uploads/publishes to the Chrome Web Store. See `DEPLOYMENT.md`
-for the required GitHub secrets and one-time Google-side setup.
+Pushing the `vX.Y.Z` tag triggers `.github/workflows/publish.yml`, which builds
+`dist/` once and publishes to the Chrome Web Store and Firefox AMO (each store is
+skipped if its secrets aren't set). See `DEPLOYMENT.md` for the required GitHub
+secrets and one-time Google/Mozilla setup.

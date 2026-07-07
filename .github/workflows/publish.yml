@@ -1,18 +1,21 @@
-name: Publish to Chrome Web Store
+name: Publish extension
 
-# Runs when you push a version tag (e.g. v9.3.0), which is exactly the last step
-# of the existing release workflow. Also runnable manually from the Actions tab.
+# Runs when you push a version tag (e.g. v9.3.0), the last step of the release
+# workflow. Also runnable manually from the Actions tab.
 #
-# Required repository secrets (Settings -> Secrets and variables -> Actions):
-#   CHROME_EXTENSION_ID     the Item ID of the extension in the Web Store
-#   CHROME_CLIENT_ID        OAuth client ID   (Chrome Web Store API)
-#   CHROME_CLIENT_SECRET    OAuth client secret
-#   CHROME_REFRESH_TOKEN    OAuth refresh token
+# It builds once, then publishes to the Chrome Web Store and to Firefox AMO.
+# Each store is skipped (job stays green) if its secrets aren't configured, so
+# you can set up one store at a time.
 #
+# Chrome secrets (Settings -> Secrets and variables -> Actions):
+#   CHROME_EXTENSION_ID, CHROME_CLIENT_ID, CHROME_CLIENT_SECRET, CHROME_REFRESH_TOKEN
+# Firefox / AMO secrets:
+#   AMO_JWT_ISSUER, AMO_JWT_SECRET
 # Optional repository variable:
-#   CHROME_AUTOPUBLISH      set to "false" to upload as draft only (no publish)
+#   CHROME_AUTOPUBLISH   set to "false" to upload the Chrome package as a draft
+#                        only (no publish). Firefox always submits to AMO review.
 #
-# See DEPLOYMENT.md for the one-time Google-side setup.
+# See DEPLOYMENT.md for the one-time Google/Mozilla setup.
 
 on:
   push:
@@ -21,40 +24,20 @@ on:
   workflow_dispatch:
     inputs:
       publish:
-        description: "Publish after upload (uncheck to upload as draft only)"
+        description: "Publish after upload (uncheck to upload the Chrome package as a draft only)"
         type: boolean
         default: true
 
 concurrency:
-  group: chrome-web-store-publish
+  group: publish-extension
   cancel-in-progress: false
 
 jobs:
-  publish:
+  build:
     runs-on: ubuntu-latest
-
-    env:
-      CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
-      CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
-      CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
-      CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
-
     steps:
       - name: Check out
         uses: actions/checkout@v4
-
-      - name: Verify required secrets are present
-        run: |
-          missing=""
-          for name in CHROME_EXTENSION_ID CHROME_CLIENT_ID CHROME_CLIENT_SECRET CHROME_REFRESH_TOKEN; do
-            if [ -z "${!name}" ]; then
-              missing="$missing $name"
-            fi
-          done
-          if [ -n "$missing" ]; then
-            echo "::error::Missing required secret(s):$missing — see DEPLOYMENT.md"
-            exit 1
-          fi
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -80,7 +63,42 @@ jobs:
             exit 1
           fi
 
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          retention-days: 1
+
+  chrome:
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
+      CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+      CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+      CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+    steps:
+      - name: Check for Chrome secrets
+        id: check
+        run: |
+          if [ -z "$CHROME_EXTENSION_ID" ] || [ -z "$CHROME_CLIENT_ID" ] \
+             || [ -z "$CHROME_CLIENT_SECRET" ] || [ -z "$CHROME_REFRESH_TOKEN" ]; then
+            echo "::notice::Chrome Web Store secrets not set — skipping. See DEPLOYMENT.md."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Download build artifact
+        if: steps.check.outputs.configured == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
       - name: Package dist into a zip
+        if: steps.check.outputs.configured == 'true'
         run: |
           cd dist
           zip -r -X ../extension.zip . >/dev/null
@@ -88,6 +106,7 @@ jobs:
           echo "Packaged $(du -h extension.zip | cut -f1) zip"
 
       - name: Get access token
+        if: steps.check.outputs.configured == 'true'
         run: |
           response="$(curl -s -X POST https://oauth2.googleapis.com/token \
             -d client_id="$CHROME_CLIENT_ID" \
@@ -103,6 +122,7 @@ jobs:
           echo "ACCESS_TOKEN=$token" >> "$GITHUB_ENV"
 
       - name: Upload package
+        if: steps.check.outputs.configured == 'true'
         run: |
           response="$(curl -s -X PUT \
             -H "Authorization: Bearer $ACCESS_TOKEN" \
@@ -118,8 +138,11 @@ jobs:
 
       - name: Publish
         if: >-
-          (github.event_name == 'workflow_dispatch' && inputs.publish) ||
-          (github.event_name == 'push' && vars.CHROME_AUTOPUBLISH != 'false')
+          steps.check.outputs.configured == 'true' &&
+          (
+            (github.event_name == 'workflow_dispatch' && inputs.publish) ||
+            (github.event_name == 'push' && vars.CHROME_AUTOPUBLISH != 'false')
+          )
         run: |
           response="$(curl -s -X POST \
             -H "Authorization: Bearer $ACCESS_TOKEN" \
@@ -138,6 +161,49 @@ jobs:
 
       - name: Draft-only notice
         if: >-
-          (github.event_name == 'workflow_dispatch' && !inputs.publish) ||
-          (github.event_name == 'push' && vars.CHROME_AUTOPUBLISH == 'false')
+          steps.check.outputs.configured == 'true' &&
+          (
+            (github.event_name == 'workflow_dispatch' && !inputs.publish) ||
+            (github.event_name == 'push' && vars.CHROME_AUTOPUBLISH == 'false')
+          )
         run: echo "Uploaded as a draft only (publish skipped). Publish it from the Web Store dashboard."
+
+  firefox:
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
+      AMO_JWT_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+    steps:
+      - name: Check for AMO secrets
+        id: check
+        run: |
+          if [ -z "$AMO_JWT_ISSUER" ] || [ -z "$AMO_JWT_SECRET" ]; then
+            echo "::notice::Firefox AMO secrets not set — skipping. See DEPLOYMENT.md."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Download build artifact
+        if: steps.check.outputs.configured == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      - name: Set up Node.js
+        if: steps.check.outputs.configured == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Sign and submit to AMO (listed)
+        if: steps.check.outputs.configured == 'true'
+        run: |
+          npx --yes web-ext@latest sign \
+            --channel=listed \
+            --api-key="$AMO_JWT_ISSUER" \
+            --api-secret="$AMO_JWT_SECRET" \
+            --source-dir=dist \
+            --artifacts-dir=web-ext-artifacts

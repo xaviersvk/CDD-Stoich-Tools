@@ -1,12 +1,18 @@
-# Automated deployment to the Chrome Web Store
+# Automated deployment (Chrome Web Store + Firefox AMO)
 
 Pushing a version tag (`git push origin vX.Y.Z`) triggers
 [`.github/workflows/publish.yml`](.github/workflows/publish.yml), which builds
-the extension, zips `dist/`, uploads it to the Chrome Web Store, and (by default)
-publishes it.
+the extension once and then publishes it to the **Chrome Web Store** and to
+**Firefox AMO** (addons.mozilla.org).
 
-This file is the **one-time setup** you (a human) have to do, because it needs a
-Google account and a paid developer registration that CI cannot create.
+Each store is **skipped** (its job stays green) if its secrets aren't
+configured, so you can set up one store at a time — e.g. Chrome now, Firefox
+later, without either breaking the run.
+
+This file is the **one-time setup** you (a human) have to do, because it needs
+developer accounts / API keys that CI cannot create.
+
+Parts 1–5 below are the Chrome Web Store. Part 6 is Firefox AMO.
 
 ---
 
@@ -108,16 +114,48 @@ variable (or set it to anything other than `false`) to go back to auto-publish.
 
 ---
 
+## 6. Firefox (AMO) setup
+
+The same tag push also submits a new **listed** version to
+[addons.mozilla.org](https://addons.mozilla.org/developers/) using Mozilla's
+official `web-ext` tool.
+
+1. **Create the AMO listing once, manually** (like Chrome): sign in to the
+   [AMO Developer Hub](https://addons.mozilla.org/developers/), submit the first
+   build (`web-ext-artifacts`/zip of `dist/`) as a **listed** add-on, and fill in
+   the listing details. The add-on's ID must match
+   `browser_specific_settings.gecko.id` in `manifest.json`
+   (`cdd-stoich-tools@local`).
+2. **Generate API credentials:** on the
+   [AMO API Keys page](https://addons.mozilla.org/developers/addon/api/key/),
+   create credentials. You get:
+   - **JWT issuer** → `AMO_JWT_ISSUER` (looks like `user:12345:67`)
+   - **JWT secret** → `AMO_JWT_SECRET` (long hex string, shown only once)
+3. Add both as GitHub repository secrets (same place as the Chrome ones).
+
+Notes:
+
+- Firefox always **submits to AMO review** when configured — there is no
+  "draft only" mode here; the `CHROME_AUTOPUBLISH=false` toggle only affects
+  Chrome. AMO's own review is the gate before it goes live.
+- Each version can only be submitted once, so the `manifest.json` version must be
+  bumped for every release (which the normal release workflow already does).
+- The build is intentionally not minified, which keeps AMO's source review
+  straightforward.
+
+---
+
 ## How a release works now
 
 1. Bump `manifest.json` version, update `CHANGELOG.md` / `RELEASES.md`.
 2. `npm run build`, commit everything.
 3. `git tag vX.Y.Z && git push origin main && git push origin vX.Y.Z`.
-4. The **Publish to Chrome Web Store** workflow runs automatically. Watch it under
-   the repo's **Actions** tab.
+4. The **Publish extension** workflow runs automatically: it builds once, then
+   publishes to the Chrome Web Store and Firefox AMO (each skipped if its secrets
+   aren't set). Watch it under the repo's **Actions** tab.
 
 The workflow fails fast if the tag doesn't match `manifest.json`'s version, so the
 store version and the git tag can't drift apart.
 
-You can also run it manually from **Actions → Publish to Chrome Web Store → Run
-workflow** (with a checkbox to publish or upload-as-draft).
+You can also run it manually from **Actions → Publish extension → Run workflow**
+(with a checkbox to publish or, for Chrome, upload-as-draft).

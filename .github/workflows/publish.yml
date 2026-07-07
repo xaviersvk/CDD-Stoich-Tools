@@ -107,17 +107,34 @@ jobs:
 
       - name: Get access token (service account)
         if: steps.check.outputs.configured == 'true'
-        id: auth
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.CHROME_SERVICE_ACCOUNT_JSON }}
-          token_format: access_token
-          access_token_scopes: https://www.googleapis.com/auth/chromewebstore
+        env:
+          CHROME_SERVICE_ACCOUNT_JSON: ${{ secrets.CHROME_SERVICE_ACCOUNT_JSON }}
+        run: |
+          # Exchange a self-signed JWT for an access token — needs only the
+          # JSON key, no IAM Credentials API or extra roles.
+          b64url() { openssl base64 -A | tr '+/' '-_' | tr -d '='; }
+          client_email="$(echo "$CHROME_SERVICE_ACCOUNT_JSON" | jq -r .client_email)"
+          echo "$CHROME_SERVICE_ACCOUNT_JSON" | jq -r .private_key > sa-key.pem
+          now="$(date +%s)"
+          claims="$(jq -nc --arg iss "$client_email" --argjson iat "$now" \
+            '{iss:$iss, scope:"https://www.googleapis.com/auth/chromewebstore",
+              aud:"https://oauth2.googleapis.com/token", iat:$iat, exp:($iat+3600)}')"
+          signing_input="$(printf '%s' '{"alg":"RS256","typ":"JWT"}' | b64url).$(printf '%s' "$claims" | b64url)"
+          signature="$(printf '%s' "$signing_input" | openssl dgst -sha256 -sign sa-key.pem -binary | b64url)"
+          rm -f sa-key.pem
+          response="$(curl -s -X POST https://oauth2.googleapis.com/token \
+            -d grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer \
+            -d assertion="$signing_input.$signature")"
+          token="$(echo "$response" | jq -r '.access_token // empty')"
+          if [ -z "$token" ]; then
+            echo "::error::Could not obtain access token. Response: $response"
+            exit 1
+          fi
+          echo "::add-mask::$token"
+          echo "ACCESS_TOKEN=$token" >> "$GITHUB_ENV"
 
       - name: Upload package
         if: steps.check.outputs.configured == 'true'
-        env:
-          ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
         run: |
           item="publishers/$CHROME_PUBLISHER_ID/items/$CHROME_EXTENSION_ID"
           response="$(curl -s -X POST \
@@ -148,8 +165,6 @@ jobs:
             (github.event_name == 'workflow_dispatch' && inputs.publish) ||
             (github.event_name == 'push' && vars.CHROME_AUTOPUBLISH != 'false')
           )
-        env:
-          ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
         run: |
           item="publishers/$CHROME_PUBLISHER_ID/items/$CHROME_EXTENSION_ID"
           response="$(curl -s -X POST \

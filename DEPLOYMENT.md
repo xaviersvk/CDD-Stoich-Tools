@@ -40,70 +40,50 @@ Parts 1–5 below are the Chrome Web Store. Part 6 is Firefox AMO.
    a project (or reuse one).
 2. **APIs & Services → Library** → search **Chrome Web Store API** → **Enable**.
 
----
-
-## 3. Create OAuth credentials
-
-1. **APIs & Services → OAuth consent screen**:
-   - User type: **External**.
-   - Add the scope `https://www.googleapis.com/auth/chromewebstore`.
-   - Add your own Google account as a test user.
-   - **Publish the app** (set the consent screen to **In production**).
-
-   > ⚠️ **Important:** if the consent screen stays in **Testing**, the refresh
-   > token **expires after 7 days** and CI will start failing. Publishing the
-   > consent screen ("In production") gives a long-lived refresh token. This is
-   > the #1 cause of Chrome CI breaking later.
-
-2. **APIs & Services → Credentials → Create credentials → OAuth client ID**:
-   - Application type: **Desktop app**.
-   - Save the **Client ID** (`CHROME_CLIENT_ID`) and **Client secret**
-     (`CHROME_CLIENT_SECRET`).
+> CI uses the **v2 API with a service account** (below). The old v1.1 OAuth
+> flow (consent screen + refresh token) is deprecated and
+> [shuts down on 15 Oct 2026](https://developer.chrome.com/blog/cws-api-v2) —
+> don't set it up.
 
 ---
 
-## 4. Get a refresh token (one time)
+## 3. Create a service account + JSON key
 
-Do this on your own machine. Replace `CLIENT_ID` / `CLIENT_SECRET`.
+1. In the same Cloud project: **IAM & Admin → Service Accounts →
+   Create service account**. Any name (e.g. `cws-publisher`); it needs **no
+   roles/permissions** — click through and create.
+2. Open the new service account → **Keys → Add key → Create new key → JSON**.
+   A `.json` key file downloads. Its full contents become the
+   `CHROME_SERVICE_ACCOUNT_JSON` secret.
+3. Copy the service account's **email** (`...@...iam.gserviceaccount.com`) —
+   you'll need it in the next step.
 
-1. Open this URL in a browser (all one line):
+> Treat the key file like a password: don't commit it, delete the local copy
+> after adding the GitHub secret.
 
-   ```
-   https://accounts.google.com/o/oauth2/auth?response_type=code&access_type=offline&prompt=consent&client_id=CLIENT_ID&redirect_uri=http://localhost&scope=https://www.googleapis.com/auth/chromewebstore
-   ```
+---
 
-2. Approve. The browser redirects to `http://localhost/?code=...` — the page
-   will fail to load, that's fine. Copy the `code` value from the address bar.
+## 4. Grant the service account access to your publisher
 
-3. Exchange the code for a refresh token:
-
-   ```bash
-   curl -s -X POST https://oauth2.googleapis.com/token \
-     -d client_id=CLIENT_ID \
-     -d client_secret=CLIENT_SECRET \
-     -d code=THE_CODE_FROM_STEP_2 \
-     -d grant_type=authorization_code \
-     -d redirect_uri=http://localhost
-   ```
-
-   The response contains `"refresh_token": "..."`. That is `CHROME_REFRESH_TOKEN`.
-
-   > The `code` is single-use and expires within minutes — if the exchange fails,
-   > redo step 1 to get a fresh code.
+1. In the [Developer Dashboard](https://chrome.google.com/webstore/devconsole),
+   open the **Account** page.
+2. Note your **Publisher ID** shown there — that is `CHROME_PUBLISHER_ID`.
+3. Add the service account's **email** as a service account for this publisher
+   (see [service account docs](https://developer.chrome.com/docs/webstore/service-accounts)).
+   Only one service account can be attached to a publisher.
 
 ---
 
 ## 5. Add the secrets to GitHub
 
 **Repository → Settings → Secrets and variables → Actions → New repository secret**,
-add all four:
+add all three:
 
-| Secret name            | Value                                  |
-| ---------------------- | -------------------------------------- |
-| `CHROME_EXTENSION_ID`  | item ID from step 1                    |
-| `CHROME_CLIENT_ID`     | OAuth client ID from step 3            |
-| `CHROME_CLIENT_SECRET` | OAuth client secret from step 3        |
-| `CHROME_REFRESH_TOKEN` | refresh token from step 4              |
+| Secret name                   | Value                                          |
+| ----------------------------- | ---------------------------------------------- |
+| `CHROME_EXTENSION_ID`         | item ID from step 1                            |
+| `CHROME_PUBLISHER_ID`         | publisher ID from step 4                       |
+| `CHROME_SERVICE_ACCOUNT_JSON` | entire contents of the JSON key file (step 3)  |
 
 ### Optional: upload as draft instead of publishing
 

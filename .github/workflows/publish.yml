@@ -8,7 +8,7 @@ name: Publish extension
 # you can set up one store at a time.
 #
 # Chrome secrets (Settings -> Secrets and variables -> Actions):
-#   CHROME_EXTENSION_ID, CHROME_CLIENT_ID, CHROME_CLIENT_SECRET, CHROME_REFRESH_TOKEN
+#   CHROME_EXTENSION_ID, CHROME_PUBLISHER_ID, CHROME_SERVICE_ACCOUNT_JSON
 # Firefox / AMO secrets:
 #   AMO_JWT_ISSUER, AMO_JWT_SECRET
 # Optional repository variable:
@@ -75,15 +75,15 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
-      CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
-      CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
-      CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+      CHROME_PUBLISHER_ID: ${{ secrets.CHROME_PUBLISHER_ID }}
     steps:
       - name: Check for Chrome secrets
         id: check
+        env:
+          CHROME_SERVICE_ACCOUNT_JSON: ${{ secrets.CHROME_SERVICE_ACCOUNT_JSON }}
         run: |
-          if [ -z "$CHROME_EXTENSION_ID" ] || [ -z "$CHROME_CLIENT_ID" ] \
-             || [ -z "$CHROME_CLIENT_SECRET" ] || [ -z "$CHROME_REFRESH_TOKEN" ]; then
+          if [ -z "$CHROME_EXTENSION_ID" ] || [ -z "$CHROME_PUBLISHER_ID" ] \
+             || [ -z "$CHROME_SERVICE_ACCOUNT_JSON" ]; then
             echo "::notice::Chrome Web Store secrets not set — skipping. See DEPLOYMENT.md."
             echo "configured=false" >> "$GITHUB_OUTPUT"
           else
@@ -105,33 +105,38 @@ jobs:
           cd ..
           echo "Packaged $(du -h extension.zip | cut -f1) zip"
 
-      - name: Get access token
+      - name: Get access token (service account)
         if: steps.check.outputs.configured == 'true'
-        run: |
-          response="$(curl -s -X POST https://oauth2.googleapis.com/token \
-            -d client_id="$CHROME_CLIENT_ID" \
-            -d client_secret="$CHROME_CLIENT_SECRET" \
-            -d refresh_token="$CHROME_REFRESH_TOKEN" \
-            -d grant_type=refresh_token)"
-          token="$(echo "$response" | jq -r '.access_token // empty')"
-          if [ -z "$token" ]; then
-            echo "::error::Could not obtain access token. Response: $response"
-            exit 1
-          fi
-          echo "::add-mask::$token"
-          echo "ACCESS_TOKEN=$token" >> "$GITHUB_ENV"
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.CHROME_SERVICE_ACCOUNT_JSON }}
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/chromewebstore
 
       - name: Upload package
         if: steps.check.outputs.configured == 'true'
+        env:
+          ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
         run: |
-          response="$(curl -s -X PUT \
+          item="publishers/$CHROME_PUBLISHER_ID/items/$CHROME_EXTENSION_ID"
+          response="$(curl -s -X POST \
             -H "Authorization: Bearer $ACCESS_TOKEN" \
-            -H "x-goog-api-version: 2" \
             -T extension.zip \
-            "https://www.googleapis.com/upload/chromewebstore/v1.1/items/$CHROME_EXTENSION_ID")"
+            "https://chromewebstore.googleapis.com/upload/v2/$item:upload")"
           echo "$response"
           state="$(echo "$response" | jq -r '.uploadState // empty')"
-          if [ "$state" != "SUCCESS" ]; then
+          # A large package may keep processing after the request returns.
+          tries=0
+          while [ "$state" = "IN_PROGRESS" ] && [ "$tries" -lt 30 ]; do
+            sleep 10
+            tries=$((tries + 1))
+            state="$(curl -s -H "Authorization: Bearer $ACCESS_TOKEN" \
+              "https://chromewebstore.googleapis.com/v2/$item:fetchStatus" \
+              | jq -r '.lastAsyncUploadState // empty')"
+            echo "Upload state after ${tries}0s: $state"
+          done
+          if [ "$state" != "SUCCEEDED" ]; then
             echo "::error::Upload failed (uploadState=$state)."
             exit 1
           fi
@@ -143,19 +148,22 @@ jobs:
             (github.event_name == 'workflow_dispatch' && inputs.publish) ||
             (github.event_name == 'push' && vars.CHROME_AUTOPUBLISH != 'false')
           )
+        env:
+          ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
         run: |
+          item="publishers/$CHROME_PUBLISHER_ID/items/$CHROME_EXTENSION_ID"
           response="$(curl -s -X POST \
             -H "Authorization: Bearer $ACCESS_TOKEN" \
-            -H "x-goog-api-version: 2" \
-            -H "Content-Length: 0" \
-            "https://www.googleapis.com/chromewebstore/v1.1/items/$CHROME_EXTENSION_ID/publish")"
+            -H "Content-Type: application/json" \
+            -d '{}' \
+            "https://chromewebstore.googleapis.com/v2/$item:publish")"
           echo "$response"
-          status="$(echo "$response" | jq -r '.status[0] // empty')"
-          case "$status" in
-            OK|PUBLISHED)
-              echo "Published; Google review may take a while before it goes live." ;;
+          state="$(echo "$response" | jq -r '.state // empty')"
+          case "$state" in
+            PENDING_REVIEW|PUBLISHED|STAGED|PUBLISHED_TO_TESTERS)
+              echo "Submitted (state=$state); Google review may take a while before it goes live." ;;
             *)
-              echo "::error::Publish did not return OK. Response above."
+              echo "::error::Publish did not succeed (state=$state). Response above."
               exit 1 ;;
           esac
 

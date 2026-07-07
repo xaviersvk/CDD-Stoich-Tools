@@ -21,31 +21,18 @@ day. A store with missing secrets is simply skipped (its job stays green).
       ```
       Copy the **Item ID** from the dashboard URL.  *(DEPLOYMENT.md part 1)*
 - [ ] **Chrome Web Store API enabled** in a Google Cloud project.  *(part 2)*
-- [ ] **OAuth consent screen** has scope
-      `https://www.googleapis.com/auth/chromewebstore` **and is set to
-      "In production"** (NOT "Testing").
-      ⚠️ If it stays in "Testing", the refresh token dies after 7 days and CI
-      breaks. This is the single most common mistake.  *(part 3)*
-- [ ] **OAuth client (Desktop app)** created → note Client ID + Client secret.
-- [ ] **Refresh token** generated. Open the consent URL in a browser (part 4),
-      grab the `code`, then:
-      ```bash
-      curl -s -X POST https://oauth2.googleapis.com/token \
-        -d client_id=CLIENT_ID \
-        -d client_secret=CLIENT_SECRET \
-        -d code=THE_CODE \
-        -d grant_type=authorization_code \
-        -d redirect_uri=http://localhost
-      ```
-      Copy `refresh_token` from the response.
-- [ ] **Add the 4 GitHub secrets** (Settings → Secrets and variables → Actions):
+- [ ] **Service account created** (IAM & Admin → Service Accounts, no roles
+      needed) + a **JSON key** downloaded for it.  *(part 3)*
+- [ ] **Service account added to the publisher**: Developer Dashboard →
+      **Account** → add the service account's email. Note the **Publisher ID**
+      from the same page.  *(part 4)*
+- [ ] **Add the 3 GitHub secrets** (Settings → Secrets and variables → Actions):
 
-  | Secret                 | From                       |
-  | ---------------------- | -------------------------- |
-  | `CHROME_EXTENSION_ID`  | item ID (step 2)           |
-  | `CHROME_CLIENT_ID`     | OAuth client ID            |
-  | `CHROME_CLIENT_SECRET` | OAuth client secret        |
-  | `CHROME_REFRESH_TOKEN` | refresh token              |
+  | Secret                        | From                                  |
+  | ----------------------------- | ------------------------------------- |
+  | `CHROME_EXTENSION_ID`         | item ID (step 2)                      |
+  | `CHROME_PUBLISHER_ID`         | Developer Dashboard → Account         |
+  | `CHROME_SERVICE_ACCOUNT_JSON` | full contents of the JSON key file    |
 
 ---
 

@@ -9,6 +9,18 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 9.3.0 — July 2026
+
+**The sample title is now click-to-copy too.**
+
+- The title at the top of each sample in the **Samples** tab
+  (e.g. `IXX-NUC-0000009-001-SM003059`) can now be clicked to copy it to the
+  clipboard, with the usual green flash.
+- Clicking the little collapse/expand arrow still just collapses the sample — it
+  won't copy.
+
+---
+
 ## 9.2.0 — July 2026
 
 **Click-to-copy now works on samples too.**

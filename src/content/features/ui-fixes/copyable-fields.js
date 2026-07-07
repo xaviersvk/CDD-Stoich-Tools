@@ -19,6 +19,13 @@ const VALUE_SELECTORS = [
     ".value-text",
 ];
 
+// Sample header title (e.g. "IXX-NUC-0000009-001-SM003059"). Lives in a
+// `.label-text` span that also contains the collapse/expand toggle button, so it
+// can't go through the generic path (labels are excluded, and the button trips
+// the interactive-content guard). Handled separately below.
+const SAMPLE_NAME_CONTAINER = "#molecule-inventory_samples";
+const SAMPLE_NAME_SELECTOR = ".sticky-header > .label-text";
+
 function log(...args) {
     if (DEBUG) console.log("[COPYABLE-FIELDS]", ...args);
 }
@@ -110,10 +117,61 @@ function findCopyableFieldNodes() {
     return nodes;
 }
 
+// Reads only the direct text of the sample-name span, skipping the nested
+// toggle button (which contains an SVG, no text).
+function getSampleNameText(node) {
+    let text = "";
+
+    node.childNodes.forEach((child) => {
+        if (child.nodeType === Node.TEXT_NODE) {
+            text += child.textContent;
+        }
+    });
+
+    return text.trim();
+}
+
+function enhanceSampleNames() {
+    const container = document.querySelector(SAMPLE_NAME_CONTAINER);
+    if (!container) return;
+
+    const nameNodes = Array.from(container.querySelectorAll(SAMPLE_NAME_SELECTOR));
+
+    nameNodes.forEach((node) => {
+        if (node.dataset.cddCopyableBound === "1") return;
+
+        const text = getSampleNameText(node);
+        if (!text) return;
+
+        node.dataset.cddCopyableBound = "1";
+        node.classList.add("cdd-copyable-field");
+        node.title = "Click to copy";
+
+        node.addEventListener("click", async (event) => {
+            // A click on the collapse/expand toggle should only collapse.
+            if (event.target.closest("button")) return;
+
+            event.stopPropagation();
+
+            const currentText = getSampleNameText(node);
+            if (!currentText) return;
+
+            const ok = await copyText(currentText);
+            if (ok) {
+                markCopied(node);
+            } else {
+                markCopyError(node);
+            }
+        });
+    });
+}
+
 export function enhanceCopyableFields() {
 
 
     injectCopyableFieldStyles();
+
+    enhanceSampleNames();
 
     const nodes = findCopyableFieldNodes();
 

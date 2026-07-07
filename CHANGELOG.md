@@ -16,6 +16,22 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [9.3.0] — 2026-07-07
+
+### Added
+- **The sample title is now click-to-copy too.** Each sample's header title
+  (e.g. `IXX-NUC-0000009-001-SM003059`) can now be clicked to copy. It lives in a
+  `.sticky-header > .label-text` span that also holds the collapse/expand toggle
+  button, so it can't go through the generic path — labels are excluded from
+  `VALUE_SELECTORS`, and the button would trip the interactive-content guard.
+  Handled by a dedicated `enhanceSampleNames()` in `copyable-fields.js` that
+  copies only the span's direct text nodes (skipping the toggle's SVG) and skips
+  the copy when the click lands on the toggle button, so collapse/expand still
+  works. Re-run from the same `MutationObserver`; binding stays idempotent via
+  `data-cddCopyableBound`.
+
+---
+
 ## [9.2.0] — 2026-07-07
 
 ### Added

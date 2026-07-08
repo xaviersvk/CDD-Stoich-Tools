@@ -16,6 +16,54 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [10.0.0] — 2026-07-08
+
+Major bump: the plate tooling grows from a single hover tooltip into a set of
+features covering the Plates list, plate export, and the Plate Map.
+
+### Added
+- **Location column in the Plates list.** The Explore Data → Plates table
+  (`table#plateList`) gets a new **Location** column right after Name. Each row
+  starts with a spinner and fills in as the plate's Inventory Location resolves
+  (`ui-fixes/plate-list-locations.js`). Values come from the same
+  fetch-once-and-cached plate-page lookup as the hover tooltip
+  (`api/plate-info.js`), so anything already hovered or exported fills
+  instantly, and vice versa. At most 4 plate pages load concurrently (a local
+  semaphore), rows/header are marked with data attributes so the
+  MutationObserver re-runs (Turbo body swaps, re-sorts, per-page changes) stay
+  idempotent, and a plate with no location shows a muted "—".
+- **Export Plate Locations (CSV) on the Plates tab.** A new link next to CDD's
+  native "Export Plates" (`ui-fixes/plate-list-export.js`). It pages through the
+  *whole* plate list 500 rows at a time (respecting the current search-box
+  `query`, deduped by href, hard-capped at 200 pages), resolves each plate's
+  Inventory Location through the shared cache, and downloads
+  `cdd-plate-locations.csv` (Plate Name + Inventory Location, name-sorted,
+  BOM-prefixed for Excel). Live progress, a Cancel link, and a confirm prompt
+  above 500 plates. Same output as the search-dialog export, driven from the
+  Plates tab instead.
+- **Structure + synonym hover bubble on the Plate Map.** Hovering a well on a
+  plate's Plate Map (or a heat map — same `.plateLayout` table) shows a floating
+  bubble with the molecule's first synonym and its rendered structure
+  (`ui-fixes/plate-map-structure-tooltip.js`). Vault + molecule ids are read off
+  the well link's href; data comes from the same `api/molecule-image.js`
+  cache as the inventory Pick Location tooltip (molecule-page fetch → SMILES +
+  synonym → client-side SVG). Owned bubble end to end (delegated listeners, one
+  reused fixed-position `<div>`, race guard against stale responses, viewport
+  edge flipping), like `plate-location-tooltip.js`.
+- **Neighbour prefetch on the Plate Map.** While hovering a well, the molecules
+  in the surrounding ±2 rows/columns (a 5×5 block clipped to the plate edges)
+  are prefetched in the background via the existing `prefetchMolecules()` idle
+  queue (concurrency 2), so sweeping across a plate feels instant.
+
+### Changed
+- **CSV + concurrency helpers extracted to `content/utils/`.**
+  `csvField`/`buildCsv`/`downloadCsv` now live in `utils/csv.js` (with
+  `buildCsv` taking the header as a parameter) and `mapLimit` in
+  `utils/concurrency.js`; `ui-fixes/plate-location-export.js` was refactored to
+  consume them so both plate-location exports share one implementation.
+
+---
+
 ## [9.3.0] — 2026-07-07
 
 ### Added

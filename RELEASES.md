@@ -9,6 +9,33 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 10.0.0 — July 2026
+
+**Plates get the full treatment: locations at a glance, one-click export, and
+structure previews on the Plate Map.**
+
+- **See where every plate lives, right in the Plates list.** The Explore Data →
+  Plates table now has a **Location** column next to the plate name. Each row
+  shows a small spinner and the inventory location (e.g. `Lab 1 > Fridge 1`)
+  appears as soon as it's found — no need to open each plate.
+- **Export all plate locations from the Plates tab.** A new **"Export Plate
+  Locations (CSV)"** link sits next to CDD's own "Export Plates". It walks
+  through your entire plate list (including pages you haven't opened) and
+  downloads a spreadsheet of plate names and locations, sorted by name — handy
+  for a walk around the lab. If you've typed something into the plate search
+  box, only the filtered plates are exported. You'll see live progress and can
+  cancel at any time.
+- **Hover a well on the Plate Map to see what's in it.** On a plate's Plate Map
+  (and on heat maps), hovering a well now shows a bubble with the entity's
+  synonym and its chemical structure — the same preview you already get in the
+  inventory "Pick Location" grid. And as you move around the plate, the
+  neighbouring wells (2 in every direction) quietly load in the background, so
+  the next preview is usually instant.
+- Everything shares one cache per browser session: a structure or location
+  loaded once — in a tooltip, the list, or an export — never loads twice.
+
+---
+
 ## 9.3.0 — July 2026
 
 **The sample title is now click-to-copy too.**

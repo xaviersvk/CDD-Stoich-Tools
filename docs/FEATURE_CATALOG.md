@@ -482,6 +482,79 @@ Copy-to-clipboard behaviour shared across the extension.
 
 ---
 
+## 10. Plates
+
+### 10.1 Plate Location Tooltip (search results)
+- **User value:** Hovering a plate link in the search results shows the plate's
+  Inventory Location (e.g. `Lab 2 > Fridge 2`) in a small bubble — CDD shows it
+  only on the plate page itself.
+- **Entry point:** `src/content/features/ui-fixes/plate-location-tooltip.js`
+  (`initPlateLocationTooltip`).
+- **Related files:** `content/api/plate-info.js` (`getPlateInfo`, plate-page
+  fetch + session cache).
+- **Data source:** the plate page's `#plate_data_table_inventory_location` cell,
+  fetched once per plate per session.
+- **Maintenance difficulty:** **low** — one selector on the plate page, one on
+  the results list.
+- **Regression risk:** **low** — additive overlay; failures fall back to no
+  tooltip.
+
+### 10.2 Plates List Location Column
+- **User value:** The Explore Data → Plates table gets a **Location** column;
+  every row streams in its plate's Inventory Location (spinner while loading,
+  muted "—" when unset) without opening any plate.
+- **Entry point:** `src/content/features/ui-fixes/plate-list-locations.js`
+  (`initPlateListLocations`).
+- **Related files:** `content/api/plate-info.js` (shared cache with 10.1/10.3).
+- **Data source:** same per-plate page fetch; max 4 in flight via a local
+  semaphore; rows marked with `data-cdd-location` for idempotent re-runs.
+- **Maintenance difficulty:** **low** — keyed to `table#plateList` markup.
+- **Regression risk:** **low** — purely additive column; a torn-out row simply
+  re-fills from cache on the next observer pass.
+
+### 10.3 Export Plate Locations (CSV)
+- **User value:** One click downloads a name-sorted CSV of plate names +
+  inventory locations — for a whole search result set (Export dialog section)
+  or the whole Plates list (link next to CDD's "Export Plates", respecting the
+  search-box filter). Progress display, cancel, and a confirm prompt for large
+  sets.
+- **Entry points:**
+  `src/content/features/ui-fixes/plate-location-export.js`
+  (`initPlateLocationExport`, Export dialog) and
+  `src/content/features/ui-fixes/plate-list-export.js`
+  (`initPlateListExport`, Plates tab).
+- **Related files:** `content/api/search-plates.js` (result paging),
+  `content/api/plate-info.js` (locations), `content/utils/csv.js`,
+  `content/utils/concurrency.js` (`mapLimit`).
+- **Data source:** paged results / plates-list HTML for the plate set; plate
+  pages for locations (4 concurrent).
+- **Maintenance difficulty:** **medium** — depends on results/list pagination
+  markup and the plates-list heading for totals.
+- **Regression risk:** **low** — read-only; worst case is a failed/empty CSV
+  with an error message.
+
+### 10.4 Plate Map Structure Tooltip
+- **User value:** Hovering a well on a plate's Plate Map (or a heat map) shows
+  a bubble with the entity's first synonym and its rendered structure — the
+  same preview as the inventory Pick Location tooltip, now on plates. Wells
+  within ±2 rows/columns prefetch in the background so sweeping the plate
+  feels instant.
+- **Entry point:**
+  `src/content/features/ui-fixes/plate-map-structure-tooltip.js`
+  (`initPlateMapStructureTooltip`).
+- **Related files:** `content/api/molecule-image.js` (`getMoleculeData`,
+  `prefetchMolecules` — cache shared with the inventory tooltip),
+  `content/api/structure-render.js`.
+- **Data source:** the well link's href for vault + molecule ids; the molecule
+  page for SMILES + synonym; neighbour ids read from the `.plateLayout` table
+  cells around the hovered one.
+- **Maintenance difficulty:** **low-medium** — depends on the `.plateLayout`
+  well markup and the molecule-page `react_props` keys (shared with 9.1).
+- **Regression risk:** **low** — additive overlay with race guards; failures
+  degrade to "Structure unavailable" or no bubble.
+
+---
+
 ## Maintenance & risk summary
 
 | Feature | Maint. | Regression |
@@ -506,6 +579,10 @@ Copy-to-clipboard behaviour shared across the extension.
 | Molecule-links grid | low | low |
 | Consumed-batches collapse | medium-high | medium |
 | Inventory well structure tooltip | medium | low |
+| Plate location tooltip | low | low |
+| Plates list Location column | low | low |
+| Export Plate Locations (CSV) | medium | low |
+| Plate Map structure tooltip | low-medium | low |
 | Network hooks | medium | **high (everything)** |
 | Payload detection | low | medium |
 | flatSample builder | medium | high |

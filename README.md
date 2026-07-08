@@ -54,8 +54,13 @@ Here's the short version of everything it adds:
   groups at a glance (colours chosen in settings).
 - **Plate location tooltip** — hover a plate link to see where it physically
   lives (e.g. `Lab 2 > Fridge 2`).
-- **Export plate locations** — download a CSV of every plate in your search
-  together with its inventory location.
+- **Plate list locations** — the Plates tab gets a Location column that fills
+  in automatically for every plate on the page.
+- **Export plate locations** — download a CSV of every plate (from a search's
+  Export dialog, or straight from the Plates tab) together with its inventory
+  location.
+- **Plate Map previews** — hover a well on a plate map or heat map to see the
+  entity's synonym and structure; nearby wells preload in the background.
 
 ### 📈 Dose-response
 - An "Easy Override" toggle in the search results lets you bulk-adjust
@@ -384,9 +389,15 @@ There are no servers; "deployment" means publishing the packaged extension.
   the Pick Location box, with per-molecule caching and idle prefetch.
 - **Plate Inventory Location tooltip** — plate's inventory location on hover over
   plate links in the search results, fetched from the plate page and cached.
+- **Plates list Location column** — the Explore Data → Plates table shows each
+  plate's inventory location, streamed in per row from the shared cache.
 - **Export Plate Locations (CSV)** — collapsed section in the Export dialog that
   downloads every plate across the whole result set with its inventory location,
-  with large-set warning, progress and cancel.
+  with large-set warning, progress and cancel; also available as a one-click
+  link on the Plates tab that pages through the entire (optionally filtered)
+  plate list.
+- **Plate Map structure tooltip** — synonym + rendered structure bubble when
+  hovering wells on plate maps and heat maps, with ±2 neighbour prefetch.
 - **Depleted-sample** marking; **consumed-batches** collapse.
 - **Saved-search Copy Link**; the full bundle of CSS/DOM **UI fixes**.
 - Shared field registry, unified clipboard helper, and standardised `EVENTS`

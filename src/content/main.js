@@ -27,6 +27,7 @@ import {watchInventoryWellStructure} from "./features/ui-fixes/inventory-well-st
 import {initInventoryGridColors} from "./features/ui-fixes/inventory-grid-colors";
 import {initPlateLocationTooltip} from "./features/ui-fixes/plate-location-tooltip";
 import {initPlateLocationExport} from "./features/ui-fixes/plate-location-export";
+import {initPlateListLocations} from "./features/ui-fixes/plate-list-locations";
 import {initSavedSearchCopyLinks} from "./features/savedSearchCopyLinks/savedSearchCopyLinks";
 import {initElnTitle} from "./features/eln-title";
 import {initBoxSelection} from "./features/box-selection/init";
@@ -97,6 +98,7 @@ function init() {
   initInventoryGridColors();
   initPlateLocationTooltip();
   initPlateLocationExport();
+  initPlateListLocations();
   initSavedSearchCopyLinks();
   initElnTitle();
 

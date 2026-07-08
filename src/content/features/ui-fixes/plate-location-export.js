@@ -19,6 +19,8 @@
 
 import { collectAllPlates, readResultTotal } from "../../api/search-plates.js";
 import { getPlateInfo } from "../../api/plate-info.js";
+import { mapLimit } from "../../utils/concurrency.js";
+import { buildCsv, downloadCsv } from "../../utils/csv.js";
 
 const LOG_PREFIX = "[CDD plate plugin]";
 
@@ -87,58 +89,6 @@ function injectStyles() {
     `;
 
     document.head.appendChild(style);
-}
-
-// Run `task` over `items` with at most `limit` in flight, preserving order.
-// Stops launching new tasks once `shouldStop()` returns true (cancellation).
-async function mapLimit(items, limit, task, shouldStop) {
-    const results = new Array(items.length);
-    let next = 0;
-
-    async function worker() {
-        while (next < items.length) {
-            if (shouldStop?.()) return;
-            const index = next;
-            next += 1;
-            results[index] = await task(items[index], index);
-        }
-    }
-
-    const workers = [];
-    for (let i = 0; i < Math.min(limit, items.length); i += 1) {
-        workers.push(worker());
-    }
-    await Promise.all(workers);
-
-    return results;
-}
-
-// Quote a CSV field per RFC 4180: wrap in quotes, double any embedded quote.
-// Locations like "Lab 2 > Fridge 2" are safe but plate names can carry commas.
-function csvField(value) {
-    return `"${String(value ?? "").replace(/"/g, '""')}"`;
-}
-
-function buildCsv(rows) {
-    const header = ["Plate Name", "Inventory Location"];
-    const lines = [header, ...rows].map((cols) => cols.map(csvField).join(","));
-    // Leading BOM so Excel reads UTF-8 (accented location names) correctly.
-    return "\uFEFF" + lines.join("\r\n") + "\r\n";
-}
-
-function downloadCsv(filename, text) {
-    const blob = new Blob([text], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-
-    // Give the download a tick to start before releasing the blob.
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 async function runExport({ button, status, cancel }) {
@@ -234,7 +184,10 @@ async function runExport({ button, status, cancel }) {
             a[0].localeCompare(b[0], undefined, { numeric: true, sensitivity: "base" })
         );
 
-        downloadCsv("cdd-plate-locations.csv", buildCsv(resolved));
+        downloadCsv(
+            "cdd-plate-locations.csv",
+            buildCsv(["Plate Name", "Inventory Location"], resolved)
+        );
         status.textContent = `Exported ${resolved.length} plate(s)`;
     } catch (err) {
         console.warn(`${LOG_PREFIX} plate export failed`, err);

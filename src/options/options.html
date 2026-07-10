@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CDD Stoich Tools — Settings</title>
+    <link rel="stylesheet" href="./options.css" />
+</head>
+<body>
+<header class="masthead">
+    <div class="masthead__inner">
+        <h1 class="wordmark">CDD Stoich Tools</h1>
+        <p class="masthead__note">
+            Settings save as you change them. Refresh the CDD page to see them take effect.
+        </p>
+    </div>
+</header>
+
+<main class="bench">
+
+    <!-- 1 · ELN tab title -->
+    <section class="card" aria-labelledby="col-title-heading">
+        <header class="card__head">
+            <span class="tile" aria-hidden="true">
+                <span class="tile__no">1</span>
+                <span class="tile__sym">Tt</span>
+            </span>
+            <div class="card__titles">
+                <h2 class="card__name" id="col-title-heading">ELN Tab title</h2>
+                <p class="card__desc">What the browser tab reads on an ELN entry.</p>
+            </div>
+        </header>
+
+        <div class="card__body">
+            <fieldset class="choices">
+                <legend class="sr-only">ELN tab title format</legend>
+
+                <label class="choice">
+                    <input type="radio" name="elnTitleMode" value="id-title" />
+                    <span class="choice__text">
+                        <span class="choice__label">Entry ID and title</span>
+                        <span class="choice__sample">4821 — Suzuki coupling</span>
+                    </span>
+                </label>
+
+                <label class="choice">
+                    <input type="radio" name="elnTitleMode" value="title-only" />
+                    <span class="choice__text">
+                        <span class="choice__label">Title only</span>
+                        <span class="choice__sample">Suzuki coupling</span>
+                    </span>
+                </label>
+
+                <label class="choice">
+                    <input type="radio" name="elnTitleMode" value="original" />
+                    <span class="choice__text">
+                        <span class="choice__label">Leave CDD's title</span>
+                        <span class="choice__sample">ELN: Vault 109</span>
+                    </span>
+                </label>
+            </fieldset>
+        </div>
+    </section>
+
+    <!-- 2 · Sample panel fields -->
+    <section class="card" aria-labelledby="col-fields-heading">
+        <header class="card__head">
+            <span class="tile" aria-hidden="true">
+                <span class="tile__no">2</span>
+                <span class="tile__sym">Fp</span>
+            </span>
+            <div class="card__titles">
+                <h2 class="card__name" id="col-fields-heading">Panel fields</h2>
+                <p class="card__desc">Attributes shown in the floating ELN sample panel.</p>
+            </div>
+        </header>
+
+        <div class="card__body card__body--scroll">
+            <div id="samplePanelFields" class="stack"></div>
+            <div id="samplePanelCustomFields" class="stack"></div>
+        </div>
+    </section>
+
+    <!-- 3 · Prefix colours -->
+    <section class="card" aria-labelledby="col-colours-heading">
+        <header class="card__head">
+            <span class="tile" aria-hidden="true">
+                <span class="tile__no">3</span>
+                <span class="tile__sym">Px</span>
+            </span>
+            <div class="card__titles">
+                <h2 class="card__name" id="col-colours-heading">Prefix colours</h2>
+                <p class="card__desc">Tint samples by the prefix of their Sample ID.</p>
+            </div>
+        </header>
+
+        <div class="card__body card__body--scroll">
+            <p class="note">
+                A prefix is everything before the second dash —
+                <code>IXX-DEMO</code> in <code>IXX-DEMO-0000048-001-SM000025</code>.
+                Prefixes appear here on their own as you browse CDD.
+            </p>
+
+            <div id="prefixColorList" class="stack"></div>
+
+            <button id="prefixColorAdd" type="button" class="btn">Add a prefix</button>
+        </div>
+    </section>
+
+    <!-- 4 · Registration form -->
+    <section class="card" aria-labelledby="col-regform-heading">
+        <header class="card__head">
+            <span class="tile" aria-hidden="true">
+                <span class="tile__no">4</span>
+                <span class="tile__sym">Rf</span>
+            </span>
+            <div class="card__titles">
+                <h2 class="card__name" id="col-regform-heading">Registration form</h2>
+                <p class="card__desc">Which form the Create Entity page opens on, and in what order the list reads.</p>
+            </div>
+        </header>
+
+        <div class="card__body card__body--scroll">
+            <fieldset class="choices">
+                <legend class="eyebrow">Preselect</legend>
+
+                <label class="choice">
+                    <input type="radio" name="regFormMode" value="remember" />
+                    <span class="choice__text">
+                        <span class="choice__label">The one you used last</span>
+                        <span class="choice__sample">Remembered per vault</span>
+                    </span>
+                </label>
+
+                <label class="choice">
+                    <input type="radio" name="regFormMode" value="fixed" />
+                    <span class="choice__text">
+                        <span class="choice__label">Always the same form</span>
+                    </span>
+                </label>
+
+                <div class="choice__child">
+                    <label class="sr-only" for="regFormFixedName">Form to always use</label>
+                    <select id="regFormFixedName" class="select"></select>
+                </div>
+
+                <label class="choice">
+                    <input type="radio" name="regFormMode" value="off" />
+                    <span class="choice__text">
+                        <span class="choice__label">Leave CDD's choice</span>
+                    </span>
+                </label>
+            </fieldset>
+
+            <div id="regFormMemory" class="memory" hidden>
+                <p class="eyebrow">Remembered</p>
+                <div id="regFormMemoryList" class="stack"></div>
+            </div>
+
+            <div class="order">
+                <p class="eyebrow">Order in the picklist</p>
+                <p class="note">Drag a form, or use its arrows. The picklist follows this order.</p>
+
+                <ol id="regFormOrderList" class="order__list"></ol>
+
+                <p id="regFormEmpty" class="empty" hidden>
+                    No forms yet. Open a Create Entity page once and they'll be listed here.
+                </p>
+
+                <button id="regFormOrderReset" type="button" class="btn btn--quiet" hidden>
+                    Restore CDD's order
+                </button>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<script type="module" src="./options.js"></script>
+</body>
+</html>

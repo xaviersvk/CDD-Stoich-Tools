@@ -1,0 +1,529 @@
+/* options.css — settings for CDD Stoich Tools.
+ *
+ * The page is a lab bench: four cards, each headed by a periodic-table tile
+ * whose symbol names the setting (Tt, Fp, Px, Rf). The tiles are the only loud
+ * thing here; everything else is hairlines, monospace micro-labels and air.
+ * No web fonts — an extension page must be self-contained, so the system stacks
+ * do the work and the monospace face carries the lab-label register.
+ */
+
+:root {
+    --paper: #eef1f4;
+    --card: #ffffff;
+    --ink: #131a21;
+    --muted: #5c6b78;
+    --rule: #d8dee5;
+    --reagent: #0f6b52;
+    --reagent-wash: #e7f2ee;
+    --danger: #b4241c;
+
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "Cascadia Mono", Consolas, monospace;
+
+    --step: 4px;
+    --radius: 6px;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --paper: #0d1216;
+        --card: #151c23;
+        --ink: #e6edf3;
+        --muted: #8b9cab;
+        --rule: #27313a;
+        --reagent: #45c39a;
+        --reagent-wash: #12281f;
+        --danger: #f0776c;
+    }
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------- masthead */
+
+.masthead {
+    border-bottom: 1px solid var(--rule);
+    background: var(--card);
+}
+
+.masthead__inner {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 20px 24px;
+}
+
+.wordmark {
+    margin: 0;
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.masthead__note {
+    margin: 4px 0 0;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+/* ------------------------------------------------------------------ bench */
+
+.bench {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 24px;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 20px;
+    align-items: start;
+}
+
+@media (max-width: 1080px) {
+    .bench {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .bench {
+        grid-template-columns: minmax(0, 1fr);
+        padding: 16px;
+    }
+}
+
+/* ------------------------------------------------------------------- card */
+
+.card {
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.card__head {
+    display: flex;
+    gap: 12px;
+    padding: 16px;
+    border-bottom: 1px solid var(--rule);
+}
+
+.card__titles {
+    min-width: 0;
+}
+
+.card__name {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+.card__desc {
+    margin: 2px 0 0;
+    color: var(--muted);
+    font-size: 12.5px;
+}
+
+.card__body {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+}
+
+/* A long list of fields or prefixes scrolls inside its own card, so the four
+   columns keep their shoulders level. */
+.card__body--scroll {
+    max-height: 560px;
+    overflow-y: auto;
+}
+
+/* --------------------------------------------------- the signature: tiles */
+
+.tile {
+    flex: 0 0 auto;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--ink);
+    border-radius: 3px;
+    display: grid;
+    grid-template-rows: auto 1fr;
+    padding: 3px 4px 2px;
+    font-family: var(--mono);
+    background: var(--reagent-wash);
+}
+
+.tile__no {
+    font-size: 9px;
+    line-height: 1;
+    color: var(--muted);
+}
+
+.tile__sym {
+    font-size: 19px;
+    font-weight: 600;
+    line-height: 1;
+    align-self: end;
+    letter-spacing: -0.02em;
+}
+
+/* ------------------------------------------------------------- primitives */
+
+.eyebrow {
+    margin: 0 0 8px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.note {
+    margin: 0;
+    color: var(--muted);
+    font-size: 12.5px;
+}
+
+.note code {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    background: var(--paper);
+    border-radius: 3px;
+    padding: 1px 4px;
+}
+
+.empty {
+    margin: 0;
+    padding: 14px;
+    border: 1px dashed var(--rule);
+    border-radius: var(--radius);
+    color: var(--muted);
+    font-size: 12.5px;
+}
+
+.stack {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.select {
+    width: 100%;
+    padding: 7px 8px;
+    font: inherit;
+    color: inherit;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 5px;
+}
+
+.btn {
+    align-self: flex-start;
+    padding: 7px 12px;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--reagent);
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.btn:hover {
+    background: var(--reagent-wash);
+    border-color: var(--reagent);
+}
+
+.btn--quiet {
+    color: var(--muted);
+    font-weight: 500;
+}
+
+.btn--quiet:hover {
+    background: var(--paper);
+    border-color: var(--rule);
+    color: var(--ink);
+}
+
+:is(a, button, input, select, [tabindex]):focus-visible {
+    outline: 2px solid var(--reagent);
+    outline-offset: 2px;
+}
+
+/* ---------------------------------------------------------------- choices */
+
+.choices {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.choice {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    padding: 7px 8px;
+    margin: 0 -8px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.choice:hover {
+    background: var(--paper);
+}
+
+.choice input {
+    margin: 2px 0 0;
+    accent-color: var(--reagent);
+}
+
+.choice__text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.choice__label {
+    font-size: 13px;
+}
+
+.choice__sample {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* The "always the same form" picker belongs to the radio above it. */
+.choice__child {
+    padding: 2px 0 6px 26px;
+}
+
+.choice__child[data-disabled="true"] {
+    opacity: 0.45;
+}
+
+/* ------------------------------------------------------------ field rows */
+
+.field-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 4px 8px;
+    margin: 0 -8px;
+    border-radius: 5px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.field-item:hover {
+    background: var(--paper);
+}
+
+.field-item input {
+    margin: 0;
+    accent-color: var(--reagent);
+}
+
+.field-subheading {
+    margin: 10px 0 2px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+/* ---------------------------------------------------------- prefix editor */
+
+.prefix-color-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.prefix-color-prefix {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 6px 8px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: inherit;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 5px;
+}
+
+.prefix-color-swatch {
+    flex: 0 0 auto;
+    width: 32px;
+    height: 30px;
+    padding: 0;
+    border: 1px solid var(--rule);
+    border-radius: 5px;
+    background: none;
+    cursor: pointer;
+}
+
+/* A prefix CDD showed us that has no colour assigned yet. */
+.prefix-color-swatch--unset {
+    border-style: dashed;
+    opacity: 0.6;
+}
+
+.prefix-color-delete {
+    flex: 0 0 auto;
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--rule);
+    border-radius: 5px;
+    background: var(--card);
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.prefix-color-delete:hover {
+    border-color: var(--danger);
+    color: var(--danger);
+}
+
+/* --------------------------------------------------------- memory + order */
+
+.memory__row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+}
+
+.memory__vault {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+}
+
+.memory__name {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.order__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.order__item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 5px;
+    cursor: grab;
+}
+
+.order__item[data-dragging="true"] {
+    opacity: 0.4;
+}
+
+.order__item[data-drop="true"] {
+    border-color: var(--reagent);
+    box-shadow: inset 0 2px 0 -1px var(--reagent);
+}
+
+.order__grip {
+    flex: 0 0 auto;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1;
+    cursor: grab;
+}
+
+.order__name {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.order__moves {
+    flex: 0 0 auto;
+    display: flex;
+    gap: 2px;
+}
+
+.order__move {
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: none;
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.order__move:hover:not(:disabled) {
+    border-color: var(--rule);
+    color: var(--ink);
+}
+
+.order__move:disabled {
+    opacity: 0.25;
+    cursor: default;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation: none !important;
+        transition: none !important;
+    }
+}

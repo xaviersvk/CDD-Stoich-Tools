@@ -85,9 +85,10 @@ and the helpers appear automatically.
 - **Chrome:** [Chrome Web Store](https://chromewebstore.google.com/detail/cdd-stoichiometric-table/ghbhjmmmgejokgekdcbcmgcfaoddlffg)
 - **Firefox:** [Firefox Add-ons](https://addons.mozilla.org/en-GB/firefox/addon/cdd-stoichiometric-table-tools/)
 
-Settings (which fields show, prefix colours, tab-title mode, …) live in the
-extension's popup — click the extension icon. Most settings apply after you
-refresh the CDD page.
+Settings (which fields show, prefix colours, tab-title mode, registration-form
+order and default, …) live on the extension's own settings page. Open it by
+clicking the extension icon, or from **CDD Plugin options** in CDD's user
+dropdown. Most settings apply after you refresh the CDD page.
 
 Developers who want to run it from source: see [For developers](#for-developers).
 
@@ -123,7 +124,8 @@ cooperate.
 ### Frontend
 
 There is no separate "frontend app" — the UI is injected directly into CDD's
-pages by the **content script** (isolated world) plus the extension **popup**.
+pages by the **content script** (isolated world), plus the extension's
+**options page** for settings.
 
 ```
 src/
@@ -145,13 +147,17 @@ src/
 │   ├── bus.js       post() → window.postMessage
 │   └── main.js      installs hooks, parses payloads, posts results
 │
-├── popup/       extension popup (settings UI) – plain ES module, not bundled
-│   └── popup.html / popup.js / popup.css
+├── options/     settings page (4 columns) – plain ES module, not bundled
+│   └── options.html / options.js / options.css
 │
-└── shared/      code used by content, inject AND popup
+├── background.js  opens the options page (toolbar icon + CDD menu entry)
+│
+└── shared/      code used by content, inject AND the options page
     ├── sample-panel-fields.js  field registry + settings + lifecycle
     ├── event-types.js          EVENT_SOURCE / EVENTS message tags
     ├── plugin-constants.js     PANEL_ID, reaction colors, inject path
+    ├── prefix-colors.js        Sample ID prefix -> colour
+    ├── registration-form.js    registration-form order + default
     └── page-detection.js       page predicates
 ```
 
@@ -231,7 +237,7 @@ extension against real data.
 
 ```bash
 npm install          # installs vite (the only dependency)
-npm run build        # builds content + inject into dist/ and copies popup/shared
+npm run build        # builds content + inject into dist/ and copies options/shared
 # or individually:
 npm run build:content
 npm run build:inject
@@ -263,15 +269,17 @@ dist/
 ├── assets/
 │   ├── content.js         bundled content script (entry: src/content/main.js)
 │   └── inject.js          bundled page script   (entry: src/inject/main.js)
-├── popup/                 copied verbatim from src/popup/  (real ES module at runtime)
-├── shared/                copied verbatim from src/shared/ (popup imports it)
+├── background.js          copied from src/background.js (unbundled, no imports)
+├── options/               copied verbatim from src/options/ (real ES module at runtime)
+├── shared/                copied verbatim from src/shared/ (the options page imports it)
 └── icons/                 copied from icons/
 ```
 
 Both bundles use `inlineDynamicImports: true` and `minify: false` (readable
-output). The popup is **not bundled** — that is why `src/shared/` is copied into
-`dist/shared/` so the popup's `import "../shared/sample-panel-fields.js"`
-resolves.
+output). The options page is **not bundled** — that is why `src/shared/` is
+copied into `dist/shared/` so its `import "../shared/sample-panel-fields.js"`
+resolves. `background.js` is copied unbundled too, so it must stay
+import-free.
 
 > See also: [`docs/LEARNING_GUIDE.md`](./docs/LEARNING_GUIDE.md) for the
 > extension concepts, and [`docs/ADDING_NEW_FIELDS.md`](./docs/ADDING_NEW_FIELDS.md)
@@ -281,13 +289,15 @@ resolves.
 
 ## Configuration
 
-### Runtime settings (user-facing, via the popup)
+### Runtime settings (user-facing, via the options page)
 
 | Setting | Storage key | Storage area | Used by |
 | --- | --- | --- | --- |
 | ELN tab title mode | `cddPluginElnTitleMode` | `chrome.storage.local` | `eln-title.js` |
 | Sample-panel visible fields | `cddSamplePanelVisibleFields` | `chrome.storage.local` | `sample-panel.js` |
-| Discovered custom fields (+`lastSeen`) | `cddSamplePanelCustomFields` | `chrome.storage.local` | popup + `sample-panel.js` |
+| Discovered custom fields (+`lastSeen`) | `cddSamplePanelCustomFields` | `chrome.storage.local` | options page + `sample-panel.js` |
+| Registration-form names / order | `cddRegistrationFormNames` / `cddRegistrationFormOrder` | `chrome.storage.local` | `registration-form-default.js` |
+| Registration-form default | `cddRegistrationFormMode` / `cddRegistrationFormFixedName` / `cddRegistrationFormLastUsed` | `chrome.storage.local` | `registration-form-default.js` |
 | Prefix colors | `chrome.storage.local` | `chrome.storage.local` | `prefix-colors.js` + visualizations |
 | Panel position / collapsed | `cdd-stoich-panel-state` | `localStorage` | `sample-panel.js` |
 | Location-tree width | `cdd-location-picker-tree-width` | `localStorage` | `location-picker-resize.js` |
@@ -316,8 +326,8 @@ is already on.
 ### Adding a new setting
 
 1. Pick a key + default, e.g. `const MY_KEY = "cddMyFeatureEnabled";`.
-2. Add the control to `src/popup/popup.html`.
-3. In `src/popup/popup.js`, load with
+2. Add the control to `src/options/options.html`.
+3. In `src/options/options.js`, load with
    `chrome.storage.local.get({ [MY_KEY]: false })` and save on `change`.
 4. Consume it in the feature (optionally react live via
    `chrome.storage.onChanged`).
@@ -378,13 +388,13 @@ There are no servers; "deployment" means publishing the packaged extension.
 - Floating, draggable, configurable **Sample Panel** with custom-field discovery,
   card warnings, and state persistence.
 - Per-reaction **stoichiometry print sheets** and **panel print**.
-- **ELN tab-title** override with three modes + popup UI.
+- **ELN tab-title** override with three modes + options-page UI.
 - **Dose-response "Easy Override"** writing back through CDD's API.
 - **Batch sample creation** — select multiple empty wells in the Pick Location
   grid and create all samples in one click, gated behind CDD's own native save,
   with a per-position results panel and retry.
 - **Prefix-based colors** — sample IDs grouped by prefix and colour-coded across
-  the inventory box grid and visualizations; colours managed in the popup.
+  the inventory box grid and visualizations; colours managed on the options page.
 - **Inventory well structure tooltip** — molecule structure + synonym on hover in
   the Pick Location box, with per-molecule caching and idle prefetch.
 - **Plate Inventory Location tooltip** — plate's inventory location on hover over

@@ -16,6 +16,60 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [11.0.0] — 2026-07-10
+
+Major bump: the browser-action popup is gone, replaced by a four-column
+settings page, and the registration picklist becomes configurable.
+
+### Added
+- **Settings page (`src/options/`).** Four columns — tab title, panel fields,
+  prefix colours, registration form. Reached from the toolbar icon or from a new
+  **CDD Plugin options** entry the extension adds to CDD's own user dropdown
+  (`ui-fixes/options-menu-link.js`). Columns 1–3 are the old popup's settings,
+  unchanged in behaviour.
+- **Registration-form order.** The Create Entity page's Registration Form
+  picklist (`#registration-form-select`) is reordered into a sequence the user
+  drags together on the settings page — a cell biologist wants Eukaryote on top,
+  a chemist Molecule. Reordering moves `<option>` nodes, which changes neither
+  `select.value` nor which option is selected, so CDD's Stimulus controller is
+  untouched. Forms the vault adds later append at the bottom rather than jumping
+  the queue.
+- **Registration-form default.** The picklist preselects either the form last
+  used *in that vault*, or one pinned on the settings page, or nothing at all
+  (`ui-fixes/registration-form-default.js`, `shared/registration-form.js`).
+  Preselecting dispatches `change`, because CDD's
+  `new-molecule#handleRegistrationFormChange` is what rebuilds the type-specific
+  form below — setting `.value` alone would leave the picklist and the form
+  disagreeing. It is one-shot per page, so it never fights a user who picks
+  something else afterwards.
+- **`src/background.js`.** Turns a click on the toolbar icon, and the CDD menu
+  entry's message, into `chrome.runtime.openOptionsPage()`. Content scripts have
+  no access to that API, hence the message hop.
+
+### Changed
+- **Everything is keyed by form NAME, not by `value`.** A
+  `registration_form_definition_id` is per-vault, so "Molecule" is `1000000170`
+  in one vault and something else in the next. A pinned form the current vault
+  does not offer leaves CDD's own default alone rather than guessing.
+- **Per-browser manifests.** Chrome MV3 accepts only
+  `background.service_worker` and rejects `background.scripts` ("requires
+  manifest version of 2 or lower"); Firefox MV3 implements no service worker and
+  needs `background.scripts`. Chrome also warns about `browser_specific_settings`,
+  a Gecko-only key. Neither browser tolerates the other's keys, so the build now
+  emits `dist/manifest.json` (Chrome, no Gecko block) and
+  `dist/manifest.firefox.json`, and `publish.yml` picks the right one per store.
+  Both are warning-free: `web-ext lint` reports 0 errors / 0 warnings / 0 notices
+  on the Firefox package, and the Chrome manifest carries no key outside the MV3
+  schema.
+
+### Removed
+- **The browser-action popup (`src/popup/`).** Its 800×600 ceiling could not
+  hold four columns. The toolbar icon now opens the settings page instead;
+  `action.default_popup` is gone, which is precisely what lets
+  `action.onClicked` fire.
+
+---
+
 ## [10.1.0] — 2026-07-10
 
 ### Added

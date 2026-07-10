@@ -100,6 +100,9 @@ jobs:
       - name: Package dist into a zip
         if: steps.check.outputs.configured == 'true'
         run: |
+          # dist/manifest.json is already the Chrome manifest; the Firefox one
+          # rides along in the artifact and must not reach the Web Store.
+          rm -f dist/manifest.firefox.json
           cd dist
           zip -r -X ../extension.zip . >/dev/null
           cd ..
@@ -218,6 +221,16 @@ jobs:
         with:
           name: dist
           path: dist
+
+      - name: Use the Firefox manifest
+        if: steps.check.outputs.configured == 'true'
+        run: |
+          # Firefox MV3 has no background.service_worker; it needs
+          # background.scripts, which in turn Chrome rejects. The build emits
+          # both manifests — swap the Firefox one in before signing.
+          test -f dist/manifest.firefox.json
+          mv dist/manifest.firefox.json dist/manifest.json
+          node -p "'Firefox background: ' + JSON.stringify(require('./dist/manifest.json').background)"
 
       - name: Package source code for AMO review
         if: steps.check.outputs.configured == 'true'

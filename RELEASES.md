@@ -9,6 +9,28 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 11.0.0 — July 2026
+
+**A real settings page, and a Create Entity page that remembers how you work.**
+
+- **Settings moved out of the little popup.** Clicking the extension icon now
+  opens a proper settings page with four columns side by side: tab title, panel
+  fields, prefix colours, and the new registration-form settings. You can also
+  reach it from **CDD Plugin options**, which now sits in CDD's own user menu
+  next to Account.
+- **Put the registration forms in the order you actually use them.** The
+  Registration Form picklist on the Create Entity page arrives in CDD's order,
+  which suits nobody. Drag the forms into your own order on the settings page and
+  the picklist follows. Someone working on cells puts Eukaryote on top; someone
+  doing chemistry puts Molecule there.
+- **The Create Entity page can preselect a form for you.** By default it picks
+  whichever form you used last in that vault — each vault remembers its own. Or
+  pin one form and always get it. Or turn it off and let CDD choose, as before.
+- Forms your vault adds later show up at the bottom of your order, and a pinned
+  form that a vault doesn't have leaves CDD's own default alone.
+
+---
+
 ## 10.1.0 — July 2026
 
 **Never lose a registration form to a forgotten project again.**

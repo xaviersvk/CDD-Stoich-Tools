@@ -7,6 +7,15 @@ name: What's new page
 # The same file also becomes the body of each GitHub Release (publish.yml), so
 # writing the notes once is enough.
 
+# Deploys only ever run from main — that is what the `github-pages` environment
+# allows, and it keeps one branch answerable for what is published.
+#
+# A new tag still has to rebuild the page, because the page names the newest
+# TAGGED version ("v11.1.0 in the stores") and moves the Latest badge onto it.
+# Rather than trigger on the tag (whose ref the environment would refuse),
+# publish.yml calls this workflow on main once the release is cut. The tag points
+# at a main commit, so the content is identical, and `fetch-depth: 0` means the
+# build can see the tag that was just pushed.
 on:
   push:
     branches: [main]

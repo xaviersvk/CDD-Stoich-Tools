@@ -78,6 +78,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: write
     steps:
       - name: Check out
         uses: actions/checkout@v5
@@ -102,6 +103,16 @@ jobs:
               --title "$GITHUB_REF_NAME" \
               --notes-file release-notes.md
           fi
+
+      # The page names the newest tagged version and badges it "Latest", so it
+      # has to be rebuilt now that this tag exists. Dispatched against main
+      # rather than triggered by the tag: the github-pages environment only
+      # accepts deployments from main, and the tag points at a main commit
+      # anyway, so the page's content is the same either way.
+      - name: Rebuild the What's new page
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run pages.yml --ref main
 
   chrome:
     needs: build

@@ -136,9 +136,33 @@ Notes:
 4. The **Publish extension** workflow runs automatically: it builds once, then
    publishes to the Chrome Web Store and Firefox AMO (each skipped if its secrets
    aren't set). Watch it under the repo's **Actions** tab.
+5. The **What's new page** workflow also runs, rebuilding
+   <https://xaviersvk.github.io/CDD-Stoich-Tools/> so it names the new version and
+   moves the "Latest" badge onto it.
 
 The workflow fails fast if the tag doesn't match `manifest.json`'s version, so the
 store version and the git tag can't drift apart.
 
 You can also run it manually from **Actions → Publish extension → Run workflow**
 (with a checkbox to publish or, for Chrome, upload-as-draft).
+
+---
+
+## GitHub Pages setup (one-time, already done)
+
+The release-notes page is deployed by `.github/workflows/pages.yml`. One setting
+lives in GitHub rather than in this repo, so it is recorded here:
+
+- **Pages source** is set to **GitHub Actions** (not a branch):
+  `gh api -X POST repos/OWNER/REPO/pages -f build_type=workflow`
+
+**Deploys always run from `main`** — that is what the `github-pages` environment
+allows, and it keeps one branch answerable for what is published.
+
+That is why `pages.yml` is *not* triggered by version tags. The page has to be
+rebuilt after a tag (it names the newest tagged version and badges it "Latest"),
+but a tag ref would be refused by the environment with *"Branch is not allowed to
+deploy to github-pages"*. Instead `publish.yml` dispatches `pages.yml` against
+`main` once the GitHub Release is cut. The tag points at a `main` commit, so the
+page's content is the same either way, and `fetch-depth: 0` lets the build see the
+tag that was just pushed.

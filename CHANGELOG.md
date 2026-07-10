@@ -110,7 +110,9 @@ settings page, and the registration picklist becomes configurable.
 - **Project select mirrored next to Create Entity.** On the "Create a New
   Entity" registration page the required Project select sits at the top of the
   form while the Create Entity button sits at the bottom, so a forgotten project
-  was only discovered after submitting — losing the whole form. A second,
+  was only discovered after submitting — a rejected submit and a scroll back to
+  the top. (CDD rejects the submit and keeps the entered data; the cost is the
+  round trip, not the form.) A second,
   synchronized Project select is now rendered inside the button row, immediately
   left of Create Entity (`ui-fixes/registration-project-mirror.js`). The two
   controls track each other in both directions; setting the mirror dispatches

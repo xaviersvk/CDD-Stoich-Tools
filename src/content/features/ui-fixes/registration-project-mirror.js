@@ -2,12 +2,13 @@
 //
 // The "Create a New Entity" registration form puts the required Project select
 // at the very top and the Create Entity button at the very bottom, often a full
-// screen apart. Filling in the whole form, hitting Create and only then finding
-// out the project was never picked means retyping everything.
+// screen apart. Filling the form in, hitting Create and only then being told the
+// project is missing costs a rejected submit and a scroll back to the top. CDD
+// keeps what you typed -- the cost is the round trip, not the data.
 //
 // This mirrors the Project select next to the Create Entity button, keeps the
 // two in sync in both directions, and disables Create Entity until a project is
-// chosen -- so the form is never lost to a missed project.
+// chosen -- so the round trip never happens.
 //
 // Both controls are the same underlying field: only CDD's original select
 // carries the `name`, so the POST body is unchanged.

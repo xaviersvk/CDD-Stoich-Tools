@@ -51,7 +51,7 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ## 10.1.0 — July 2026
 
-**Never lose a registration form to a forgotten project again.**
+**No more bouncing off "you forgot the project" at the bottom of the form.**
 
 - **The Project picker now also sits right next to the Create Entity button.**
   On the *Create a New Entity* page the project dropdown is at the very top of
@@ -60,8 +60,8 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
   change one and the other follows.
 - **Create Entity stays disabled until you pick a project.** While no project is
   selected the button is greyed out ("Select a project first") and the project
-  dropdown is highlighted in amber, so you can't submit a form that's about to
-  be rejected and have to type it all in again.
+  dropdown is highlighted in amber. Nothing is lost when you forget — CDD just
+  rejects the submit — but now you don't make the trip at all.
 
 ---
 

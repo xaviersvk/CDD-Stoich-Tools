@@ -85,6 +85,10 @@ and the helpers appear automatically.
 - **Chrome:** [Chrome Web Store](https://chromewebstore.google.com/detail/cdd-stoichiometric-table/ghbhjmmmgejokgekdcbcmgcfaoddlffg)
 - **Firefox:** [Firefox Add-ons](https://addons.mozilla.org/en-GB/firefox/addon/cdd-stoichiometric-table-tools/)
 
+What changed in each version, in plain language:
+[**What's new**](https://xaviersvk.github.io/CDD-Stoich-Tools/) — also linked from the
+settings page and published as a GitHub Release per tag.
+
 Settings (which fields show, prefix colours, tab-title mode, registration-form
 order and default, …) live on the extension's own settings page. Open it by
 clicking the extension icon, or from **CDD Plugin options** in CDD's user

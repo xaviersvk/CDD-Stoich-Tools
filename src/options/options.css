@@ -5,6 +5,10 @@
  * thing here; everything else is hairlines, monospace micro-labels and air.
  * No web fonts — an extension page must be self-contained, so the system stacks
  * do the work and the monospace face carries the lab-label register.
+ *
+ * The accent is sampled from the extension's own icon (the flask's navy,
+ * #033c8e), so the logo in the masthead and the controls below it belong to one
+ * another. Dark mode lifts it to a legible tint of the same hue.
  */
 
 :root {
@@ -13,8 +17,8 @@
     --ink: #131a21;
     --muted: #5c6b78;
     --rule: #d8dee5;
-    --reagent: #0f6b52;
-    --reagent-wash: #e7f2ee;
+    --accent: #033c8e;
+    --accent-wash: #e8eefa;
     --danger: #b4241c;
 
     --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -31,8 +35,8 @@
         --ink: #e6edf3;
         --muted: #8b9cab;
         --rule: #27313a;
-        --reagent: #45c39a;
-        --reagent-wash: #12281f;
+        --accent: #7fa9ef;
+        --accent-wash: #121d31;
         --danger: #f0776c;
     }
 }
@@ -76,9 +80,29 @@ body {
 .masthead__row {
     display: flex;
     flex-wrap: wrap;
-    align-items: baseline;
+    align-items: center;
     justify-content: space-between;
     gap: 8px 16px;
+}
+
+.masthead__brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+/* The icon ships with an opaque white background, so it is set as an app tile
+   rather than floated on the surface — that reads deliberate in dark mode too,
+   instead of looking like a transparency bug. */
+.logo {
+    flex: 0 0 auto;
+    width: 32px;
+    height: 32px;
+    border-radius: 7px;
+    border: 1px solid var(--rule);
+    background: #fff;
+    display: block;
 }
 
 .wordmark {
@@ -104,7 +128,7 @@ body {
 }
 
 .masthead__link {
-    color: var(--reagent);
+    color: var(--accent);
     font-size: 13px;
     font-weight: 600;
     text-decoration: none;
@@ -207,7 +231,7 @@ body {
     grid-template-rows: auto 1fr;
     padding: 3px 4px 2px;
     font-family: var(--mono);
-    background: var(--reagent-wash);
+    background: var(--accent-wash);
 }
 
 .tile__no {
@@ -282,7 +306,7 @@ body {
     font: inherit;
     font-size: 13px;
     font-weight: 600;
-    color: var(--reagent);
+    color: var(--accent);
     background: var(--card);
     border: 1px solid var(--rule);
     border-radius: 5px;
@@ -290,8 +314,8 @@ body {
 }
 
 .btn:hover {
-    background: var(--reagent-wash);
-    border-color: var(--reagent);
+    background: var(--accent-wash);
+    border-color: var(--accent);
 }
 
 .btn--quiet {
@@ -306,7 +330,7 @@ body {
 }
 
 :is(a, button, input, select, [tabindex]):focus-visible {
-    outline: 2px solid var(--reagent);
+    outline: 2px solid var(--accent);
     outline-offset: 2px;
 }
 
@@ -337,7 +361,7 @@ body {
 
 .choice input {
     margin: 2px 0 0;
-    accent-color: var(--reagent);
+    accent-color: var(--accent);
 }
 
 .choice__text {
@@ -387,7 +411,7 @@ body {
 
 .field-item input {
     margin: 0;
-    accent-color: var(--reagent);
+    accent-color: var(--accent);
 }
 
 .field-subheading {
@@ -503,8 +527,8 @@ body {
 }
 
 .order__item[data-drop="true"] {
-    border-color: var(--reagent);
-    box-shadow: inset 0 2px 0 -1px var(--reagent);
+    border-color: var(--accent);
+    box-shadow: inset 0 2px 0 -1px var(--accent);
 }
 
 .order__grip {

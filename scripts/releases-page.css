@@ -3,7 +3,11 @@
  * Same tokens and the same periodic-tile language as the extension's settings
  * page (src/options/options.css), so the two read as one product: a version
  * number sits in an element tile, hairlines and monospace micro-labels do the
- * structural work, and one reagent-green accent is the only colour that speaks.
+ * structural work, and one accent is the only colour that speaks.
+ *
+ * That accent is sampled from the extension's own icon — the flask's navy,
+ * #033c8e — so the logo in the hero and the buttons beneath it are the same
+ * blue rather than two unrelated brands sharing a page.
  *
  * Copied verbatim to site/style.css by scripts/build-releases-page.mjs.
  */
@@ -14,8 +18,8 @@
     --ink: #131a21;
     --muted: #5c6b78;
     --rule: #d8dee5;
-    --reagent: #0f6b52;
-    --reagent-wash: #e7f2ee;
+    --accent: #033c8e;
+    --accent-wash: #e8eefa;
 
     --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     --mono: ui-monospace, SFMono-Regular, "Cascadia Mono", Consolas, monospace;
@@ -28,8 +32,8 @@
         --ink: #e6edf3;
         --muted: #8b9cab;
         --rule: #27313a;
-        --reagent: #45c39a;
-        --reagent-wash: #12281f;
+        --accent: #7fa9ef;
+        --accent-wash: #121d31;
     }
 }
 
@@ -53,11 +57,11 @@ body {
 }
 
 a {
-    color: var(--reagent);
+    color: var(--accent);
 }
 
 :is(a, button):focus-visible {
-    outline: 2px solid var(--reagent);
+    outline: 2px solid var(--accent);
     outline-offset: 2px;
 }
 
@@ -82,6 +86,25 @@ a {
     color: var(--muted);
 }
 
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+/* The icon ships with an opaque white background, so it is set as an app tile
+   rather than floated on the surface — deliberate in dark mode too, instead of
+   looking like a transparency bug. */
+.logo {
+    flex: 0 0 auto;
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    border: 1px solid var(--rule);
+    background: #fff;
+    display: block;
+}
+
 .wordmark {
     margin: 0;
     font-family: var(--mono);
@@ -93,10 +116,18 @@ a {
 }
 
 h1 {
-    margin: 6px 0 0;
+    margin: 2px 0 0;
     font-size: 38px;
     line-height: 1.1;
     letter-spacing: -0.025em;
+}
+
+@media (max-width: 640px) {
+    .logo {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+    }
 }
 
 .lede {
@@ -125,19 +156,19 @@ h1 {
 }
 
 .btn:hover {
-    border-color: var(--reagent);
-    background: var(--reagent-wash);
+    border-color: var(--accent);
+    background: var(--accent-wash);
 }
 
 .btn--primary {
-    background: var(--reagent);
-    border-color: var(--reagent);
+    background: var(--accent);
+    border-color: var(--accent);
     color: var(--card);
 }
 
 .btn--primary:hover {
     filter: brightness(1.08);
-    background: var(--reagent);
+    background: var(--accent);
 }
 
 .btn--quiet {
@@ -190,7 +221,7 @@ main.wrap {
     padding: 5px 7px 7px;
     border: 1px solid var(--ink);
     border-radius: 3px;
-    background: var(--reagent-wash);
+    background: var(--accent-wash);
     font-family: var(--mono);
 }
 
@@ -212,7 +243,7 @@ main.wrap {
 .pill {
     padding: 2px 7px;
     border-radius: 999px;
-    background: var(--reagent);
+    background: var(--accent);
     color: var(--card);
     font-family: var(--mono);
     font-size: 9.5px;
@@ -256,7 +287,7 @@ main.wrap {
 }
 
 .notes h2 .anchor:hover {
-    color: var(--reagent);
+    color: var(--accent);
 }
 
 .notes h2 strong {
@@ -292,7 +323,7 @@ main.wrap {
 .notes blockquote {
     margin: 0 0 12px;
     padding: 10px 14px;
-    border-left: 2px solid var(--reagent);
+    border-left: 2px solid var(--accent);
     background: var(--card);
     color: var(--muted);
     font-size: 14px;

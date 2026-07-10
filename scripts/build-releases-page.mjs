@@ -170,13 +170,19 @@ function renderPage(releases, version) {
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>What's new — CDD Stoich Tools</title>
 <meta name="description" content="Release notes for the CDD Stoichiometric Table Tools browser extension." />
+<link rel="icon" type="image/png" href="./icon.png" />
 <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
 <header class="masthead">
   <div class="wrap">
-    <p class="wordmark">CDD Stoich Tools</p>
-    <h1>What's new</h1>
+    <div class="brand">
+      <img class="logo" src="./icon.png" width="56" height="56" alt="" />
+      <div>
+        <p class="wordmark">CDD Stoich Tools</p>
+        <h1>What's new</h1>
+      </div>
+    </div>
     <p class="lede">
       Every change to the extension, in plain language. The newest release is at
       the top. Settings live behind the extension icon, or under
@@ -254,6 +260,9 @@ const outDir = resolve(root, "site");
 mkdirSync(outDir, { recursive: true });
 writeFileSync(resolve(outDir, "index.html"), renderPage(releases, version));
 copyFileSync(resolve(here, "releases-page.css"), resolve(outDir, "style.css"));
+
+// The extension's own icon, serving as both the hero logo and the favicon.
+copyFileSync(resolve(root, "icons/icon128.png"), resolve(outDir, "icon.png"));
 
 const unreleased = releases
     .filter((release) => statusOf(release, version) === "unreleased")

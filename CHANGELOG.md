@@ -32,6 +32,18 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   marks a written-up-but-untagged version "Not yet released", so it never
   promises a build nobody can install.
 
+### Changed
+- **The extension's icon now heads both pages**, as a logo and as a favicon. The
+  settings page loads it straight from `icons/`; the release-notes build copies
+  it to `site/icon.png`. It is set in a rounded white tile rather than floated on
+  the surface, because the PNG has an opaque white background — on a dark theme a
+  bare `<img>` would read as a transparency bug.
+- **The accent colour is now sampled from that icon** (`#033c8e`, the flask's
+  navy; `#7fa9ef` on dark). It was an unrelated green, which beside a navy logo
+  read as two brands sharing a page. The CSS variable is renamed
+  `--reagent` → `--accent` in both stylesheets to stop the name lying about the
+  hue.
+
 ### Removed
 - **`docs/RELEASE_NOTES.md`.** A stale 8.0.0-era draft for a version that never
   shipped, long superseded by `RELEASES.md`.

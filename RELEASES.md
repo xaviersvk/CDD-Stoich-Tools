@@ -20,6 +20,10 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 - This page itself is new: every release, in plain language, at
   <https://xaviersvk.github.io/CDD-Stoich-Tools/>. Each version also gets its own
   entry on GitHub, so you can link a colleague to exactly the change you mean.
+- **The plugin's flask now heads both the settings page and this one**, and sits
+  in the browser tab as the favicon. The blue you see in the buttons and
+  highlights is taken from that icon, so the whole thing finally looks like one
+  piece of software rather than three.
 
 ---
 

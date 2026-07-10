@@ -16,6 +16,37 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [10.1.0] — 2026-07-10
+
+### Added
+- **Project select mirrored next to Create Entity.** On the "Create a New
+  Entity" registration page the required Project select sits at the top of the
+  form while the Create Entity button sits at the bottom, so a forgotten project
+  was only discovered after submitting — losing the whole form. A second,
+  synchronized Project select is now rendered inside the button row, immediately
+  left of Create Entity (`ui-fixes/registration-project-mirror.js`). The two
+  controls track each other in both directions; setting the mirror dispatches
+  `input` + `change` on CDD's own select, so the project-dependent re-render of
+  the registration fields still fires.
+- **Create Entity is disabled until a project is picked.** While the project is
+  blank the button is disabled (`title="Select a project first"`, dimmed) and
+  the mirror is highlighted amber. Ownership is one-way: the button is only ever
+  re-enabled if *we* disabled it, so a button CDD disabled for its own reasons
+  (`data-initally-disabled`, no structure drawn) is never silently released. A
+  capture-phase click guard on the submit button backstops the frame between
+  CDD re-rendering a fresh, enabled button and the next sync — necessary because
+  CDD's Stimulus controller (`new-molecule#interceptSubmitForm`) posts the form
+  itself, so the browser's native `required` validation never runs.
+
+### Notes
+- The mirror carries no `name` and no `id`, so the POST body and CDD's own
+  `#project_id` are untouched. Everything is scoped to
+  `.displayed_form_content` — the page ships a second, hidden `form#new_molecule`
+  template for the other registration types. Registration types with no project
+  field at all (e.g. "Other") remove the mirror and release the button.
+
+---
+
 ## [10.0.0] — 2026-07-08
 
 Major bump: the plate tooling grows from a single hover tooltip into a set of

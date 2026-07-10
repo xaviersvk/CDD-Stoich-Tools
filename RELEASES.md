@@ -9,6 +9,22 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 10.1.0 — July 2026
+
+**Never lose a registration form to a forgotten project again.**
+
+- **The Project picker now also sits right next to the Create Entity button.**
+  On the *Create a New Entity* page the project dropdown is at the very top of
+  the form, a screenful away from the Create button at the bottom. There's now a
+  second copy of it directly left of **Create Entity**. Both are the same field —
+  change one and the other follows.
+- **Create Entity stays disabled until you pick a project.** While no project is
+  selected the button is greyed out ("Select a project first") and the project
+  dropdown is highlighted in amber, so you can't submit a form that's about to
+  be rejected and have to type it all in again.
+
+---
+
 ## 10.0.0 — July 2026
 
 **Plates get the full treatment: locations at a glance, one-click export, and

@@ -30,6 +30,7 @@ import {initPlateLocationExport} from "./features/ui-fixes/plate-location-export
 import {initPlateListLocations} from "./features/ui-fixes/plate-list-locations";
 import {initPlateListExport} from "./features/ui-fixes/plate-list-export";
 import {initPlateMapStructureTooltip} from "./features/ui-fixes/plate-map-structure-tooltip";
+import {initRegistrationProjectMirror} from "./features/ui-fixes/registration-project-mirror";
 import {initSavedSearchCopyLinks} from "./features/savedSearchCopyLinks/savedSearchCopyLinks";
 import {initElnTitle} from "./features/eln-title";
 import {initBoxSelection} from "./features/box-selection/init";
@@ -103,6 +104,7 @@ function init() {
   initPlateListLocations();
   initPlateListExport();
   initPlateMapStructureTooltip();
+  initRegistrationProjectMirror();
   initSavedSearchCopyLinks();
   initElnTitle();
 

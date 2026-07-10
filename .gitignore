@@ -1,6 +1,11 @@
 /node_modules/
 /dist/
 26*
+
+# Saved DOM snapshots of logged-in CDD pages, kept locally as a DOM reference.
+# They carry live authenticity/csrf tokens and internal vault + project names,
+# and this repo is public.
+/docs/registration/
 /.idea/.gitignore
 /.idea/CDD-Stoich-Tools.iml
 /.idea/modules.xml

@@ -16,6 +16,28 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [11.1.0] — 2026-07-10
+
+### Added
+- **"What's new" link on the settings page.** The masthead now carries the
+  running version — read from `chrome.runtime.getManifest()`, so it cannot
+  disagree with the build the user is on — next to a link to the public release
+  notes at <https://xaviersvk.github.io/CDD-Stoich-Tools/>.
+- **A public release-notes page and a GitHub Release per tag.** `RELEASES.md`
+  becomes the single source for both: `scripts/build-releases-page.mjs` renders
+  it into `site/` (deployed by `.github/workflows/pages.yml`), and a new
+  `github-release` job in `publish.yml` creates each release from the matching
+  section, failing when a tag has no notes. Nine existing tags were backfilled.
+  The page reports the newest *tagged* version rather than `manifest.json`, and
+  marks a written-up-but-untagged version "Not yet released", so it never
+  promises a build nobody can install.
+
+### Removed
+- **`docs/RELEASE_NOTES.md`.** A stale 8.0.0-era draft for a version that never
+  shipped, long superseded by `RELEASES.md`.
+
+---
+
 ## [11.0.0] — 2026-07-10
 
 Major bump: the browser-action popup is gone, replaced by a four-column

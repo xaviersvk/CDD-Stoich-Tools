@@ -10,6 +10,19 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 11.1.0 — July 2026
+
+**Find out what changed, without leaving the extension.**
+
+- **The settings page now tells you which version you're running**, and links
+  straight to this page. It's in the top-right corner, next to the version
+  number.
+- This page itself is new: every release, in plain language, at
+  <https://xaviersvk.github.io/CDD-Stoich-Tools/>. Each version also gets its own
+  entry on GitHub, so you can link a colleague to exactly the change you mean.
+
+---
+
 ## 11.0.0 — July 2026
 
 **A real settings page, and a Create Entity page that remembers how you work.**

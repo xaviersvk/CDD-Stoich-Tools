@@ -33,6 +33,10 @@ jobs:
     steps:
       - name: Check out
         uses: actions/checkout@v5
+        with:
+          # The page reads the shipping version off the newest version tag, not
+          # off manifest.json — a shallow clone has no tags.
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v5

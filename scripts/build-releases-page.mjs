@@ -9,6 +9,7 @@
 // keep on a leash. `npm run build:page` fails loudly on anything unexpected.
 
 import { mkdirSync, writeFileSync, copyFileSync, readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readReleases } from "./release-notes.mjs";
@@ -50,7 +51,9 @@ function renderInline(markdown) {
                 ? `${REPO}/blob/main/${href.slice(2)}`
                 : href;
             return `<a href="${escapeHtml(url)}">${text}</a>`;
-        });
+        })
+        // Autolinks, <https://…>. The angle brackets are already escaped by now.
+        .replace(/&lt;(https?:\/\/[^\s&]+)&gt;/g, '<a href="$1">$1</a>');
 
     html = html.replace(
         /@@cddcode(\d+)@@/g,
@@ -106,19 +109,26 @@ const anchor = (label) =>
 
 // The version tile echoes the periodic-table tiles on the settings page: the
 // major version reads as the atomic number, the full version as the symbol.
-function renderTile(release, isLatest) {
+function renderTile(release, status) {
     const [major] = release.versionLabel.split(".");
+
+    const pill =
+        status === "latest"
+            ? '<span class="pill">Latest</span>'
+            : status === "unreleased"
+              ? '<span class="pill pill--unreleased">Not yet released</span>'
+              : "";
 
     return `      <div class="rail">
         <span class="tile">
           <span class="tile__no">${escapeHtml(major)}</span>
           <span class="tile__sym">${escapeHtml(release.versionLabel)}</span>
         </span>
-        ${isLatest ? '<span class="pill">Latest</span>' : ""}
+        ${pill}
       </div>`;
 }
 
-function renderRelease(release, isLatest) {
+function renderRelease(release, status) {
     const id = anchor(release.versionLabel);
 
     // The lead is promoted to the release's own heading, so it must not appear
@@ -128,7 +138,7 @@ function renderRelease(release, isLatest) {
         : release.body;
 
     return `    <article class="release" id="${id}">
-${renderTile(release, isLatest)}
+${renderTile(release, status)}
       <div class="notes">
         <p class="eyebrow">${escapeHtml(release.date)}</p>
         <h2><a class="anchor" href="#${id}">${release.lead ? renderInline(release.lead) : escapeHtml(release.versionLabel)}</a></h2>
@@ -140,9 +150,19 @@ ${renderMarkdown(body)
     </article>`;
 }
 
-function renderPage(releases, version) {
-    const latest = releases.find((release) => release.version);
+// "latest" -> the version the stores serve; "unreleased" -> written up in
+// RELEASES.md but newer than that, so nobody can install it yet; "" -> history.
+//
+// Absence of a tag proves nothing on its own: the 8.x and 9.0.0 releases shipped
+// before this repo tagged anything. Only a version ABOVE the shipping one is
+// genuinely unreleased.
+function statusOf(release, shipping) {
+    if (!release.version) return "";
+    if (release.version === shipping) return "latest";
+    return compareSemver(release.version, shipping) > 0 ? "unreleased" : "";
+}
 
+function renderPage(releases, version) {
     return `<!doctype html>
 <html lang="en">
 <head>
@@ -167,12 +187,14 @@ function renderPage(releases, version) {
       <a class="btn" href="${FIREFOX_STORE}">Get it for Firefox</a>
       <a class="btn btn--quiet" href="${REPO}/blob/main/CHANGELOG.md">Technical changelog</a>
     </p>
-    <p class="version">Currently shipping <strong>${escapeHtml(version)}</strong></p>
+    <p class="version">In the stores right now: <strong>${escapeHtml(version)}</strong></p>
   </div>
 </header>
 
 <main class="wrap">
-${releases.map((release) => renderRelease(release, release === latest)).join("\n\n")}
+${releases
+            .map((release) => renderRelease(release, statusOf(release, version)))
+            .join("\n\n")}
 </main>
 
 <footer class="masthead masthead--foot">
@@ -193,14 +215,51 @@ ${releases.map((release) => renderRelease(release, release === latest)).join("\n
 const releases = readReleases(resolve(root, "RELEASES.md"));
 if (!releases.length) throw new Error("RELEASES.md yielded no releases");
 
-const { version } = JSON.parse(readFileSync(resolve(root, "manifest.json"), "utf8"));
+const compareSemver = (a, b) => {
+    const [aMajor, aMinor, aPatch] = a.split(".").map(Number);
+    const [bMajor, bMinor, bPatch] = b.split(".").map(Number);
+    return aMajor - bMajor || aMinor - bMinor || aPatch - bPatch;
+};
+
+/**
+ * Which versions have actually been tagged, newest last.
+ *
+ * The page must not read the shipping version off manifest.json: main carries a
+ * bumped manifest from the moment work on the next version starts, which can be
+ * long before that version is tagged and published. Promising a release nobody
+ * can install yet is worse than being a little behind.
+ *
+ * Needs full history — pages.yml checks out with fetch-depth: 0.
+ */
+function taggedVersions() {
+    try {
+        return execFileSync("git", ["tag", "--list", "v*.*.*"], { cwd: root, encoding: "utf8" })
+            .split("\n")
+            .map((tag) => tag.trim().replace(/^v/, ""))
+            .filter((tag) => /^\d+\.\d+\.\d+$/.test(tag))
+            .sort(compareSemver);
+    } catch {
+        return []; // no git available
+    }
+}
+
+const tags = taggedVersions();
+
+// A shallow clone with no tags is the only case where the manifest is the best
+// guess we have.
+const version =
+    tags.at(-1) ?? JSON.parse(readFileSync(resolve(root, "manifest.json"), "utf8")).version;
 
 const outDir = resolve(root, "site");
 mkdirSync(outDir, { recursive: true });
 writeFileSync(resolve(outDir, "index.html"), renderPage(releases, version));
 copyFileSync(resolve(here, "releases-page.css"), resolve(outDir, "style.css"));
 
-const named = releases.filter((release) => release.version).length;
+const unreleased = releases
+    .filter((release) => statusOf(release, version) === "unreleased")
+    .map((release) => release.version);
+
 console.log(
-    `site/index.html — ${releases.length} sections (${named} tagged releases), shipping ${version}`
+    `site/index.html — ${releases.length} sections, ${tags.length} tagged, in the stores: ${version}` +
+    (unreleased.length ? `, not yet released: ${unreleased.join(", ")}` : "")
 );

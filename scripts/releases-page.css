@@ -221,6 +221,14 @@ main.wrap {
     text-transform: uppercase;
 }
 
+/* Written up, but no tag yet — so it is not in the stores. Reads as a caveat,
+   not as a badge: outlined rather than filled. */
+.pill--unreleased {
+    background: none;
+    border: 1px solid var(--rule);
+    color: var(--muted);
+}
+
 .notes {
     min-width: 0;
 }

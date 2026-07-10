@@ -86,10 +86,14 @@ a {
     color: var(--muted);
 }
 
+/* The brand rail: logo, wordmark, and — pushed to the far end — what the stores
+   are actually serving. One line, so the headline below it lands clean. */
 .brand {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 12px;
+    padding-bottom: 22px;
+    border-bottom: 1px solid var(--rule);
 }
 
 /* The icon ships with an opaque white background, so it is set as an app tile
@@ -97,9 +101,9 @@ a {
    looking like a transparency bug. */
 .logo {
     flex: 0 0 auto;
-    width: 56px;
-    height: 56px;
-    border-radius: 12px;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
     border: 1px solid var(--rule);
     background: #fff;
     display: block;
@@ -107,6 +111,8 @@ a {
 
 .wordmark {
     margin: 0;
+    flex: 1 1 auto;
+    min-width: 0;
     font-family: var(--mono);
     font-size: 12px;
     font-weight: 600;
@@ -115,32 +121,54 @@ a {
     color: var(--muted);
 }
 
-h1 {
-    margin: 2px 0 0;
-    font-size: 38px;
-    line-height: 1.1;
-    letter-spacing: -0.025em;
+.chip {
+    flex: 0 0 auto;
+    padding: 4px 10px;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
 }
 
-@media (max-width: 640px) {
-    .logo {
-        width: 44px;
-        height: 44px;
-        border-radius: 10px;
-    }
+h1 {
+    margin: 26px 0 0;
+    font-size: 40px;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
 }
 
 .lede {
-    margin: 12px 0 0;
-    max-width: 60ch;
+    margin: 10px 0 0;
+    max-width: 52ch;
+    font-size: 16px;
     color: var(--muted);
 }
 
 .actions {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     gap: 8px;
-    margin: 22px 0 0;
+    margin: 24px 0 0;
+}
+
+@media (max-width: 640px) {
+    .logo {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+    }
+
+    /* The chip drops below the wordmark rather than squeezing it. */
+    .brand {
+        flex-wrap: wrap;
+    }
+
+    .wordmark {
+        flex: 1 1 auto;
+    }
 }
 
 .btn {
@@ -174,13 +202,6 @@ h1 {
 .btn--quiet {
     color: var(--muted);
     font-weight: 500;
-}
-
-.version {
-    margin: 16px 0 0;
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--muted);
 }
 
 /* ---------------------------------------------------------------- release */

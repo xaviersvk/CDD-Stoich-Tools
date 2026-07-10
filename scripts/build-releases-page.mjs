@@ -9,6 +9,7 @@
 // keep on a leash. `npm run build:page` fails loudly on anything unexpected.
 
 import { mkdirSync, writeFileSync, copyFileSync, readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -162,7 +163,7 @@ function statusOf(release, shipping) {
     return compareSemver(release.version, shipping) > 0 ? "unreleased" : "";
 }
 
-function renderPage(releases, version) {
+function renderPage(releases, version, assets) {
     return `<!doctype html>
 <html lang="en">
 <head>
@@ -170,30 +171,26 @@ function renderPage(releases, version) {
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>What's new — CDD Stoich Tools</title>
 <meta name="description" content="Release notes for the CDD Stoichiometric Table Tools browser extension." />
-<link rel="icon" type="image/png" href="./icon.png" />
-<link rel="stylesheet" href="./style.css" />
+<link rel="icon" type="image/png" href="./icon.png?v=${assets.icon}" />
+<link rel="stylesheet" href="./style.css?v=${assets.style}" />
 </head>
 <body>
 <header class="masthead">
   <div class="wrap">
     <div class="brand">
-      <img class="logo" src="./icon.png" width="56" height="56" alt="" />
-      <div>
-        <p class="wordmark">CDD Stoich Tools</p>
-        <h1>What's new</h1>
-      </div>
+      <img class="logo" src="./icon.png?v=${assets.icon}" width="44" height="44" alt="" />
+      <p class="wordmark">CDD Stoich Tools</p>
+      <span class="chip">v${escapeHtml(version)} in the stores</span>
     </div>
-    <p class="lede">
-      Every change to the extension, in plain language. The newest release is at
-      the top. Settings live behind the extension icon, or under
-      <strong>CDD Plugin options</strong> in CDD's user menu.
-    </p>
+
+    <h1>What's new</h1>
+    <p class="lede">Every change to the extension, in plain language. Newest first.</p>
+
     <p class="actions">
-      <a class="btn btn--primary" href="${CHROME_STORE}">Get it for Chrome</a>
-      <a class="btn" href="${FIREFOX_STORE}">Get it for Firefox</a>
+      <a class="btn btn--primary" href="${CHROME_STORE}">Add to Chrome</a>
+      <a class="btn" href="${FIREFOX_STORE}">Add to Firefox</a>
       <a class="btn btn--quiet" href="${REPO}/blob/main/CHANGELOG.md">Technical changelog</a>
     </p>
-    <p class="version">In the stores right now: <strong>${escapeHtml(version)}</strong></p>
   </div>
 </header>
 
@@ -258,11 +255,23 @@ const version =
 
 const outDir = resolve(root, "site");
 mkdirSync(outDir, { recursive: true });
-writeFileSync(resolve(outDir, "index.html"), renderPage(releases, version));
-copyFileSync(resolve(here, "releases-page.css"), resolve(outDir, "style.css"));
 
+const cssSource = resolve(here, "releases-page.css");
 // The extension's own icon, serving as both the hero logo and the favicon.
-copyFileSync(resolve(root, "icons/icon128.png"), resolve(outDir, "icon.png"));
+const iconSource = resolve(root, "icons/icon128.png");
+
+copyFileSync(cssSource, resolve(outDir, "style.css"));
+copyFileSync(iconSource, resolve(outDir, "icon.png"));
+
+// GitHub Pages serves assets with `Cache-Control: max-age=600`, so a restyle is
+// invisible to anyone whose browser still holds the old stylesheet. Fingerprint
+// each asset with a hash of its contents: change the file, change the URL.
+const fingerprint = (path) =>
+    createHash("sha256").update(readFileSync(path)).digest("hex").slice(0, 8);
+
+const assets = { style: fingerprint(cssSource), icon: fingerprint(iconSource) };
+
+writeFileSync(resolve(outDir, "index.html"), renderPage(releases, version, assets));
 
 const unreleased = releases
     .filter((release) => statusOf(release, version) === "unreleased")

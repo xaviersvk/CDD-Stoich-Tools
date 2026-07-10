@@ -1,0 +1,59 @@
+name: What's new page
+
+# Builds the public release-notes page from RELEASES.md and deploys it to
+# GitHub Pages: https://xaviersvk.github.io/CDD-Stoich-Tools/
+#
+# RELEASES.md is the only source; scripts/build-releases-page.mjs renders it.
+# The same file also becomes the body of each GitHub Release (publish.yml), so
+# writing the notes once is enough.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - RELEASES.md
+      - manifest.json
+      - scripts/**
+      - .github/workflows/pages.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never let two deploys race; queue instead of cancelling a half-finished one.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "20"
+
+      - name: Build the page
+        run: node scripts/build-releases-page.mjs
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,330 @@
+/* releases-page.css — the public "What's new" page.
+ *
+ * Same tokens and the same periodic-tile language as the extension's settings
+ * page (src/options/options.css), so the two read as one product: a version
+ * number sits in an element tile, hairlines and monospace micro-labels do the
+ * structural work, and one reagent-green accent is the only colour that speaks.
+ *
+ * Copied verbatim to site/style.css by scripts/build-releases-page.mjs.
+ */
+
+:root {
+    --paper: #eef1f4;
+    --card: #ffffff;
+    --ink: #131a21;
+    --muted: #5c6b78;
+    --rule: #d8dee5;
+    --reagent: #0f6b52;
+    --reagent-wash: #e7f2ee;
+
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "Cascadia Mono", Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --paper: #0d1216;
+        --card: #151c23;
+        --ink: #e6edf3;
+        --muted: #8b9cab;
+        --rule: #27313a;
+        --reagent: #45c39a;
+        --reagent-wash: #12281f;
+    }
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.55;
+}
+
+.wrap {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+a {
+    color: var(--reagent);
+}
+
+:is(a, button):focus-visible {
+    outline: 2px solid var(--reagent);
+    outline-offset: 2px;
+}
+
+/* ---------------------------------------------------------------- masthead */
+
+.masthead {
+    background: var(--card);
+    border-bottom: 1px solid var(--rule);
+    padding: 40px 0 32px;
+}
+
+.masthead--foot {
+    border-bottom: 0;
+    border-top: 1px solid var(--rule);
+    margin-top: 48px;
+    padding: 20px 0;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.masthead--foot a {
+    color: var(--muted);
+}
+
+.wordmark {
+    margin: 0;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+h1 {
+    margin: 6px 0 0;
+    font-size: 38px;
+    line-height: 1.1;
+    letter-spacing: -0.025em;
+}
+
+.lede {
+    margin: 12px 0 0;
+    max-width: 60ch;
+    color: var(--muted);
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 22px 0 0;
+}
+
+.btn {
+    display: inline-block;
+    padding: 8px 14px;
+    border: 1px solid var(--rule);
+    border-radius: 5px;
+    background: var(--card);
+    color: var(--ink);
+    font-size: 13.5px;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.btn:hover {
+    border-color: var(--reagent);
+    background: var(--reagent-wash);
+}
+
+.btn--primary {
+    background: var(--reagent);
+    border-color: var(--reagent);
+    color: var(--card);
+}
+
+.btn--primary:hover {
+    filter: brightness(1.08);
+    background: var(--reagent);
+}
+
+.btn--quiet {
+    color: var(--muted);
+    font-weight: 500;
+}
+
+.version {
+    margin: 16px 0 0;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+}
+
+/* ---------------------------------------------------------------- release */
+
+main.wrap {
+    padding-top: 40px;
+}
+
+.release {
+    display: grid;
+    grid-template-columns: 96px minmax(0, 1fr);
+    gap: 24px;
+    padding: 28px 0;
+    border-top: 1px solid var(--rule);
+}
+
+.release:first-child {
+    border-top: 0;
+    padding-top: 0;
+}
+
+.rail {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    position: sticky;
+    top: 24px;
+    align-self: start;
+}
+
+/* The tile: atomic number = major version, symbol = the version itself. */
+.tile {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    width: 100%;
+    min-height: 62px;
+    padding: 5px 7px 7px;
+    border: 1px solid var(--ink);
+    border-radius: 3px;
+    background: var(--reagent-wash);
+    font-family: var(--mono);
+}
+
+.tile__no {
+    font-size: 10px;
+    line-height: 1;
+    color: var(--muted);
+}
+
+.tile__sym {
+    align-self: end;
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    overflow-wrap: anywhere;
+}
+
+.pill {
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: var(--reagent);
+    color: var(--card);
+    font-family: var(--mono);
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.notes {
+    min-width: 0;
+}
+
+.eyebrow {
+    margin: 0;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.notes h2 {
+    margin: 6px 0 14px;
+    font-size: 21px;
+    line-height: 1.3;
+    letter-spacing: -0.015em;
+}
+
+.notes h2 .anchor {
+    color: inherit;
+    text-decoration: none;
+}
+
+.notes h2 .anchor:hover {
+    color: var(--reagent);
+}
+
+.notes h2 strong {
+    font-weight: inherit;
+}
+
+.notes p {
+    margin: 0 0 12px;
+}
+
+.notes ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.notes li {
+    position: relative;
+    margin: 0 0 10px;
+    padding-left: 18px;
+}
+
+/* A hairline dash, not a bullet — the same structural register as the rules. */
+.notes li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.7em;
+    width: 9px;
+    border-top: 1px solid var(--rule);
+}
+
+.notes blockquote {
+    margin: 0 0 12px;
+    padding: 10px 14px;
+    border-left: 2px solid var(--reagent);
+    background: var(--card);
+    color: var(--muted);
+    font-size: 14px;
+}
+
+code {
+    font-family: var(--mono);
+    font-size: 0.86em;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 0 4px;
+}
+
+@media (max-width: 640px) {
+    h1 {
+        font-size: 30px;
+    }
+
+    .release {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 14px;
+    }
+
+    .rail {
+        position: static;
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .tile {
+        width: auto;
+        min-height: 0;
+        min-width: 84px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation: none !important;
+        transition: none !important;
+    }
+}

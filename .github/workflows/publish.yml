@@ -70,6 +70,39 @@ jobs:
           path: dist
           retention-days: 1
 
+  # A GitHub Release per tag, its body taken from RELEASES.md — the same text
+  # the public "What's new" page renders. Fails if the tag has no section there.
+  github-release:
+    needs: build
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "20"
+
+      - name: Extract the notes for this tag
+        run: node scripts/notes-for-tag.mjs "$GITHUB_REF_NAME" > release-notes.md
+
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            echo "::notice::Release $GITHUB_REF_NAME already exists — updating its notes."
+            gh release edit "$GITHUB_REF_NAME" --notes-file release-notes.md
+          else
+            gh release create "$GITHUB_REF_NAME" \
+              --title "$GITHUB_REF_NAME" \
+              --notes-file release-notes.md
+          fi
+
   chrome:
     needs: build
     runs-on: ubuntu-latest

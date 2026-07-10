@@ -5,7 +5,8 @@
   "scripts": {
     "build:content": "vite build --config vite.content.config.js",
     "build:inject": "vite build --config vite.inject.config.js",
-    "build": "npm run build:content && npm run build:inject"
+    "build": "npm run build:content && npm run build:inject",
+    "build:page": "node scripts/build-releases-page.mjs"
   },
   "dependencies": {
     "smiles-drawer": "^2.1.7"

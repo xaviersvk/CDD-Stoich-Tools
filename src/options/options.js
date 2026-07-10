@@ -37,6 +37,15 @@ import {
 const ELN_TITLE_MODE_KEY = "cddPluginElnTitleMode";
 const DEFAULT_ELN_TITLE_MODE = "id-title";
 
+/* ================================================================ masthead */
+
+// Read from the manifest rather than hardcoded, so the version next to the
+// "What's new" link can never disagree with the build the user is running.
+function showVersion() {
+    const el = document.getElementById("version");
+    if (el) el.textContent = `v${chrome.runtime.getManifest().version}`;
+}
+
 /* ================================================================ 1 · Tab title */
 
 const titleRadios = [...document.querySelectorAll('input[name="elnTitleMode"]')];
@@ -485,6 +494,7 @@ chrome.storage.onChanged.addListener(async (changes, areaName) => {
     }
 });
 
+showVersion();
 initElnTitleUI();
 initSamplePanelFieldsUI();
 initPrefixColorsUI();

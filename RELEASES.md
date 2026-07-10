@@ -4,8 +4,9 @@ A plain-language history of **CDD Stoichiometric Table Tools** — what changed 
 each version and why it matters for everyday CDD work. For the full technical
 detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
-> Most settings live in the extension popup (click the extension icon), and
-> changes usually take effect after you refresh the CDD page.
+> Most settings live on the extension's settings page — click the extension
+> icon, or pick **CDD Plugin options** in CDD's user menu. Changes usually take
+> effect after you refresh the CDD page.
 
 ---
 

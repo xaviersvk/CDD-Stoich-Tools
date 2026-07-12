@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: What's new / release notes
+    url: https://xaviersvk.github.io/CDD-Stoich-Tools/
+    about: Check whether your issue is already addressed in a recent release.
+  - name: Install or update the extension
+    url: https://chromewebstore.google.com/detail/cdd-stoichiometric-table/ghbhjmmmgejokgekdcbcmgcfaoddlffg
+    about: Make sure you're on the latest version before reporting a bug.

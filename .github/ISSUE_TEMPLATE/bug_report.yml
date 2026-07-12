@@ -1,0 +1,88 @@
+name: Bug report
+description: Something in the extension is broken or behaves wrong on a CDD page.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug! Please fill in as much as you can — it makes
+        the problem far quicker to reproduce and fix.
+
+        **Please don't paste anything confidential** (structures, unpublished
+        data, full result rows). A vault id or a field name is fine.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug and what you saw.
+      placeholder: When I open the filter attribute picker, the columns are empty…
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: How can we make it happen?
+      placeholder: |
+        1. Open an Inventory search in vault …
+        2. Add a filter and open the field selector
+        3. …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect instead?
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Extension version
+      description: Shown in the top-right corner of the extension's settings page.
+      placeholder: "12.0.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser
+      options:
+        - Chrome
+        - Firefox
+        - Edge
+        - Other (say which below)
+    validations:
+      required: true
+  - type: input
+    id: browser-version
+    attributes:
+      label: Browser version (optional)
+      placeholder: "Chrome 150"
+  - type: input
+    id: cdd-context
+    attributes:
+      label: Where in CDD? (optional)
+      description: Which page or feature — e.g. Inventory search, Column editor, Create Entity. A vault id helps; no sensitive data please.
+      placeholder: "Inventory search filter, vault 1000000109"
+  - type: textarea
+    id: console
+    attributes:
+      label: Console errors (optional)
+      description: Open DevTools (F12) → Console and paste anything red that appears when the bug happens. This will be rendered as code.
+      render: shell
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots (optional)
+      description: Drag images in here if a picture helps.
+  - type: checkboxes
+    id: confirms
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and didn't find a duplicate.
+          required: true
+        - label: I removed any confidential data from this report.
+          required: true

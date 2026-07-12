@@ -1,0 +1,43 @@
+name: Feature request
+description: Suggest an improvement or a new helper for working in CDD.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the idea! Tell us what you're trying to do — the underlying
+        goal often matters more than a specific solution.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: The task or pain point. What's slow, missing, or awkward today?
+      placeholder: When I register many entities at once, I have to reselect the type every time…
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like to happen?
+      description: Your proposed solution or behaviour.
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: Where in CDD would this live? (optional)
+      description: Which page or area — e.g. Inventory search, Create Entity, ELN, plates.
+      placeholder: "Bulk registration (slurp) page"
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives or workarounds (optional)
+      description: Anything you've tried, or other ways this could work.
+  - type: checkboxes
+    id: confirms
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and didn't find a similar request.
+          required: true

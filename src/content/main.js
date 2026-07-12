@@ -34,6 +34,7 @@ import {initPlateListExport} from "./features/ui-fixes/plate-list-export";
 import {initPlateMapStructureTooltip} from "./features/ui-fixes/plate-map-structure-tooltip";
 import {initRegistrationProjectMirror} from "./features/ui-fixes/registration-project-mirror";
 import {initRegistrationFormDefault} from "./features/ui-fixes/registration-form-default";
+import {initSlurpTypeDefault} from "./features/ui-fixes/slurp-type-default";
 import {initOptionsMenuLink} from "./features/ui-fixes/options-menu-link";
 import {initSavedSearchCopyLinks} from "./features/savedSearchCopyLinks/savedSearchCopyLinks";
 import {initElnTitle} from "./features/eln-title";
@@ -112,6 +113,7 @@ function init() {
   initPlateMapStructureTooltip();
   initRegistrationProjectMirror();
   initRegistrationFormDefault();
+  initSlurpTypeDefault();
   initOptionsMenuLink();
   initSavedSearchCopyLinks();
   initElnTitle();

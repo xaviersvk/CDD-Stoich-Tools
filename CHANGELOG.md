@@ -16,6 +16,51 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [12.0.0] — 2026-07-12
+
+### Added
+- **A four-column attribute picker for the Inventory filter field.** CDD renders
+  the "Filter Entries" field selector as one very long, very narrow dropdown that
+  mixes Sample, Batch, Entity and Event attributes into a single scroll (130+
+  fields on a busy vault). A new content-script feature
+  (`ui-fixes/filter-field-picker.js`) overlays it with a wide four-column popover
+  — one column per object type, each with its own heading, vault/Default grouping
+  and scroll — anchored under the trigger like a normal dropdown. It is a
+  non-destructive overlay built **inside** CDD's own MUI menu Paper: the native
+  `<ul>` is hidden but kept, and selecting one of our items dispatches a real
+  click on the original `<li>`, so CDD's handler, values and requests are
+  untouched. The search box is relevance-scored (exact › prefix › whole-word ›
+  substring), case- and diacritics-insensitive, hides non-matches and empty
+  columns, lets a lone surviving column expand, and highlights the matched slice
+  of each name.
+- **A searchable "Column Manager" for the Select-and-reorder-columns dialog.**
+  The columns editor is a flat list of every available column (152 on the sample
+  vault) with a drag handle on every row. A new feature
+  (`ui-fixes/column-manager.js`) adds a sticky toolbar with a *Visible columns /
+  Total available* summary, a ranked **and fuzzy** search (exact › prefix ›
+  whole-word › substring › fuzzy, empties hidden), and category chips
+  (Sample/Batch/Entity/Event with live counts) that focus one type. It replaces
+  the italic `(Category)` suffix with coloured badges, tints selected rows, and
+  shows a drag handle **only** on selected rows. Because reordering uses
+  react-beautiful-dnd over one global order, no native row is moved or
+  restructured — all state is expressed through `data-*` attributes and scoped
+  CSS (`:has()`), so selection and drag reordering stay byte-for-byte intact.
+- **Order + last-used default for the bulk-registration entity-type picklist.**
+  The "slurp" type select (`select[name="slurp[registration_form_definition_id]"]`)
+  now gets the same treatment as the Create-a-New-Entity picklist
+  (`ui-fixes/slurp-type-default.js`): its options are ordered by the sequence
+  configured on the settings page, and it is preselected from the entity type you
+  last used in that vault (or a pinned one). Its option values are the same
+  per-vault `registration_form_definition_id`, so it reuses
+  `shared/registration-form.js` verbatim — both entity-type pickers now share one
+  order, one mode, and one per-vault last-used memory. Preselecting dispatches
+  `change`, so CDD's `slurp-type` controller rebuilds the dependent with/without
+  list.
+
+### Changed
+- **The README and public release notes now link to GitHub Issues for feedback**,
+  so anyone can report a problem or request a change without hunting for the repo.
+
 ## [11.1.0] — 2026-07-10
 
 ### Added

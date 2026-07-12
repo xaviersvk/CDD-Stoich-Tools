@@ -328,6 +328,56 @@ affect the others. These are the **safest** files to touch.
 - **Regression risk:** **medium** — moving CDD's own nodes is riskier than pure
   CSS; depends on specific ids/labels.
 
+### 6.7 Filter Field Picker (Inventory)
+- **User value:** Replaces the Inventory "Filter Entries" field selector — one
+  long narrow dropdown mixing Sample/Batch/Entity/Event (130+ fields) — with a
+  wide four-column popover anchored under the trigger, each column headed and
+  scrolled on its own, with a relevance-ranked, accent-insensitive search that
+  hides non-matches, hides empty columns, expands a lone match, and highlights
+  the matched slice of each name.
+- **Entry point:** `ui-fixes/filter-field-picker.js` (`initFilterFieldPicker`).
+- **Data source:** live DOM — the native MUI menu
+  (`li.search-bar__filters__field-name`, category from the `data-value` prefix).
+- **Dependencies:** none.
+- **Maintenance difficulty:** **medium** — overlays the MUI menu, hides the
+  native `<ul>`, and delegates selection by dispatching a real click on the
+  original `<li>`.
+- **Regression risk:** **medium** — depends on the menu's class names; selection
+  always routes through the untouched native option, so the worst case is
+  cosmetic.
+
+### 6.8 Column Manager (Select-and-reorder columns)
+- **User value:** Turns the flat columns editor (152 rows, a drag handle on each)
+  into a manager: sticky toolbar with a *Visible / Total* summary, a ranked +
+  fuzzy search, Sample/Batch/Entity/Event chips with live counts, coloured type
+  badges (replacing the italic `(Category)`), tinted selected rows, and a drag
+  handle only on selected rows.
+- **Entry point:** `ui-fixes/column-manager.js` (`initColumnManager`).
+- **Data source:** live DOM — `.ColumnsEditor-dialog` rows
+  (`tr.row[id]`, category from the `id` prefix, selection from the checkbox).
+- **Dependencies:** none.
+- **Maintenance difficulty:** **medium** — all added state is `data-*` attributes
+  + scoped CSS (`:has()`); no native row is moved, so react-beautiful-dnd and the
+  global order are untouched. Filtering clears on drag start.
+- **Regression risk:** **low-medium** — never mutates CDD's rows; depends on the
+  dialog/row class names.
+
+### 6.9 Entity-Type Order & Default (Registration + slurp)
+- **User value:** The bulk-registration ("slurp") entity-type picklist is ordered
+  by the settings-page sequence and preselected from the entity type last used in
+  that vault — the same conveniences the Create-a-New-Entity picklist already has,
+  sharing one memory so both agree.
+- **Entry point:** `ui-fixes/slurp-type-default.js` (`initSlurpTypeDefault`);
+  sibling of `ui-fixes/registration-form-default.js`.
+- **Data source:** `select[name="slurp[registration_form_definition_id]"]` +
+  `shared/registration-form.js` (order / mode / per-vault last-used in
+  `chrome.storage.local`).
+- **Dependencies:** `shared/registration-form.js`.
+- **Maintenance difficulty:** **low-medium** — reorders `<option>` nodes and, on
+  default, dispatches `input`+`change` for the `slurp-type` controller.
+- **Regression risk:** **low** — keyed by name, never by the per-vault value;
+  ordering changes neither `select.value` nor the selected option.
+
 ---
 
 ## 7. Data Extraction

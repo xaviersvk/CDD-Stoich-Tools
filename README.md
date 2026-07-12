@@ -61,6 +61,19 @@ Here's the short version of everything it adds:
   location.
 - **Plate Map previews** — hover a well on a plate map or heat map to see the
   entity's synonym and structure; nearby wells preload in the background.
+- **Four-column filter attribute picker** — the "Filter Entries" field selector
+  opens as a wide popover split into Sample / Batch / Entity / Event columns with
+  a ranked, accent-insensitive search that highlights matches, instead of one
+  long narrow dropdown.
+- **Column Manager** — "Select and reorder columns" gains a search (with fuzzy
+  typing), category chips with counts, coloured type badges, a visible/total
+  summary, and drag handles only on the columns you've actually selected.
+
+### 🧬 Registration
+- **Entity-type picklists in your order, defaulted to your last choice** — both
+  the Create Entity form picker and the bulk-registration ("slurp") type list
+  arrive in the order you set on the settings page and preselect the type you
+  last used in that vault. They share one memory, so the two agree.
 
 ### 📈 Dose-response
 - An "Easy Override" toggle in the search results lets you bulk-adjust
@@ -103,6 +116,12 @@ Developers who want to run it from source: see [For developers](#for-developers)
 See **[`RELEASES.md`](./RELEASES.md)** for a plain-language history of each
 release — what changed and why it matters. The full technical changelog lives in
 [`CHANGELOG.md`](./CHANGELOG.md).
+
+## Feedback & bug reports
+
+Found a bug, or want something added? Please open a
+[**GitHub issue**](https://github.com/xaviersvk/CDD-Stoich-Tools/issues) — it's
+the quickest way to get it seen.
 
 ---
 

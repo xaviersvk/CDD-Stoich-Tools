@@ -7,6 +7,38 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 > Most settings live on the extension's settings page — click the extension
 > icon, or pick **CDD Plugin options** in CDD's user menu. Changes usually take
 > effect after you refresh the CDD page.
+>
+> **Found a bug or have a request?** Open an issue at
+> <https://github.com/xaviersvk/CDD-Stoich-Tools/issues>.
+
+---
+
+## 12.0.0 — July 2026
+
+**Finding and choosing attributes stops being a scroll-fest.**
+
+- **The Inventory filter's attribute picker is now four columns, not one endless
+  list.** When you add a filter and open the field selector, instead of one long
+  narrow dropdown mixing everything together you get Sample, Batch, Entity and
+  Event side by side, each with its own heading and scroll. There's a search box
+  at the top that ranks matches (an exact "Sample ID" wins over a loose match),
+  ignores case and accents, hides everything irrelevant, and highlights the part
+  of the name you typed. Picking a field behaves exactly as before.
+- **"Select and reorder columns" became a proper Column Manager.** On a vault
+  with a hundred-plus columns the old flat list was painful. Now there's a header
+  showing how many columns are visible out of the total, a search that even
+  copes with fuzzy typing, and Sample/Batch/Entity/Event chips (with counts) to
+  jump to one type. Each field carries a small coloured category badge instead of
+  an italic "(Sample)"; the columns you've selected are tinted and are the only
+  ones showing a drag handle — so it's obvious at a glance what's on and what
+  isn't. Selecting and drag-reordering work exactly as before.
+- **The bulk-registration type list now remembers, like the Create Entity page
+  does.** When you register many entities at once, the entity-type picklist
+  arrives in your configured order and preselects whichever type you last used in
+  that vault. It shares that memory with the Create Entity page, so both agree on
+  what you last worked with.
+- **Got feedback? There's now a link.** The manual and this page point to GitHub
+  Issues, so you can report a bug or ask for something in one click.
 
 ---
 

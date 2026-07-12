@@ -20,6 +20,7 @@ import {
 import {observeCopyableFields} from "./features/ui-fixes/copyable-fields";
 import {injectLeftEllipsisForLocations} from "./features/ui-fixes/left-ellipsis-locations";
 import {initFilterDefaultFix} from "./features/ui-fixes/filter-default";
+import {initFilterFieldPicker} from "./features/ui-fixes/filter-field-picker";
 import {initLocationPickerResize} from "./features/ui-fixes/location-picker-resize";
 import {injectMoleculeLinksStyles} from "./features/ui-fixes/molecule-links-fixes";
 import {watchConsumedBatches} from "./features/ui-fixes/consumed-batches-collapse";
@@ -96,6 +97,7 @@ function init() {
 
   injectLeftEllipsisForLocations();
   initFilterDefaultFix();
+  initFilterFieldPicker();
   initLocationPickerResize();
   injectMoleculeLinksStyles();
   watchConsumedBatches();

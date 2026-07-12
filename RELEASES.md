@@ -37,8 +37,9 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
   arrives in your configured order and preselects whichever type you last used in
   that vault. It shares that memory with the Create Entity page, so both agree on
   what you last worked with.
-- **Got feedback? There's now a link.** The manual and this page point to GitHub
-  Issues, so you can report a bug or ask for something in one click.
+- **Got feedback? There's now a link.** Report a bug or ask for something at
+  <https://github.com/xaviersvk/CDD-Stoich-Tools/issues> — linked from the manual
+  and from the top of this page.
 
 ---
 

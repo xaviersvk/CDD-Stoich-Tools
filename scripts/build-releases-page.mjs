@@ -189,6 +189,7 @@ function renderPage(releases, version, assets) {
     <p class="actions">
       <a class="btn btn--primary" href="${CHROME_STORE}">Add to Chrome</a>
       <a class="btn" href="${FIREFOX_STORE}">Add to Firefox</a>
+      <a class="btn btn--quiet" href="${REPO}/issues">Report an issue</a>
       <a class="btn btn--quiet" href="${REPO}/blob/main/CHANGELOG.md">Technical changelog</a>
     </p>
   </div>
@@ -203,7 +204,8 @@ ${releases
 <footer class="masthead masthead--foot">
   <div class="wrap">
     <p>
-      <a href="${REPO}">Source on GitHub</a> · Built from
+      <a href="${REPO}">Source on GitHub</a> ·
+      <a href="${REPO}/issues">Report an issue</a> · Built from
       <a href="${REPO}/blob/main/RELEASES.md">RELEASES.md</a>
     </p>
   </div>

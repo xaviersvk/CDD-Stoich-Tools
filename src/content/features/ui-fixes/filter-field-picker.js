@@ -215,6 +215,13 @@ function injectStyles() {
             color: #d64545;
             margin-right: 1px;
         }
+        /* The matched slice of the name while searching. */
+        .${PANEL_CLASS}__hl {
+            background: #fff3b0;
+            color: inherit;
+            font-weight: 700;
+            border-radius: 2px;
+        }
 
         /* Subtle per-column + whole-panel empty states while searching. */
         .${PANEL_CLASS}__empty {
@@ -458,25 +465,72 @@ function buildItem(item) {
     if (item.selected) btn.classList.add("is-selected");
     btn.setAttribute("role", "option");
     btn.dataset.cddFfpItem = "1";
-    // Search key = normalised field name WITHOUT the leading "*" required
-    // marker, so "Sample ID" scores an exact match against "*Sample ID".
-    const nameOnly = item.required ? item.label.slice(1) : item.label;
-    btn.dataset.search = normalize(nameOnly).trim();
 
-    if (item.required) {
-        // Preserve the "*" required marker, but render it as an accent so the
-        // field name stays readable (e.g. *Sample ID).
+    // Field name WITHOUT the leading "*" required marker, so "Sample ID" scores
+    // an exact match against "*Sample ID".
+    const nameOnly = item.required ? item.label.slice(1) : item.label;
+    // Fold once (case + diacritics) keeping an index map back to the original,
+    // so we can both score and highlight the exact matched slice of the name.
+    const fold = foldWithMap(nameOnly);
+
+    btn.dataset.search = fold.norm; // scoring key
+    btn._ffpName = nameOnly; // original text as displayed
+    btn._ffpRequired = item.required;
+    btn._ffpFold = fold;
+
+    btn.addEventListener("click", () => selectNative(item.li));
+
+    paintItem(btn, ""); // initial plain render
+    return btn;
+}
+
+// Render a button's label, wrapping the slice that matches `query` (already
+// normalised) in a highlight span. `query` empty -> plain text.
+function paintItem(btn, query) {
+    btn.replaceChildren();
+
+    if (btn._ffpRequired) {
         const star = document.createElement("span");
         star.className = `${PANEL_CLASS}__req`;
         star.textContent = "*";
         btn.appendChild(star);
-        btn.appendChild(document.createTextNode(item.label.slice(1)));
-    } else {
-        btn.textContent = item.label;
     }
 
-    btn.addEventListener("click", () => selectNative(item.li));
-    return btn;
+    const name = btn._ffpName;
+    const { norm, map } = btn._ffpFold;
+    const at = query ? norm.indexOf(query) : -1;
+
+    if (at === -1) {
+        btn.appendChild(document.createTextNode(name));
+        return;
+    }
+
+    // Map the normalised [at, at+len) range back onto the original characters.
+    const start = map[at];
+    const end = map[at + query.length - 1] + 1;
+
+    if (start > 0) btn.appendChild(document.createTextNode(name.slice(0, start)));
+    const mark = document.createElement("span");
+    mark.className = `${PANEL_CLASS}__hl`;
+    mark.textContent = name.slice(start, end);
+    btn.appendChild(mark);
+    if (end < name.length) btn.appendChild(document.createTextNode(name.slice(end)));
+}
+
+// Fold `str` (lower-case + strip diacritics) while recording, for each folded
+// character, the index of the original character it came from — so a match
+// found in the folded string can be projected back onto the displayed text.
+function foldWithMap(str) {
+    let norm = "";
+    const map = [];
+    for (let i = 0; i < str.length; i++) {
+        const folded = normalize(str[i]);
+        for (let j = 0; j < folded.length; j++) {
+            norm += folded[j];
+            map.push(i);
+        }
+    }
+    return { norm, map };
 }
 
 /* --------------------------------------------------------------------------- */
@@ -557,7 +611,10 @@ function wireSearch(panel, input) {
             for (const btn of col.querySelectorAll(`[data-cdd-ffp-item]`)) {
                 const score = scoreLabel(btn.dataset.search, query);
                 btn.hidden = score === 0;
-                if (score > 0) scored.push({ btn, score, ord: Number(btn.dataset.ord) });
+                if (score > 0) {
+                    paintItem(btn, query); // highlight the matched slice
+                    scored.push({ btn, score, ord: Number(btn.dataset.ord) });
+                }
             }
             scored.sort((a, b) => b.score - a.score || a.ord - b.ord);
             for (const { btn } of scored) body.appendChild(btn);
@@ -595,6 +652,8 @@ function restoreBrowseView(panel, columns, cols) {
         for (const node of body.children) {
             if (node.dataset.cddFfpEmpty) node.hidden = true;
             else node.hidden = false;
+            // Drop any leftover highlight from the previous query.
+            if (node.dataset.cddFfpItem) paintItem(node, "");
         }
     }
 }

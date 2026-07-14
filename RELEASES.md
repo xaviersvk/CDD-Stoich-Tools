@@ -13,6 +13,32 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 12.1.0 — July 2026
+
+**The Search page's "Keywords" field picker gets the same treatment as the
+Inventory filter.**
+
+- **Choosing what to search is no longer one endless dropdown.** On the Search
+  page, the Keywords field selector used to be a single long, narrow list mixing
+  the general choices, every Entity field and every Batch field together. Now it
+  opens as the same wide, multi-column picker you already know from the Inventory
+  filter — General, Entity and Batch side by side, each with its own heading and
+  scroll, and a search box at the top that ranks matches (an exact name wins over
+  a loose one), ignores case and accents, hides everything irrelevant, and
+  highlights the part you typed. Just start typing the field name — you don't
+  even need to click first.
+- **Nothing you could pick before is gone.** Every original choice is still
+  there, including "Entity Fields" and "Batch Fields" themselves (which search
+  across a whole object) — they now sit in the General column, and picking any
+  field does exactly what it did in the old dropdown. Your saved searches and
+  results are unaffected.
+- **The picker stays attached to the field you clicked.** It drops right below
+  the Keywords selector, and when there isn't room it repositions sensibly while
+  staying connected to that field — so it's always clear which selector it
+  belongs to.
+
+---
+
 ## 12.0.0 — July 2026
 
 **Finding and choosing attributes stops being a scroll-fest.**

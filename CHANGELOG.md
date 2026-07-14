@@ -16,6 +16,54 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [12.1.0] — 2026-07-14
+
+### Added
+- **A structured field picker for the Search page's "Keywords" selector.** The
+  Keywords field selector is a plain native `<select>` that stacks the General
+  choices, every Entity field and every Batch field into one long, narrow OS
+  dropdown. A new content-script feature (`ui-fixes/keywords-field-picker.js`)
+  suppresses the native dropdown (pointer **and** keyboard, including type-ahead)
+  and opens the same wide, searchable, multi-column popover already used by the
+  Inventory filter — one column per category, each headed and scrolled on its
+  own, with the relevance-ranked (exact › prefix › whole-word › substring),
+  case- and accent-insensitive search that hides non-matches and highlights the
+  matched slice. Delegated on `document`, so the selectors CDD clones in via
+  "Add a term" are covered automatically.
+  - **Categories are derived from the option list itself**, in source order: a
+    "General" column for the leading standalone options, then one column per
+    `<Object> Fields` heading the vault actually emits (Entity + Batch today;
+    Sample/Event appear automatically where present). Empty categories are never
+    rendered.
+  - **The `Entity Fields` / `Batch Fields` headings stay selectable.** They are
+    real options in CDD's native list (each with its own value — a "whole
+    object" search scope), so besides switching the parsing section they are
+    also kept as choices under General with their original value preserved.
+  - **Selection is delegated to the real `<select>`**: the chosen option's
+    numeric value is written back via the `HTMLSelectElement` prototype setter
+    (updating React's value tracker) and `input`+`change` are dispatched, so
+    CDD's own handler computes field/path/data_type_name exactly as before.
+    Operator select, value input, Add/Remove term, saved-search serialisation,
+    URL params and request payloads are untouched — no backend change.
+  - **Positioning keeps the panel tethered to the field**: it opens directly
+    below with a small gap, caps its height to the room available beside the
+    field (columns scroll internally) so it never slides over the trigger to
+    fit, flips above only when below is too cramped, stays clear of the Search
+    button where it can, ties a panel edge to a field edge horizontally, and
+    stays inside the viewport.
+
+### Changed
+- **Extracted a shared field-picker engine (`ui-fixes/field-picker-core.js`).**
+  The styles, relevance search, highlight, column rendering, keyboard navigation
+  and viewport-aware positioning that powered the Inventory picker now live in
+  one module. `filter-field-picker.js` is refactored to consume it (behaviour
+  unchanged — same MUI-menu overlay and click delegation) and the new Keywords
+  picker reuses the same engine, so the two selectors are one component with two
+  small adapters rather than duplicated logic. The shared grid now renders only
+  non-empty columns and sizes itself to the count actually shown (1–5).
+
+---
+
 ## [12.0.0] — 2026-07-12
 
 ### Added

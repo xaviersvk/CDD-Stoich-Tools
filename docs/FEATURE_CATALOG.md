@@ -338,13 +338,36 @@ affect the others. These are the **safest** files to touch.
 - **Entry point:** `ui-fixes/filter-field-picker.js` (`initFilterFieldPicker`).
 - **Data source:** live DOM — the native MUI menu
   (`li.search-bar__filters__field-name`, category from the `data-value` prefix).
-- **Dependencies:** none.
+- **Dependencies:** shares the picker engine `ui-fixes/field-picker-core.js`
+  (styles, search, columns, keyboard, positioning) with the Keywords picker
+  (6.7b).
 - **Maintenance difficulty:** **medium** — overlays the MUI menu, hides the
   native `<ul>`, and delegates selection by dispatching a real click on the
   original `<li>`.
 - **Regression risk:** **medium** — depends on the menu's class names; selection
   always routes through the untouched native option, so the worst case is
   cosmetic.
+
+### 6.7b Keywords Field Picker (Search page)
+- **User value:** Replaces the Search page's "Keywords" field selector — a plain
+  native `<select>` stacking General + every Entity + every Batch field into one
+  long OS dropdown — with the same wide, searchable multi-column popover as 6.7.
+  Columns are derived from the option list in source order (General, then one per
+  `<Object> Fields` heading the vault emits); empty categories aren't rendered.
+  The `Entity Fields` / `Batch Fields` headings stay selectable under General
+  with their original value.
+- **Entry point:** `ui-fixes/keywords-field-picker.js`
+  (`initKeywordsFieldPicker`).
+- **Data source:** live DOM — the native `select.molecule_criteria__field`
+  `<option>`s (category from heading + `- ` indentation; value = option index).
+- **Dependencies:** shares the picker engine `ui-fixes/field-picker-core.js`
+  with 6.7.
+- **Maintenance difficulty:** **medium** — suppresses the native dropdown
+  (pointer + keyboard, delegated on `document`) and drives its own floating host
+  (outside-click, Escape, focus return, height-capped positioning).
+- **Regression risk:** **medium** — selection writes the original option value
+  back onto the real `<select>` (prototype setter + `input`/`change`), so CDD's
+  handler, values and payloads are untouched; depends on the select's class name.
 
 ### 6.8 Column Manager (Select-and-reorder columns)
 - **User value:** Turns the flat columns editor (152 rows, a drag handle on each)

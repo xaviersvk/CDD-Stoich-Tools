@@ -65,6 +65,10 @@ Here's the short version of everything it adds:
   opens as a wide popover split into Sample / Batch / Entity / Event columns with
   a ranked, accent-insensitive search that highlights matches, instead of one
   long narrow dropdown.
+- **Search "Keywords" field picker** — the same wide, searchable multi-column
+  popover for the Search page's Keywords selector, with columns (General /
+  Entity / Batch …) derived from the vault's own field list instead of one long
+  native dropdown; every original choice, value and saved search is preserved.
 - **Column Manager** — "Select and reorder columns" gains a search (with fuzzy
   typing), category chips with counts, coloured type badges, a visible/total
   summary, and drag handles only on the columns you've actually selected.

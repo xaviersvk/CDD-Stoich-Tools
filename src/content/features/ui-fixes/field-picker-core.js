@@ -48,7 +48,7 @@ export function injectPickerStyles() {
            corners + soft shadow, sized like an oversized autocomplete rather
            than a full-screen overlay. */
         .MuiPaper-root[data-cdd-ffp-paper] {
-            max-height: 70vh !important;
+            max-height: min(70vh, 640px) !important;
             max-width: min(960px, calc(100vw - 24px)) !important;
             overflow: hidden !important;
             border-radius: 10px !important;
@@ -71,7 +71,7 @@ export function injectPickerStyles() {
         .${PANEL_CLASS} {
             box-sizing: border-box;
             width: min(960px, calc(100vw - 24px));
-            max-height: 70vh;
+            max-height: min(70vh, 640px);
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -118,6 +118,14 @@ export function injectPickerStyles() {
             min-height: 0;
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
+            /* The single row must be minmax(0, 1fr), not the implicit auto:
+               an auto row sizes to the tallest column's content, so the column
+               bodies never receive a constrained height and Firefox clips
+               their tails unscrollably (Chromium re-constrains stretched items
+               against the container, which masked this). With 1fr the row
+               equals the grid's own (capped) height and each column body owns
+               exactly the overflow. */
+            grid-template-rows: minmax(0, 1fr);
             gap: 0;
             overflow: hidden;
         }
@@ -155,7 +163,9 @@ export function injectPickerStyles() {
             min-height: 0;
             overflow-y: auto;
             overflow-x: hidden;
-            padding: 4px 0 8px;
+            scrollbar-gutter: stable;
+            /* Bottom padding keeps the last item clear of the clip edge. */
+            padding: 4px 0 10px;
         }
 
         .${PANEL_CLASS}__group {
@@ -243,6 +253,9 @@ export function injectPickerStyles() {
         @media (max-width: 900px) {
             .${PANEL_CLASS}__columns {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
+                /* Back to content-sized rows: here the grid itself is the one
+                   scroller, so its rows must grow with their content. */
+                grid-template-rows: none;
                 overflow-y: auto;
             }
             .${PANEL_CLASS}__col-body {

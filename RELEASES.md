@@ -13,6 +13,20 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 12.1.2 — July 2026
+
+**Bug fix: in Firefox, the field picker's columns can now scroll all the way
+down.**
+
+- **No more unreachable options at the bottom.** In Firefox, the long Entity
+  and Batch columns of the wide field picker (Inventory filter and the Search
+  page's Keywords selector) cut off their last options — the scrollbar ran out
+  before the list did. The columns now measure their height correctly in every
+  browser, the last option is fully visible and clickable, and the list keeps a
+  little breathing room at the bottom. Chrome behaves exactly as before.
+
+---
+
 ## 12.1.1 — July 2026
 
 **Bug fix: the plugin's tweaks now survive navigating within CDD.**

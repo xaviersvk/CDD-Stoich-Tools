@@ -16,6 +16,24 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [12.1.2] — 2026-07-14
+
+### Fixed
+- **Firefox: the field picker's columns now scroll all the way to the bottom.**
+  The shared picker's columns grid (`ui-fixes/field-picker-core.js`) declared
+  `grid-template-columns` but left its single row implicit (`auto`), so the row
+  sized to the tallest column's content instead of the panel's capped height and
+  the per-column scrollers never received a constrained height. Firefox follows
+  grid track sizing strictly, so the tail of the Entity/Batch columns was
+  clipped beyond the reach of the scrollbar; Chromium re-constrains stretched
+  items in a lone `auto` row against the container, which masked the bug. The
+  row is now an explicit `minmax(0, 1fr)` (reset to content-sized rows in the
+  ≤900px layout, where the grid itself is the scroller). Also: the panel is
+  capped at `min(70vh, 640px)`, the column scrollers reserve a stable
+  scrollbar gutter, and the list's bottom padding grew to 10px so the last item
+  never sits flush against the clip edge. Applies to both the Inventory filter
+  picker and the Search-page Keywords picker, in every browser.
+
 ## [12.1.1] — 2026-07-14
 
 ### Fixed

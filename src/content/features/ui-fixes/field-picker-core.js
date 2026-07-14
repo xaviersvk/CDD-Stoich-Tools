@@ -525,6 +525,33 @@ function isWholeWord(haystack, needle) {
     return false;
 }
 
+// Gecko workaround: a column flex container sized only by max-height does not
+// reliably re-flex its children against the clamped height — the panel box is
+// clipped at the cap, but the columns grid inside keeps its unclamped content
+// height, so the per-column scrollers think nothing (or too little) overflows
+// and the tail of a long column ends up beyond the scrollbar's reach. Chromium
+// re-runs flex layout with the clamped size, which is why it never showed.
+//
+// The fix is to hand the scrollable region a finite explicit pixel height, but
+// only when the content actually overflows the capped panel (detected by
+// comparing the panel's scroll and client heights after clearing any previous
+// override). When everything fits, the inline height is removed and the panel
+// keeps sizing to its content exactly as before — so browsers without the bug,
+// and short lists everywhere, are pixel-identical to the old behaviour.
+export function syncColumnsHeight(panel) {
+    const columns = panel.querySelector(`.${PANEL_CLASS}__columns`);
+    if (!columns) return;
+
+    columns.style.height = "";
+
+    // 1px tolerance for fractional layouts at odd browser zooms.
+    if (panel.scrollHeight - panel.clientHeight <= 1) return;
+
+    const search = panel.querySelector(`.${PANEL_CLASS}__search`);
+    const height = panel.clientHeight - (search ? search.offsetHeight : 0);
+    if (height > 0) columns.style.height = `${height}px`;
+}
+
 function wireSearch(panel, input) {
     const columns = panel.querySelector(`.${PANEL_CLASS}__columns`);
     const cols = Array.from(panel.querySelectorAll(`.${PANEL_CLASS}__col`));
@@ -534,6 +561,8 @@ function wireSearch(panel, input) {
 
         if (!query) {
             restoreBrowseView(panel, columns, cols);
+            // Re-measure: the restored (full) list may overflow the cap again.
+            syncColumnsHeight(panel);
             return;
         }
 
@@ -574,6 +603,10 @@ function wireSearch(panel, input) {
 
         // Nothing anywhere → single centered message.
         panel.classList.toggle("is-empty", liveColumns === 0);
+
+        // Filtering changes the content height, so re-derive whether the
+        // columns still need an explicit height (see syncColumnsHeight).
+        syncColumnsHeight(panel);
     };
 
     input.addEventListener("input", apply);
@@ -713,6 +746,14 @@ const MARGIN = 8; // keep this far from every viewport edge
 const GAP = 6; // offset between the trigger and the surface
 
 export function positionPanel(surface, anchor) {
+    // Settle the panel's internal heights before measuring the surface: on
+    // open and on every resize the columns grid may need (or may no longer
+    // need) its explicit pixel height (see syncColumnsHeight).
+    const panel = surface.classList.contains(PANEL_CLASS)
+        ? surface
+        : surface.querySelector(`.${PANEL_CLASS}`);
+    if (panel) syncColumnsHeight(panel);
+
     const rect = surface.getBoundingClientRect(); // size is position-independent
     const vw = window.innerWidth;
     const vh = window.innerHeight;

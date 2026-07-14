@@ -29,7 +29,8 @@ export function initElnTitle() {
         runOnlyOnElnEntryPage();
     });
 
-    navigationObserver.observe(document.body, {
+    // <html>, not <body>: Turbo swaps <body> on in-app navigation.
+    navigationObserver.observe(document.documentElement, {
         childList: true,
         subtree: true,
     });
@@ -76,7 +77,8 @@ function startTitleObserver() {
         updateElnTabTitle();
     });
 
-    observer.observe(document.body, {
+    // <html>, not <body>: Turbo swaps <body> on in-app navigation.
+    observer.observe(document.documentElement, {
         childList: true,
         subtree: true,
     });

@@ -27,7 +27,8 @@ export function watchKetcherDialog() {
         updatePanelVisibilityForOverlays();
     });
 
-    observer.observe(document.body, {
+    // <html>, not <body>: Turbo swaps <body> on in-app navigation.
+    observer.observe(document.documentElement, {
         childList: true,
         subtree: true,
         attributes: false

@@ -16,6 +16,25 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [12.1.1] — 2026-07-14
+
+### Fixed
+- **Features no longer die after in-app (Turbo) navigation.** CDD navigates
+  between pages by swapping the whole `<body>` element (Turbo), which silently
+  disconnects any `MutationObserver` attached to the old body — so features like
+  the Inventory filter operator default (`ui-fixes/filter-default.js`) and the
+  filter field picker only worked after a hard refresh of the page, not when the
+  user browsed to Inventory from elsewhere in the app. All 14 remaining
+  body-attached observers (filter default, filter field picker, Column Manager,
+  copyable fields, consumed-batches collapse, location picker resize, options
+  menu link, registration form default, registration project mirror, slurp type
+  default, dose-response override, ELN title, file-dialog watcher, Ketcher
+  overlay watcher) now observe `document.documentElement` instead — the same
+  pattern the newer inventory features (`inventory-grid-colors`,
+  `plate-list-*`) already used, since `<html>` survives the body swap and
+  `subtree: true` covers everything below it. No behaviour change beyond the
+  observers staying alive across navigations.
+
 ## [12.1.0] — 2026-07-14
 
 ### Added

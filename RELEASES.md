@@ -13,6 +13,21 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 12.1.1 — July 2026
+
+**Bug fix: the plugin's tweaks now survive navigating within CDD.**
+
+- **No more "it only works after a refresh".** If you moved to the Inventory
+  page (or a registration form) by clicking through CDD instead of reloading it,
+  several of the plugin's touches — the filter operator default, the wide filter
+  field picker, the Column Manager, form defaults and more — quietly stopped
+  applying until you refreshed the page. That's fixed: CDD replaces the page
+  content in place when you navigate, and the plugin now watches the page in a
+  way that survives that replacement. Everything applies immediately, however
+  you arrive.
+
+---
+
 ## 12.1.0 — July 2026
 
 **The Search page's "Keywords" field picker gets the same treatment as the

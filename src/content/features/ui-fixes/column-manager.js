@@ -439,7 +439,8 @@ export function initColumnManager() {
     injectStyles();
 
     const observer = new MutationObserver(() => scan());
-    observer.observe(document.body, { childList: true, subtree: true });
+    // <html>, not <body>: Turbo swaps <body> on in-app navigation.
+    observer.observe(document.documentElement, { childList: true, subtree: true });
 
     scan();
 }

@@ -199,7 +199,8 @@ export async function initRegistrationFormDefault() {
         });
     };
 
-    new MutationObserver(run).observe(document.body, {
+    // <html>, not <body>: Turbo swaps <body> on in-app navigation.
+    new MutationObserver(run).observe(document.documentElement, {
         childList: true,
         subtree: true,
     });

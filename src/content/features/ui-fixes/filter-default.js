@@ -14,7 +14,10 @@ export function initFilterDefaultFix() {
         scheduleFixFilters();
     });
 
-    observer.observe(document.body, {
+    // <html>, not <body>: Turbo swaps <body> on in-app navigation, which would
+    // silently kill this observer — the filter fix would then only work after a
+    // hard refresh of the Inventory page.
+    observer.observe(document.documentElement, {
         childList: true,
         subtree: true,
     });

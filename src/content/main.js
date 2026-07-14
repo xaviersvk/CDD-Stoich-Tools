@@ -54,7 +54,9 @@ function watchFileDialog() {
     fixAssociateFileBar();
   });
 
-  observer.observe(document.body, {
+  // <html>, not <body>: Turbo swaps <body> on in-app navigation, which would
+  // silently kill an observer attached to the old body.
+  observer.observe(document.documentElement, {
     childList: true,
     subtree: true
   });

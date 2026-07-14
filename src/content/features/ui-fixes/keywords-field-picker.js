@@ -42,7 +42,9 @@
 import {
     injectPickerStyles,
     buildPickerPanel,
+    syncColumnsHeight,
     HOST_CLASS,
+    PANEL_CLASS,
 } from "./field-picker-core.js";
 
 // Only the Keywords field selector — never the operator select
@@ -220,7 +222,18 @@ function openPickerFor(select, seedChar) {
             closePicker({ refocus: false });
         }
     };
-    const onReflow = () => {
+    const onReflow = (event) => {
+        // Only scrolls of the page UNDER the picker move the anchor; scrolls
+        // inside the picker's own columns must not trigger a reposition — the
+        // measurement pass would clamp the very scroll the user is making,
+        // leaving the thumb stuck jittering near the top.
+        if (
+            event?.type === "scroll" &&
+            event.target instanceof Node &&
+            host.contains(event.target)
+        ) {
+            return;
+        }
         if (host.isConnected) positionHost(host, select);
     };
     // Deferred so the very mousedown/keydown that opened us doesn't close us.
@@ -285,8 +298,17 @@ function positionHost(host, anchor) {
     const vh = window.innerHeight;
 
     // Measure the panel's natural height with no cap, so we can decide whether
-    // it needs to scroll internally.
-    if (panel) panel.style.maxHeight = "";
+    // it needs to scroll internally. The uncapped pass momentarily removes the
+    // columns' overflow (clamping their scrollTop), so save the scroll
+    // positions and restore them once the final cap is back on.
+    const bodies = panel
+        ? Array.from(panel.querySelectorAll(`.${PANEL_CLASS}__col-body`))
+        : [];
+    const savedScroll = bodies.map((el) => [el, el.scrollTop]);
+    if (panel) {
+        panel.style.maxHeight = "";
+        panel.querySelector(`.${PANEL_CLASS}__columns`)?.style.removeProperty("height");
+    }
     const width = host.getBoundingClientRect().width;
     const natural = host.getBoundingClientRect().height;
 
@@ -314,7 +336,16 @@ function positionHost(host, anchor) {
         Math.max(0, placeBelow ? roomBelow : roomAbove),
         Math.round(vh * 0.7)
     );
-    if (panel) panel.style.maxHeight = `${Math.floor(avail)}px`;
+    if (panel) {
+        panel.style.maxHeight = `${Math.floor(avail)}px`;
+        // Gecko does not re-flex the columns against a max-height clamp, so
+        // hand the scrollable region its explicit pixel height (no-op where
+        // the content fits or the browser shrinks the flex items itself).
+        syncColumnsHeight(panel);
+        for (const [el, top] of savedScroll) {
+            if (top && el.scrollTop !== top) el.scrollTop = top;
+        }
+    }
     const shown = Math.min(natural, avail);
     const top = placeBelow ? a.bottom + GAP : a.top - GAP - shown;
 

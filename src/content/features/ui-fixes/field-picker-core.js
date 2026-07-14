@@ -542,14 +542,27 @@ export function syncColumnsHeight(panel) {
     const columns = panel.querySelector(`.${PANEL_CLASS}__columns`);
     if (!columns) return;
 
+    // Clearing the height for measurement momentarily removes the scrollers'
+    // overflow, which clamps their scrollTop to 0 — save and restore them, or
+    // any reflow while the user is mid-scroll snaps the list back to the top.
+    const scrollers = [
+        columns,
+        ...columns.querySelectorAll(`.${PANEL_CLASS}__col-body`),
+    ];
+    const saved = scrollers.map((el) => [el, el.scrollTop]);
+
     columns.style.height = "";
 
     // 1px tolerance for fractional layouts at odd browser zooms.
-    if (panel.scrollHeight - panel.clientHeight <= 1) return;
+    if (panel.scrollHeight - panel.clientHeight > 1) {
+        const search = panel.querySelector(`.${PANEL_CLASS}__search`);
+        const height = panel.clientHeight - (search ? search.offsetHeight : 0);
+        if (height > 0) columns.style.height = `${height}px`;
+    }
 
-    const search = panel.querySelector(`.${PANEL_CLASS}__search`);
-    const height = panel.clientHeight - (search ? search.offsetHeight : 0);
-    if (height > 0) columns.style.height = `${height}px`;
+    for (const [el, top] of saved) {
+        if (top && el.scrollTop !== top) el.scrollTop = top;
+    }
 }
 
 function wireSearch(panel, input) {

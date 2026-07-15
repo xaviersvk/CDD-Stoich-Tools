@@ -16,6 +16,32 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [12.1.3] — 2026-07-15
+
+### Fixed
+- **Firefox: the field picker's columns get an explicit pixel height when the
+  panel overflows.** The 12.1.2 grid-row fix was not enough in Gecko: a column
+  flex container sized only by `max-height` does not reliably re-flex its
+  children against the clamped height, so long columns still scrolled against
+  their unclamped content height and the list tail stayed out of reach. The
+  shared picker (`ui-fixes/field-picker-core.js`) now runs `syncColumnsHeight()`
+  on open, resize and after every search keystroke: when the panel content
+  overflows its capped box, the columns grid receives an explicit pixel height
+  (panel client height minus the search row); otherwise it stays `auto`. In
+  Chromium the overflow never materialises and behaviour is pixel-identical.
+- **The Search-page Keywords picker no longer fights its own scroll.** Its
+  adapter (`ui-fixes/keywords-field-picker.js`) never used the shared
+  `positionPanel`, so the explicit column height never reached it — and its
+  window-level capture scroll listener treated scrolls *inside* the picker as
+  page scrolls: every wheel tick re-ran `positionHost`, whose uncapped
+  measurement pass momentarily removed the columns' overflow and clamped the
+  very `scrollTop` the user was advancing (the thumb jittered near the top).
+  `onReflow` now ignores scroll events originating inside the host,
+  `positionHost` preserves the column bodies' scroll positions across its
+  measurement pass and calls `syncColumnsHeight` after applying the final cap,
+  and `syncColumnsHeight` itself preserves scroller positions so no caller can
+  snap a mid-scroll list back to the top.
+
 ## [12.1.2] — 2026-07-14
 
 ### Fixed

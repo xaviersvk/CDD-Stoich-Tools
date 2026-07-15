@@ -13,6 +13,22 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 12.1.3 — July 2026
+
+**Bug fix: the Keywords picker on the Search page scrolls smoothly to the end
+in Firefox.**
+
+- **Finishing the 12.1.2 fix.** In Firefox, the long columns of the field
+  picker could still stop short of their last options, and the Search page's
+  Keywords picker had it worst: while scrolling inside it, the list jittered
+  near the top and kept snapping back, so the bottom entries were effectively
+  unreachable. The picker no longer mistakes scrolling inside its own list for
+  page scrolling, remembers your scroll position while it re-measures itself,
+  and gives its columns an exact height so Firefox lets you reach the very
+  last option. Chrome behaves exactly as before.
+
+---
+
 ## 12.1.2 — July 2026
 
 **Bug fix: in Firefox, the field picker's columns can now scroll all the way

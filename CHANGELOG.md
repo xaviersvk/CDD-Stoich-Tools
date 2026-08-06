@@ -16,6 +16,28 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [12.2.1] — 2026-08-06
+
+### Added
+- **The CDD Samples panel now shows cards for batches without an inventory
+  sample.** Stoichiometry rows that reference a registered batch (e.g.
+  `RGT-0001620-001`) but no sample used to be skipped entirely, because CDD's
+  `eln_entry` JSON only ships batch metafields alongside a sample. Now:
+  - the inject parser (`inject/parsers/sample-data.js`) keeps sample-less rows
+    that carry a batch (products excluded — their batches are synthesis
+    targets with no QC metadata) and flags every sample with `hasSample`;
+  - card names compose the batch identifier the way CDD displays it
+    (`RGT-0001620` + `001` → `RGT-0001620-001`);
+  - a new content module (`content/features/batch-field-enrichment.js`)
+    fetches the batch's molecule page (one GET per molecule, promise-cached;
+    the ELN-vault URL redirects to the molecule's home vault and fetch follows
+    it), parses the `RegistrationFormRenderer` `react_props` embedded in the
+    HTML, joins `batch_field_definitions` with the lot's values and merges
+    Purity, Density, Vendor ID, Internal ID plus all custom batch fields into
+    the card before re-rendering;
+  - batch-only cards wear a grey **BATCH ONLY** badge so it's obvious why
+    sample-side fields (Location, Concentration…) are absent.
+
 ## [12.2.0] — 2026-08-06
 
 ### Changed

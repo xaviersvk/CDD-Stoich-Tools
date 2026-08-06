@@ -20,7 +20,18 @@ export function extractRowsFromReactionFeature(feature, reactionIndex) {
     const seen = new Set();
 
     for (const row of rows) {
-        if (!row?.sample) continue;
+        const hasSample = !!row?.sample;
+        const rowBatchId = row?.batchId ?? row?.batch?.id ?? null;
+        const role = String(row?.role || "").toLowerCase();
+
+        // Rows without a sample are still worth a card when they carry a
+        // registered batch — its metafields (purity, density…) are fetched
+        // later by the content script. Products are skipped: their batches
+        // are the synthesis targets and carry no useful QC metadata.
+        if (!hasSample) {
+            if (!rowBatchId) continue;
+            if (role === "product" || role === "parallelproduct") continue;
+        }
 
         const rowUid = row?.uid ?? null;
         const sampleId =
@@ -29,7 +40,7 @@ export function extractRowsFromReactionFeature(feature, reactionIndex) {
             row?.sample_id ??
             null;
 
-        const dedupeKey = `${reactionIndex}::${rowUid ?? "no-row"}::${sampleId ?? "no-sample"}`;
+        const dedupeKey = `${reactionIndex}::${rowUid ?? "no-row"}::${sampleId ?? (rowBatchId ? `batch-${rowBatchId}` : "no-sample")}`;
         if (seen.has(dedupeKey)) continue;
         seen.add(dedupeKey);
 
@@ -46,6 +57,7 @@ export function extractRowsFromReactionFeature(feature, reactionIndex) {
             rowUid,
             role: row?.role ?? null,
             sampleId,
+            hasSample,
             name: resolveRowName(row),
             location: resolveRowLocation(row),
             ...batchFields,      // purity, density, internalID

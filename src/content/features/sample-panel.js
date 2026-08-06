@@ -361,6 +361,16 @@ export function ensurePanel() {
     border-radius: 999px;
     border: 1px solid rgba(239, 68, 68, 0.35);
   }
+
+  #${PANEL_ID} .cdd-batch-only-badge {
+    background: rgba(148, 163, 184, 0.15);
+    color: #94a3b8;
+    font-weight: 700;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+  }
 `;
 
     document.documentElement.appendChild(style);
@@ -679,6 +689,14 @@ export function renderSamples(payload) {
                 depletedBadge.className = "cdd-low-purity-badge";
                 depletedBadge.textContent = "⚠ DEPLETED SAMPLE USED";
                 cardTop.appendChild(depletedBadge);
+            }
+
+            if (sample.hasSample === false) {
+                const batchBadge = document.createElement("div");
+                batchBadge.className = "cdd-batch-only-badge";
+                batchBadge.textContent = "BATCH ONLY";
+                batchBadge.title = "No inventory sample on this row — fields come from the registered batch.";
+                cardTop.appendChild(batchBadge);
             }
 
             card.appendChild(cardTop);

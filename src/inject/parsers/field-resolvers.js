@@ -64,11 +64,26 @@ export function resolveRowName(row) {
         return String(row.sample.sample_identifier).trim();
     }
 
+    // Batch-only rows (no sample yet): compose the batch identifier the way
+    // CDD displays it — "RGT-0001620" + "001" → "RGT-0001620-001".
+    const moleculeName = row?.moleculeName ? String(row.moleculeName).trim() : "";
+    const batchName = row?.batch?.name ? String(row.batch.name).trim() : "";
+
+    if (
+        !row?.sample &&
+        moleculeName &&
+        batchName &&
+        !/unspecified/i.test(batchName) &&
+        !batchName.startsWith(moleculeName)
+    ) {
+        return `${moleculeName}-${batchName}`;
+    }
+
     const fallback =
         row?.sample?.name ||
         row?.iupacName ||
-        row?.moleculeName ||
-        row?.batch?.name ||
+        moleculeName ||
+        batchName ||
         "Unnamed sample";
 
     return String(fallback).trim();

@@ -13,6 +13,23 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 12.2.1 — August 2026
+
+**Purity and density without a sample — batch-only rows join the panel.**
+
+- **The CDD Samples panel no longer ignores reagents that don't have an
+  inventory sample.** If a stoichiometry row references a registered batch
+  (say `RGT-0001620-001`) rather than a specific sample, the panel now shows a
+  card for it anyway: it quietly looks the batch up on its molecule page and
+  pulls in the registered metadata — purity, density, vendor ID, internal ID
+  and any other batch fields your vault records. There's no reason you
+  shouldn't see a reagent's purity just because nobody made a sample of it.
+- **Batch-only cards are labelled.** A grey **BATCH ONLY** tag tells you the
+  card's data comes from the registered batch, which is also why sample-side
+  details like Location or Concentration aren't there.
+
+---
+
 ## 12.2.0 — August 2026
 
 **Bulk-reaction print sheets now use letters, matching CDD.**

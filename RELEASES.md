@@ -13,6 +13,17 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 12.1.4 — August 2026
+
+**Goodbye, filter auto-switcher — CDD does it natively now.**
+
+- **Removed the "smart filter default" helper.** It used to flip a freshly added
+  ELN/Inventory filter from "Any value" to the second operator for you. CDD now
+  ships this behaviour itself, so the extension no longer needs to watch the
+  page and simulate clicks — same result, less background work in your browser.
+
+---
+
 ## 12.1.3 — July 2026
 
 **Bug fix: the Keywords picker on the Search page scrolls smoothly to the end

@@ -86,8 +86,8 @@ Here's the short version of everything it adds:
 
 ### ✨ Quality-of-life fixes
 - One-click copy on molecule and batch fields, "Copy Link" on saved searches,
-  smarter filter defaults, a resizable location-picker, collapsible
-  consumed/depleted batches, and a handful of layout tidy-ups.
+  a resizable location-picker, collapsible consumed/depleted batches, and a
+  handful of layout tidy-ups.
 
 > For the full, detailed feature list see
 > [`docs/FEATURE_CATALOG.md`](./docs/FEATURE_CATALOG.md).

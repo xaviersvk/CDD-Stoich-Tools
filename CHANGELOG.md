@@ -16,6 +16,16 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [12.1.4] — 2026-08-06
+
+### Removed
+- **Filter default operator** (`ui-fixes/filter-default.js`). The feature
+  auto-selected the second filter operator (e.g. "Has") instead of "Any value"
+  when a filter was added in ELN or Inventory. CDD now does this natively, so
+  the whole feature — its `MutationObserver`, synthetic-click dropdown driving
+  and chained timeouts — was deleted (it was also the most timing-/DOM-fragile
+  code in the extension). One less permanent page observer.
+
 ## [12.1.3] — 2026-07-15
 
 ### Fixed

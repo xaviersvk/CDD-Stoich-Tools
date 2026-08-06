@@ -23,7 +23,7 @@ All paths are relative to the repository root. Every feature is registered from
 | [Printing](#3-printing) | Per-reaction stoichiometry sheet · Panel print · Print dispatcher |
 | [Dose Response Tools](#4-dose-response-tools) | Easy Override toggle + action menu |
 | [Saved Searches](#5-saved-searches) | Copy Link buttons |
-| [UI Improvements](#6-ui-improvements) | File-dialog fixes · Left-ellipsis locations · Filter default operator · Location-picker resize · Molecule-links grid · Consumed-batches collapse |
+| [UI Improvements](#6-ui-improvements) | File-dialog fixes · Left-ellipsis locations · Location-picker resize · Molecule-links grid · Consumed-batches collapse |
 | [Data Extraction](#7-data-extraction) | fetch/XHR hooks · Payload detection · flatSample builder · Field resolvers · Print-data extractor · Messaging bus |
 | [Clipboard Features](#8-clipboard-features) | Unified clipboard helper · CDD-ready concentration copy · Click-to-copy fields |
 | [Inventory](#9-inventory) | Well structure tooltip (structure + synonym, idle prefetch) |
@@ -281,19 +281,7 @@ affect the others. These are the **safest** files to touch.
 - **Regression risk:** **low**. *Note:* contains a stray unconditional
   `console.log("[LEFT-ELLIPSIS] CSS injected")`.
 
-### 6.3 Filter Default Operator
-- **User value:** When a filter is added, auto-selects the second operator instead
-  of leaving it on "Any value", saving a click — for both ELN (CDD SelectBox) and
-  Inventory (MUI Select) filters.
-- **Entry point:** `ui-fixes/filter-default.js` (`initFilterDefaultFix`).
-- **Data source:** live DOM (`[data-testid="filter-item"]`, option labels).
-- **Dependencies:** none.
-- **Maintenance difficulty:** **high** — drives dropdowns with synthetic
-  mouse/keyboard events and chained `setTimeout`s.
-- **Regression risk:** **high** — the most timing-/DOM-fragile feature; a CDD
-  markup or render-timing change can break it silently.
-
-### 6.4 Location-Picker Resize
+### 6.3 Location-Picker Resize
 - **User value:** Adds a draggable resizer to the location-picker tree panel
   (double-click resets); the width is remembered.
 - **Entry point:** `ui-fixes/location-picker-resize.js`
@@ -304,7 +292,7 @@ affect the others. These are the **safest** files to touch.
 - **Maintenance difficulty:** **medium** (drag handling + CSS variable + storage).
 - **Regression risk:** **low-medium** — isolated, but tied to picker class names.
 
-### 6.5 Molecule-Links Grid
+### 6.4 Molecule-Links Grid
 - **User value:** Lays out `#molecule-links` as a responsive multi-column grid
   (3 → 2 → 1 columns by viewport width) for readability.
 - **Entry point:** `ui-fixes/molecule-links-fixes.js`
@@ -314,7 +302,7 @@ affect the others. These are the **safest** files to touch.
 - **Maintenance difficulty:** **low** (CSS only).
 - **Regression risk:** **low**.
 
-### 6.6 Consumed-Batches Collapse
+### 6.5 Consumed-Batches Collapse
 - **User value:** On the molecule batches page, folds "Consumed = Yes" batch
   blocks into a collapsible "Consumed batches (N)" section; restores them when you
   navigate away.
@@ -328,7 +316,7 @@ affect the others. These are the **safest** files to touch.
 - **Regression risk:** **medium** — moving CDD's own nodes is riskier than pure
   CSS; depends on specific ids/labels.
 
-### 6.7 Filter Field Picker (Inventory)
+### 6.6 Filter Field Picker (Inventory)
 - **User value:** Replaces the Inventory "Filter Entries" field selector — one
   long narrow dropdown mixing Sample/Batch/Entity/Event (130+ fields) — with a
   wide four-column popover anchored under the trigger, each column headed and
@@ -340,7 +328,7 @@ affect the others. These are the **safest** files to touch.
   (`li.search-bar__filters__field-name`, category from the `data-value` prefix).
 - **Dependencies:** shares the picker engine `ui-fixes/field-picker-core.js`
   (styles, search, columns, keyboard, positioning) with the Keywords picker
-  (6.7b).
+  (6.7).
 - **Maintenance difficulty:** **medium** — overlays the MUI menu, hides the
   native `<ul>`, and delegates selection by dispatching a real click on the
   original `<li>`.
@@ -348,10 +336,10 @@ affect the others. These are the **safest** files to touch.
   always routes through the untouched native option, so the worst case is
   cosmetic.
 
-### 6.7b Keywords Field Picker (Search page)
+### 6.7 Keywords Field Picker (Search page)
 - **User value:** Replaces the Search page's "Keywords" field selector — a plain
   native `<select>` stacking General + every Entity + every Batch field into one
-  long OS dropdown — with the same wide, searchable multi-column popover as 6.7.
+  long OS dropdown — with the same wide, searchable multi-column popover as 6.6.
   Columns are derived from the option list in source order (General, then one per
   `<Object> Fields` heading the vault emits); empty categories aren't rendered.
   The `Entity Fields` / `Batch Fields` headings stay selectable under General
@@ -361,7 +349,7 @@ affect the others. These are the **safest** files to touch.
 - **Data source:** live DOM — the native `select.molecule_criteria__field`
   `<option>`s (category from heading + `- ` indentation; value = option index).
 - **Dependencies:** shares the picker engine `ui-fixes/field-picker-core.js`
-  with 6.7.
+  with 6.6.
 - **Maintenance difficulty:** **medium** — suppresses the native dropdown
   (pointer + keyboard, delegated on `document`) and drives its own floating host
   (outside-click, Escape, focus return, height-capped positioning).
@@ -647,7 +635,6 @@ Copy-to-clipboard behaviour shared across the extension.
 | Saved-search Copy Link | low | low |
 | File-dialog fixes | low | low |
 | Left-ellipsis locations | low | low |
-| Filter default operator | high | **high (timing/DOM)** |
 | Location-picker resize | medium | low-medium |
 | Molecule-links grid | low | low |
 | Consumed-batches collapse | medium-high | medium |
@@ -668,6 +655,6 @@ Copy-to-clipboard behaviour shared across the extension.
 
 > **Highest-attention areas when changing the code:** the Dose Response tools
 > (they write to CDD), the field resolvers and network hooks (everything depends
-> on them, untested), the filter-default automation (very fragile), and the
-> messaging bus (the only link between the two worlds).
+> on them, untested), and the messaging bus (the only link between the two
+> worlds).
 </content>

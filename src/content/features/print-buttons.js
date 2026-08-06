@@ -84,7 +84,42 @@ function normalizeName(str) {
         .trim();
 }
 
+function letterLabel(index) {
+    let label = "";
+    let n = index;
+
+    do {
+        label = String.fromCharCode(65 + (n % 26)) + label;
+        n = Math.floor(n / 26) - 1;
+    } while (n >= 0);
+
+    return label;
+}
+
+// Plain rows keep their 1..N numbering; rows of a parallel (bulk) reaction are
+// labelled A, B, C… per reagent/product pair, matching CDD's own table.
+function buildRowLabels(rows) {
+    const pairLetters = new Map();
+    let number = 0;
+
+    return rows.map((row) => {
+        const pairId = row?.parallelPairId;
+
+        if (pairId) {
+            if (!pairLetters.has(pairId)) {
+                pairLetters.set(pairId, letterLabel(pairLetters.size));
+            }
+            return pairLetters.get(pairId);
+        }
+
+        number += 1;
+        return String(number);
+    });
+}
+
 function buildRowsHtml(rows) {
+    const labels = buildRowLabels(rows);
+
     return rows.map((row, index) => {
         const fw = row.formulaWeight ?? row.molecularWeight;
         const exactMass = row.exactMass;
@@ -104,7 +139,7 @@ function buildRowsHtml(rows) {
         return `
           <tr class="main-row">
             <td class="col-name compact-name">
-              <div class="row-index">${index + 1}</div>
+              <div class="row-index">${escapeHtml(labels[index])}</div>
               <div class="${nameClass}">${escapeHtml(row.name || "Unnamed")}</div>
             </td>
 

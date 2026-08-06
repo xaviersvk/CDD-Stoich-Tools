@@ -13,6 +13,20 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 12.2.0 — August 2026
+
+**Bulk-reaction print sheets now use letters, matching CDD.**
+
+- **Printed stoichiometry sheets label bulk-reaction rows A, B, C… instead of
+  numbers.** In a parallel (bulk) reaction, CDD lists each variable reagent and
+  its product together under a letter — but the printed report used to number
+  those rows 1–17 like any other. Now the PDF shows the same letters as the
+  page: each reagent/product pair shares its letter, and the fixed rows at the
+  top keep their normal 1, 2, 3… numbering. Reports for ordinary single
+  reactions look exactly as before.
+
+---
+
 ## 12.1.4 — August 2026
 
 **Goodbye, filter auto-switcher — CDD does it natively now.**

@@ -59,6 +59,11 @@ function resolveRowData(row) {
     return {
         name: resolveDisplayName(row),
 
+        role: String(row?.role || ""),
+        // Parallel (bulk) reactions pair a variable reagent with its product via
+        // this id; CDD labels each pair A, B, C… by order of appearance.
+        parallelPairId: row?.parallelReactionsPairId || null,
+
         formulaWeight: formatValue(mw),
         molecularWeight: formatValue(mw),
         exactMass: formatValue(exactMass),

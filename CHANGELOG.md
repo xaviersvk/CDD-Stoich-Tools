@@ -16,6 +16,21 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [12.2.0] — 2026-08-06
+
+### Changed
+- **The stoichiometry print sheet labels bulk-reaction rows A, B, C… like CDD
+  does.** Parallel ("bulk") reactions store their variable reagent/product rows
+  with roles `parallelReactant`/`parallelProduct`, joined by a
+  `parallelReactionsPairId`; CDD's own table shows each pair under a letter in
+  its "Reagents and products" section, but our PDF report numbered every row
+  1–N. The print-data extractor (`inject/parsers/print-data.js`) now passes
+  each row's `role` and pair id through, and the sheet builder
+  (`content/features/print-buttons.js`) assigns letters per pair in order of
+  first appearance (A…Z, then AA, AB…), with both rows of a pair sharing the
+  letter. Plain rows keep their 1..N numbering, so reports for ordinary
+  reactions are unchanged.
+
 ## [12.1.4] — 2026-08-06
 
 ### Removed

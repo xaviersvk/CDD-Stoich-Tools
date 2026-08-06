@@ -27,9 +27,23 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   1–N. The print-data extractor (`inject/parsers/print-data.js`) now passes
   each row's `role` and pair id through, and the sheet builder
   (`content/features/print-buttons.js`) assigns letters per pair in order of
-  first appearance (A…Z, then AA, AB…), with both rows of a pair sharing the
-  letter. Plain rows keep their 1..N numbering, so reports for ordinary
-  reactions are unchanged.
+  first appearance (A…Z, then AA, AB…). Plain rows keep their 1..N numbering,
+  so reports for ordinary reactions are unchanged.
+- **Each pair prints as its own bordered block, mirroring CDD's "Reagents and
+  products" section.** Instead of interleaving lettered rows into the main
+  table (A, A, B, B…), the sheet now renders the fixed rows first and then a
+  "Reagents and products" section where every pair is a rounded, bordered
+  block: the letter sits in a shaded band on the left spanning both rows, and
+  each row carries a small VARIABLE REAGENT / PRODUCT tag above its name. Pair
+  blocks avoid page breaks inside themselves.
+
+### Fixed
+- **No more "Extension context invalidated" console errors after reloading the
+  extension.** When the (unpacked) extension is reloaded while a CDD tab is
+  open, the tab's orphaned content script loses its `chrome.storage` bridge and
+  the panel's settings/custom-field writes threw uncaught promise errors. Both
+  storage writers in `shared/sample-panel-fields.js` now swallow that failure —
+  the fresh content script takes over on the next page refresh anyway.
 
 ## [12.1.4] — 2026-08-06
 

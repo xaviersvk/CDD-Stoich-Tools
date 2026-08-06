@@ -311,7 +311,14 @@ export async function saveSamplePanelSettings(visibleMap) {
     for (const [key, value] of Object.entries(visibleMap || {})) {
         if (typeof value === "boolean") clean[key] = value;
     }
-    await chrome.storage.local.set({ [SAMPLE_PANEL_SETTINGS_KEY]: clean });
+
+    try {
+        await chrome.storage.local.set({ [SAMPLE_PANEL_SETTINGS_KEY]: clean });
+    } catch {
+        // "Extension context invalidated": the extension was reloaded while
+        // this page's old content script was still alive. Nothing to save —
+        // the fresh script takes over after the page is refreshed.
+    }
 }
 
 /* ------------------------------------------------------------------ *
@@ -386,9 +393,14 @@ export async function getDiscoveredCustomFields() {
 }
 
 export async function saveDiscoveredCustomFields(list) {
-    await chrome.storage.local.set({
-        [SAMPLE_PANEL_CUSTOM_FIELDS_KEY]: Array.isArray(list) ? list : [],
-    });
+    try {
+        await chrome.storage.local.set({
+            [SAMPLE_PANEL_CUSTOM_FIELDS_KEY]: Array.isArray(list) ? list : [],
+        });
+    } catch {
+        // "Extension context invalidated" after an extension reload — see
+        // saveSamplePanelSettings. Discovery re-runs on the next page load.
+    }
 }
 
 /* ------------------------------------------------------------------ *

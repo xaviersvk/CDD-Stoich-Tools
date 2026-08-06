@@ -96,51 +96,39 @@ function letterLabel(index) {
     return label;
 }
 
-// Plain rows keep their 1..N numbering; rows of a parallel (bulk) reaction are
-// labelled A, B, C… per reagent/product pair, matching CDD's own table.
-function buildRowLabels(rows) {
-    const pairLetters = new Map();
-    let number = 0;
+function renderRowHtml(row, { indexLabel = "", roleTag = "" } = {}) {
+    const fw = row.formulaWeight ?? row.molecularWeight;
+    const exactMass = row.exactMass;
+    const mass = row.mass;
+    const volume = row.volume;
+    const equivalent = row.equivalent;
+    const limiting = row.limitingReagent;
+    const mole = row.mole;
+    const effectiveMole = row.effectiveMole;
+    const yieldValue = row.yield;
+    const showIupac =
+        row.subtitle &&
+        normalizeName(row.subtitle) !== normalizeName(row.name);
 
-    return rows.map((row) => {
-        const pairId = row?.parallelPairId;
+    const nameClass = row.depleted ? "name-main depleted" : "name-main";
 
-        if (pairId) {
-            if (!pairLetters.has(pairId)) {
-                pairLetters.set(pairId, letterLabel(pairLetters.size));
-            }
-            return pairLetters.get(pairId);
-        }
+    const indexHtml = indexLabel !== ""
+        ? `<div class="row-index">${escapeHtml(indexLabel)}</div>`
+        : "";
 
-        number += 1;
-        return String(number);
-    });
-}
+    const roleTagHtml = roleTag
+        ? `<div class="role-tag">${escapeHtml(roleTag)}</div>`
+        : "";
 
-function buildRowsHtml(rows) {
-    const labels = buildRowLabels(rows);
+    const nameCellClass = indexLabel !== ""
+        ? "col-name compact-name"
+        : "col-name compact-name no-index";
 
-    return rows.map((row, index) => {
-        const fw = row.formulaWeight ?? row.molecularWeight;
-        const exactMass = row.exactMass;
-        const mass = row.mass;
-        const volume = row.volume;
-        const equivalent = row.equivalent;
-        const limiting = row.limitingReagent;
-        const mole = row.mole;
-        const effectiveMole = row.effectiveMole;
-        const yieldValue = row.yield;
-        const showIupac =
-            row.subtitle &&
-            normalizeName(row.subtitle) !== normalizeName(row.name);
-
-        const nameClass = row.depleted ? "name-main depleted" : "name-main";
-
-        return `
+    return `
           <tr class="main-row">
-            <td class="col-name compact-name">
-              <div class="row-index">${escapeHtml(labels[index])}</div>
-              <div class="${nameClass}">${escapeHtml(row.name || "Unnamed")}</div>
+            <td class="${nameCellClass}">
+              ${indexHtml}
+              ${roleTagHtml ? `<div class="name-wrap">${roleTagHtml}<div class="${nameClass}">${escapeHtml(row.name || "Unnamed")}</div></div>` : `<div class="${nameClass}">${escapeHtml(row.name || "Unnamed")}</div>`}
             </td>
 
             <td class="col-properties">
@@ -173,10 +161,67 @@ function buildRowsHtml(rows) {
     ${showIupac ? `<div class="muted" style="margin-top:2px;">
              <strong>IUPAC:</strong> ${escapeHtml(row.subtitle)}
            </div>`
-                : ""
+            : ""
         }
   </td>
 </tr>
+        `;
+}
+
+// Split the flat row list into the plain (fixed) rows and the parallel
+// reagent/product pairs of a bulk reaction, keyed by parallelPairId in order
+// of first appearance — the same order CDD letters them A, B, C…
+function splitParallelPairs(rows) {
+    const plainRows = [];
+    const pairs = new Map();
+
+    for (const row of rows) {
+        const pairId = row?.parallelPairId;
+
+        if (!pairId) {
+            plainRows.push(row);
+            continue;
+        }
+
+        if (!pairs.has(pairId)) pairs.set(pairId, []);
+        pairs.get(pairId).push(row);
+    }
+
+    return { plainRows, pairs: Array.from(pairs.values()) };
+}
+
+function roleTagForRow(row) {
+    const role = String(row?.role || "").toLowerCase();
+    if (role === "parallelproduct") return "Product";
+    if (role === "parallelreactant") return "Variable reagent";
+    return "";
+}
+
+function buildRowsHtml(rows) {
+    return rows
+        .map((row, index) => renderRowHtml(row, { indexLabel: String(index + 1) }))
+        .join("");
+}
+
+function buildPairBlocksHtml(pairs) {
+    return pairs.map((pairRows, pairIndex) => {
+        const letter = letterLabel(pairIndex);
+
+        const rowsHtml = pairRows
+            .map((row) => renderRowHtml(row, { roleTag: roleTagForRow(row) }))
+            .join("");
+
+        return `
+          <div class="pair-block">
+            <div class="pair-letter">${escapeHtml(letter)}</div>
+            <div class="pair-body">
+              <table>
+                <tbody>
+                  ${rowsHtml}
+                </tbody>
+              </table>
+            </div>
+          </div>
         `;
     }).join("");
 }
@@ -195,7 +240,16 @@ function buildPrintHtml(reactionPayload) {
         ? `<div class="scheme">${domReactionImageHtml}</div>`
         : "";
 
-    const rowsHtml = buildRowsHtml(rows);
+    const { plainRows, pairs } = splitParallelPairs(rows);
+
+    const rowsHtml = buildRowsHtml(plainRows);
+
+    const pairSectionHtml = pairs.length
+        ? `
+            <div class="pair-section-title">Reagents and products</div>
+            ${buildPairBlocksHtml(pairs)}
+          `
+        : "";
 
     return `
       <html lang="en">
@@ -352,6 +406,61 @@ function buildPrintHtml(reactionPayload) {
               line-height: 1.2;
             }
 
+            .pair-section-title {
+              font-size: 14px;
+              font-weight: 700;
+              margin: 18px 0 8px;
+              padding-bottom: 4px;
+              border-bottom: 1px solid #9ca3af;
+            }
+
+            .pair-block {
+              display: flex;
+              border: 1px solid #d1d5db;
+              border-radius: 8px;
+              margin-bottom: 10px;
+              overflow: hidden;
+              page-break-inside: avoid;
+            }
+
+            .pair-letter {
+              flex: 0 0 32px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 20px;
+              font-weight: 700;
+              color: #374151;
+              background: #f3f4f6;
+              border-right: 1px solid #d1d5db;
+            }
+
+            .pair-body {
+              flex: 1;
+              min-width: 0;
+            }
+
+            .pair-body table {
+              width: 100%;
+            }
+
+            .pair-body .main-row:first-child {
+              border-top: none;
+            }
+
+            .role-tag {
+              font-size: 9px;
+              font-weight: 700;
+              text-transform: uppercase;
+              letter-spacing: 0.06em;
+              color: #6b7280;
+              margin-bottom: 2px;
+            }
+
+            .compact-name.no-index .name-main {
+              margin-left: 0;
+            }
+
             .print-footer {
               margin-top: 24px;
               padding-top: 8px;
@@ -395,6 +504,8 @@ function buildPrintHtml(reactionPayload) {
                 ${rowsHtml}
               </tbody>
             </table>
+
+            ${pairSectionHtml}
 
             <div class="print-footer">
               Custom print layout generated by CDD Stoichiometric Table Tools. Written by Matus Drexler, IOCB Prague & PharmTheon

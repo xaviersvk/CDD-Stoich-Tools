@@ -20,10 +20,12 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 - **Printed stoichiometry sheets label bulk-reaction rows A, B, C… instead of
   numbers.** In a parallel (bulk) reaction, CDD lists each variable reagent and
   its product together under a letter — but the printed report used to number
-  those rows 1–17 like any other. Now the PDF shows the same letters as the
-  page: each reagent/product pair shares its letter, and the fixed rows at the
-  top keep their normal 1, 2, 3… numbering. Reports for ordinary single
-  reactions look exactly as before.
+  those rows 1–17 like any other. Now the PDF mirrors the page: the fixed rows
+  keep their normal 1, 2, 3… numbering, and below them a "Reagents and
+  products" section shows each pair as its own framed block — the letter in a
+  shaded band on the left, with the variable reagent and its product stacked
+  inside and clearly tagged. Reports for ordinary single reactions look
+  exactly as before.
 
 ---
 

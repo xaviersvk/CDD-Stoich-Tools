@@ -362,14 +362,23 @@ export function ensurePanel() {
     border: 1px solid rgba(239, 68, 68, 0.35);
   }
 
-  #${PANEL_ID} .cdd-batch-only-badge {
-    background: rgba(148, 163, 184, 0.15);
-    color: #94a3b8;
+  #${PANEL_ID} .cdd-no-sample-badge {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
     font-weight: 700;
     font-size: 10px;
     padding: 2px 6px;
     border-radius: 999px;
-    border: 1px solid rgba(148, 163, 184, 0.35);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+  }
+
+  #${PANEL_ID} .cdd-no-sample-quote {
+    margin-top: 4px;
+    font-size: 12px;
+    font-style: italic;
+    line-height: 1.35;
+    color: #f59e0b;
+    opacity: 0.95;
   }
 `;
 
@@ -606,6 +615,40 @@ function isSampleDepleted(sample) {
     return false;
 }
 
+// A batch-only card gets a random bit of inventory education. The pool mixes
+// factual reminders with gentle mockery on purpose — the point is that the
+// message stays fresh enough to be read, not muted as wallpaper.
+function pickNoSampleQuote(sample) {
+    const purity = sample?.purity != null && sample.purity !== ""
+        ? String(sample.purity)
+        : null;
+
+    const quotes = [
+        "This purity is from registration day, not from the bottle on your shelf.",
+        purity
+            ? `Batch says ${purity} %. The bottle? Nobody knows — no sample.`
+            : "Batch data looks fine. The bottle? Nobody knows — no sample.",
+        "Samples keep inventory honest. Batch data is just a rumor about a bottle.",
+        "No sample, no trace: nobody knows where this bottle is or how much is left.",
+        "Someone skipped inventory day.",
+        "This reagent is homeless — give it a sample.",
+        "Working sampleless. Brave. Untraceable, but brave.",
+        "No sample, no location, no amount — create a sample to track this bottle.",
+        "Schrödinger's reagent: both full and empty until someone makes a sample.",
+        "Location: unknown. Amount: unknown. Confidence: high, apparently.",
+        "Somewhere in the lab, this bottle exists. Probably.",
+        "No sample means the amount is vibes-based.",
+        "Inventory ghosts are real. This is one of them.",
+        "Batch fields don't age. Bottles do. Make a sample.",
+        "Your future self is looking for this bottle right now. Help them out — make a sample.",
+        "A sample a day keeps the audit away.",
+        "This bottle has no paper trail. Very noir. Very untraceable.",
+        "Trust the batch, but verify with a sample.",
+    ];
+
+    return quotes[Math.floor(Math.random() * quotes.length)];
+}
+
 export function renderSamples(payload) {
     const { list } = getPanelParts();
     if (!list) return;
@@ -693,9 +736,11 @@ export function renderSamples(payload) {
 
             if (sample.hasSample === false) {
                 const batchBadge = document.createElement("div");
-                batchBadge.className = "cdd-batch-only-badge";
-                batchBadge.textContent = "BATCH ONLY";
-                batchBadge.title = "No inventory sample on this row — fields come from the registered batch.";
+                batchBadge.className = "cdd-no-sample-badge";
+                batchBadge.textContent = "⚠ NO SAMPLE";
+                batchBadge.title =
+                    "This row uses a registered batch without an inventory sample. " +
+                    "Creating a sample is the right way — it tracks location, amount and depletion.";
                 cardTop.appendChild(batchBadge);
             }
 
@@ -703,6 +748,13 @@ export function renderSamples(payload) {
 
             for (const rowEl of renderConfiguredFields(sample)) {
                 card.appendChild(rowEl);
+            }
+
+            if (sample.hasSample === false) {
+                const quote = document.createElement("div");
+                quote.className = "cdd-no-sample-quote";
+                quote.textContent = pickNoSampleQuote(sample);
+                card.appendChild(quote);
             }
 
             groupBody.appendChild(card);

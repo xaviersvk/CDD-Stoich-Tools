@@ -13,6 +13,20 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 12.2.3 — August 2026
+
+**Batch-only cards get a sense of humour (and a mission).**
+
+- **The BATCH ONLY tag grew into an amber ⚠ NO SAMPLE badge with a random
+  educational quote.** Every card that shows registered-batch data instead of
+  a real inventory sample now ends with one of eighteen rotating one-liners
+  reminding you that creating a sample is the proper way — ranging from the
+  sober *"This purity is from registration day, not from the bottle on your
+  shelf."* to *"Schrödinger's reagent: both full and empty until someone makes
+  a sample."* Collect them all — or just make a sample.
+
+---
+
 ## 12.2.2 — August 2026
 
 **Reordered reactions no longer print with the wrong table.**

@@ -16,6 +16,20 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [12.2.3] — 2026-08-06
+
+### Changed
+- **Batch-only cards now educate — loudly and at random.** The grey
+  BATCH ONLY badge became an amber **⚠ NO SAMPLE** badge (tooltip: creating a
+  sample is the right way — it tracks location, amount and depletion), and
+  every batch-only card closes with a randomly picked one-liner from an
+  18-quote pool — from the factual ("This purity is from registration day,
+  not from the bottle on your shelf.") through "Schrödinger's reagent: both
+  full and empty until someone makes a sample." to "No sample means the
+  amount is vibes-based." A fresh quote on every render keeps the nudge
+  readable instead of letting it fade into wallpaper. Quote text is 12px
+  italic amber so it can actually be read.
+
 ## [12.2.2] — 2026-08-06
 
 ### Fixed

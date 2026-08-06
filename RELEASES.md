@@ -13,6 +13,21 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 12.2.2 — August 2026
+
+**Reordered reactions no longer print with the wrong table.**
+
+- **Fixed: after moving reactions around inside an ELN entry, the printed
+  stoichiometry sheet could show the right reaction scheme with a different
+  reaction's reagent table — and the CDD samples panel grouped samples under
+  the wrong reaction number.** The extension used to read reactions in the
+  order they were created, while the page shows them in the order they appear
+  in the entry; once you dragged a reaction to a new spot, the two got out of
+  sync. The extension now follows the entry's actual layout, so the table,
+  scheme and samples panel always belong to the reaction you clicked.
+
+---
+
 ## 12.2.1 — August 2026
 
 **Purity and density without a sample — batch-only rows join the panel.**

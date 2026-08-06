@@ -16,6 +16,26 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [12.2.2] — 2026-08-06
+
+### Fixed
+- **Print sheets and the CDD samples panel pair each reaction with its own
+  stoichiometry table again after reactions are reordered in an entry.** The
+  parsers read reactions from `eln_entry.feature_map`, whose keys are numeric
+  feature ids — and JavaScript iterates numeric object keys in ascending order,
+  i.e. creation order. The reaction scheme image and the print buttons, by
+  contrast, follow the on-screen DOM order. As long as reactions were never
+  moved the two orders coincided, but after dragging a reaction elsewhere in
+  the entry (or duplicating entries) the printed sheet showed the correct
+  scheme with another reaction's reagent table, and the samples panel grouped
+  rows under the wrong "Reaction N". `getReactionFeatures()`
+  (`inject/parsers/common.js`) now reads the true display order from
+  `eln_entry.body` — the serialized editor document, whose `reaction` nodes
+  carry `data.feature_id` in document order — and sorts the features by it.
+  Features absent from the body (or a missing/unparsable body) fall back to
+  the previous id order. Print, depleted-marker and samples-panel extractors
+  all share this helper, so one sort fixes them all.
+
 ## [12.2.1] — 2026-08-06
 
 ### Added

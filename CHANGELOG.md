@@ -16,6 +16,29 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [12.3.0] — 2026-08-06
+
+### Added
+- **"Fill density into table" button on batch-only cards.** When the
+  registered batch knows a density (from the batch-field enrichment) that the
+  stoichiometry row is missing (`userInput.density` empty — now passed
+  through as `tableDensity`), the card offers a one-click fill. A new module
+  (`content/features/density-fill.js`) replays the user's own editing
+  gestures: click the row (the table flips to edit mode), click the row's
+  `Density: Optional/Required` link, set the popup input natively (React
+  value-tracker aware) and press Enter — so CDD itself recalculates volume,
+  autosaves and keeps its undo history. Every step re-verifies the DOM it
+  expects and aborts cleanly with a reason on the button when CDD's markup
+  changed; the worst case writes nothing. Deliberately button-triggered only
+  (one click = one write to a scientific record); automatic filling is a
+  possible later step.
+  - Hardened against two live-found traps: the density popup's input only
+    sometimes carries `placeholder="Density"` (the popup's `Density [g/cm3]`
+    label is the reliable marker), and the trigger click itself — being
+    outside the table — would bubble to CDD's outside-click handler and
+    instantly close the edit mode it had just opened, so the button stops
+    propagation and defers the sequence until the click has fully settled.
+
 ## [12.2.3] — 2026-08-06
 
 ### Changed

@@ -13,6 +13,20 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 12.3.0 — August 2026
+
+**One click puts the batch's density into the stoichiometry table.**
+
+- **Batch-only cards can now fill the table's Density field for you.** When a
+  reagent has no sample but its registered batch knows the density, the card
+  shows a **⤵ Fill density into table** button. One click and the extension
+  does exactly what you would: opens the row for editing, clicks the Density
+  field, types the value and confirms — CDD recalculates the volume and saves
+  as usual. If anything on the page doesn't look the way it should, nothing
+  is written and the button tells you to fill it manually instead.
+
+---
+
 ## 12.2.3 — August 2026
 
 **Batch-only cards get a sense of humour (and a mission).**

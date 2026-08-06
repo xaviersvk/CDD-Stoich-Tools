@@ -1,6 +1,7 @@
 import { copyTextWithFeedback } from "../utils/clipboard.js";
 import { normalizeValue } from "../utils/format.js";
 import { STATE } from "../state.js";
+import { fillDensityIntoTable } from "./density-fill.js";
 import { isElnEntryPage } from "../../shared/page-detection.js";
 import { PANEL_ID, REACTION_COLORS } from "../../shared/plugin-constants.js";
 import { updatePanelVisibilityForOverlays } from "../overlay-watcher.js";
@@ -380,6 +381,28 @@ export function ensurePanel() {
     color: #f59e0b;
     opacity: 0.95;
   }
+
+  #${PANEL_ID} .cdd-density-fill-btn {
+    margin-top: 6px;
+    width: 100%;
+    padding: 4px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 6px;
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    background: rgba(56, 189, 248, 0.12);
+    color: #38bdf8;
+    cursor: pointer;
+  }
+
+  #${PANEL_ID} .cdd-density-fill-btn:hover:not(:disabled) {
+    background: rgba(56, 189, 248, 0.25);
+  }
+
+  #${PANEL_ID} .cdd-density-fill-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
 `;
 
     document.documentElement.appendChild(style);
@@ -615,6 +638,43 @@ function isSampleDepleted(sample) {
     return false;
 }
 
+// "Fill density into table" — offered on batch-only cards whose registered
+// batch knows a density the stoichiometry row is missing. One click, one
+// write, visible outcome; the DOM automation lives in density-fill.js.
+function buildDensityFillButton(sample) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "cdd-density-fill-btn";
+    btn.textContent = `⤵ Fill density (${sample.density}) into table`;
+    btn.title = "Writes this batch density into the row's Density field, exactly as if you typed it.";
+
+    btn.addEventListener("click", async (event) => {
+        // The table enters edit mode on a row click and leaves it on any
+        // click outside — and this very button IS outside the table. Stop
+        // the click from reaching CDD's document-level handlers, then let it
+        // finish propagating before the fill sequence starts, or the edit
+        // mode we just opened is closed again by our own trigger click.
+        event.stopPropagation();
+
+        btn.disabled = true;
+        btn.textContent = "Filling…";
+
+        await new Promise((resolve) => setTimeout(resolve, 60));
+
+        const result = await fillDensityIntoTable(sample);
+
+        if (result.ok) {
+            sample.tableDensity = String(sample.density);
+            btn.textContent = "✓ Density filled";
+        } else {
+            btn.textContent = `✗ ${result.reason || "couldn't fill"} — edit the row manually`;
+            btn.disabled = false;
+        }
+    });
+
+    return btn;
+}
+
 // A batch-only card gets a random bit of inventory education. The pool mixes
 // factual reminders with gentle mockery on purpose — the point is that the
 // message stays fresh enough to be read, not muted as wallpaper.
@@ -755,6 +815,15 @@ export function renderSamples(payload) {
                 quote.className = "cdd-no-sample-quote";
                 quote.textContent = pickNoSampleQuote(sample);
                 card.appendChild(quote);
+            }
+
+            if (
+                sample.hasSample === false &&
+                sample.density != null &&
+                sample.density !== "" &&
+                (sample.tableDensity == null || sample.tableDensity === "")
+            ) {
+                card.appendChild(buildDensityFillButton(sample));
             }
 
             groupBody.appendChild(card);

@@ -408,6 +408,14 @@ export function ensurePanel() {
     opacity: 0.6;
     cursor: default;
   }
+
+  #${PANEL_ID} .cdd-density-memory-note {
+    margin-top: 4px;
+    font-size: 10px;
+    line-height: 1.35;
+    color: #f59e0b;
+    opacity: 0.95;
+  }
 `;
 
     document.documentElement.appendChild(style);
@@ -643,15 +651,23 @@ function isSampleDepleted(sample) {
     return false;
 }
 
-// "Fill density into table" — offered on batch-only cards whose registered
-// batch knows a density the stoichiometry row is missing. One click, one
-// write, visible outcome; the DOM automation lives in density-fill.js.
-function buildDensityFillButton(sample) {
+// "Fill density into table" — offered on any card whose stoichiometry row
+// is missing a density we can supply: from the registered batch's own field
+// (authoritative) or, failing that, from density-memory (a value the user
+// typed for this batch before). One click, one write, visible outcome; the
+// DOM automation lives in density-fill.js.
+function buildDensityFillButton(sample, value, source) {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "cdd-density-fill-btn";
-    btn.textContent = `⤵ Fill density (${sample.density}) into table`;
-    btn.title = "Writes this batch density into the row's Density field, exactly as if you typed it.";
+    btn.textContent =
+        source === "memory"
+            ? `⤵ Fill remembered density (${value}) into table`
+            : `⤵ Fill density (${value}) into table`;
+    btn.title =
+        source === "memory"
+            ? "Writes the density you previously typed for this batch into the row, exactly as if you typed it."
+            : "Writes this batch density into the row's Density field, exactly as if you typed it.";
 
     btn.addEventListener("click", async (event) => {
         // The table enters edit mode on a row click and leaves it on any
@@ -666,10 +682,11 @@ function buildDensityFillButton(sample) {
 
         await new Promise((resolve) => setTimeout(resolve, 60));
 
-        const result = await fillDensityIntoTable(sample);
+        const result = await fillDensityIntoTable(sample, value);
 
         if (result.ok) {
-            sample.tableDensity = String(sample.density);
+            sample.tableDensity = String(value);
+            if (source === "memory") touchDensityUsed(sample.batchId);
             btn.textContent = "✓ Density filled";
         } else {
             btn.textContent = `✗ ${result.reason || "couldn't fill"} — edit the row manually`;
@@ -678,6 +695,16 @@ function buildDensityFillButton(sample) {
     });
 
     return btn;
+}
+
+// Amber nudge under a memory-sourced fill button: the right long-term home
+// for the density is the batch record, not this extension's storage.
+function buildDensityMemoryNote() {
+    const note = document.createElement("div");
+    note.className = "cdd-density-memory-note";
+    note.textContent =
+        "This density isn't saved on the batch — add it to the batch record so it fills automatically.";
+    return note;
 }
 
 // A batch-only card gets a random bit of inventory education. The pool mixes
@@ -826,13 +853,27 @@ export function renderSamples(payload) {
                 card.appendChild(quote);
             }
 
-            if (
-                sample.hasSample === false &&
-                sample.density != null &&
-                sample.density !== "" &&
-                (sample.tableDensity == null || sample.tableDensity === "")
-            ) {
-                card.appendChild(buildDensityFillButton(sample));
+            // Offer a density fill wherever the table row misses one and a
+            // value exists — batch field first (authoritative), remembered
+            // value second. Cards with neither get no button.
+            const tableDensityEmpty =
+                sample.tableDensity == null || String(sample.tableDensity).trim() === "";
+            if (tableDensityEmpty) {
+                const batchDensity =
+                    sample.density != null && String(sample.density).trim() !== ""
+                        ? String(sample.density)
+                        : null;
+                const remembered =
+                    !batchDensity && sample.batchId
+                        ? getRememberedDensity(sample.batchId)
+                        : null;
+
+                if (batchDensity) {
+                    card.appendChild(buildDensityFillButton(sample, batchDensity, "batch"));
+                } else if (remembered) {
+                    card.appendChild(buildDensityFillButton(sample, remembered.density, "memory"));
+                    card.appendChild(buildDensityMemoryNote());
+                }
             }
 
             groupBody.appendChild(card);

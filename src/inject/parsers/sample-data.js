@@ -58,9 +58,16 @@ export function extractRowsFromReactionFeature(feature, reactionIndex) {
             role: row?.role ?? null,
             sampleId,
             hasSample,
-            // Density already sitting in the table row (user-entered);
-            // used to decide whether "Fill density into table" is offered.
+            // Values already sitting in the table row (user-entered); used
+            // to decide whether the fill buttons are offered and what the
+            // density-memory capture may remember.
             tableDensity: row?.userInput?.density ?? null,
+            tablePurity: row?.userInput?.purity ?? null,
+            tableConcentration: row?.userInput?.concentration ?? null,
+            tableConcentrationUnits:
+                row?.userInput?.concentrationUnits ??
+                row?.userInput?.concentrationUnit ??
+                null,
             name: resolveRowName(row),
             location: resolveRowLocation(row),
             ...batchFields,      // purity, density, internalID

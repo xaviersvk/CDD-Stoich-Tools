@@ -6,10 +6,12 @@ Whenever `manifest.json` version is bumped:
 1. Update `CHANGELOG.md` and `RELEASES.md` (in English)
 2. Rebuild (`npm run build`)
 3. Commit all changed files
-4. Create a git tag matching the version: `git tag vX.Y.Z`
-5. Push commit and tag: `git push origin main && git push origin vX.Y.Z`
+4. Push the commit: `git push origin main`
 
-Do all five steps without being asked — a version bump means a release.
+Do these four steps without being asked. **NEVER create or push the `vX.Y.Z`
+tag yourself — the user decides about tags.** Pushing a tag publishes to the
+stores, so after step 4 just say the release is ready to tag and wait for an
+explicit go-ahead (`git tag vX.Y.Z && git push origin vX.Y.Z`).
 
 Pushing the `vX.Y.Z` tag triggers `.github/workflows/publish.yml`, which builds
 `dist/` once and publishes to the Chrome Web Store and Firefox AMO (each store is

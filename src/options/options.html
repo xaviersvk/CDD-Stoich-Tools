@@ -87,16 +87,20 @@
             </div>
         </header>
 
-        <div class="card__body card__body--scroll">
-            <div id="samplePanelFields" class="stack"></div>
-            <div id="samplePanelCustomFields" class="stack"></div>
-
+        <!-- Outside the scrolling field list on purpose: a setting buried
+             under 20 field checkboxes is a setting nobody finds. -->
+        <div class="card__body">
             <label class="field-item show-products-toggle">
                 <input type="checkbox" id="showProducts" />
                 <span>Show <strong>products</strong> of each reaction in the
                 panel and in the print sheets (display only — no fill
                 buttons, no remembered values)</span>
             </label>
+        </div>
+
+        <div class="card__body card__body--scroll">
+            <div id="samplePanelFields" class="stack"></div>
+            <div id="samplePanelCustomFields" class="stack"></div>
         </div>
     </section>
 

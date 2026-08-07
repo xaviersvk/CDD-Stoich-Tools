@@ -29,7 +29,8 @@ export function extractRowsFromReactionFeature(feature, reactionIndex) {
     const output = [];
     const seen = new Set();
 
-    for (const row of rows) {
+    for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
+        const row = rows[rowIndex];
         const hasSample = !!row?.sample;
         const rowBatchId = row?.batchId ?? row?.batch?.id ?? null;
         const role = String(row?.role || "").toLowerCase();
@@ -65,6 +66,10 @@ export function extractRowsFromReactionFeature(feature, reactionIndex) {
             reactionLabel: `Reaction ${reactionIndex + 1}`,
             featureId: feature?.id ?? null,
             rowUid,
+            // 1-based position in the stoichiometry table — the number the
+            // table prints in the row's first cell. Lets the fill target a
+            // row deterministically even when the same batch appears twice.
+            rowNumber: rowIndex + 1,
             role: row?.role ?? null,
             sampleId,
             hasSample,

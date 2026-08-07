@@ -18,8 +18,6 @@
 // exception, a failed equivalent restore AFTER purity landed, is reported
 // loudly in the button/status).
 
-import { STATE } from "../state.js";
-
 const STEP_TIMEOUT_MS = 3000;
 const POLL_MS = 100;
 
@@ -259,24 +257,17 @@ function candidateNames(sample) {
     return out;
 }
 
-// Among payload samples of the same reaction and batch, which occurrence
-// is this one? The same entity can sit in a reaction's table twice; the
-// rows look identical, but payload order matches display order, so the
-// ordinal picks the right tr.
-function occurrenceIndex(sample) {
-    const samples = STATE.lastPayload?.samples || [];
-    let n = 0;
-    for (const s of samples) {
-        if (s === sample) break;
-        if (
-            s?.reactionIndex === sample?.reactionIndex &&
-            s?.batchId != null && sample?.batchId != null &&
-            String(s.batchId) === String(sample.batchId)
-        ) {
-            n += 1;
-        }
+// The tr whose first cell prints the given 1-based row number — the same
+// number the payload row had in stoichiometryTable.rows. Deterministic
+// even when the same batch sits in the table twice.
+function findRowByNumber(container, rowNumber) {
+    if (!rowNumber) return null;
+    const want = String(rowNumber);
+    for (const tr of container.querySelectorAll("table tr")) {
+        if (!tr.cells || tr.cells.length < 4) continue;
+        if ((tr.cells[0].innerText || "").trim() === want) return tr;
     }
-    return n;
+    return null;
 }
 
 // Click the sample's row into edit mode; returns {container, name} (the
@@ -287,9 +278,30 @@ function occurrenceIndex(sample) {
 // variants, so the index alone is not trustworthy.
 async function openRow(sample) {
     const containers = getReactionContainers();
+    const names = candidateNames(sample);
 
-    for (const name of candidateNames(sample)) {
-        let container = containers[sample.reactionIndex];
+    // Preferred path: the table prints the payload row number in the
+    // row's first cell — click exactly that row of the sample's reaction
+    // block. This is the only reliable route when the same batch appears
+    // in the table twice.
+    const primary = containers[sample.reactionIndex];
+    if (primary && sample.rowNumber) {
+        const tr = findRowByNumber(primary, sample.rowNumber);
+        if (tr) {
+            const name =
+                names.find((n) => (tr.innerText || "").includes(n)) || names[0] || "";
+            if (name) {
+                mouseClick(tr.cells[0]);
+                return { container: primary, name };
+            }
+        }
+    }
+
+    // Fallback: match by name, first in the sample's own container, then
+    // anywhere — the page renders fewer reaction blocks than reactions
+    // for some table variants, so the index alone is not trustworthy.
+    for (const name of names) {
+        let container = primary;
         let viewRows = container ? findRowsByName(container, name) : [];
 
         if (!viewRows.length) {
@@ -304,13 +316,10 @@ async function openRow(sample) {
         }
 
         if (viewRows.length) {
-            // Duplicate entities: click the occurrence that belongs to
-            // THIS card, not blindly the first matching row.
-            const pick = viewRows[Math.min(occurrenceIndex(sample), viewRows.length - 1)];
             // Either the row is view-mode, or the table is already in edit
             // mode — both tolerate the click; the field-link searches that
             // follow decide.
-            mouseClick(pick.cells[0]);
+            mouseClick(viewRows[0].cells[0]);
             return { container, name };
         }
     }

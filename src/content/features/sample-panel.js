@@ -823,7 +823,16 @@ function pickNoSampleQuote(sample) {
         "Trust the batch, but verify with a sample.",
     ];
 
-    return quotes[Math.floor(Math.random() * quotes.length)];
+    // Stable per card per day: the panel re-renders often (storage sync,
+    // enrichment, autosave payloads) and a random pick would visibly
+    // shuffle the text under the user's eyes. A day in the seed keeps the
+    // rotation alive without the jitter.
+    const seedText = `${sample?.batchId ?? sample?.name ?? ""}:${new Date().toDateString()}`;
+    let seed = 0;
+    for (let i = 0; i < seedText.length; i += 1) {
+        seed = (seed * 31 + seedText.charCodeAt(i)) | 0;
+    }
+    return quotes[Math.abs(seed) % quotes.length];
 }
 
 export function renderSamples(payload) {

@@ -127,9 +127,17 @@ export function rememberValues(batchId, values, name) {
 
     const existing = cachedMemory[id];
     const label = String(name ?? "").trim();
-    const merged = { ...(existing || {}) };
-    let changed = !existing || existing.name !== label;
-    merged.name = label;
+    const merged = { name: "", ...(existing || {}) };
+    let changed = !existing;
+
+    // Keep the FIRST non-empty label. The same batch is visible through
+    // several rows whose display names differ (bulk pairs, sample rows);
+    // flip-flopping the label would write storage on every parse, and each
+    // write re-renders the panel — an endless redraw loop.
+    if (label && !merged.name) {
+        merged.name = label;
+        changed = true;
+    }
 
     for (const field of VALUE_FIELDS) {
         const value = values?.[field] != null ? String(values[field]).trim() : "";

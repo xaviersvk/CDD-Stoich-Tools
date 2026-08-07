@@ -16,6 +16,21 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [12.8.3] — 2026-08-07
+
+### Fixed
+- **Heat-map tooltip defaults could vanish.** An empty selection array in
+  storage (left behind by the 12.8.0 free-text card) made the options list
+  start with nothing selected and the popup show no extra rows.
+  `sanitizeHeatMapFields` now treats anything that cleans up to zero
+  labels as "unset" and returns the defaults (Synonyms, Internal ID), on
+  read AND write — so the defaults can never silently disappear; removing
+  every row in the options card brings them back. The options page also
+  no longer repaints from a discovery event before the initial selection
+  has loaded.
+
+---
+
 ## [12.8.2] — 2026-08-07
 
 ### Changed

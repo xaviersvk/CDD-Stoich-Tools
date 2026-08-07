@@ -44,6 +44,7 @@ import {
 import {
     HEAT_MAP_DISCOVERED_KEY,
     SYNONYMS_LABEL,
+    DEFAULT_HEAT_MAP_FIELDS,
     getHeatMapFields,
     saveHeatMapFields,
     getDiscoveredHeatMapFields,
@@ -622,6 +623,9 @@ function heatMapSubheading(text) {
 }
 
 function persistHeatMapSelection() {
+    // An emptied list saves as the defaults (see sanitizeHeatMapFields), so
+    // mirror that in the UI instead of showing a list storage doesn't have.
+    if (!heatMapSelection.length) heatMapSelection = [...DEFAULT_HEAT_MAP_FIELDS];
     saveHeatMapFields(heatMapSelection);
     renderHeatMapFields();
 }
@@ -717,9 +721,15 @@ function renderHeatMapFields() {
     heatMapEmptyEl.hidden = heatMapDiscovered.length > 0 || heatMapSelection.length > 0;
 }
 
+// Guards the storage.onChanged re-render: a discovery write arriving before
+// the initial load finishes must not paint (and thus expose for editing) an
+// empty selection.
+let heatMapUiReady = false;
+
 async function initHeatMapFieldsUI() {
     heatMapSelection = await getHeatMapFields();
     heatMapDiscovered = await getDiscoveredHeatMapFields();
+    heatMapUiReady = true;
     renderHeatMapFields();
 }
 
@@ -767,7 +777,7 @@ chrome.storage.onChanged.addListener(async (changes, areaName) => {
         renderDensityMemory(await loadDensityMemory());
     }
 
-    if (changes[HEAT_MAP_DISCOVERED_KEY]) {
+    if (changes[HEAT_MAP_DISCOVERED_KEY] && heatMapUiReady) {
         heatMapDiscovered = await getDiscoveredHeatMapFields();
         renderHeatMapFields();
     }

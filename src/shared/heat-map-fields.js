@@ -36,11 +36,11 @@ export function isSynonymLabel(label) {
     return normalized === "synonyms" || normalized === "synonym";
 }
 
-// undefined (never saved) -> the default list. Anything else is cleaned to a
-// deduped array of non-empty strings; an EMPTY array is a valid saved state
-// ("show nothing extra"), so it is kept, not replaced by the default.
+// Anything that doesn't clean up to at least one label — never saved, wrong
+// type, or an empty array (e.g. left behind by an older version) — falls back
+// to the default list. The defaults can therefore never silently disappear:
+// removing every row in the options card just brings them back.
 export function sanitizeHeatMapFields(raw) {
-    if (raw === undefined) return [...DEFAULT_HEAT_MAP_FIELDS];
     if (!Array.isArray(raw)) return [...DEFAULT_HEAT_MAP_FIELDS];
 
     const out = [];
@@ -54,7 +54,7 @@ export function sanitizeHeatMapFields(raw) {
         out.push(label);
         if (out.length >= MAX_FIELDS) break;
     }
-    return out;
+    return out.length ? out : [...DEFAULT_HEAT_MAP_FIELDS];
 }
 
 export async function getHeatMapFields() {
@@ -69,11 +69,9 @@ export async function getHeatMapFields() {
 export async function saveHeatMapFields(list) {
     try {
         await chrome.storage.local.set({
-            // sanitize() maps undefined to the default list, but a save always
-            // has an explicit array (possibly empty) from the options page.
-            [HEAT_MAP_FIELDS_STORAGE_KEY]: sanitizeHeatMapFields(
-                Array.isArray(list) ? list : []
-            ),
+            // sanitize() turns an emptied list back into the defaults, so what
+            // lands in storage is always a usable non-empty selection.
+            [HEAT_MAP_FIELDS_STORAGE_KEY]: sanitizeHeatMapFields(list),
         });
     } catch {
         // Orphaned content script — nothing useful to do.

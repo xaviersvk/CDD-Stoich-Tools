@@ -13,6 +13,17 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 12.8.3 — August 2026
+
+**The tooltip defaults are back.**
+
+- Fixed: the heat-map tooltip settings could come up with **nothing
+  selected** (and the popup showed no extra rows) if an older version had
+  stored an empty list. Synonyms + Internal ID now always apply as the
+  default — and if you ever remove every row, they simply come back.
+
+---
+
 ## 12.8.2 — August 2026
 
 **You decide the tooltip order.**

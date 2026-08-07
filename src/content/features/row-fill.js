@@ -219,36 +219,64 @@ function clickOutside(container) {
     }
 }
 
-// Click the sample's row into edit mode; returns {container, name} or null.
-// Prefer the container at the sample's display index, but fall back to
-// whichever reaction block actually contains the row — the page renders
-// fewer `[data-autotest-id="reaction"]` blocks than reactions for some
-// table variants, so the index alone is not trustworthy.
+// The strings that might identify the sample's row in the table text. A
+// batch-only card's name ("RGT-0001620-001") appears verbatim, but a card
+// for a row WITH a sample carries the SAMPLE name, which the table never
+// shows — there the composed "molecule-batch" (or the bare molecule name)
+// is what the row text contains.
+function candidateNames(sample) {
+    const out = [];
+    const push = (v) => {
+        const s = String(v || "").trim();
+        if (s && !out.includes(s)) out.push(s);
+    };
+
+    push(sample?.name);
+
+    const mol = String(sample?.moleculeName || "").trim();
+    const batch = String(sample?.batchName || "").trim();
+    if (mol && batch && !batch.startsWith(mol) && !/unspecified/i.test(batch)) {
+        push(`${mol}-${batch}`);
+    }
+    push(mol);
+
+    return out;
+}
+
+// Click the sample's row into edit mode; returns {container, name} (the
+// identifier that actually matched) or null. Prefer the container at the
+// sample's display index, but fall back to whichever reaction block
+// actually contains the row — the page renders fewer
+// `[data-autotest-id="reaction"]` blocks than reactions for some table
+// variants, so the index alone is not trustworthy.
 async function openRow(sample) {
-    const name = String(sample?.name || "").trim();
-    if (!name) return null;
-
     const containers = getReactionContainers();
-    let container = containers[sample.reactionIndex];
-    let viewRows = container ? findRowsByName(container, name) : [];
 
-    if (!viewRows.length) {
-        for (const candidate of containers) {
-            const rows = findRowsByName(candidate, name);
-            if (rows.length) {
-                container = candidate;
-                viewRows = rows;
-                break;
+    for (const name of candidateNames(sample)) {
+        let container = containers[sample.reactionIndex];
+        let viewRows = container ? findRowsByName(container, name) : [];
+
+        if (!viewRows.length) {
+            for (const candidate of containers) {
+                const rows = findRowsByName(candidate, name);
+                if (rows.length) {
+                    container = candidate;
+                    viewRows = rows;
+                    break;
+                }
             }
+        }
+
+        if (viewRows.length) {
+            // Either the row is view-mode, or the table is already in edit
+            // mode — both tolerate the click; the field-link searches that
+            // follow decide.
+            mouseClick(viewRows[0].cells[0]);
+            return { container, name };
         }
     }
 
-    if (!viewRows.length) return null;
-
-    // Either the row is view-mode, or the table is already in edit mode —
-    // both tolerate the click; the field-link searches that follow decide.
-    mouseClick(viewRows[0].cells[0]);
-    return { container, name };
+    return null;
 }
 
 // Read "Equivalent: X" from the sample's edit-mode row, or null.

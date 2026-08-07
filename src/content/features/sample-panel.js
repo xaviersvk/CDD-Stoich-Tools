@@ -762,8 +762,10 @@ async function runAllOffers(btn) {
 
     delete btn.dataset.running;
     btn.disabled = false;
-    setStatus(`Fill all: ${filled} value(s) filled${failed ? `, ${failed} failed` : ""}.`);
+    // Render first — renderFromState() writes its own "Loaded …" status,
+    // which would otherwise swallow the summary.
     renderFromState();
+    setStatus(`Fill all: ${filled} value(s) filled${failed ? `, ${failed} failed` : ""}.`);
 }
 
 // Keep the "Fill all (N)" label in sync with what the cards offer; hidden

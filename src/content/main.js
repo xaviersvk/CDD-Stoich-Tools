@@ -32,6 +32,7 @@ import {initPlateLocationExport} from "./features/ui-fixes/plate-location-export
 import {initPlateListLocations} from "./features/ui-fixes/plate-list-locations";
 import {initPlateListExport} from "./features/ui-fixes/plate-list-export";
 import {initPlateMapStructureTooltip} from "./features/ui-fixes/plate-map-structure-tooltip";
+import {initPlateMapExport} from "./features/ui-fixes/plate-map-export";
 import {initRegistrationProjectMirror} from "./features/ui-fixes/registration-project-mirror";
 import {initRegistrationFormDefault} from "./features/ui-fixes/registration-form-default";
 import {initSlurpTypeDefault} from "./features/ui-fixes/slurp-type-default";
@@ -117,6 +118,7 @@ function init() {
   initPlateListLocations();
   initPlateListExport();
   initPlateMapStructureTooltip();
+  initPlateMapExport();
   initRegistrationProjectMirror();
   initRegistrationFormDefault();
   initSlurpTypeDefault();

@@ -13,6 +13,19 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 12.7.0 — August 2026
+
+**Export a plate map to CSV.**
+
+- Every plate page now has an **Export Plate Map (CSV)** link right in the
+  Plate Details / Projects / Plate Map tab bar. The file lists every
+  occupied well — barcode, well position (A01…P24), the full entity name,
+  and that name already split into **Batch ID** and **Sample ID** columns —
+  ready for Excel or a picking robot. Plates without a barcode field use
+  the plate name as the barcode.
+
+---
+
 ## 12.6.2 — August 2026
 
 **Even more no-sample quotes.**

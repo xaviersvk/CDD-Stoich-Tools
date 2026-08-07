@@ -66,6 +66,30 @@ export function extractPrefix(sampleId) {
     return trimmed.slice(0, cut);
 }
 
+/**
+ * splitBatchAndSample(name) — pure BUSINESS logic, no UI, no storage.
+ *
+ * A full Sample ID is "<batch id>-<sample code>" where the sample code is the
+ * LAST dash-segment and is letter-led (e.g. "S003559", "SM003035"):
+ *     PHA-0334442-001-S003559 → { batchId: "PHA-0334442-001", sampleId: "S003559" }
+ * A batch-only id ends in a numeric segment and stays unsplit:
+ *     PHA-0334442-001         → { batchId: "PHA-0334442-001", sampleId: "" }
+ *
+ * Lives here for the same reason as extractPrefix: this module is the single
+ * authority on the Sample ID shape — nobody else slices these strings.
+ */
+export function splitBatchAndSample(name) {
+    const trimmed = typeof name === "string" ? name.trim() : "";
+    if (!trimmed) return { batchId: "", sampleId: "" };
+
+    const cut = trimmed.lastIndexOf("-");
+    const tail = cut >= 0 ? trimmed.slice(cut + 1) : "";
+    if (cut > 0 && /^[A-Za-z]+\d+$/.test(tail)) {
+        return { batchId: trimmed.slice(0, cut), sampleId: tail };
+    }
+    return { batchId: trimmed, sampleId: "" };
+}
+
 /* ------------------------------------------------------------------ *
  * Colour validation / sanitisation
  * ------------------------------------------------------------------ */

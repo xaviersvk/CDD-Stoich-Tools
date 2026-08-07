@@ -16,6 +16,22 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [12.7.0] — 2026-08-07
+
+### Added
+- **Plate Map CSV export.** Plate pages (`/vaults/<v>/plates/<p>`) get an
+  "Export Plate Map (CSV)" link in the Plate Details / Projects / Plate Map
+  tab bar. One click downloads a CSV with one row per occupied well:
+  `Barcode, Well, Name, Batch ID, Sample ID`. The barcode column uses the
+  plate's barcode field when the vault shows one and falls back to the
+  plate name; wells are read straight from the rendered `.plateLayout`
+  grid, so the export is instant (no extra requests). The Batch ID /
+  Sample ID split (last letter-led dash-segment = sample code) lives in
+  the shared `splitBatchAndSample()` in `shared/prefix-colors.js`, next to
+  the existing prefix parsing.
+
+---
+
 ## [12.6.2] — 2026-08-07
 
 ### Added

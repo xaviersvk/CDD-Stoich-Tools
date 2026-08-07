@@ -1,7 +1,7 @@
 import { copyTextWithFeedback } from "../utils/clipboard.js";
 import { normalizeValue } from "../utils/format.js";
 import { STATE } from "../state.js";
-import { fillDensityIntoTable } from "./density-fill.js";
+import { fillDensityIntoTable } from "./row-fill.js";
 import {
     captureValuesFromSamples,
     getRememberedValues,

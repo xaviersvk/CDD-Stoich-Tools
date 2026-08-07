@@ -33,6 +33,10 @@ import {
     saveAutoFillEnabled,
 } from "../shared/auto-fill-flag.js";
 import {
+    loadPurityThreshold,
+    savePurityThreshold,
+} from "../shared/purity-threshold.js";
+import {
     REG_FORM_NAMES_KEY,
     REG_FORM_LAST_USED_KEY,
     getRegistrationFormSettings,
@@ -554,6 +558,16 @@ async function initAutoFillUI() {
     autoFillCheckbox.checked = await getAutoFillEnabled();
 }
 
+const purityThresholdInput = document.getElementById("purityThreshold");
+
+purityThresholdInput.addEventListener("change", () => {
+    savePurityThreshold(purityThresholdInput.value);
+});
+
+async function initPurityThresholdUI() {
+    purityThresholdInput.value = await loadPurityThreshold();
+}
+
 /* ================================================================== live sync */
 
 // The content script discovers things while this page is open: new custom
@@ -606,3 +620,4 @@ initPrefixColorsUI();
 initRegistrationFormUI();
 initDensityMemoryUI();
 initAutoFillUI();
+initPurityThresholdUI();

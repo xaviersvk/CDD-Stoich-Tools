@@ -6,6 +6,7 @@
 // first, remembered value second — never both for one field.
 
 import { getRememberedValues } from "../../shared/density-memory.js";
+import { getPurityThreshold } from "../../shared/purity-threshold.js";
 import {
     fillDensityIntoTable,
     fillPurityIntoTable,
@@ -26,9 +27,20 @@ export function computeFillOffers(sample) {
         }
     }
     if (!has(sample?.tablePurity)) {
+        // High purities are stoichiometric noise — offer a purity fill
+        // only at or below the configurable threshold. A batch purity
+        // above it does NOT fall through to the remembered value: the
+        // batch stays authoritative.
+        const limit = getPurityThreshold();
+        const lowEnough = (v) => {
+            const n = parseFloat(String(v).replace(",", "."));
+            return Number.isFinite(n) && n <= limit;
+        };
         if (has(sample?.purity)) {
-            offers.push({ field: "purity", value: String(sample.purity), source: "batch" });
-        } else if (entry?.purity) {
+            if (lowEnough(sample.purity)) {
+                offers.push({ field: "purity", value: String(sample.purity), source: "batch" });
+            }
+        } else if (entry?.purity && lowEnough(entry.purity)) {
             offers.push({ field: "purity", value: entry.purity, source: "memory" });
         }
     }

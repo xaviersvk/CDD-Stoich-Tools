@@ -606,6 +606,24 @@ body {
     margin-bottom: 10px;
 }
 
+.purity-threshold-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.purity-threshold-input {
+    width: 72px;
+    padding: 4px 6px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    background: var(--card);
+    color: var(--ink);
+    font-family: var(--mono);
+}
+
 /* The remembered-values list has six columns — give the card room. */
 .card--wide {
     grid-column: span 2;

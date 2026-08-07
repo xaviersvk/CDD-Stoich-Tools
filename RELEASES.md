@@ -13,6 +13,23 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 12.4.0 — August 2026
+
+**The extension now remembers densities you type — per batch, everywhere.**
+
+- **Type a density once, get it offered forever.** When you fill a density
+  into a stoichiometry row whose registered batch has none, the extension
+  quietly remembers it (up to 100, per molecule batch). Next time that batch
+  shows up without a density — any entry, any reaction — its card offers
+  **⤵ Fill remembered density into table**, with a gentle amber reminder
+  that the proper home for the value is the batch record itself. A density
+  saved on the batch always wins and retires the remembered copy.
+- **See and manage what's remembered.** The settings page gained a
+  **Remembered densities** card: every stored value with its batch name,
+  density and date, a ✕ to forget one, and **Clear all** for a fresh start.
+
+---
+
 ## 12.3.0 — August 2026
 
 **One click puts the batch's density into the stoichiometry table.**

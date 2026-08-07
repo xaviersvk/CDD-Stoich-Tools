@@ -68,9 +68,16 @@ export async function loadDensityMemory() {
 }
 
 export async function saveDensityMemory(map) {
-    await chrome.storage.local.set({
-        [DENSITY_MEMORY_STORAGE_KEY]: sanitizeDensityMemory(map),
-    });
+    try {
+        await chrome.storage.local.set({
+            [DENSITY_MEMORY_STORAGE_KEY]: sanitizeDensityMemory(map),
+        });
+    } catch {
+        // An orphaned content script (the extension was reloaded while
+        // this page stayed open) has no storage any more — "Extension
+        // context invalidated". Nothing useful to do: the fresh script in
+        // a refreshed tab persists the next change.
+    }
 }
 
 /* ------------------------------------------------------------------ *

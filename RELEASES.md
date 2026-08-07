@@ -13,6 +13,31 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 12.5.0 — August 2026
+
+**Purity and concentration join the remembered values — and can fill themselves.**
+
+- **The batch memory now covers density, purity and concentration.** Type a
+  value once and every later appearance of that batch offers it back with
+  one click. Registration data still rules: a purity/density on the batch
+  record or a concentration on the sample always wins and retires the
+  remembered copy. The purity fill even puts your Equivalent back the way
+  it was after CDD's recalculation, and the concentration fill clicks
+  "Make solution" for you when needed.
+- **One click to fill everything.** The panel's new
+  **⤵ Fill all missing values (N)** button runs every offered fill in
+  sequence — keep the tab visible while it works.
+- **Experimental auto-fill (off by default).** Tick the checkbox in
+  settings and rows you ADD while working fill themselves; entries you
+  merely open are never touched automatically.
+- **Settings page**: the remembered-values card grew per-field columns and
+  double width.
+- **Reliability**: fills now target rows by their printed table number, so
+  the right row gets the value even when the same batch appears twice in
+  one reaction; assorted redraw-loop and stale-offer fixes.
+
+---
+
 ## 12.4.0 — August 2026
 
 **The extension now remembers densities you type — per batch, everywhere.**

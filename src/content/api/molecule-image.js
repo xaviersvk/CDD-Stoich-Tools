@@ -116,7 +116,8 @@ function extractSmiles(doc) {
 }
 
 // The molecule definition list carries a "Synonyms" row; read its value.
-function extractSynonym(doc) {
+// Also used by batch-fields.js, which parses the same molecule page HTML.
+export function extractSynonym(doc) {
     const fields = doc.querySelectorAll(".molecule_field");
     for (const field of fields) {
         const label = field.querySelector("dt")?.textContent?.trim().toLowerCase();

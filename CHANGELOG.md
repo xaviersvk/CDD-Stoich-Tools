@@ -16,6 +16,25 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [12.8.0] — 2026-08-07
+
+### Added
+- **Configurable batch fields in the heat-map well tooltip.** On run heat
+  maps (`/vaults/<v>/runs/<r>/heat_maps/<p>`), CDD's native hover popup on
+  a well gains extra rows: by default the molecule's **Synonyms** and the
+  batch's **Internal ID**, configurable as a one-label-per-line list in the
+  new "Heat map tooltip" options card. Labels match the vault's batch field
+  names ignoring case and `*` markers; the special label `Synonyms` shows
+  the molecule synonym; clearing the list disables the feature. Data is
+  parsed from the molecule page's `RegistrationFormRenderer` `react_props`
+  (`api/batch-fields.js`, one cached fetch per molecule per session) with
+  neighbour-well prefetch driven by CDD's inline
+  `CDD.HeatMap.wellDetails` data. New shared config module
+  `shared/heat-map-fields.js`; `extractSynonym` is now exported from
+  `api/molecule-image.js`.
+
+---
+
 ## [12.7.0] — 2026-08-07
 
 ### Added

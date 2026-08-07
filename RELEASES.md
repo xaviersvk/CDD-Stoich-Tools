@@ -13,6 +13,21 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 12.8.0 — August 2026
+
+**Heat map tooltips that tell you what's in the well.**
+
+- Hover a well on a run's heat map and CDD's popup now also shows the
+  molecule's **synonym** and the batch's **Internal ID** — right under the
+  concentration readouts, loaded in the background as you move the mouse.
+- **You pick the rows.** A new "Heat map tooltip" card in the settings
+  takes one batch field name per line, in the order you want them —
+  `Purity [%]`, `Vendor ID`, whatever your vault defines. Case and the
+  `*` required-marker don't matter (`Internal ID` finds `*Internal ID`).
+  Clear the list to switch the extra rows off.
+
+---
+
 ## 12.7.0 — August 2026
 
 **Export a plate map to CSV.**

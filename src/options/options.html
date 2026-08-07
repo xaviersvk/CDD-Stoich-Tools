@@ -197,11 +197,39 @@
         </div>
     </section>
 
-    <!-- 5 · Remembered batch values -->
-    <section class="card card--wide" aria-labelledby="col-densities-heading">
+    <!-- 5 · Heat map tooltip -->
+    <section class="card" aria-labelledby="col-heatmap-heading">
         <header class="card__head">
             <span class="tile" aria-hidden="true">
                 <span class="tile__no">5</span>
+                <span class="tile__sym">Hm</span>
+            </span>
+            <div class="card__titles">
+                <h2 class="card__name" id="col-heatmap-heading">Heat map tooltip</h2>
+                <p class="card__desc">Extra rows in the well popup on run heat maps.</p>
+            </div>
+        </header>
+
+        <div class="card__body">
+            <p class="note">
+                One field per line, shown in this order. Batch field names are
+                matched ignoring case and <code>*</code> markers — so
+                <code>Internal ID</code> also finds <code>*Internal ID</code>.
+                The special entry <code>Synonyms</code> shows the molecule's
+                synonym. Clear the list to turn the extra rows off.
+            </p>
+            <label class="sr-only" for="heatMapFields">Heat map tooltip fields</label>
+            <textarea id="heatMapFields" class="select heat-map-fields-input"
+                      rows="5" spellcheck="false"
+                      placeholder="Synonyms&#10;Internal ID"></textarea>
+        </div>
+    </section>
+
+    <!-- 6 · Remembered batch values -->
+    <section class="card card--wide" aria-labelledby="col-densities-heading">
+        <header class="card__head">
+            <span class="tile" aria-hidden="true">
+                <span class="tile__no">6</span>
                 <span class="tile__sym">ρ</span>
             </span>
             <div class="card__titles">

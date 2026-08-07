@@ -42,6 +42,10 @@ import {
     saveShowProducts,
 } from "../shared/show-products-flag.js";
 import {
+    getHeatMapFields,
+    saveHeatMapFields,
+} from "../shared/heat-map-fields.js";
+import {
     REG_FORM_NAMES_KEY,
     REG_FORM_LAST_USED_KEY,
     getRegistrationFormSettings,
@@ -589,6 +593,20 @@ async function initShowProductsUI() {
     showProductsCheckbox.checked = await getShowProducts();
 }
 
+/* ==================================================== 5 · Heat map tooltip */
+
+const heatMapFieldsInput = document.getElementById("heatMapFields");
+
+// Persist on change (blur/close), not per keystroke — half-typed labels in
+// storage would flicker "—" rows onto tooltips in other tabs.
+heatMapFieldsInput.addEventListener("change", () => {
+    saveHeatMapFields(heatMapFieldsInput.value.split("\n"));
+});
+
+async function initHeatMapFieldsUI() {
+    heatMapFieldsInput.value = (await getHeatMapFields()).join("\n");
+}
+
 /* ================================================================== live sync */
 
 // The content script discovers things while this page is open: new custom
@@ -643,3 +661,4 @@ initDensityMemoryUI();
 initAutoFillUI();
 initPurityThresholdUI();
 initShowProductsUI();
+initHeatMapFieldsUI();

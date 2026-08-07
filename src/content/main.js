@@ -33,6 +33,7 @@ import {initPlateListLocations} from "./features/ui-fixes/plate-list-locations";
 import {initPlateListExport} from "./features/ui-fixes/plate-list-export";
 import {initPlateMapStructureTooltip} from "./features/ui-fixes/plate-map-structure-tooltip";
 import {initPlateMapExport} from "./features/ui-fixes/plate-map-export";
+import {initHeatMapWellFields} from "./features/ui-fixes/heat-map-well-fields";
 import {initRegistrationProjectMirror} from "./features/ui-fixes/registration-project-mirror";
 import {initRegistrationFormDefault} from "./features/ui-fixes/registration-form-default";
 import {initSlurpTypeDefault} from "./features/ui-fixes/slurp-type-default";
@@ -46,6 +47,7 @@ import {initDensityMemory, onDensityMemoryChanged} from "../shared/density-memor
 import {initAutoFill} from "./features/auto-fill.js";
 import {initPurityThresholds, onPurityThresholdChanged} from "../shared/purity-threshold.js";
 import {initShowProducts, onShowProductsChanged} from "../shared/show-products-flag.js";
+import {initHeatMapFieldsConfig} from "../shared/heat-map-fields.js";
 
 
 function isSupportedHost() {
@@ -119,6 +121,7 @@ function init() {
   initPlateListExport();
   initPlateMapStructureTooltip();
   initPlateMapExport();
+  initHeatMapWellFields();
   initRegistrationProjectMirror();
   initRegistrationFormDefault();
   initSlurpTypeDefault();
@@ -165,6 +168,10 @@ function init() {
   initShowProducts().then(() => {
     onShowProductsChanged(() => renderFromState());
   });
+
+  // Extra rows in the heat-map well tooltip. Fire-and-forget: hovers before
+  // the (fast) storage read completes just show CDD's native popup.
+  initHeatMapFieldsConfig();
 }
 
 init();

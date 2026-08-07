@@ -16,6 +16,17 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [12.8.4] — 2026-08-07
+
+### Changed
+- **Heat-map tooltip default is now EMPTY (reverts 12.8.3's default).**
+  No preset rows: the popup shows nothing extra until the user picks
+  fields in the options card — discovery fills "Available", choosing is
+  deliberate (same philosophy as prefix colours). `DEFAULT_HEAT_MAP_FIELDS`
+  is gone; an empty selection is simply "off".
+
+---
+
 ## [12.8.3] — 2026-08-07
 
 ### Fixed

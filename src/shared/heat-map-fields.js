@@ -14,8 +14,6 @@ export const HEAT_MAP_DISCOVERED_KEY = "cddHeatMapDiscoveredFields";
 // The one built-in pseudo-field: the molecule's first synonym.
 export const SYNONYMS_LABEL = "Synonyms";
 
-export const DEFAULT_HEAT_MAP_FIELDS = [SYNONYMS_LABEL, "Internal ID"];
-
 // Cap on stored discovered labels — far above any real vault's field count.
 const MAX_DISCOVERED = 200;
 
@@ -36,12 +34,11 @@ export function isSynonymLabel(label) {
     return normalized === "synonyms" || normalized === "synonym";
 }
 
-// Anything that doesn't clean up to at least one label — never saved, wrong
-// type, or an empty array (e.g. left behind by an older version) — falls back
-// to the default list. The defaults can therefore never silently disappear:
-// removing every row in the options card just brings them back.
+// The default is deliberately EMPTY: the tooltip shows nothing extra until
+// the user picks rows in the options card — the vault's fields are discovered
+// automatically, choosing them is the user's job (like prefix colours).
 export function sanitizeHeatMapFields(raw) {
-    if (!Array.isArray(raw)) return [...DEFAULT_HEAT_MAP_FIELDS];
+    if (!Array.isArray(raw)) return [];
 
     const out = [];
     const seen = new Set();
@@ -54,7 +51,7 @@ export function sanitizeHeatMapFields(raw) {
         out.push(label);
         if (out.length >= MAX_FIELDS) break;
     }
-    return out.length ? out : [...DEFAULT_HEAT_MAP_FIELDS];
+    return out;
 }
 
 export async function getHeatMapFields() {
@@ -62,15 +59,13 @@ export async function getHeatMapFields() {
         const result = await chrome.storage.local.get(HEAT_MAP_FIELDS_STORAGE_KEY);
         return sanitizeHeatMapFields(result?.[HEAT_MAP_FIELDS_STORAGE_KEY]);
     } catch {
-        return [...DEFAULT_HEAT_MAP_FIELDS];
+        return [];
     }
 }
 
 export async function saveHeatMapFields(list) {
     try {
         await chrome.storage.local.set({
-            // sanitize() turns an emptied list back into the defaults, so what
-            // lands in storage is always a usable non-empty selection.
             [HEAT_MAP_FIELDS_STORAGE_KEY]: sanitizeHeatMapFields(list),
         });
     } catch {
@@ -78,7 +73,7 @@ export async function saveHeatMapFields(list) {
     }
 }
 
-let cached = [...DEFAULT_HEAT_MAP_FIELDS];
+let cached = [];
 let listenerAttached = false;
 const changeListeners = new Set();
 

@@ -44,7 +44,6 @@ import {
 import {
     HEAT_MAP_DISCOVERED_KEY,
     SYNONYMS_LABEL,
-    DEFAULT_HEAT_MAP_FIELDS,
     getHeatMapFields,
     saveHeatMapFields,
     getDiscoveredHeatMapFields,
@@ -623,9 +622,6 @@ function heatMapSubheading(text) {
 }
 
 function persistHeatMapSelection() {
-    // An emptied list saves as the defaults (see sanitizeHeatMapFields), so
-    // mirror that in the UI instead of showing a list storage doesn't have.
-    if (!heatMapSelection.length) heatMapSelection = [...DEFAULT_HEAT_MAP_FIELDS];
     saveHeatMapFields(heatMapSelection);
     renderHeatMapFields();
 }

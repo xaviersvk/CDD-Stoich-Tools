@@ -13,6 +13,17 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 12.8.4 — August 2026
+
+**Heat map tooltip starts blank — you choose.**
+
+- No more preset rows: the well popup shows nothing extra until you pick
+  the fields yourself in the settings. Hover a heat map once, the
+  "Available" list fills with your vault's batch fields, tick and order
+  what you want. Removing everything switches the extra rows off again.
+
+---
+
 ## 12.8.3 — August 2026
 
 **The tooltip defaults are back.**

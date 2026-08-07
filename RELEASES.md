@@ -13,6 +13,16 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 12.6.2 — August 2026
+
+**Even more no-sample quotes.**
+
+- The NO SAMPLE cards now rotate through 74 quotes — cold cases, wildlife
+  documentaries, corporate memos and other reminders that a bottle without
+  a sample is just a rumor with a cap.
+
+---
+
 ## 12.6.1 — August 2026
 
 **More no-sample quotes.**

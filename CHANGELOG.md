@@ -16,6 +16,15 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [12.6.2] — 2026-08-07
+
+### Added
+- **39 more no-sample quotes.** The pool on batch-only cards grows from 35
+  to 74 — detective stories, wildlife documentaries, office life and more
+  short jabs. Same deterministic per-card-per-day rotation.
+
+---
+
 ## [12.6.1] — 2026-08-07
 
 ### Added

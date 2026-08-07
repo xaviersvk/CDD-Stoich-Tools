@@ -186,6 +186,38 @@
         </div>
     </section>
 
+    <!-- 5 · Remembered densities -->
+    <section class="card" aria-labelledby="col-densities-heading">
+        <header class="card__head">
+            <span class="tile" aria-hidden="true">
+                <span class="tile__no">5</span>
+                <span class="tile__sym">ρ</span>
+            </span>
+            <div class="card__titles">
+                <h2 class="card__name" id="col-densities-heading">Remembered densities</h2>
+                <p class="card__desc">
+                    Densities you typed into stoichiometry rows, remembered per
+                    molecule batch. A density saved on the batch record itself
+                    always wins and removes the entry here.
+                </p>
+            </div>
+        </header>
+
+        <div class="card__body">
+            <p class="density-memory-count">
+                <span id="densityMemoryCount">0</span> / 100 remembered
+            </p>
+            <div id="densityMemoryList" class="stack"></div>
+            <p id="densityMemoryEmpty" class="empty" hidden>
+                Nothing remembered yet. Type a density into a stoichiometry row
+                whose batch has none, and it will appear here.
+            </p>
+            <button id="densityMemoryClear" type="button" class="btn btn--quiet" hidden>
+                Clear all
+            </button>
+        </div>
+    </section>
+
 </main>
 
 <script type="module" src="./options.js"></script>

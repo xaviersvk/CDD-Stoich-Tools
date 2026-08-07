@@ -24,6 +24,11 @@ import {
     isValidHexColor,
 } from "../shared/prefix-colors.js";
 import {
+    DENSITY_MEMORY_STORAGE_KEY,
+    loadDensityMemory,
+    saveDensityMemory,
+} from "../shared/density-memory.js";
+import {
     REG_FORM_NAMES_KEY,
     REG_FORM_LAST_USED_KEY,
     getRegistrationFormSettings,
@@ -453,6 +458,75 @@ async function initRegistrationFormUI() {
     renderMemory();
 }
 
+/* ==================================================== 5 · Remembered densities */
+
+const densityListEl = document.getElementById("densityMemoryList");
+const densityCountEl = document.getElementById("densityMemoryCount");
+const densityEmptyEl = document.getElementById("densityMemoryEmpty");
+const densityClearBtn = document.getElementById("densityMemoryClear");
+
+function createDensityRow(batchId, entry) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "density-memory-item";
+
+    const name = document.createElement("span");
+    name.className = "density-memory-name";
+    name.textContent = entry.name || `batch #${batchId}`;
+    name.title = `Batch id ${batchId}`;
+
+    const value = document.createElement("span");
+    value.className = "density-memory-value";
+    value.textContent = entry.density;
+
+    const saved = document.createElement("span");
+    saved.className = "density-memory-date";
+    saved.textContent = entry.savedAt
+        ? new Date(entry.savedAt).toLocaleDateString()
+        : "";
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.type = "button";
+    deleteBtn.className = "density-memory-delete";
+    deleteBtn.setAttribute("aria-label", `Forget density for ${name.textContent}`);
+    deleteBtn.textContent = "✕";
+    deleteBtn.addEventListener("click", async () => {
+        const map = await loadDensityMemory();
+        delete map[batchId];
+        await saveDensityMemory(map);
+        renderDensityMemory(map);
+    });
+
+    wrapper.append(name, value, saved, deleteBtn);
+    return wrapper;
+}
+
+function renderDensityMemory(map) {
+    // Newest first — the list is a working set, not an archive.
+    const entries = Object.entries(map).sort(
+        (a, b) => (b[1].savedAt || 0) - (a[1].savedAt || 0)
+    );
+
+    densityListEl.replaceChildren();
+    for (const [batchId, entry] of entries) {
+        densityListEl.appendChild(createDensityRow(batchId, entry));
+    }
+
+    densityCountEl.textContent = String(entries.length);
+    densityEmptyEl.hidden = entries.length > 0;
+    densityClearBtn.hidden = entries.length === 0;
+}
+
+densityClearBtn.addEventListener("click", async () => {
+    const count = densityListEl.children.length;
+    if (!confirm(`Forget all ${count} remembered densities?`)) return;
+    await saveDensityMemory({});
+    renderDensityMemory({});
+});
+
+async function initDensityMemoryUI() {
+    renderDensityMemory(await loadDensityMemory());
+}
+
 /* ================================================================== live sync */
 
 // The content script discovers things while this page is open: new custom
@@ -492,6 +566,10 @@ chrome.storage.onChanged.addListener(async (changes, areaName) => {
         regLastUsed = settings.lastUsed;
         renderMemory();
     }
+
+    if (changes[DENSITY_MEMORY_STORAGE_KEY]) {
+        renderDensityMemory(await loadDensityMemory());
+    }
 });
 
 showVersion();
@@ -499,3 +577,4 @@ initElnTitleUI();
 initSamplePanelFieldsUI();
 initPrefixColorsUI();
 initRegistrationFormUI();
+initDensityMemoryUI();

@@ -16,6 +16,20 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [12.8.2] — 2026-08-07
+
+### Changed
+- **Heat-map tooltip rows are now user-ordered.** The options card shows
+  the chosen rows as a reorderable list (▲/▼ arrows, ✕ to remove) — the
+  popup renders them in exactly that order, all in the block under the
+  molecule link. The synonym is no longer pinned to the bottom: "Synonyms"
+  sits in the same ordered list as the batch fields, and unchosen fields
+  (Synonyms included) wait under "Available". The stored selection array
+  is unchanged in shape — it was always ordered; the UI just finally
+  exposes the order.
+
+---
+
 ## [12.8.1] — 2026-08-07
 
 ### Changed

@@ -13,6 +13,18 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 12.8.2 — August 2026
+
+**You decide the tooltip order.**
+
+- The heat-map tooltip rows now come in the order **you** arrange in the
+  settings — move them with the ▲/▼ arrows, remove with ✕. Everything,
+  synonym included, shows in one block right under the molecule link; no
+  more fields scattered in vault order with the synonym stranded at the
+  bottom.
+
+---
+
 ## 12.8.1 — August 2026
 
 **Heat map tooltip: tick, don't type.**

@@ -147,15 +147,14 @@ async function augment(popup, link) {
 
     const batch = pickBatch(data.batches, batchName);
 
-    // Batch fields (Internal ID & co) go straight under the molecule link so
-    // they read before the structure image; only labels the vault actually
-    // defines get a row, a valueless field shows "—" so a configured field
-    // never silently vanishes.
+    // Every configured row — batch fields and the synonym alike — goes
+    // straight under the molecule link, in EXACTLY the order the user set in
+    // the options card. Only labels the vault actually defines get a row; a
+    // valueless field shows "—" so a configured field never silently vanishes.
     const rows = [];
-    let wantSynonym = false;
     for (const label of labels) {
         if (isSynonymLabel(label)) {
-            wantSynonym = true;
+            rows.push(["Synonym", data.synonym || "—"]);
             continue;
         }
         const key = normalizeFieldLabel(label);
@@ -177,19 +176,6 @@ async function augment(popup, link) {
         }
         const heading = link.closest("h3") || link;
         heading.insertAdjacentElement("afterend", box);
-    }
-
-    // The synonym (first one only) can be a full IUPAC name — it stays at the
-    // bottom of the readout list where a long value doesn't push the
-    // structure image around.
-    const list = popup.querySelector("ul");
-    if (wantSynonym && list) {
-        const li = document.createElement("li");
-        li.className = EXTRA_CLASS;
-        const strong = document.createElement("strong");
-        strong.textContent = "Synonym: ";
-        li.append(strong, document.createTextNode(data.synonym || "—"));
-        list.appendChild(li);
     }
 }
 

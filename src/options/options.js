@@ -48,7 +48,6 @@ import {
     saveHeatMapFields,
     getDiscoveredHeatMapFields,
     normalizeFieldLabel,
-    isSynonymLabel,
 } from "../shared/heat-map-fields.js";
 import {
     REG_FORM_NAMES_KEY,
@@ -608,77 +607,114 @@ const heatMapEmptyEl = document.getElementById("heatMapFieldsEmpty");
 let heatMapSelection = [];
 let heatMapDiscovered = [];
 
-// Discovered fields in the vault's own batch-form order.
+// Discovered fields in the vault's own batch-form order (the "available" pool).
 function sortedHeatMapDiscovered() {
     return [...heatMapDiscovered].sort(
         (a, b) => a.order - b.order || a.label.localeCompare(b.label)
     );
 }
 
-// Rebuild the ordered selection from a set of checked (normalized) labels:
-// Synonyms first, then the discovered fields in vault order, then any checked
-// leftover the vault no longer offers (kept so it can still be unticked).
-function rebuildHeatMapSelection(checkedKeys) {
-    const out = [];
-    if (checkedKeys.has(normalizeFieldLabel(SYNONYMS_LABEL))) out.push(SYNONYMS_LABEL);
+function heatMapSubheading(text) {
+    const heading = document.createElement("div");
+    heading.className = "field-subheading";
+    heading.textContent = text;
+    return heading;
+}
 
-    for (const field of sortedHeatMapDiscovered()) {
-        if (checkedKeys.has(normalizeFieldLabel(field.label))) out.push(field.label);
-    }
-
-    for (const label of heatMapSelection) {
-        const key = normalizeFieldLabel(label);
-        if (!checkedKeys.has(key)) continue;
-        if (out.some((l) => normalizeFieldLabel(l) === key)) continue;
-        out.push(label);
-    }
-
-    return out;
+function persistHeatMapSelection() {
+    saveHeatMapFields(heatMapSelection);
+    renderHeatMapFields();
 }
 
 function renderHeatMapFields() {
-    const checkedKeys = new Set(heatMapSelection.map(normalizeFieldLabel));
-
-    const onToggle = (label, checked) => {
-        const key = normalizeFieldLabel(label);
-        if (checked) checkedKeys.add(key);
-        else checkedKeys.delete(key);
-        heatMapSelection = rebuildHeatMapSelection(checkedKeys);
-        saveHeatMapFields(heatMapSelection);
-    };
+    const selectedKeys = new Set(heatMapSelection.map(normalizeFieldLabel));
 
     heatMapFieldListEl.replaceChildren();
 
-    // The built-in pseudo-field first, always available.
-    heatMapFieldListEl.appendChild(
-        createFieldCheckbox(
-            { key: SYNONYMS_LABEL, label: "Synonyms (molecule's first synonym)" },
-            checkedKeys.has(normalizeFieldLabel(SYNONYMS_LABEL)),
-            onToggle
-        )
-    );
+    // Chosen rows as an ordered list — this order, Synonyms included, is
+    // EXACTLY the popup's row order.
+    if (heatMapSelection.length) {
+        heatMapFieldListEl.appendChild(heatMapSubheading("Shown, in this order"));
 
-    const discoveredKeys = new Set();
-    for (const field of sortedHeatMapDiscovered()) {
-        discoveredKeys.add(normalizeFieldLabel(field.label));
-        const item = createFieldCheckbox(
-            { key: field.label, label: field.label },
-            checkedKeys.has(normalizeFieldLabel(field.label)),
-            onToggle
-        );
-        heatMapFieldListEl.appendChild(item);
+        const list = document.createElement("ol");
+        list.className = "order__list";
+
+        heatMapSelection.forEach((label, index) => {
+            const item = document.createElement("li");
+            item.className = "order__item";
+
+            const name = document.createElement("span");
+            name.className = "order__name";
+            name.textContent = label;
+
+            const moves = document.createElement("span");
+            moves.className = "order__moves";
+
+            const move = (to) => {
+                if (to < 0 || to >= heatMapSelection.length) return;
+                const [moved] = heatMapSelection.splice(index, 1);
+                heatMapSelection.splice(to, 0, moved);
+                persistHeatMapSelection();
+            };
+
+            const up = document.createElement("button");
+            up.type = "button";
+            up.className = "order__move";
+            up.textContent = "▲";
+            up.disabled = index === 0;
+            up.setAttribute("aria-label", `Move ${label} up`);
+            up.addEventListener("click", () => move(index - 1));
+
+            const down = document.createElement("button");
+            down.type = "button";
+            down.className = "order__move";
+            down.textContent = "▼";
+            down.disabled = index === heatMapSelection.length - 1;
+            down.setAttribute("aria-label", `Move ${label} down`);
+            down.addEventListener("click", () => move(index + 1));
+
+            moves.append(up, down);
+
+            const remove = document.createElement("button");
+            remove.type = "button";
+            remove.className = "prefix-color-delete";
+            remove.textContent = "✕";
+            remove.setAttribute("aria-label", `Remove ${label}`);
+            remove.addEventListener("click", () => {
+                heatMapSelection.splice(index, 1);
+                persistHeatMapSelection();
+            });
+
+            item.append(name, moves, remove);
+            list.appendChild(item);
+        });
+
+        heatMapFieldListEl.appendChild(list);
     }
 
-    // Selected labels the vault hasn't (re)offered — e.g. the old defaults on
-    // a vault that names the field differently. Shown so they can be unticked.
-    for (const label of heatMapSelection) {
-        if (isSynonymLabel(label)) continue;
-        const key = normalizeFieldLabel(label);
-        if (discoveredKeys.has(key)) continue;
-        heatMapFieldListEl.appendChild(createFieldCheckbox({ key: label, label }, true, onToggle));
+    // Everything not yet chosen: the built-in Synonyms row plus the vault's
+    // remaining batch fields. Ticking one appends it to the end of the list.
+    const available = [
+        ...(selectedKeys.has(normalizeFieldLabel(SYNONYMS_LABEL))
+            ? []
+            : [{ label: SYNONYMS_LABEL }]),
+        ...sortedHeatMapDiscovered().filter(
+            (f) => !selectedKeys.has(normalizeFieldLabel(f.label))
+        ),
+    ];
+    if (available.length) {
+        heatMapFieldListEl.appendChild(heatMapSubheading("Available"));
+        for (const field of available) {
+            heatMapFieldListEl.appendChild(
+                createFieldCheckbox({ key: field.label, label: field.label }, false, () => {
+                    heatMapSelection.push(field.label);
+                    persistHeatMapSelection();
+                })
+            );
+        }
     }
 
-    heatMapEmptyEl.hidden = heatMapDiscovered.length > 0;
+    heatMapEmptyEl.hidden = heatMapDiscovered.length > 0 || heatMapSelection.length > 0;
 }
 
 async function initHeatMapFieldsUI() {

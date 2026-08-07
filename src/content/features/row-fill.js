@@ -84,18 +84,29 @@ function findRowsByName(container, name) {
     });
 }
 
-// Only ONE row per table is in edit mode (the clicked one) and only it
-// carries the editable field links — but VIEW-mode duplicates of the same
-// entity print the same "Label: value" texts, so every field search must
-// be scoped to the edit row or it grabs the first look-alike. The marker
-// is the bold "Name:" label: verified live, the edit row's <b> labels are
-// Name:/IUPAC:/Density:/… ("Molecule:" is NOT one of them), and view rows
-// never render a "Name:" label.
+// A row rendering the editable "Label: value" structure. NOTE (verified
+// live): when a table enters edit mode, EVERY row of that table renders
+// the edit labels — this marker identifies edit-mode TABLES, not the one
+// clicked row, so field searches additionally need the row number.
 function isEditModeRow(tr) {
     for (const b of tr.querySelectorAll("b")) {
         if ((b.textContent || "").trim() === "Name:") return true;
     }
     return false;
+}
+
+// THE sample's row: by its printed number when known (the only reliable
+// key when the same batch sits in the table twice), else the first
+// name-matching row with edit labels.
+function findTargetRow(container, name, rowNumber) {
+    if (rowNumber) {
+        const tr = findRowByNumber(container, rowNumber);
+        if (tr) return tr;
+    }
+    for (const tr of findRowsByName(container, name)) {
+        if (isEditModeRow(tr)) return tr;
+    }
+    return null;
 }
 
 // In edit mode every property renders as "<b>Label:</b> <value>".
@@ -292,7 +303,7 @@ async function openRow(sample) {
                 names.find((n) => (tr.innerText || "").includes(n)) || names[0] || "";
             if (name) {
                 mouseClick(tr.cells[0]);
-                return { container: primary, name };
+                return { container: primary, name, rowNumber: sample.rowNumber };
             }
         }
     }
@@ -320,39 +331,29 @@ async function openRow(sample) {
             // mode — both tolerate the click; the field-link searches that
             // follow decide.
             mouseClick(viewRows[0].cells[0]);
-            return { container, name };
+            return { container, name, rowNumber: null };
         }
     }
 
     return null;
 }
 
-// Read "Equivalent: X" from the sample's EDIT-MODE row — the one carrying
-// the editable field links. View-mode duplicates of the same entity also
-// print "Equivalent: …", so a bare text match could read the wrong row;
-// they only serve as a fallback.
-function readEquivalent(container, name) {
-    let fallback = null;
-    for (const tr of findRowsByName(container, name)) {
-        const m = (tr.innerText || "").match(/Equivalent:\s*([\d.,]+)/);
-        if (!m) continue;
-        if (findFieldValueLink(tr, "Equivalent:", false)) return m[1];
-        if (fallback == null) fallback = m[1];
-    }
-    return fallback;
+// Read "Equivalent: X" from the sample's own row.
+function readEquivalent(container, name, rowNumber) {
+    const tr = findTargetRow(container, name, rowNumber);
+    const m = tr ? (tr.innerText || "").match(/Equivalent:\s*([\d.,]+)/) : null;
+    return m ? m[1] : null;
 }
 
-// Click `label`'s value link in the sample's edit row, type `value` into
-// the popup, Enter, and wait until the row text shows the value. `units`
-// (optional) is set on the popup's <select> when one exists.
-async function writeFieldViaPopup(container, name, label, popupLabelRe, value, placeholderOnly, units) {
+// Click `label`'s value link in the sample's own row (ctx from openRow),
+// type `value` into the popup, Enter, and wait until the row text shows
+// the value. `units` (optional) is set on the popup's <select> when one
+// exists.
+async function writeFieldViaPopup(ctx, label, popupLabelRe, value, placeholderOnly, units) {
+    const { container, name, rowNumber } = ctx;
     const link = await waitFor(() => {
-        for (const tr of findRowsByName(container, name)) {
-            if (!isEditModeRow(tr)) continue;
-            const found = findFieldValueLink(tr, label, placeholderOnly);
-            if (found) return found;
-        }
-        return null;
+        const tr = findTargetRow(container, name, rowNumber);
+        return tr ? findFieldValueLink(tr, label, placeholderOnly) : null;
     });
     if (!link) return { ok: false, reason: `row has no ${label.replace(":", "")} field` };
 
@@ -368,14 +369,12 @@ async function writeFieldViaPopup(container, name, label, popupLabelRe, value, p
     }
     pressEnter(input);
 
-    // The popup closes and the edit-mode row shows "<label> <value> …".
+    // The popup closes and the sample's row shows "<label> <value> …".
     const confirmed = await waitFor(() => {
-        for (const tr of findRowsByName(container, name)) {
-            if (!isEditModeRow(tr)) continue;
-            const text = tr.innerText || "";
-            if (text.includes(label) && text.includes(value)) return tr;
-        }
-        return null;
+        const tr = findTargetRow(container, name, rowNumber);
+        if (!tr) return null;
+        const text = tr.innerText || "";
+        return text.includes(label) && text.includes(value) ? tr : null;
     });
     return confirmed ? { ok: true } : { ok: false, reason: "value did not stick" };
 }
@@ -389,8 +388,7 @@ export async function fillDensityIntoTable(sample, value) {
     const ctx = await openRow(sample);
     if (!ctx) return { ok: false, reason: "table row not found" };
 
-    const result = await writeFieldViaPopup(
-        ctx.container, ctx.name, "Density:", /Density\s*\[/i, value, true);
+    const result = await writeFieldViaPopup(ctx, "Density:", /Density\s*\[/i, value, true);
     if (!result.ok) {
         pressEscape();
         return result;
@@ -410,11 +408,10 @@ export async function fillPurityIntoTable(sample, value) {
     const ctx = await openRow(sample);
     if (!ctx) return { ok: false, reason: "table row not found" };
 
-    await waitFor(() => (readEquivalent(ctx.container, ctx.name) != null) || null);
-    const equivalentBefore = readEquivalent(ctx.container, ctx.name);
+    await waitFor(() => (readEquivalent(ctx.container, ctx.name, ctx.rowNumber) != null) || null);
+    const equivalentBefore = readEquivalent(ctx.container, ctx.name, ctx.rowNumber);
 
-    const result = await writeFieldViaPopup(
-        ctx.container, ctx.name, "Purity:", /Purity/i, value, false);
+    const result = await writeFieldViaPopup(ctx, "Purity:", /Purity/i, value, false);
     if (!result.ok) {
         pressEscape();
         return result;
@@ -422,13 +419,12 @@ export async function fillPurityIntoTable(sample, value) {
 
     if (equivalentBefore != null) {
         const changed = await waitFor(() => {
-            const now = readEquivalent(ctx.container, ctx.name);
+            const now = readEquivalent(ctx.container, ctx.name, ctx.rowNumber);
             return now != null && now !== equivalentBefore ? now : null;
         });
         if (changed != null) {
             const restore = await writeFieldViaPopup(
-                ctx.container, ctx.name, "Equivalent:", /Equivalent/i,
-                equivalentBefore, false);
+                ctx, "Equivalent:", /Equivalent/i, equivalentBefore, false);
             if (!restore.ok) {
                 pressEscape();
                 // Purity IS written; the failure is visible, never silent.
@@ -455,19 +451,16 @@ export async function fillConcentrationIntoTable(sample, value, units) {
     if (!ctx) return { ok: false, reason: "table row not found" };
 
     const hasField = await waitFor(() => {
-        for (const tr of findRowsByName(ctx.container, ctx.name)) {
-            if (isEditModeRow(tr) && findFieldValueLink(tr, "Concentration:", false)) return true;
-        }
-        return null;
+        const tr = findTargetRow(ctx.container, ctx.name, ctx.rowNumber);
+        return tr && findFieldValueLink(tr, "Concentration:", false) ? true : null;
     });
 
     if (!hasField) {
         const make = (() => {
-            for (const tr of findRowsByName(ctx.container, ctx.name)) {
-                if (!isEditModeRow(tr)) continue;
-                for (const el of tr.querySelectorAll("a, span, button")) {
-                    if (/^Make solution$/i.test((el.textContent || "").trim())) return el;
-                }
+            const tr = findTargetRow(ctx.container, ctx.name, ctx.rowNumber);
+            if (!tr) return null;
+            for (const el of tr.querySelectorAll("a, span, button")) {
+                if (/^Make solution$/i.test((el.textContent || "").trim())) return el;
             }
             return null;
         })();
@@ -479,10 +472,8 @@ export async function fillConcentrationIntoTable(sample, value, units) {
         mouseClick(make);
 
         const appeared = await waitFor(() => {
-            for (const tr of findRowsByName(ctx.container, ctx.name)) {
-                if (isEditModeRow(tr) && findFieldValueLink(tr, "Concentration:", false)) return true;
-            }
-            return null;
+            const tr = findTargetRow(ctx.container, ctx.name, ctx.rowNumber);
+            return tr && findFieldValueLink(tr, "Concentration:", false) ? true : null;
         });
         if (!appeared) {
             pressEscape();
@@ -491,8 +482,7 @@ export async function fillConcentrationIntoTable(sample, value, units) {
     }
 
     const result = await writeFieldViaPopup(
-        ctx.container, ctx.name, "Concentration:", /Concentration/i,
-        value, false, units || null);
+        ctx, "Concentration:", /Concentration/i, value, false, units || null);
     if (!result.ok) {
         pressEscape();
         return result;

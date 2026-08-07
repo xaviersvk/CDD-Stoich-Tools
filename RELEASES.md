@@ -13,6 +13,27 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 12.6.0 — August 2026
+
+**Products, thresholds you control, and a CSV button.**
+
+- **Products in the panel (optional).** Tick the new checkbox in Panel
+  fields and every reaction's products appear as PRODUCT-badged cards with
+  the same fields as your reagents — and in the print sheets too (a
+  Products section per reaction, a Type column in the panel print).
+  Products are display-only: nothing gets written to them.
+- **You decide what counts as low purity.** Two settings, both starting at
+  93 %: one decides when a purity fill is offered at all, the other when
+  the ⚠ LOW PURITY badge appears.
+- **CSV export.** The panel's new CSV button downloads exactly what Print
+  shows, ready for Excel.
+- **Fixed:** filling purity now reliably puts your Equivalent back — the
+  old check could silently give up when Chrome throttled a background tab,
+  leaving the recalculated value behind. Keep the tab in front for long
+  runs; Fill all now says so.
+
+---
+
 ## 12.5.0 — August 2026
 
 **Purity and concentration join the remembered values — and can fill themselves.**

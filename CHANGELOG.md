@@ -16,6 +16,39 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [12.6.0] — 2026-08-07
+
+### Added
+- **Products in the panel and print (optional).** A Panel-fields checkbox
+  (default off) renders each reaction's product rows as PRODUCT-badged
+  cards with the same configurable fields as reagents, adds a Products
+  section to the per-reaction print sheet and a Type column to the panel
+  print table. Products are display-only: no fill buttons, no remembered
+  values, no metafield fetches. The parsers now emit product rows (with
+  `isProduct`) and all gating happens content-side.
+- **Two purity thresholds** (both default 93 %, own settings): purity fill
+  offers appear only at or below the fill threshold — a batch purity above
+  it stays authoritative and never falls through to a remembered value —
+  and the ⚠ LOW PURITY badge follows the warning threshold instead of a
+  hardcoded 93.
+- **CSV export of the panel table.** A CSV button next to Print downloads
+  the same rows and columns in the English CSV convention (comma
+  separator, dot decimals, RFC 4180 quoting) with a UTF-8 BOM so Excel
+  reads diacritics correctly.
+
+### Fixed
+- **The equivalent restore after a purity fill could be skipped silently.**
+  Waits were wall-clock bound and Chrome throttles background-tab timers to
+  roughly one tick per minute, so the 3 s deadline expired before the
+  second poll and the "did the equivalent change?" wait gave up. Waits now
+  count poll attempts (with a generous hard cap), the purity fill decides
+  on the current equivalent rather than on whether the wait observed the
+  change, and it verifies the restored value at the end — reporting loudly
+  when it still differs. Fill all warns when the tab is in the background.
+- Write verification compares the field's own value (numeric,
+  unit-tolerant) instead of substring-matching the whole row text, where a
+  value like "1" matched almost any row.
+
 ## [12.5.0] — 2026-08-07
 
 ### Added

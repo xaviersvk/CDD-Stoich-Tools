@@ -1,10 +1,9 @@
 import { copyTextWithFeedback } from "../utils/clipboard.js";
 import { normalizeValue } from "../utils/format.js";
 import { STATE } from "../state.js";
-import { fillDensityIntoTable } from "./row-fill.js";
+import { computeFillOffers, runFillOffer, markOfferFilled } from "./fill-offers.js";
 import {
     captureValuesFromSamples,
-    getRememberedValues,
     touchValueUsed,
 } from "../../shared/density-memory.js";
 import { isElnEntryPage } from "../../shared/page-detection.js";
@@ -651,23 +650,23 @@ function isSampleDepleted(sample) {
     return false;
 }
 
-// "Fill density into table" — offered on any card whose stoichiometry row
-// is missing a density we can supply: from the registered batch's own field
-// (authoritative) or, failing that, from density-memory (a value the user
-// typed for this batch before). One click, one write, visible outcome; the
-// DOM automation lives in density-fill.js.
-function buildDensityFillButton(sample, value, source) {
+// One fill button per offer (density / purity / concentration) — from the
+// authoritative record (batch/sample) or from density-memory (a value the
+// user typed for this batch before). One click, one write, visible
+// outcome; the DOM automation lives in row-fill.js.
+function buildFillButton(sample, offer) {
+    const shown = offer.units ? `${offer.value} ${offer.units}` : offer.value;
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "cdd-density-fill-btn";
     btn.textContent =
-        source === "memory"
-            ? `⤵ Fill remembered density (${value}) into table`
-            : `⤵ Fill density (${value}) into table`;
+        offer.source === "memory"
+            ? `⤵ Fill remembered ${offer.field} (${shown}) into table`
+            : `⤵ Fill ${offer.field} (${shown}) into table`;
     btn.title =
-        source === "memory"
-            ? "Writes the density you previously typed for this batch into the row, exactly as if you typed it."
-            : "Writes this batch density into the row's Density field, exactly as if you typed it.";
+        offer.source === "memory"
+            ? `Writes the ${offer.field} you previously typed for this batch into the row, exactly as if you typed it.`
+            : `Writes this ${offer.field} into the row, exactly as if you typed it.`;
 
     btn.addEventListener("click", async (event) => {
         // The table enters edit mode on a row click and leaves it on any
@@ -682,12 +681,12 @@ function buildDensityFillButton(sample, value, source) {
 
         await new Promise((resolve) => setTimeout(resolve, 60));
 
-        const result = await fillDensityIntoTable(sample, value);
+        const result = await runFillOffer(sample, offer);
 
         if (result.ok) {
-            sample.tableDensity = String(value);
-            if (source === "memory") touchValueUsed(sample.batchId);
-            btn.textContent = "✓ Density filled";
+            markOfferFilled(sample, offer);
+            if (offer.source === "memory") touchValueUsed(sample.batchId);
+            btn.textContent = `✓ ${offer.field} filled`;
         } else {
             btn.textContent = `✗ ${result.reason || "couldn't fill"} — edit the row manually`;
             btn.disabled = false;
@@ -697,13 +696,14 @@ function buildDensityFillButton(sample, value, source) {
     return btn;
 }
 
-// Amber nudge under a memory-sourced fill button: the right long-term home
-// for the density is the batch record, not this extension's storage.
+// Amber nudge under memory-sourced fill buttons: the right long-term home
+// for these values is the batch/sample record, not this extension's
+// storage.
 function buildDensityMemoryNote() {
     const note = document.createElement("div");
     note.className = "cdd-density-memory-note";
     note.textContent =
-        "This density isn't saved on the batch — add it to the batch record so it fills automatically.";
+        "Some of these values aren't saved on the batch/sample record — add them there so they fill automatically.";
     return note;
 }
 
@@ -853,27 +853,15 @@ export function renderSamples(payload) {
                 card.appendChild(quote);
             }
 
-            // Offer a density fill wherever the table row misses one and a
-            // value exists — batch field first (authoritative), remembered
-            // value second. Cards with neither get no button.
-            const tableDensityEmpty =
-                sample.tableDensity == null || String(sample.tableDensity).trim() === "";
-            if (tableDensityEmpty) {
-                const batchDensity =
-                    sample.density != null && String(sample.density).trim() !== ""
-                        ? String(sample.density)
-                        : null;
-                const remembered =
-                    !batchDensity && sample.batchId
-                        ? getRememberedValues(sample.batchId)
-                        : null;
-
-                if (batchDensity) {
-                    card.appendChild(buildDensityFillButton(sample, batchDensity, "batch"));
-                } else if (remembered) {
-                    card.appendChild(buildDensityFillButton(sample, remembered.density, "memory"));
-                    card.appendChild(buildDensityMemoryNote());
-                }
+            // Offer a fill wherever a table value is missing and a source
+            // exists — authoritative record first, remembered value second.
+            // Cards with neither get no buttons.
+            const offers = computeFillOffers(sample);
+            for (const offer of offers) {
+                card.appendChild(buildFillButton(sample, offer));
+            }
+            if (offers.some((o) => o.source === "memory")) {
+                card.appendChild(buildDensityMemoryNote());
             }
 
             groupBody.appendChild(card);

@@ -18,22 +18,31 @@
 // exception, a failed equivalent restore AFTER purity landed, is reported
 // loudly in the button/status).
 
-const STEP_TIMEOUT_MS = 3000;
+// Waiting is counted in POLL ATTEMPTS, not wall-clock: Chrome throttles
+// timers in a background tab to roughly one tick per minute, and a
+// wall-clock deadline then expires before the second poll even runs —
+// steps would give up while the page is merely slow (that is how a purity
+// fill once skipped its equivalent restore silently). The hard cap only
+// exists so a genuinely broken step cannot hang forever.
+const STEP_POLL_ATTEMPTS = 30;
+const HARD_TIMEOUT_MS = 120000;
 const POLL_MS = 100;
 
 function wait(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function waitFor(probe) {
-    const deadline = Date.now() + STEP_TIMEOUT_MS;
+async function waitFor(probe, attempts = STEP_POLL_ATTEMPTS) {
+    const hardDeadline = Date.now() + HARD_TIMEOUT_MS;
 
-    for (;;) {
+    for (let i = 0; i < attempts; i += 1) {
         const result = probe();
         if (result) return result;
-        if (Date.now() > deadline) return null;
+        if (Date.now() > hardDeadline) return null;
         await wait(POLL_MS);
     }
+
+    return null;
 }
 
 function mouseClick(element) {
@@ -338,11 +347,32 @@ async function openRow(sample) {
     return null;
 }
 
+// The value text of "<b>Label:</b> <value>" in a row ("93 %", "1.23
+// g/cm3", "1"), or null.
+function readFieldText(tr, label) {
+    const el = findFieldValueLink(tr, label, false);
+    return el ? (el.textContent || "").trim() : null;
+}
+
+// Does a field's displayed value represent `expected`? Compares the
+// leading number when both sides are numeric (units and decimal commas
+// differ between fields), else plain text. NEVER substring-match a whole
+// row's text: "Equivalent: 1" would "match" any row containing a 1.
+function valuesMatch(actual, expected) {
+    if (actual == null) return false;
+
+    const norm = (v) => String(v).trim().replace(",", ".");
+    const a = parseFloat(norm(actual));
+    const b = parseFloat(norm(expected));
+    if (Number.isFinite(a) && Number.isFinite(b)) return Math.abs(a - b) < 1e-9;
+
+    return norm(actual) === norm(expected);
+}
+
 // Read "Equivalent: X" from the sample's own row.
 function readEquivalent(container, name, rowNumber) {
     const tr = findTargetRow(container, name, rowNumber);
-    const m = tr ? (tr.innerText || "").match(/Equivalent:\s*([\d.,]+)/) : null;
-    return m ? m[1] : null;
+    return tr ? readFieldText(tr, "Equivalent:") : null;
 }
 
 // Click `label`'s value link in the sample's own row (ctx from openRow),
@@ -369,12 +399,11 @@ async function writeFieldViaPopup(ctx, label, popupLabelRe, value, placeholderOn
     }
     pressEnter(input);
 
-    // The popup closes and the sample's row shows "<label> <value> …".
+    // The popup closes and the field itself carries the new value.
     const confirmed = await waitFor(() => {
         const tr = findTargetRow(container, name, rowNumber);
         if (!tr) return null;
-        const text = tr.innerText || "";
-        return text.includes(label) && text.includes(value) ? tr : null;
+        return valuesMatch(readFieldText(tr, label), value) ? tr : null;
     });
     return confirmed ? { ok: true } : { ok: false, reason: "value did not stick" };
 }
@@ -418,11 +447,16 @@ export async function fillPurityIntoTable(sample, value) {
     }
 
     if (equivalentBefore != null) {
-        const changed = await waitFor(() => {
+        // Give CDD a moment to recalculate, then decide on the CURRENT
+        // value — never on whether the wait happened to observe the
+        // change. (A wait that times out must not mean "nothing changed".)
+        await waitFor(() => {
             const now = readEquivalent(ctx.container, ctx.name, ctx.rowNumber);
-            return now != null && now !== equivalentBefore ? now : null;
+            return now != null && !valuesMatch(now, equivalentBefore) ? now : null;
         });
-        if (changed != null) {
+
+        const equivalentAfter = readEquivalent(ctx.container, ctx.name, ctx.rowNumber);
+        if (equivalentAfter != null && !valuesMatch(equivalentAfter, equivalentBefore)) {
             const restore = await writeFieldViaPopup(
                 ctx, "Equivalent:", /Equivalent/i, equivalentBefore, false);
             if (!restore.ok) {
@@ -431,6 +465,15 @@ export async function fillPurityIntoTable(sample, value) {
                 return {
                     ok: false,
                     reason: `purity written but equivalent restore failed (was ${equivalentBefore})`,
+                };
+            }
+
+            const finalEquivalent = readEquivalent(ctx.container, ctx.name, ctx.rowNumber);
+            if (finalEquivalent != null && !valuesMatch(finalEquivalent, equivalentBefore)) {
+                pressEscape();
+                return {
+                    ok: false,
+                    reason: `purity written but equivalent is ${finalEquivalent}, not ${equivalentBefore}`,
                 };
             }
         }

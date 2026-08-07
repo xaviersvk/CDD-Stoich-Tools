@@ -762,6 +762,13 @@ async function runAllOffers(btn) {
     btn.dataset.running = "1";
     btn.disabled = true;
 
+    // Chrome throttles timers in a background tab to about one per minute:
+    // the run still completes correctly (waits are attempt-based) but takes
+    // minutes instead of seconds. Say so rather than looking frozen.
+    if (document.hidden) {
+        setStatus("Fill all: keep this tab in the foreground — a background tab makes Chrome throttle the run to a crawl.");
+    }
+
     let filled = 0;
     let failed = 0;
 

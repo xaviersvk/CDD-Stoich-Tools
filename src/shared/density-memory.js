@@ -16,9 +16,15 @@
 export const DENSITY_MEMORY_STORAGE_KEY = "cddDensityMemoryV1";
 export const DENSITY_MEMORY_LIMIT = 100;
 
+// The value fields a batch entry can remember. concentrationUnits is a
+// ride-along of concentration, not a value of its own.
+export const VALUE_FIELDS = ["density", "purity", "concentration"];
+
 // Normalise an arbitrary stored value into a clean map
-// Record<batchId, {density, name, savedAt, lastUsedAt}>. Used on every read
-// AND write so neither context ever trusts raw storage. Pure.
+// Record<batchId, {density?, purity?, concentration?, concentrationUnits?,
+// name, savedAt, lastUsedAt}>. Used on every read AND write so neither
+// context ever trusts raw storage. Entries written by 12.4.0 (density
+// only) sanitize into the same shape. Pure.
 export function sanitizeDensityMemory(raw) {
     const out = {};
     if (!raw || typeof raw !== "object") return out;
@@ -28,11 +34,21 @@ export function sanitizeDensityMemory(raw) {
         if (!/^\d+$/.test(id)) continue;
         if (!entry || typeof entry !== "object") continue;
 
-        const density = typeof entry.density === "string" ? entry.density.trim() : "";
-        if (!density) continue;
+        const clean = {};
+        for (const field of VALUE_FIELDS) {
+            if (typeof entry[field] === "string" && entry[field].trim()) {
+                clean[field] = entry[field].trim();
+            }
+        }
+        if (!Object.keys(clean).length) continue;
+
+        if (clean.concentration && typeof entry.concentrationUnits === "string"
+            && entry.concentrationUnits.trim()) {
+            clean.concentrationUnits = entry.concentrationUnits.trim();
+        }
 
         out[id] = {
-            density,
+            ...clean,
             name: typeof entry.name === "string" ? entry.name.trim() : "",
             savedAt: Number.isFinite(entry.savedAt) ? entry.savedAt : 0,
             lastUsedAt: Number.isFinite(entry.lastUsedAt) ? entry.lastUsedAt : 0,
@@ -52,9 +68,16 @@ export async function loadDensityMemory() {
 }
 
 export async function saveDensityMemory(map) {
-    await chrome.storage.local.set({
-        [DENSITY_MEMORY_STORAGE_KEY]: sanitizeDensityMemory(map),
-    });
+    try {
+        await chrome.storage.local.set({
+            [DENSITY_MEMORY_STORAGE_KEY]: sanitizeDensityMemory(map),
+        });
+    } catch {
+        // An orphaned content script (the extension was reloaded while
+        // this page stayed open) has no storage any more — "Extension
+        // context invalidated". Nothing useful to do: the fresh script in
+        // a refreshed tab persists the next change.
+    }
 }
 
 /* ------------------------------------------------------------------ *
@@ -90,12 +113,12 @@ function schedulePersist() {
     }, 250);
 }
 
-export function getRememberedDensity(batchId) {
-    const entry = cachedMemory[String(batchId)];
-    return entry || null;
+export function getRememberedValues(batchId) {
+    return cachedMemory[String(batchId)] || null;
 }
 
-// Upsert. Writes storage ONLY when density or name actually changed, so
+// Merge-upsert. `values` may hold any of VALUE_FIELDS plus
+// concentrationUnits. Persists ONLY when something actually changed —
 // repeated renders of an unchanged page never churn chrome.storage.
 //
 // Deliberately does NOT call notifyChange(): capture runs inside a render
@@ -103,30 +126,47 @@ export function getRememberedDensity(batchId) {
 // duplicate cards. Subscribers are notified by the chrome.storage.onChanged
 // listener instead, which fires asynchronously (in the writing context too)
 // after the debounced persist.
-export function rememberDensity(batchId, density, name) {
+export function rememberValues(batchId, values, name) {
     if (!cacheLoaded) return;
 
     const id = String(batchId ?? "").trim();
-    const value = String(density ?? "").trim();
-    if (!/^\d+$/.test(id) || !value) return;
+    if (!/^\d+$/.test(id)) return;
 
-    const label = String(name ?? "").trim();
     const existing = cachedMemory[id];
-    if (existing && existing.density === value && existing.name === label) return;
+    const label = String(name ?? "").trim();
+    const merged = { name: "", ...(existing || {}) };
+    let changed = !existing;
+
+    // Keep the FIRST non-empty label. The same batch is visible through
+    // several rows whose display names differ (bulk pairs, sample rows);
+    // flip-flopping the label would write storage on every parse, and each
+    // write re-renders the panel — an endless redraw loop.
+    if (label && !merged.name) {
+        merged.name = label;
+        changed = true;
+    }
+
+    for (const field of VALUE_FIELDS) {
+        const value = values?.[field] != null ? String(values[field]).trim() : "";
+        if (!value || merged[field] === value) continue;
+        merged[field] = value;
+        changed = true;
+    }
+    const units = values?.concentrationUnits != null
+        ? String(values.concentrationUnits).trim() : "";
+    if (units && merged.concentrationUnits !== units) {
+        merged.concentrationUnits = units;
+        changed = true;
+    }
+    if (!changed) return;
 
     const now = Date.now();
-    const next = {
-        ...cachedMemory,
-        [id]: {
-            density: value,
-            name: label,
-            savedAt: existing?.savedAt || now,
-            lastUsedAt: now,
-        },
-    };
+    merged.savedAt = existing?.savedAt || now;
+    merged.lastUsedAt = now;
 
     // Over the cap: evict the entry with the oldest lastUsedAt (never the
     // one just written).
+    const next = { ...cachedMemory, [id]: merged };
     const keys = Object.keys(next);
     if (keys.length > DENSITY_MEMORY_LIMIT) {
         let oldestKey = null;
@@ -145,21 +185,34 @@ export function rememberDensity(batchId, density, name) {
     schedulePersist();
 }
 
-// Same no-notify rule as rememberDensity (see above).
-export function forgetDensity(batchId) {
+// Remove the listed fields from a batch entry; the entry disappears with
+// its last value. Same no-notify rule as rememberValues (see above).
+export function forgetValues(batchId, fields) {
     if (!cacheLoaded) return;
 
     const id = String(batchId ?? "").trim();
-    if (!Object.prototype.hasOwnProperty.call(cachedMemory, id)) return;
+    const existing = cachedMemory[id];
+    if (!existing) return;
+
+    const nextEntry = { ...existing };
+    let changed = false;
+    for (const field of fields) {
+        if (nextEntry[field] == null) continue;
+        delete nextEntry[field];
+        if (field === "concentration") delete nextEntry.concentrationUnits;
+        changed = true;
+    }
+    if (!changed) return;
 
     const next = { ...cachedMemory };
-    delete next[id];
+    if (VALUE_FIELDS.some((f) => nextEntry[f] != null)) next[id] = nextEntry;
+    else delete next[id];
     cachedMemory = next;
     schedulePersist();
 }
 
 // A successful fill from memory refreshes the entry's LRU stamp.
-export function touchDensityUsed(batchId) {
+export function touchValueUsed(batchId) {
     if (!cacheLoaded) return;
 
     const entry = cachedMemory[String(batchId)];
@@ -179,38 +232,52 @@ export async function clearDensityMemory() {
 }
 
 /**
- * captureDensitiesFromSamples(samples) — THE capture rule, run after every
- * payload parse / enrichment re-render. For each row with a batchId:
+ * captureValuesFromSamples(samples) — THE capture rule, run after every
+ * payload parse / enrichment re-render. Per row with a batchId, per field:
  *
- *   - batch-field density present → forget the remembered entry (the batch
- *     record is authoritative and the slot is freed);
- *   - else a user-typed table density present → remember it — but for
- *     batch-only rows only AFTER enrichment has run (batchFieldsEnriched),
- *     otherwise we would briefly remember a density that IS on the batch,
- *     just not fetched yet. Rows with a sample carry their batch fields
- *     from the payload itself, so they capture immediately.
+ *   - the authoritative value present → forget the stored copy of that
+ *     field (the record is authoritative and the slot is freed);
+ *   - else a user-typed table value present → remember it.
  *
- * All writes funnel through rememberDensity/forgetDensity, which no-op on
+ * Density and purity are authoritative on the BATCH record, so batch-only
+ * rows wait for enrichment (batchFieldsEnriched) — otherwise we would
+ * briefly remember a value that IS on the batch, just not fetched yet.
+ * Rows with a sample carry their batch fields from the payload itself.
+ * Concentration is authoritative on the SAMPLE, which is in the payload
+ * directly — no gate needed.
+ *
+ * All writes funnel through rememberValues/forgetValues, which no-op on
  * unchanged data — calling this on every render is safe.
  */
-export function captureDensitiesFromSamples(samples) {
+export function captureValuesFromSamples(samples) {
     if (!cacheLoaded || !Array.isArray(samples)) return;
+
+    const has = (v) => v != null && String(v).trim() !== "";
 
     for (const sample of samples) {
         if (!sample?.batchId) continue;
 
-        const batchDensity =
-            sample.density != null && String(sample.density).trim() !== "";
-        const tableDensity =
-            sample.tableDensity != null && String(sample.tableDensity).trim() !== "";
+        const gate = sample.hasSample !== false || sample.batchFieldsEnriched === true;
+        const toForget = [];
+        const toRemember = {};
 
-        if (batchDensity) {
-            forgetDensity(sample.batchId);
-        } else if (
-            tableDensity &&
-            (sample.hasSample !== false || sample.batchFieldsEnriched === true)
-        ) {
-            rememberDensity(sample.batchId, String(sample.tableDensity), sample.name);
+        if (has(sample.density)) toForget.push("density");
+        else if (has(sample.typedDensity) && gate) toRemember.density = String(sample.typedDensity);
+
+        if (has(sample.purity)) toForget.push("purity");
+        else if (has(sample.tablePurity) && gate) toRemember.purity = String(sample.tablePurity);
+
+        if (has(sample.concentration)) toForget.push("concentration");
+        else if (has(sample.tableConcentration)) {
+            toRemember.concentration = String(sample.tableConcentration);
+            if (has(sample.tableConcentrationUnits)) {
+                toRemember.concentrationUnits = String(sample.tableConcentrationUnits);
+            }
+        }
+
+        if (toForget.length) forgetValues(sample.batchId, toForget);
+        if (Object.keys(toRemember).length) {
+            rememberValues(sample.batchId, toRemember, sample.name);
         }
     }
 }

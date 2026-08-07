@@ -29,6 +29,10 @@ import {
     saveDensityMemory,
 } from "../shared/density-memory.js";
 import {
+    getAutoFillEnabled,
+    saveAutoFillEnabled,
+} from "../shared/auto-fill-flag.js";
+import {
     REG_FORM_NAMES_KEY,
     REG_FORM_LAST_USED_KEY,
     getRegistrationFormSettings,
@@ -474,9 +478,22 @@ function createDensityRow(batchId, entry) {
     name.textContent = entry.name || `batch #${batchId}`;
     name.title = `Batch id ${batchId}`;
 
-    const value = document.createElement("span");
-    value.className = "density-memory-value";
-    value.textContent = entry.density;
+    const density = document.createElement("span");
+    density.className = "density-memory-value";
+    density.textContent = entry.density || "—";
+    density.title = "Density";
+
+    const purity = document.createElement("span");
+    purity.className = "density-memory-value";
+    purity.textContent = entry.purity || "—";
+    purity.title = "Purity";
+
+    const conc = document.createElement("span");
+    conc.className = "density-memory-value";
+    conc.textContent = entry.concentration
+        ? entry.concentration + (entry.concentrationUnits ? ` ${entry.concentrationUnits}` : "")
+        : "—";
+    conc.title = "Concentration";
 
     const saved = document.createElement("span");
     saved.className = "density-memory-date";
@@ -496,7 +513,7 @@ function createDensityRow(batchId, entry) {
         renderDensityMemory(map);
     });
 
-    wrapper.append(name, value, saved, deleteBtn);
+    wrapper.append(name, density, purity, conc, saved, deleteBtn);
     return wrapper;
 }
 
@@ -525,6 +542,16 @@ densityClearBtn.addEventListener("click", async () => {
 
 async function initDensityMemoryUI() {
     renderDensityMemory(await loadDensityMemory());
+}
+
+const autoFillCheckbox = document.getElementById("autoFillEnabled");
+
+autoFillCheckbox.addEventListener("change", () => {
+    saveAutoFillEnabled(autoFillCheckbox.checked);
+});
+
+async function initAutoFillUI() {
+    autoFillCheckbox.checked = await getAutoFillEnabled();
 }
 
 /* ================================================================== live sync */
@@ -578,3 +605,4 @@ initSamplePanelFieldsUI();
 initPrefixColorsUI();
 initRegistrationFormUI();
 initDensityMemoryUI();
+initAutoFillUI();

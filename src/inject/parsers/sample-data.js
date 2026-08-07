@@ -13,13 +13,54 @@ import {
     getSampleFields
 } from "./field-resolvers.js";
 
+// The 1-based number the table PRINTS in each row's first cell. The table
+// does not render rows in payload order — it groups them by role:
+// reactants first, then agents (incl. solvents and solutions), then
+// products, each group in payload order. Parallel rows sit in the
+// lettered A/B/C block and get no number. Verified against the live
+// tables of entry 2504170 (all three reaction variants).
+function computeDisplayRowNumbers(rows) {
+    const groupOf = (row) => {
+        const role = String(row?.role || "").toLowerCase();
+        if (role.startsWith("parallel")) return null;
+        if (role === "reactant") return 0;
+        if (role === "product") return 2;
+        return 1;
+    };
+
+    const numbers = new Array(rows.length).fill(null);
+    let n = 0;
+    for (let group = 0; group <= 2; group += 1) {
+        rows.forEach((row, i) => {
+            if (groupOf(row) === group) {
+                n += 1;
+                numbers[i] = n;
+            }
+        });
+    }
+    return numbers;
+}
+
+// Typed table purity as a percent string ("98.2"), or null. The row keeps
+// purity as a fraction; exactly 1 is the untyped 100 % default, which we
+// deliberately read as "nothing typed" (a hand-typed 100 is
+// indistinguishable and stays un-captured — harmless).
+function resolveTablePurity(row) {
+    const p = Number(row?.purity);
+    if (!Number.isFinite(p) || p === 1) return null;
+    return String(Number((p * 100).toFixed(6)));
+}
+
 export function extractRowsFromReactionFeature(feature, reactionIndex) {
     const stoichTable = feature?.data?.stoichiometryTable;
     const rows = Array.isArray(stoichTable?.rows) ? stoichTable.rows : [];
     const output = [];
     const seen = new Set();
 
-    for (const row of rows) {
+    const displayRowNumbers = computeDisplayRowNumbers(rows);
+
+    for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
+        const row = rows[rowIndex];
         const hasSample = !!row?.sample;
         const rowBatchId = row?.batchId ?? row?.batch?.id ?? null;
         const role = String(row?.role || "").toLowerCase();
@@ -55,12 +96,37 @@ export function extractRowsFromReactionFeature(feature, reactionIndex) {
             reactionLabel: `Reaction ${reactionIndex + 1}`,
             featureId: feature?.id ?? null,
             rowUid,
+            // The number the table prints in the row's first cell (null
+            // for lettered parallel rows). Lets the fill target a row
+            // deterministically even when the same batch appears twice.
+            rowNumber: displayRowNumbers[rowIndex],
             role: row?.role ?? null,
             sampleId,
             hasSample,
-            // Density already sitting in the table row (user-entered);
-            // used to decide whether "Fill density into table" is offered.
-            tableDensity: row?.userInput?.density ?? null,
+            // Values already sitting in the table row (user-entered); used
+            // to decide whether the fill buttons are offered and what the
+            // density-memory capture may remember. Verified against the
+            // live eln/v2 payload: density is the typed string in
+            // userInput; purity is a row-level FRACTION (0.982 = 98.2 %,
+            // and exactly 1 is CDD's untyped 100 % default); concentration
+            // is a row-level number, always in mol/L (the editor popup has
+            // no unit selector).
+            // Effective density: the typed value, or the row-level one CDD
+            // keeps/derives itself (molecule data, or a typed value it has
+            // moved out of userInput on some edit paths). Either way the
+            // table HAS a density — no fill offer needed.
+            tableDensity: row?.userInput?.density ?? row?.density ?? null,
+            // Only the typed value is worth remembering.
+            typedDensity: row?.userInput?.density ?? null,
+            tablePurity: resolveTablePurity(row),
+            tableConcentration:
+                row?.concentration != null && row.concentration !== ""
+                    ? String(row.concentration)
+                    : null,
+            tableConcentrationUnits:
+                row?.concentration != null && row.concentration !== ""
+                    ? "mol/L"
+                    : null,
             name: resolveRowName(row),
             location: resolveRowLocation(row),
             ...batchFields,      // purity, density, internalID

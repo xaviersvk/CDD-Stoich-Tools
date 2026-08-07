@@ -115,19 +115,40 @@ Clear all with confirmation, live refresh — all unchanged mechanics.
 
 ### 7 · Experimental auto-fill (options checkbox, default OFF)
 
-- Checkbox in the options card, clearly labelled experimental: when ON, the
-  extension automatically runs the same fill sequences the buttons offer
-  (all sources — authoritative and remembered), instead of waiting for a
-  click.
+Amended after user discussion: automatic writes into an entry the user
+merely opened are too risky. The policy is **new rows only**.
+
+- Checkbox in the options card, clearly labelled experimental, with a
+  warning explaining exactly this scope: when ON, the extension
+  automatically fills values **only into rows added while the user works
+  on the page**. Rows that existed when the entry loaded are never touched
+  automatically.
+- Mechanism: the first payloads after a page load (a ~5 s baseline window
+  — initial parse, enrichment, partial responses all describe pre-existing
+  rows) register every row in a baseline set keyed by
+  `reactionIndex:rowUid`. Auto-fill skips baseline rows; a URL change
+  (Turbo navigation) resets the baseline and the attempted set.
 - Trigger: after a payload settles (parse + enrichment re-render). Fills
   run **sequentially** (the DOM automation cannot overlap; each fill causes
   an autosave → new payload → re-render).
-- Loop guards: each `(batchId, field)` is attempted at most once per page
+- Loop guards: each `(row, field)` is attempted at most once per page
   session; any failure stops the auto-run for that row and is reported in
   the panel status line. The buttons remain rendered while auto-fill is
   pending, so a failed auto attempt degrades to the manual path.
 - Stored under a new `chrome.storage.local` flag (own key, read by the
   content script at startup and live via `onChanged`).
+
+### 7b · "Fill all" panel button (the conscious path for existing rows)
+
+The panel body (under the status line) shows
+`⤵ Fill all missing values (N)` whenever the cards offer N ≥ 1 fills. One
+deliberate click runs every offer sequentially — same machinery, same
+per-step verification, failures reported in the status line and the rest
+of that row skipped. Hidden when there is nothing to fill; the label
+doubles as a progress indicator while running.
+
+The options card also spans two grid columns (`card--wide`) so the
+six-column remembered-values list has room.
 
 ## Edge cases
 

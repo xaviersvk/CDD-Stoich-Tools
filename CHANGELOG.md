@@ -16,6 +16,56 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [12.5.0] — 2026-08-07
+
+### Added
+- **Remembered purity & concentration.** The per-batch memory
+  (`cddDensityMemoryV1`) now holds density, purity and concentration
+  (+units) in one entry per batch. Same contract as density: the
+  authoritative source — batch field for purity/density, sample field for
+  concentration — always wins and clears the remembered copy; typed values
+  are captured passively from the payloads CDD sends on autosave. Typed
+  purity is read from the row-level fraction (1 = CDD's untyped 100 %
+  default), typed concentration from the row-level mol/L number. Cards
+  offer up to three fill buttons; one shared amber notice marks
+  memory-sourced values. The purity fill snapshots the row's Equivalent and
+  writes it back after CDD's recalculation; the concentration fill clicks
+  "Make solution" first when the row isn't a solution yet. The options card
+  became **Remembered batch values** (two grid columns wide) with
+  per-field columns.
+- **"⤵ Fill all missing values (N)" panel button.** One deliberate click
+  runs every offer the cards show, sequentially, with progress in the
+  button label and failures in the status line. Keep the tab visible while
+  it runs — background tabs are timer-throttled by Chrome.
+- **Experimental auto-fill (options checkbox, default off).** When
+  enabled, the extension automatically fills values — but ONLY into rows
+  added while you work on the page. Rows that existed when the entry
+  loaded are never touched automatically (a ~5 s baseline window after
+  load registers them; URL changes reset it); the card buttons and Fill
+  all remain the conscious path for those.
+
+### Fixed
+- **Fills now target the exact table row, keyed by its printed number.**
+  The table renders rows grouped by role (reactants → agents → products;
+  parallel rows are lettered), not in payload order — and in edit mode
+  every row renders the edit labels, so name- or label-based matching
+  cannot tell duplicates apart. All fill steps (field link, popup,
+  verification, Make solution, Equivalent snapshot) now address the one
+  row whose first cell prints the sample's display number, which makes
+  fills reliable when the same batch sits in a reaction twice.
+- Sample-carrying cards can fill again: their row is found via the
+  composed molecule-batch name (the table never shows the sample name).
+- Density offers no longer linger on rows whose density lives outside
+  `userInput` (molecule-derived or moved by CDD); only genuinely typed
+  densities are remembered.
+- Ended a panel redraw loop (and the visibly shuffling NO SAMPLE quotes):
+  a batch's stored label is written once instead of ping-ponging between
+  the display names of its rows, and quotes are now seeded per batch and
+  day instead of re-randomized on every render.
+- Orphaned content scripts (extension reloaded while a CDD tab stayed
+  open) no longer throw "Extension context invalidated" from storage
+  writes.
+
 ## [12.4.0] — 2026-08-07
 
 ### Added

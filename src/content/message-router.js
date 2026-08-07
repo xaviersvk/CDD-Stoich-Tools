@@ -2,6 +2,7 @@
 import { STATE } from "./state.js";
 import { renderFromState, removePanel } from "./features/sample-panel.js";
 import { enrichBatchOnlySamples } from "./features/batch-field-enrichment.js";
+import { onSamplePayload } from "./features/auto-fill.js";
 import { ensurePrintButtons } from "./features/print-buttons.js";
 import { markDepletedSamplesInSelector } from "./features/depleted-marker.js";
 import { prefetchMolecules } from "./api/molecule-image.js";
@@ -34,6 +35,7 @@ export function handleMessage(event) {
             STATE.lastPayload = data.payload || null;
             renderFromState();
             enrichBatchOnlySamples();
+            onSamplePayload();
             break;
         }
 

@@ -38,6 +38,10 @@ import {
     savePurityWarnThreshold,
 } from "../shared/purity-threshold.js";
 import {
+    getShowProducts,
+    saveShowProducts,
+} from "../shared/show-products-flag.js";
+import {
     REG_FORM_NAMES_KEY,
     REG_FORM_LAST_USED_KEY,
     getRegistrationFormSettings,
@@ -575,6 +579,16 @@ async function initPurityThresholdUI() {
     purityWarnInput.value = thresholds.warn;
 }
 
+const showProductsCheckbox = document.getElementById("showProducts");
+
+showProductsCheckbox.addEventListener("change", () => {
+    saveShowProducts(showProductsCheckbox.checked);
+});
+
+async function initShowProductsUI() {
+    showProductsCheckbox.checked = await getShowProducts();
+}
+
 /* ================================================================== live sync */
 
 // The content script discovers things while this page is open: new custom
@@ -628,3 +642,4 @@ initRegistrationFormUI();
 initDensityMemoryUI();
 initAutoFillUI();
 initPurityThresholdUI();
+initShowProductsUI();

@@ -12,6 +12,7 @@ import { isElnEntryPage } from "../../shared/page-detection.js";
 import { PANEL_ID, REACTION_COLORS } from "../../shared/plugin-constants.js";
 import { updatePanelVisibilityForOverlays } from "../overlay-watcher.js";
 import { printPanel } from "./panel-print.js";
+import { exportPanelCsv } from "./panel-csv.js";
 import {
     SAMPLE_PANEL_FIELDS,
     SAMPLE_PANEL_SETTINGS_KEY,
@@ -159,6 +160,12 @@ export function ensurePanel() {
     printBtn.type = "button";
     printBtn.textContent = "Print";
 
+    const csvBtn = document.createElement("button");
+    csvBtn.id = `${PANEL_ID}-csv`;
+    csvBtn.type = "button";
+    csvBtn.textContent = "CSV";
+    csvBtn.title = "Download this table as a CSV file (opens in Excel).";
+
     const toggleBtn = document.createElement("button");
     toggleBtn.id = `${PANEL_ID}-toggle`;
     toggleBtn.type = "button";
@@ -171,6 +178,7 @@ export function ensurePanel() {
 
     actions.appendChild(refreshBtn);
     actions.appendChild(printBtn);
+    actions.appendChild(csvBtn);
     actions.appendChild(toggleBtn);
 
     header.appendChild(title);
@@ -486,6 +494,10 @@ export function ensurePanel() {
 
     printBtn.addEventListener("click", () => {
         printPanel(visibleFields);
+    });
+
+    csvBtn.addEventListener("click", () => {
+        exportPanelCsv(visibleFields);
     });
 
     toggleBtn.addEventListener("click", () => {

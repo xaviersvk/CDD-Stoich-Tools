@@ -12,7 +12,7 @@ import {
 // Build print columns from the same enabled fields the floating panel uses:
 // enabled static registry fields first, then enabled custom fields. A column is
 // kept only if at least one sample actually has a value for it.
-function buildPrintColumns(samples, visibleFields) {
+export function buildPrintColumns(samples, visibleFields) {
     const columns = [];
 
     for (const field of SAMPLE_PANEL_FIELDS) {

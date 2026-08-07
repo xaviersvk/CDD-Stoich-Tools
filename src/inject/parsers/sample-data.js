@@ -65,16 +65,17 @@ export function extractRowsFromReactionFeature(feature, reactionIndex) {
         const rowBatchId = row?.batchId ?? row?.batch?.id ?? null;
         const role = String(row?.role || "").toLowerCase();
 
+        const rowUid = row?.uid ?? null;
+        const isProduct = role === "product" || role === "parallelproduct";
+
         // Rows without a sample are still worth a card when they carry a
         // registered batch — its metafields (purity, density…) are fetched
-        // later by the content script. Products are skipped: their batches
-        // are the synthesis targets and carry no useful QC metadata.
-        if (!hasSample) {
-            if (!rowBatchId) continue;
-            if (role === "product" || role === "parallelproduct") continue;
-        }
-
-        const rowUid = row?.uid ?? null;
+        // later by the content script — or when they are PRODUCTS, which
+        // often have neither sample nor batch ("Unspecified Batch"): their
+        // identity comes from the molecule. Whether products are SHOWN is
+        // decided content-side by the show-products option.
+        if (!hasSample && !isProduct && !rowBatchId) continue;
+        if (isProduct && !rowBatchId && !row?.moleculeName && !rowUid) continue;
         const sampleId =
             row?.sample?.id ??
             row?.sampleId ??
@@ -103,6 +104,7 @@ export function extractRowsFromReactionFeature(feature, reactionIndex) {
             role: row?.role ?? null,
             sampleId,
             hasSample,
+            isProduct,
             // Values already sitting in the table row (user-entered); used
             // to decide whether the fill buttons are offered and what the
             // density-memory capture may remember. Verified against the

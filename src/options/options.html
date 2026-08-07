@@ -87,6 +87,17 @@
             </div>
         </header>
 
+        <!-- Outside the scrolling field list on purpose: a setting buried
+             under 20 field checkboxes is a setting nobody finds. -->
+        <div class="card__body">
+            <label class="field-item show-products-toggle">
+                <input type="checkbox" id="showProducts" />
+                <span>Show <strong>products</strong> of each reaction in the
+                panel and in the print sheets (display only — no fill
+                buttons, no remembered values)</span>
+            </label>
+        </div>
+
         <div class="card__body card__body--scroll">
             <div id="samplePanelFields" class="stack"></div>
             <div id="samplePanelCustomFields" class="stack"></div>
@@ -205,6 +216,26 @@
         </header>
 
         <div class="card__body">
+            <label class="field-item purity-threshold-row">
+                <span>
+                    <strong>Fill purity threshold (%)</strong> — purity fill
+                    offers appear only at or below this value.
+                </span>
+                <input type="number" id="purityFillThreshold"
+                       min="1" max="100" step="0.1"
+                       class="purity-threshold-input" />
+            </label>
+
+            <label class="field-item purity-threshold-row">
+                <span>
+                    <strong>Low purity warning threshold (%)</strong> — the
+                    ⚠ LOW PURITY badge fires at or below this value.
+                </span>
+                <input type="number" id="purityWarnThreshold"
+                       min="1" max="100" step="0.1"
+                       class="purity-threshold-input" />
+            </label>
+
             <label class="field-item auto-fill-toggle">
                 <input type="checkbox" id="autoFillEnabled" />
                 <span><strong>Experimental:</strong> auto-fill values into rows

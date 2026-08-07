@@ -33,6 +33,15 @@ import {
     saveAutoFillEnabled,
 } from "../shared/auto-fill-flag.js";
 import {
+    loadPurityThresholds,
+    savePurityFillThreshold,
+    savePurityWarnThreshold,
+} from "../shared/purity-threshold.js";
+import {
+    getShowProducts,
+    saveShowProducts,
+} from "../shared/show-products-flag.js";
+import {
     REG_FORM_NAMES_KEY,
     REG_FORM_LAST_USED_KEY,
     getRegistrationFormSettings,
@@ -554,6 +563,32 @@ async function initAutoFillUI() {
     autoFillCheckbox.checked = await getAutoFillEnabled();
 }
 
+const purityFillInput = document.getElementById("purityFillThreshold");
+const purityWarnInput = document.getElementById("purityWarnThreshold");
+
+purityFillInput.addEventListener("change", () => {
+    savePurityFillThreshold(purityFillInput.value);
+});
+purityWarnInput.addEventListener("change", () => {
+    savePurityWarnThreshold(purityWarnInput.value);
+});
+
+async function initPurityThresholdUI() {
+    const thresholds = await loadPurityThresholds();
+    purityFillInput.value = thresholds.fill;
+    purityWarnInput.value = thresholds.warn;
+}
+
+const showProductsCheckbox = document.getElementById("showProducts");
+
+showProductsCheckbox.addEventListener("change", () => {
+    saveShowProducts(showProductsCheckbox.checked);
+});
+
+async function initShowProductsUI() {
+    showProductsCheckbox.checked = await getShowProducts();
+}
+
 /* ================================================================== live sync */
 
 // The content script discovers things while this page is open: new custom
@@ -606,3 +641,5 @@ initPrefixColorsUI();
 initRegistrationFormUI();
 initDensityMemoryUI();
 initAutoFillUI();
+initPurityThresholdUI();
+initShowProductsUI();

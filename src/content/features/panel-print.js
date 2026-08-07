@@ -2,6 +2,7 @@
 import { STATE } from "../state.js";
 import { escapeHtml } from "../utils/dom.js";
 import { EVENT_SOURCE, EVENTS } from "../../shared/event-types";
+import { isShowProductsEnabled } from "../../shared/show-products-flag.js";
 import {
     SAMPLE_PANEL_FIELDS,
     resolveFieldValue,
@@ -11,7 +12,7 @@ import {
 // Build print columns from the same enabled fields the floating panel uses:
 // enabled static registry fields first, then enabled custom fields. A column is
 // kept only if at least one sample actually has a value for it.
-function buildPrintColumns(samples, visibleFields) {
+export function buildPrintColumns(samples, visibleFields) {
     const columns = [];
 
     for (const field of SAMPLE_PANEL_FIELDS) {
@@ -62,10 +63,14 @@ export function printPanel(visibleFields = {}) {
         return;
     }
 
-    const samples = payload.samples;
+    // Products only when the option is on; the Type column appears only
+    // when there is a product to label.
+    const showProducts = isShowProductsEnabled();
+    const samples = payload.samples.filter((s) => showProducts || !s.isProduct);
+    const anyProduct = samples.some((s) => s.isProduct);
     const columns = buildPrintColumns(samples, visibleFields);
 
-    const headHtml = ["Reaction", ...columns.map((c) => c.label)]
+    const headHtml = ["Reaction", ...(anyProduct ? ["Type"] : []), ...columns.map((c) => c.label)]
         .map((label) => `<th>${escapeHtml(label)}</th>`)
         .join("");
 
@@ -73,6 +78,7 @@ export function printPanel(visibleFields = {}) {
         .map((sample, index) => {
             const cells = [
                 sample.reactionLabel || "",
+                ...(anyProduct ? [sample.isProduct ? "Product" : ""] : []),
                 ...columns.map((column) => column.getText(sample, index)),
             ];
             return `<tr>${cells.map((value) => `<td>${escapeHtml(value)}</td>`).join("")}</tr>`;

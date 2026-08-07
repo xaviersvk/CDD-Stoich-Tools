@@ -91,13 +91,10 @@ function extractRows(feature) {
     const stoichTable = feature?.data?.stoichiometryTable;
     const rows = Array.isArray(stoichTable?.rows) ? stoichTable.rows : [];
 
-    return rows
-        .filter((row) => {
-            const role = String(row?.role || "").toLowerCase();
-            const rowType = String(row?.rowType || "").toLowerCase();
-            return role !== "product" && rowType !== "product";
-        })
-        .map(resolveRowData);
+    // Product rows ride along (each carries its `role`); the content-side
+    // print builder decides whether to render them, driven by the
+    // show-products option.
+    return rows.map(resolveRowData);
 }
 
 function extractDepletedIdentifiers(payload) {

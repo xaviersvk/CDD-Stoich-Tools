@@ -256,6 +256,7 @@ export function captureValuesFromSamples(samples) {
 
     for (const sample of samples) {
         if (!sample?.batchId) continue;
+        if (sample.isProduct) continue;   // products are display-only
 
         const gate = sample.hasSample !== false || sample.batchFieldsEnriched === true;
         const toForget = [];

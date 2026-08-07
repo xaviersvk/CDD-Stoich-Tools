@@ -42,6 +42,7 @@ import {initBoxSelection} from "./features/box-selection/init";
 import {initMultiPositionSampleCreate} from "./features/multi-position-sample-create/init";
 import {initPrefixColorCache} from "../shared/prefix-colors.js";
 import {initDensityMemory, onDensityMemoryChanged} from "../shared/density-memory.js";
+import {initAutoFill} from "./features/auto-fill.js";
 
 
 function isSupportedHost() {
@@ -145,6 +146,10 @@ function init() {
   initDensityMemory().then(() => {
     onDensityMemoryChanged(() => renderFromState());
   });
+
+  // Experimental auto-fill (opt-in via the options checkbox): runs the
+  // same fills the card buttons offer, sequentially, once the page settles.
+  initAutoFill();
 }
 
 init();

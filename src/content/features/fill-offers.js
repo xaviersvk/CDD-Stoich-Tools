@@ -16,6 +16,8 @@ import {
 const has = (v) => v != null && String(v).trim() !== "";
 
 export function computeFillOffers(sample) {
+    if (sample?.isProduct) return [];   // products are display-only
+
     const offers = [];
     const entry = sample?.batchId ? getRememberedValues(sample.batchId) : null;
 

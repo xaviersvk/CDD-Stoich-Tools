@@ -136,6 +136,7 @@ export function enrichBatchOnlySamples() {
 
     for (const sample of samples) {
         if (sample?.hasSample !== false) continue;
+        if (sample.isProduct) continue;   // no metafield fetches for products
         if (sample.batchFieldsEnriched) continue;
         if (!sample.batchId || !sample.moleculeId) continue;
 

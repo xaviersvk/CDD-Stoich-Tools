@@ -86,6 +86,17 @@ function findRowsByName(container, name) {
     });
 }
 
+// Only ONE row per table is in edit mode (the clicked one) and only it
+// carries the editable field links — but VIEW-mode duplicates of the same
+// entity print the same "Label: value" texts, so every field search must
+// be scoped to the edit row or it grabs the first look-alike.
+function isEditModeRow(tr) {
+    for (const b of tr.querySelectorAll("b")) {
+        if ((b.textContent || "").trim() === "Molecule:") return true;
+    }
+    return false;
+}
+
 // In edit mode every property renders as "<b>Label:</b> <value>".
 // placeholderOnly limits the match to the blue Optional/Required link (an
 // EMPTY field) — density keeps that rule; purity overwrites CDD's default
@@ -325,6 +336,7 @@ function readEquivalent(container, name) {
 async function writeFieldViaPopup(container, name, label, popupLabelRe, value, placeholderOnly, units) {
     const link = await waitFor(() => {
         for (const tr of findRowsByName(container, name)) {
+            if (!isEditModeRow(tr)) continue;
             const found = findFieldValueLink(tr, label, placeholderOnly);
             if (found) return found;
         }
@@ -347,6 +359,7 @@ async function writeFieldViaPopup(container, name, label, popupLabelRe, value, p
     // The popup closes and the edit-mode row shows "<label> <value> …".
     const confirmed = await waitFor(() => {
         for (const tr of findRowsByName(container, name)) {
+            if (!isEditModeRow(tr)) continue;
             const text = tr.innerText || "";
             if (text.includes(label) && text.includes(value)) return tr;
         }
@@ -431,7 +444,7 @@ export async function fillConcentrationIntoTable(sample, value, units) {
 
     const hasField = await waitFor(() => {
         for (const tr of findRowsByName(ctx.container, ctx.name)) {
-            if (findFieldValueLink(tr, "Concentration:", false)) return true;
+            if (isEditModeRow(tr) && findFieldValueLink(tr, "Concentration:", false)) return true;
         }
         return null;
     });
@@ -439,6 +452,7 @@ export async function fillConcentrationIntoTable(sample, value, units) {
     if (!hasField) {
         const make = (() => {
             for (const tr of findRowsByName(ctx.container, ctx.name)) {
+                if (!isEditModeRow(tr)) continue;
                 for (const el of tr.querySelectorAll("a, span, button")) {
                     if (/^Make solution$/i.test((el.textContent || "").trim())) return el;
                 }
@@ -454,7 +468,7 @@ export async function fillConcentrationIntoTable(sample, value, units) {
 
         const appeared = await waitFor(() => {
             for (const tr of findRowsByName(ctx.container, ctx.name)) {
-                if (findFieldValueLink(tr, "Concentration:", false)) return true;
+                if (isEditModeRow(tr) && findFieldValueLink(tr, "Concentration:", false)) return true;
             }
             return null;
         });

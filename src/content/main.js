@@ -44,6 +44,7 @@ import {initPrefixColorCache} from "../shared/prefix-colors.js";
 import {initDensityMemory, onDensityMemoryChanged} from "../shared/density-memory.js";
 import {initAutoFill} from "./features/auto-fill.js";
 import {initPurityThresholds, onPurityThresholdChanged} from "../shared/purity-threshold.js";
+import {initShowProducts, onShowProductsChanged} from "../shared/show-products-flag.js";
 
 
 function isSupportedHost() {
@@ -156,6 +157,11 @@ function init() {
   // change in the options page.
   initPurityThresholds().then(() => {
     onPurityThresholdChanged(() => renderFromState());
+  });
+
+  // Optional products section (panel + print).
+  initShowProducts().then(() => {
+    onShowProductsChanged(() => renderFromState());
   });
 }
 

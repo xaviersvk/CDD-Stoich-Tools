@@ -7,6 +7,7 @@ import {
     touchValueUsed,
 } from "../../shared/density-memory.js";
 import { getPurityWarnThreshold } from "../../shared/purity-threshold.js";
+import { isShowProductsEnabled } from "../../shared/show-products-flag.js";
 import { isElnEntryPage } from "../../shared/page-detection.js";
 import { PANEL_ID, REACTION_COLORS } from "../../shared/plugin-constants.js";
 import { updatePanelVisibilityForOverlays } from "../overlay-watcher.js";
@@ -421,6 +422,27 @@ export function ensurePanel() {
   #${PANEL_ID} .cdd-density-fill-btn:disabled {
     opacity: 0.6;
     cursor: default;
+  }
+
+  #${PANEL_ID} .cdd-product-badge {
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    background: rgba(74, 222, 128, 0.15);
+    color: #4ade80;
+    border: 1px solid rgba(74, 222, 128, 0.4);
+  }
+
+  #${PANEL_ID} .cdd-products-divider {
+    margin: 8px 2px 2px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: #4ade80;
+    opacity: 0.9;
   }
 
   #${PANEL_ID} .cdd-density-memory-note {
@@ -876,9 +898,17 @@ export function renderSamples(payload) {
         const groupTitle = document.createElement("span");
         groupTitle.textContent = group.reactionLabel;
 
+        // Products are opt-in and render in their own section below the
+        // reagent cards.
+        const regulars = group.items.filter((s) => !s.isProduct);
+        const products = isShowProductsEnabled()
+            ? group.items.filter((s) => s.isProduct)
+            : [];
+
         const groupCount = document.createElement("span");
         groupCount.className = "cdd-stoich-group-count";
-        groupCount.textContent = `${group.items.length} sample(s)`;
+        groupCount.textContent = `${regulars.length} sample(s)` +
+            (products.length ? ` · ${products.length} product(s)` : "");
 
         groupHeader.appendChild(groupTitle);
         groupHeader.appendChild(groupCount);
@@ -886,7 +916,7 @@ export function renderSamples(payload) {
         const groupBody = document.createElement("div");
         groupBody.className = "cdd-stoich-group-body";
 
-        for (const sample of group.items) {
+        for (const sample of regulars) {
             const card = document.createElement("div");
             card.className = "cdd-stoich-card";
             card.style.borderLeftColor = color.border;
@@ -961,6 +991,43 @@ export function renderSamples(payload) {
             }
 
             groupBody.appendChild(card);
+        }
+
+        if (products.length) {
+            const divider = document.createElement("div");
+            divider.className = "cdd-products-divider";
+            divider.textContent = "Products";
+            groupBody.appendChild(divider);
+
+            for (const sample of products) {
+                const card = document.createElement("div");
+                card.className = "cdd-stoich-card";
+                card.style.borderLeftColor = color.border;
+                card.style.boxShadow = `0 0 0 1px ${color.glow} inset`;
+
+                const cardTop = document.createElement("div");
+                cardTop.className = "cdd-stoich-card-top";
+
+                const badge = document.createElement("div");
+                badge.className = "cdd-stoich-reaction-badge";
+                badge.style.background = color.badgeBg;
+                badge.style.color = color.badgeText;
+                badge.textContent = group.reactionLabel;
+                cardTop.appendChild(badge);
+
+                const productBadge = document.createElement("div");
+                productBadge.className = "cdd-product-badge";
+                productBadge.textContent = "PRODUCT";
+                cardTop.appendChild(productBadge);
+
+                card.appendChild(cardTop);
+
+                for (const rowEl of renderConfiguredFields(sample)) {
+                    card.appendChild(rowEl);
+                }
+
+                groupBody.appendChild(card);
+            }
         }
 
         groupEl.appendChild(groupHeader);

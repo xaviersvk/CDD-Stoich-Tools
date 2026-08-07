@@ -2,6 +2,7 @@
 import { STATE } from "../state.js";
 import { escapeHtml } from "../utils/dom.js";
 import {EVENT_SOURCE, EVENTS} from "../../shared/event-types";
+import { isShowProductsEnabled } from "../../shared/show-products-flag.js";
 
 const BTN_CLASS = "cdd-stoich-print-button";
 const BTN_ATTR = "data-cdd-stoich-print-button";
@@ -242,7 +243,26 @@ function buildPrintHtml(reactionPayload) {
 
     const { plainRows, pairs } = splitParallelPairs(rows);
 
-    const rowsHtml = buildRowsHtml(plainRows);
+    // The parser no longer filters products: keep them out of the numbered
+    // reagent list always, and render them as their own section only when
+    // the show-products option is on. (Bulk lettered pairs already carry
+    // their products and are untouched.)
+    const isProductRow = (row) => String(row?.role || "").toLowerCase() === "product";
+    const reagentRows = plainRows.filter((row) => !isProductRow(row));
+    const productRows = isShowProductsEnabled() ? plainRows.filter(isProductRow) : [];
+
+    const rowsHtml = buildRowsHtml(reagentRows);
+
+    const productSectionHtml = productRows.length
+        ? `
+            <div class="pair-section-title">Products</div>
+            <table>
+              <tbody>
+                ${productRows.map((row) => renderRowHtml(row, { roleTag: "Product" })).join("")}
+              </tbody>
+            </table>
+          `
+        : "";
 
     const pairSectionHtml = pairs.length
         ? `
@@ -504,6 +524,8 @@ function buildPrintHtml(reactionPayload) {
                 ${rowsHtml}
               </tbody>
             </table>
+
+            ${productSectionHtml}
 
             ${pairSectionHtml}
 

@@ -180,10 +180,10 @@ function clickOutside(container) {
     }
 }
 
-// Fill sample.density into the sample's stoichiometry row.
+// Fill `value` into the sample's stoichiometry row.
 // Returns { ok: true } or { ok: false, reason }.
-export async function fillDensityIntoTable(sample) {
-    const value = sample?.density != null ? String(sample.density).trim() : "";
+export async function fillDensityIntoTable(sample, value) {
+    value = value != null ? String(value).trim() : "";
     if (!value) return { ok: false, reason: "no density value on this card" };
 
     const name = String(sample?.name || "").trim();

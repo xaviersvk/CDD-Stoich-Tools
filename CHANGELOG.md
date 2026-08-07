@@ -16,6 +16,31 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [12.4.0] — 2026-08-07
+
+### Added
+- **Remembered densities.** When you type a density into a stoichiometry row
+  whose registered batch has none, the extension remembers it (up to 100,
+  keyed by molecule batch id in `chrome.storage.local`, LRU-evicted) and
+  offers a one-click **⤵ Fill remembered density** wherever that batch
+  appears again without one — with an amber nudge to save the value on the
+  batch record itself, which always takes precedence and removes the
+  remembered copy on the next parse. Capture is passive (reads
+  `userInput.density` from the payloads CDD already sends on autosave; no
+  DOM watching) and, for batch-only rows, waits for batch-field enrichment
+  so a density that lives on the batch is never mistaken for a user value.
+  A new options-page card **Remembered densities** lists the entries
+  (name, value, saved date, `N / 100` counter) with per-row forget and
+  Clear all; edits propagate live to open ELN tabs via
+  `chrome.storage.onChanged`. New shared module
+  `src/shared/density-memory.js`; `fillDensityIntoTable()` now takes the
+  value to write as an explicit parameter.
+
+### Fixed
+- Batch-field enrichment now marks a batch-only row as enriched even when
+  the molecule page has no field values for that batch — previously such a
+  row could never have its typed density remembered.
+
 ## [12.3.0] — 2026-08-06
 
 ### Added

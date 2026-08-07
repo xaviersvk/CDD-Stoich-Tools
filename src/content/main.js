@@ -41,6 +41,7 @@ import {initElnTitle} from "./features/eln-title";
 import {initBoxSelection} from "./features/box-selection/init";
 import {initMultiPositionSampleCreate} from "./features/multi-position-sample-create/init";
 import {initPrefixColorCache} from "../shared/prefix-colors.js";
+import {initDensityMemory, onDensityMemoryChanged} from "../shared/density-memory.js";
 
 
 function isSupportedHost() {
@@ -137,6 +138,13 @@ function init() {
   // popup edit. Fire-and-forget: features render with the default look until the
   // (fast) storage read completes.
   initPrefixColorCache();
+
+  // Remembered densities: load the batch->density map, then re-render the
+  // panel whenever it changes in any context (typing on another tab, deleting
+  // from the options page) so fill offers appear/disappear live.
+  initDensityMemory().then(() => {
+    onDensityMemoryChanged(() => renderFromState());
+  });
 }
 
 init();

@@ -160,9 +160,15 @@ export function enrichBatchOnlySamples() {
             let changed = false;
             for (const sample of targets) {
                 const fieldMap = fieldsByBatch.get(Number(sample.batchId));
-                if (!fieldMap) continue;
-
-                applyBatchFields(sample, fieldMap);
+                if (fieldMap) {
+                    applyBatchFields(sample, fieldMap);
+                } else {
+                    // The molecule page loaded but carries no field values
+                    // for this batch — enrichment is still COMPLETE: we now
+                    // know the batch has no density, which density-memory's
+                    // capture gate needs to trust user-typed values.
+                    sample.batchFieldsEnriched = true;
+                }
                 changed = true;
             }
             return changed;

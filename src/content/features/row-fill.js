@@ -18,6 +18,8 @@
 // exception, a failed equivalent restore AFTER purity landed, is reported
 // loudly in the button/status).
 
+import { STATE } from "../state.js";
+
 const STEP_TIMEOUT_MS = 3000;
 const POLL_MS = 100;
 
@@ -243,6 +245,26 @@ function candidateNames(sample) {
     return out;
 }
 
+// Among payload samples of the same reaction and batch, which occurrence
+// is this one? The same entity can sit in a reaction's table twice; the
+// rows look identical, but payload order matches display order, so the
+// ordinal picks the right tr.
+function occurrenceIndex(sample) {
+    const samples = STATE.lastPayload?.samples || [];
+    let n = 0;
+    for (const s of samples) {
+        if (s === sample) break;
+        if (
+            s?.reactionIndex === sample?.reactionIndex &&
+            s?.batchId != null && sample?.batchId != null &&
+            String(s.batchId) === String(sample.batchId)
+        ) {
+            n += 1;
+        }
+    }
+    return n;
+}
+
 // Click the sample's row into edit mode; returns {container, name} (the
 // identifier that actually matched) or null. Prefer the container at the
 // sample's display index, but fall back to whichever reaction block
@@ -268,10 +290,13 @@ async function openRow(sample) {
         }
 
         if (viewRows.length) {
+            // Duplicate entities: click the occurrence that belongs to
+            // THIS card, not blindly the first matching row.
+            const pick = viewRows[Math.min(occurrenceIndex(sample), viewRows.length - 1)];
             // Either the row is view-mode, or the table is already in edit
             // mode — both tolerate the click; the field-link searches that
             // follow decide.
-            mouseClick(viewRows[0].cells[0]);
+            mouseClick(pick.cells[0]);
             return { container, name };
         }
     }
@@ -279,13 +304,19 @@ async function openRow(sample) {
     return null;
 }
 
-// Read "Equivalent: X" from the sample's edit-mode row, or null.
+// Read "Equivalent: X" from the sample's EDIT-MODE row — the one carrying
+// the editable field links. View-mode duplicates of the same entity also
+// print "Equivalent: …", so a bare text match could read the wrong row;
+// they only serve as a fallback.
 function readEquivalent(container, name) {
+    let fallback = null;
     for (const tr of findRowsByName(container, name)) {
         const m = (tr.innerText || "").match(/Equivalent:\s*([\d.,]+)/);
-        if (m) return m[1];
+        if (!m) continue;
+        if (findFieldValueLink(tr, "Equivalent:", false)) return m[1];
+        if (fallback == null) fallback = m[1];
     }
-    return null;
+    return fallback;
 }
 
 // Click `label`'s value link in the sample's edit row, type `value` into

@@ -89,10 +89,13 @@ function findRowsByName(container, name) {
 // Only ONE row per table is in edit mode (the clicked one) and only it
 // carries the editable field links — but VIEW-mode duplicates of the same
 // entity print the same "Label: value" texts, so every field search must
-// be scoped to the edit row or it grabs the first look-alike.
+// be scoped to the edit row or it grabs the first look-alike. The marker
+// is the bold "Name:" label: verified live, the edit row's <b> labels are
+// Name:/IUPAC:/Density:/… ("Molecule:" is NOT one of them), and view rows
+// never render a "Name:" label.
 function isEditModeRow(tr) {
     for (const b of tr.querySelectorAll("b")) {
-        if ((b.textContent || "").trim() === "Molecule:") return true;
+        if ((b.textContent || "").trim() === "Name:") return true;
     }
     return false;
 }

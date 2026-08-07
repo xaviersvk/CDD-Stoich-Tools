@@ -16,6 +16,16 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [12.6.1] — 2026-08-07
+
+### Added
+- **17 new no-sample quotes.** The educational-quote pool on batch-only
+  cards (introduced in 12.2.3) grows from 18 to 35 entries — more lab
+  humor, audit jokes, and gentle mockery in the same spirit. Rotation
+  stays deterministic per card per day.
+
+---
+
 ## [12.6.0] — 2026-08-07
 
 ### Added

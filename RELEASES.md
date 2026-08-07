@@ -13,6 +13,16 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 12.6.1 — August 2026
+
+**More no-sample quotes.**
+
+- The NO SAMPLE cards in the Samples panel now draw from 35 quotes
+  instead of 18 — fresh reminders (and gentle teasing) about why that
+  bottle deserves a sample record. Still one quote per card per day.
+
+---
+
 ## 12.6.0 — August 2026
 
 **Products, thresholds you control, and a CSV button.**

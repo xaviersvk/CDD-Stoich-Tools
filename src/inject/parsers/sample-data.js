@@ -13,6 +13,34 @@ import {
     getSampleFields
 } from "./field-resolvers.js";
 
+// The 1-based number the table PRINTS in each row's first cell. The table
+// does not render rows in payload order — it groups them by role:
+// reactants first, then agents (incl. solvents and solutions), then
+// products, each group in payload order. Parallel rows sit in the
+// lettered A/B/C block and get no number. Verified against the live
+// tables of entry 2504170 (all three reaction variants).
+function computeDisplayRowNumbers(rows) {
+    const groupOf = (row) => {
+        const role = String(row?.role || "").toLowerCase();
+        if (role.startsWith("parallel")) return null;
+        if (role === "reactant") return 0;
+        if (role === "product") return 2;
+        return 1;
+    };
+
+    const numbers = new Array(rows.length).fill(null);
+    let n = 0;
+    for (let group = 0; group <= 2; group += 1) {
+        rows.forEach((row, i) => {
+            if (groupOf(row) === group) {
+                n += 1;
+                numbers[i] = n;
+            }
+        });
+    }
+    return numbers;
+}
+
 // Typed table purity as a percent string ("98.2"), or null. The row keeps
 // purity as a fraction; exactly 1 is the untyped 100 % default, which we
 // deliberately read as "nothing typed" (a hand-typed 100 is
@@ -28,6 +56,8 @@ export function extractRowsFromReactionFeature(feature, reactionIndex) {
     const rows = Array.isArray(stoichTable?.rows) ? stoichTable.rows : [];
     const output = [];
     const seen = new Set();
+
+    const displayRowNumbers = computeDisplayRowNumbers(rows);
 
     for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
         const row = rows[rowIndex];
@@ -66,10 +96,10 @@ export function extractRowsFromReactionFeature(feature, reactionIndex) {
             reactionLabel: `Reaction ${reactionIndex + 1}`,
             featureId: feature?.id ?? null,
             rowUid,
-            // 1-based position in the stoichiometry table — the number the
-            // table prints in the row's first cell. Lets the fill target a
-            // row deterministically even when the same batch appears twice.
-            rowNumber: rowIndex + 1,
+            // The number the table prints in the row's first cell (null
+            // for lettered parallel rows). Lets the fill target a row
+            // deterministically even when the same batch appears twice.
+            rowNumber: displayRowNumbers[rowIndex],
             role: row?.role ?? null,
             sampleId,
             hasSample,

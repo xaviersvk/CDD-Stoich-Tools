@@ -3,9 +3,9 @@ import { normalizeValue } from "../utils/format.js";
 import { STATE } from "../state.js";
 import { fillDensityIntoTable } from "./density-fill.js";
 import {
-    captureDensitiesFromSamples,
-    getRememberedDensity,
-    touchDensityUsed,
+    captureValuesFromSamples,
+    getRememberedValues,
+    touchValueUsed,
 } from "../../shared/density-memory.js";
 import { isElnEntryPage } from "../../shared/page-detection.js";
 import { PANEL_ID, REACTION_COLORS } from "../../shared/plugin-constants.js";
@@ -686,7 +686,7 @@ function buildDensityFillButton(sample, value, source) {
 
         if (result.ok) {
             sample.tableDensity = String(value);
-            if (source === "memory") touchDensityUsed(sample.batchId);
+            if (source === "memory") touchValueUsed(sample.batchId);
             btn.textContent = "✓ Density filled";
         } else {
             btn.textContent = `✗ ${result.reason || "couldn't fill"} — edit the row manually`;
@@ -760,7 +760,7 @@ export function renderSamples(payload) {
     // Passive capture: remember user-typed densities for batches that lack
     // one, drop entries whose batch now carries its own. No-ops when
     // nothing changed, so the enrichment re-render can't loop storage.
-    captureDensitiesFromSamples(samples);
+    captureValuesFromSamples(samples);
 
     const groups = groupSamplesByReaction(samples);
 
@@ -865,7 +865,7 @@ export function renderSamples(payload) {
                         : null;
                 const remembered =
                     !batchDensity && sample.batchId
-                        ? getRememberedDensity(sample.batchId)
+                        ? getRememberedValues(sample.batchId)
                         : null;
 
                 if (batchDensity) {

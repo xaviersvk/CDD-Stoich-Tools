@@ -33,8 +33,9 @@ import {
     saveAutoFillEnabled,
 } from "../shared/auto-fill-flag.js";
 import {
-    loadPurityThreshold,
-    savePurityThreshold,
+    loadPurityThresholds,
+    savePurityFillThreshold,
+    savePurityWarnThreshold,
 } from "../shared/purity-threshold.js";
 import {
     REG_FORM_NAMES_KEY,
@@ -558,14 +559,20 @@ async function initAutoFillUI() {
     autoFillCheckbox.checked = await getAutoFillEnabled();
 }
 
-const purityThresholdInput = document.getElementById("purityThreshold");
+const purityFillInput = document.getElementById("purityFillThreshold");
+const purityWarnInput = document.getElementById("purityWarnThreshold");
 
-purityThresholdInput.addEventListener("change", () => {
-    savePurityThreshold(purityThresholdInput.value);
+purityFillInput.addEventListener("change", () => {
+    savePurityFillThreshold(purityFillInput.value);
+});
+purityWarnInput.addEventListener("change", () => {
+    savePurityWarnThreshold(purityWarnInput.value);
 });
 
 async function initPurityThresholdUI() {
-    purityThresholdInput.value = await loadPurityThreshold();
+    const thresholds = await loadPurityThresholds();
+    purityFillInput.value = thresholds.fill;
+    purityWarnInput.value = thresholds.warn;
 }
 
 /* ================================================================== live sync */

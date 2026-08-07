@@ -1,9 +1,14 @@
-// shared/purity-threshold.js — the one purity threshold (percent). At or
-// below it a purity counts as "low": the panel badge flags it and the
-// fill offers consider a purity worth filling. DOM-free; read by the
-// content script (sync cache) and the options page (async load/save).
+// shared/purity-threshold.js — TWO purity thresholds (percent), both
+// defaulting to 93 but independently configurable:
+//
+//   fill  → a purity is offered for filling only at or below this value
+//   warn  → the panel's ⚠ LOW PURITY badge fires at or below this value
+//
+// DOM-free; read by the content script (sync cache) and the options page
+// (async load/save).
 
-export const PURITY_THRESHOLD_STORAGE_KEY = "cddPurityThreshold";
+export const PURITY_FILL_THRESHOLD_KEY = "cddPurityFillThreshold";
+export const PURITY_WARN_THRESHOLD_KEY = "cddPurityWarnThreshold";
 export const DEFAULT_PURITY_THRESHOLD = 93;
 
 export function sanitizePurityThreshold(raw) {
@@ -12,28 +17,40 @@ export function sanitizePurityThreshold(raw) {
     return n;
 }
 
-export async function loadPurityThreshold() {
+export async function loadPurityThresholds() {
     try {
-        const result = await chrome.storage.local.get(PURITY_THRESHOLD_STORAGE_KEY);
-        return sanitizePurityThreshold(result?.[PURITY_THRESHOLD_STORAGE_KEY]);
+        const result = await chrome.storage.local.get([
+            PURITY_FILL_THRESHOLD_KEY,
+            PURITY_WARN_THRESHOLD_KEY,
+        ]);
+        return {
+            fill: sanitizePurityThreshold(result?.[PURITY_FILL_THRESHOLD_KEY]),
+            warn: sanitizePurityThreshold(result?.[PURITY_WARN_THRESHOLD_KEY]),
+        };
     } catch {
-        return DEFAULT_PURITY_THRESHOLD;
+        return { fill: DEFAULT_PURITY_THRESHOLD, warn: DEFAULT_PURITY_THRESHOLD };
     }
 }
 
-export async function savePurityThreshold(value) {
+async function saveThreshold(key, value) {
     try {
-        await chrome.storage.local.set({
-            [PURITY_THRESHOLD_STORAGE_KEY]: sanitizePurityThreshold(value),
-        });
+        await chrome.storage.local.set({ [key]: sanitizePurityThreshold(value) });
     } catch {
         // Orphaned content script — nothing useful to do.
     }
 }
 
+export function savePurityFillThreshold(value) {
+    return saveThreshold(PURITY_FILL_THRESHOLD_KEY, value);
+}
+
+export function savePurityWarnThreshold(value) {
+    return saveThreshold(PURITY_WARN_THRESHOLD_KEY, value);
+}
+
 /* Sync cache for render paths, refreshed via chrome.storage.onChanged. */
 
-let cached = DEFAULT_PURITY_THRESHOLD;
+let cached = { fill: DEFAULT_PURITY_THRESHOLD, warn: DEFAULT_PURITY_THRESHOLD };
 let listenerAttached = false;
 const changeListeners = new Set();
 
@@ -47,8 +64,12 @@ function notify() {
     }
 }
 
-export function getPurityThreshold() {
-    return cached;
+export function getPurityFillThreshold() {
+    return cached.fill;
+}
+
+export function getPurityWarnThreshold() {
+    return cached.warn;
 }
 
 export function onPurityThresholdChanged(cb) {
@@ -56,17 +77,31 @@ export function onPurityThresholdChanged(cb) {
     return () => changeListeners.delete(cb);
 }
 
-export async function initPurityThreshold() {
+export async function initPurityThresholds() {
     if (!listenerAttached && chrome?.storage?.onChanged) {
         listenerAttached = true;
         chrome.storage.onChanged.addListener((changes, areaName) => {
-            if (areaName !== "local" || !changes[PURITY_THRESHOLD_STORAGE_KEY]) return;
-            cached = sanitizePurityThreshold(changes[PURITY_THRESHOLD_STORAGE_KEY].newValue);
-            notify();
+            if (areaName !== "local") return;
+            let touched = false;
+            if (changes[PURITY_FILL_THRESHOLD_KEY]) {
+                cached = {
+                    ...cached,
+                    fill: sanitizePurityThreshold(changes[PURITY_FILL_THRESHOLD_KEY].newValue),
+                };
+                touched = true;
+            }
+            if (changes[PURITY_WARN_THRESHOLD_KEY]) {
+                cached = {
+                    ...cached,
+                    warn: sanitizePurityThreshold(changes[PURITY_WARN_THRESHOLD_KEY].newValue),
+                };
+                touched = true;
+            }
+            if (touched) notify();
         });
     }
 
-    cached = await loadPurityThreshold();
+    cached = await loadPurityThresholds();
     notify();
     return cached;
 }

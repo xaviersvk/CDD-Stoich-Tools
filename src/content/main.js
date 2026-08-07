@@ -43,7 +43,7 @@ import {initMultiPositionSampleCreate} from "./features/multi-position-sample-cr
 import {initPrefixColorCache} from "../shared/prefix-colors.js";
 import {initDensityMemory, onDensityMemoryChanged} from "../shared/density-memory.js";
 import {initAutoFill} from "./features/auto-fill.js";
-import {initPurityThreshold, onPurityThresholdChanged} from "../shared/purity-threshold.js";
+import {initPurityThresholds, onPurityThresholdChanged} from "../shared/purity-threshold.js";
 
 
 function isSupportedHost() {
@@ -152,9 +152,9 @@ function init() {
   // same fills the card buttons offer, sequentially, once the page settles.
   initAutoFill();
 
-  // Purity threshold: badge + fill offers re-render when it changes in
-  // the options page.
-  initPurityThreshold().then(() => {
+  // Purity thresholds (fill + warn): badge and offers re-render when they
+  // change in the options page.
+  initPurityThresholds().then(() => {
     onPurityThresholdChanged(() => renderFromState());
   });
 }

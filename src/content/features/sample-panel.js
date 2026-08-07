@@ -6,7 +6,7 @@ import {
     captureValuesFromSamples,
     touchValueUsed,
 } from "../../shared/density-memory.js";
-import { getPurityThreshold } from "../../shared/purity-threshold.js";
+import { getPurityWarnThreshold } from "../../shared/purity-threshold.js";
 import { isElnEntryPage } from "../../shared/page-detection.js";
 import { PANEL_ID, REACTION_COLORS } from "../../shared/plugin-constants.js";
 import { updatePanelVisibilityForOverlays } from "../overlay-watcher.js";
@@ -893,7 +893,7 @@ export function renderSamples(payload) {
             card.style.boxShadow = `0 0 0 1px ${color.glow} inset`;
 
             const purityValue = parsePurity(sample.purity);
-            const lowPurity = !isNaN(purityValue) && purityValue <= getPurityThreshold();
+            const lowPurity = !isNaN(purityValue) && purityValue <= getPurityWarnThreshold();
             const depletedSample = isSampleDepleted(sample);
 
             if (lowPurity || depletedSample) {

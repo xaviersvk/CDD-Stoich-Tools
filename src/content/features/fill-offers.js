@@ -6,7 +6,7 @@
 // first, remembered value second — never both for one field.
 
 import { getRememberedValues } from "../../shared/density-memory.js";
-import { getPurityThreshold } from "../../shared/purity-threshold.js";
+import { getPurityFillThreshold } from "../../shared/purity-threshold.js";
 import {
     fillDensityIntoTable,
     fillPurityIntoTable,
@@ -31,7 +31,7 @@ export function computeFillOffers(sample) {
         // only at or below the configurable threshold. A batch purity
         // above it does NOT fall through to the remembered value: the
         // batch stays authoritative.
-        const limit = getPurityThreshold();
+        const limit = getPurityFillThreshold();
         const lowEnough = (v) => {
             const n = parseFloat(String(v).replace(",", "."));
             return Number.isFinite(n) && n <= limit;

@@ -11,12 +11,14 @@ already flags "⚠ LOW PURITY" at a hardcoded ≤ 93 %.
 
 ## Decision
 
-One configurable threshold (default **93 %**), shared by:
-- the **⚠ LOW PURITY badge** (replaces the hardcoded 93), and
-- the **Fill purity offer**: shown only when the offered value (batch or
-  remembered) is ≤ threshold. Auto-fill and Fill all inherit the rule via
-  `computeFillOffers`. Capture is unchanged (remembering a high purity is
-  harmless; it just is not offered).
+Amended after user reconsideration: **two independent thresholds** (both
+default **93 %**):
+- **Fill purity threshold** — the Fill purity offer is shown only when
+  the offered value (batch or remembered) is ≤ this. Auto-fill and Fill
+  all inherit the rule via `computeFillOffers`. Capture is unchanged
+  (remembering a high purity is harmless; it just is not offered).
+- **Low purity warning threshold** — the **⚠ LOW PURITY badge** fires at
+  or below this (replaces the hardcoded 93).
 
 A batch purity above the threshold does NOT fall through to the
 remembered value — the batch stays authoritative.

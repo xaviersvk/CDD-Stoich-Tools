@@ -12,6 +12,7 @@
 // neighbour prefetches never re-request.
 
 import { extractSynonym } from "./molecule-image.js";
+import { recordHeatMapFieldDefs } from "../../shared/heat-map-fields.js";
 
 const LOG_PREFIX = "[CDD plate plugin]";
 
@@ -26,6 +27,7 @@ const EMPTY = { synonym: null, batches: [] };
 // silently vanish. The batch-name field ("001") names the batch instead.
 function extractBatches(doc) {
     const batches = [];
+    let recorded = false;
 
     for (const el of doc.querySelectorAll('[component_class="RegistrationFormRenderer"]')) {
         let props;
@@ -34,7 +36,17 @@ function extractBatches(doc) {
         } catch {
             continue;
         }
-        if (props?.resource_type !== "batch" || props.object_id == null) continue;
+        if (props?.resource_type !== "batch") continue;
+
+        // Feed the options page's checkbox list from ANY batch renderer — the
+        // blank new-batch form (object_id null) carries the full definitions
+        // too, so discovery works even for molecules without saved batches.
+        if (!recorded && Array.isArray(props.batch_field_definitions)) {
+            recorded = true;
+            recordHeatMapFieldDefs(props.batch_field_definitions);
+        }
+
+        if (props.object_id == null) continue;
 
         const values = new Map();
         for (const entry of Object.values(props.data || {})) {

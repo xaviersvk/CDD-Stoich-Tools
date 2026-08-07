@@ -122,7 +122,12 @@ export function extractSynonym(doc) {
     for (const field of fields) {
         const label = field.querySelector("dt")?.textContent?.trim().toLowerCase();
         if (label === "synonyms" || label === "synonym") {
-            const value = field.querySelector("dd")?.textContent?.trim();
+            const dd = field.querySelector("dd");
+            if (!dd) return null;
+            // <br>-separated synonyms would silently concatenate through
+            // textContent; turn the breaks into real separators first.
+            for (const br of dd.querySelectorAll("br")) br.replaceWith(", ");
+            const value = dd.textContent?.trim();
             // Only the first synonym. CDD joins multiple synonyms with ", " /
             // "; ", so split on a separator (comma/semicolon followed by
             // whitespace) -- NOT a bare comma, which would mangle names that

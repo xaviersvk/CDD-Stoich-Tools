@@ -42,8 +42,13 @@ import {
     saveShowProducts,
 } from "../shared/show-products-flag.js";
 import {
+    HEAT_MAP_DISCOVERED_KEY,
+    SYNONYMS_LABEL,
     getHeatMapFields,
     saveHeatMapFields,
+    getDiscoveredHeatMapFields,
+    normalizeFieldLabel,
+    isSynonymLabel,
 } from "../shared/heat-map-fields.js";
 import {
     REG_FORM_NAMES_KEY,
@@ -595,16 +600,91 @@ async function initShowProductsUI() {
 
 /* ==================================================== 5 · Heat map tooltip */
 
-const heatMapFieldsInput = document.getElementById("heatMapFields");
+const heatMapFieldListEl = document.getElementById("heatMapFieldList");
+const heatMapEmptyEl = document.getElementById("heatMapFieldsEmpty");
 
-// Persist on change (blur/close), not per keystroke — half-typed labels in
-// storage would flicker "—" rows onto tooltips in other tabs.
-heatMapFieldsInput.addEventListener("change", () => {
-    saveHeatMapFields(heatMapFieldsInput.value.split("\n"));
-});
+// The saved selection (ordered array of labels — that order IS the tooltip
+// row order) and the labels the content script has discovered so far.
+let heatMapSelection = [];
+let heatMapDiscovered = [];
+
+// Discovered fields in the vault's own batch-form order.
+function sortedHeatMapDiscovered() {
+    return [...heatMapDiscovered].sort(
+        (a, b) => a.order - b.order || a.label.localeCompare(b.label)
+    );
+}
+
+// Rebuild the ordered selection from a set of checked (normalized) labels:
+// Synonyms first, then the discovered fields in vault order, then any checked
+// leftover the vault no longer offers (kept so it can still be unticked).
+function rebuildHeatMapSelection(checkedKeys) {
+    const out = [];
+    if (checkedKeys.has(normalizeFieldLabel(SYNONYMS_LABEL))) out.push(SYNONYMS_LABEL);
+
+    for (const field of sortedHeatMapDiscovered()) {
+        if (checkedKeys.has(normalizeFieldLabel(field.label))) out.push(field.label);
+    }
+
+    for (const label of heatMapSelection) {
+        const key = normalizeFieldLabel(label);
+        if (!checkedKeys.has(key)) continue;
+        if (out.some((l) => normalizeFieldLabel(l) === key)) continue;
+        out.push(label);
+    }
+
+    return out;
+}
+
+function renderHeatMapFields() {
+    const checkedKeys = new Set(heatMapSelection.map(normalizeFieldLabel));
+
+    const onToggle = (label, checked) => {
+        const key = normalizeFieldLabel(label);
+        if (checked) checkedKeys.add(key);
+        else checkedKeys.delete(key);
+        heatMapSelection = rebuildHeatMapSelection(checkedKeys);
+        saveHeatMapFields(heatMapSelection);
+    };
+
+    heatMapFieldListEl.replaceChildren();
+
+    // The built-in pseudo-field first, always available.
+    heatMapFieldListEl.appendChild(
+        createFieldCheckbox(
+            { key: SYNONYMS_LABEL, label: "Synonyms (molecule's first synonym)" },
+            checkedKeys.has(normalizeFieldLabel(SYNONYMS_LABEL)),
+            onToggle
+        )
+    );
+
+    const discoveredKeys = new Set();
+    for (const field of sortedHeatMapDiscovered()) {
+        discoveredKeys.add(normalizeFieldLabel(field.label));
+        const item = createFieldCheckbox(
+            { key: field.label, label: field.label },
+            checkedKeys.has(normalizeFieldLabel(field.label)),
+            onToggle
+        );
+        heatMapFieldListEl.appendChild(item);
+    }
+
+    // Selected labels the vault hasn't (re)offered — e.g. the old defaults on
+    // a vault that names the field differently. Shown so they can be unticked.
+    for (const label of heatMapSelection) {
+        if (isSynonymLabel(label)) continue;
+        const key = normalizeFieldLabel(label);
+        if (discoveredKeys.has(key)) continue;
+        heatMapFieldListEl.appendChild(createFieldCheckbox({ key: label, label }, true, onToggle));
+    }
+
+    heatMapEmptyEl.hidden = heatMapDiscovered.length > 0;
+}
 
 async function initHeatMapFieldsUI() {
-    heatMapFieldsInput.value = (await getHeatMapFields()).join("\n");
+    heatMapSelection = await getHeatMapFields();
+    heatMapDiscovered = await getDiscoveredHeatMapFields();
+    renderHeatMapFields();
 }
 
 /* ================================================================== live sync */
@@ -649,6 +729,11 @@ chrome.storage.onChanged.addListener(async (changes, areaName) => {
 
     if (changes[DENSITY_MEMORY_STORAGE_KEY]) {
         renderDensityMemory(await loadDensityMemory());
+    }
+
+    if (changes[HEAT_MAP_DISCOVERED_KEY]) {
+        heatMapDiscovered = await getDiscoveredHeatMapFields();
+        renderHeatMapFields();
     }
 });
 

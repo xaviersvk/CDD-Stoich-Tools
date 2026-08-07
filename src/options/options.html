@@ -210,18 +210,18 @@
             </div>
         </header>
 
-        <div class="card__body">
+        <div class="card__body card__body--scroll">
             <p class="note">
-                One field per line, shown in this order. Batch field names are
-                matched ignoring case and <code>*</code> markers — so
-                <code>Internal ID</code> also finds <code>*Internal ID</code>.
-                The special entry <code>Synonyms</code> shows the molecule's
-                synonym. Clear the list to turn the extra rows off.
+                Tick what the popup should show besides CDD's own rows. Batch
+                fields appear here on their own as you hover heat maps — in
+                your vault's order. Untick everything to switch the extra
+                rows off.
             </p>
-            <label class="sr-only" for="heatMapFields">Heat map tooltip fields</label>
-            <textarea id="heatMapFields" class="select heat-map-fields-input"
-                      rows="5" spellcheck="false"
-                      placeholder="Synonyms&#10;Internal ID"></textarea>
+            <div id="heatMapFieldList" class="stack"></div>
+            <p id="heatMapFieldsEmpty" class="empty" hidden>
+                No batch fields discovered yet. Hover a well on any run's heat
+                map once and your vault's fields will appear here.
+            </p>
         </div>
     </section>
 

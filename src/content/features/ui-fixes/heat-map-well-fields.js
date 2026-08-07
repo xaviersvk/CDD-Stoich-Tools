@@ -23,6 +23,7 @@ import {
 
 const LOG_PREFIX = "[CDD plate plugin]";
 
+const STYLE_ID = "cdd-heat-map-extra-style";
 const EXTRA_CLASS = "cdd-heat-map-extra";
 const WELL_SELECTOR = "td.heat-map-well";
 const WELL_ID_RE = /^plate_(\d+)_well_(\d+)_(\d+)$/;
@@ -138,35 +139,56 @@ async function augment(popup, link) {
 
     // Race guards: the balloon is one reused element — by the time the fetch
     // resolves it may show another well (marker gone, different link) or be
-    // gone entirely. Only append if it still shows OUR molecule, unaugmented.
+    // gone entirely. Only append if it still shows OUR molecule, unprocessed.
     if (!popup.isConnected) return;
     if (popup.querySelector(`a[href*="/molecules/"]`) !== link) return;
-    if (popup.querySelector(`.${EXTRA_CLASS}`)) return;
-
-    const list = popup.querySelector("ul");
-    if (!list) return;
+    if (popup.dataset.cddExtraDone) return;
+    popup.dataset.cddExtraDone = "1";
 
     const batch = pickBatch(data.batches, batchName);
 
+    // Batch fields (Internal ID & co) go straight under the molecule link so
+    // they read before the structure image; only labels the vault actually
+    // defines get a row, a valueless field shows "—" so a configured field
+    // never silently vanishes.
+    const rows = [];
+    let wantSynonym = false;
     for (const label of labels) {
-        let value;
         if (isSynonymLabel(label)) {
-            value = data.synonym || "—";
-        } else {
-            // Only labels the vault actually defines get a row; a valueless
-            // field shows "—" so a configured field never silently vanishes.
-            const key = normalizeFieldLabel(label);
-            const field = batch?.fields.find((f) => normalizeFieldLabel(f.label) === key);
-            if (!field) continue;
-            value = field.value || "—";
+            wantSynonym = true;
+            continue;
         }
+        const key = normalizeFieldLabel(label);
+        const field = batch?.fields.find((f) => normalizeFieldLabel(f.label) === key);
+        if (!field) continue;
+        // The vault's own label style, minus the "*" required marker.
+        rows.push([label.replace(/\*/g, "").trim(), field.value || "—"]);
+    }
 
+    if (rows.length) {
+        const box = document.createElement("div");
+        box.className = `${EXTRA_CLASS} ${EXTRA_CLASS}-top`;
+        for (const [label, value] of rows) {
+            const row = document.createElement("div");
+            const strong = document.createElement("strong");
+            strong.textContent = `${label}: `;
+            row.append(strong, document.createTextNode(value));
+            box.appendChild(row);
+        }
+        const heading = link.closest("h3") || link;
+        heading.insertAdjacentElement("afterend", box);
+    }
+
+    // The synonym (first one only) can be a full IUPAC name — it stays at the
+    // bottom of the readout list where a long value doesn't push the
+    // structure image around.
+    const list = popup.querySelector("ul");
+    if (wantSynonym && list) {
         const li = document.createElement("li");
         li.className = EXTRA_CLASS;
         const strong = document.createElement("strong");
-        // Show the vault's own label style, minus the "*" required marker.
-        strong.textContent = `${label.replace(/\*/g, "").trim()}: `;
-        li.append(strong, document.createTextNode(value));
+        strong.textContent = "Synonym: ";
+        li.append(strong, document.createTextNode(data.synonym || "—"));
         list.appendChild(li);
     }
 }
@@ -178,7 +200,7 @@ function maybeAugment() {
     if (!balloon) return;
 
     const popup = balloon.querySelector(".details-popup");
-    if (!popup || popup.querySelector(`.${EXTRA_CLASS}`)) return;
+    if (!popup || popup.dataset.cddExtraDone) return;
 
     const link = popup.querySelector('a[href*="/molecules/"]');
     if (!link) return;
@@ -190,9 +212,29 @@ function maybeAugment() {
     );
 }
 
+function injectStyles() {
+    if (document.getElementById(STYLE_ID)) return;
+
+    const style = document.createElement("style");
+    style.id = STYLE_ID;
+    style.textContent = `
+        .${EXTRA_CLASS}-top {
+            margin: 4px 0 6px;
+        }
+
+        .${EXTRA_CLASS}-top div {
+            margin: 2px 0;
+        }
+    `;
+
+    document.head.appendChild(style);
+}
+
 export function initHeatMapWellFields() {
     if (started) return;
     started = true;
+
+    injectStyles();
 
     // Delegated on document so it survives Turbo's <body> swaps.
     document.addEventListener("mouseover", (event) => {

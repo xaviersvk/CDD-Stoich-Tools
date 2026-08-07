@@ -9,8 +9,15 @@
 // molecule's first synonym instead of a batch field.
 
 export const HEAT_MAP_FIELDS_STORAGE_KEY = "cddHeatMapTooltipFields";
+export const HEAT_MAP_DISCOVERED_KEY = "cddHeatMapDiscoveredFields";
 
-export const DEFAULT_HEAT_MAP_FIELDS = ["Synonyms", "Internal ID"];
+// The one built-in pseudo-field: the molecule's first synonym.
+export const SYNONYMS_LABEL = "Synonyms";
+
+export const DEFAULT_HEAT_MAP_FIELDS = [SYNONYMS_LABEL, "Internal ID"];
+
+// Cap on stored discovered labels — far above any real vault's field count.
+const MAX_DISCOVERED = 200;
 
 // At most this many extra rows — the tooltip is a glance, not a data sheet.
 const MAX_FIELDS = 30;
@@ -109,4 +116,106 @@ export async function initHeatMapFieldsConfig() {
     cached = await getHeatMapFields();
     notify();
     return cached;
+}
+
+/* ------------------------------------------------------------------ *
+ * Discovered fields — the options page never asks the user to TYPE a field
+ * name. The content script records every batch field definition it parses off
+ * a molecule page (api/batch-fields.js), and the options page renders the
+ * recorded labels as checkboxes, exactly like the Panel fields card.
+ *
+ * Stored shape: Array<{ label, order, lastSeen }> — `order` is the vault's
+ * display_order so the checkbox list reads like the vault's own batch form.
+ * ------------------------------------------------------------------ */
+
+export function sanitizeDiscoveredHeatMapFields(raw) {
+    if (!Array.isArray(raw)) return [];
+
+    const out = [];
+    const seen = new Set();
+    for (const entry of raw) {
+        const label = typeof entry?.label === "string" ? entry.label.trim() : "";
+        const key = normalizeFieldLabel(label);
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        out.push({
+            label,
+            order: Number.isFinite(entry.order) ? entry.order : 0,
+            lastSeen: Number.isFinite(entry.lastSeen) ? entry.lastSeen : 0,
+        });
+        if (out.length >= MAX_DISCOVERED) break;
+    }
+    return out;
+}
+
+export async function getDiscoveredHeatMapFields() {
+    try {
+        const result = await chrome.storage.local.get(HEAT_MAP_DISCOVERED_KEY);
+        return sanitizeDiscoveredHeatMapFields(result?.[HEAT_MAP_DISCOVERED_KEY]);
+    } catch {
+        return [];
+    }
+}
+
+export async function saveDiscoveredHeatMapFields(list) {
+    try {
+        await chrome.storage.local.set({
+            [HEAT_MAP_DISCOVERED_KEY]: sanitizeDiscoveredHeatMapFields(list),
+        });
+    } catch {
+        // Orphaned content script — discovery re-runs on the next page load.
+    }
+}
+
+// Refresh `lastSeen` at most daily so a hover burst over a heat map does not
+// write storage once per molecule parsed.
+const DISCOVERY_TOUCH_INTERVAL_MS = 24 * 60 * 60 * 1000;
+
+// Serialises read-modify-write cycles so parallel molecule parses can't lose
+// each other's labels.
+let recordQueue = Promise.resolve();
+
+/**
+ * recordHeatMapFieldDefs(defs) — content-side AUTO-DISCOVERY, fire-and-forget.
+ * `defs` are raw batch_field_definitions off a molecule page. The batch-name
+ * field is skipped (the popup shows the batch name natively).
+ */
+export function recordHeatMapFieldDefs(defs) {
+    const found = [];
+    for (const def of Array.isArray(defs) ? defs : []) {
+        if (!def || typeof def.name !== "string" || def.is_batch_name_field) continue;
+        const label = def.name.trim();
+        if (!label) continue;
+        found.push({
+            label,
+            order: Number.isFinite(def.display_order) ? def.display_order : 0,
+        });
+    }
+    if (!found.length) return;
+
+    recordQueue = recordQueue
+        .then(async () => {
+            const existing = await getDiscoveredHeatMapFields();
+            const byKey = new Map(existing.map((f) => [normalizeFieldLabel(f.label), f]));
+            const now = Date.now();
+            let changed = false;
+
+            for (const field of found) {
+                const key = normalizeFieldLabel(field.label);
+                const prev = byKey.get(key);
+                if (
+                    !prev ||
+                    prev.order !== field.order ||
+                    now - prev.lastSeen > DISCOVERY_TOUCH_INTERVAL_MS
+                ) {
+                    changed = true;
+                }
+                byKey.set(key, { ...field, lastSeen: now });
+            }
+
+            if (changed) await saveDiscoveredHeatMapFields([...byKey.values()]);
+        })
+        .catch(() => {
+            /* storage gone (extension reloaded) — rediscovered next load */
+        });
 }

@@ -621,13 +621,6 @@ body {
     margin-bottom: 10px;
 }
 
-.heat-map-fields-input {
-    resize: vertical;
-    font-family: var(--mono);
-    font-size: 12.5px;
-    line-height: 1.6;
-}
-
 .purity-threshold-input {
     width: 72px;
     padding: 4px 6px;

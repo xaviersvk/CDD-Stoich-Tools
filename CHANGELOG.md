@@ -16,6 +16,26 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [12.8.1] — 2026-08-07
+
+### Changed
+- **Heat-map tooltip settings are now checkboxes, not a text box.** The
+  content script records every batch field definition it parses off a
+  molecule page (`recordHeatMapFieldDefs` in `shared/heat-map-fields.js`,
+  fed from `api/batch-fields.js` — the blank new-batch form counts too, so
+  discovery works before any batch is saved). The "Heat map tooltip"
+  options card lists the discovered fields in the vault's own
+  `display_order` with a built-in "Synonyms" entry on top; ticking builds
+  the same ordered label array as before, so stored selections carry over.
+- **Batch fields moved to the top of the popup.** Rows like Internal ID
+  now sit directly under the molecule link, before the structure image;
+  the synonym row (first synonym only) stays at the bottom of the readout
+  list where a long IUPAC name doesn't push the structure around.
+- `extractSynonym` now converts `<br>` separators to ", " before reading,
+  so multi-line synonym lists can't concatenate into one string.
+
+---
+
 ## [12.8.0] — 2026-08-07
 
 ### Added

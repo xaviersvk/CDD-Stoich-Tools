@@ -13,6 +13,21 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 12.8.1 — August 2026
+
+**Heat map tooltip: tick, don't type.**
+
+- The "Heat map tooltip" settings card now fills itself: hover any run
+  heat map once and your vault's batch fields appear as checkboxes, in
+  the same order as your batch form. Tick what you want — no more typing
+  field names.
+- Batch fields like **Internal ID** now show at the **top** of the popup,
+  right under the molecule link. The synonym (first one only) stays at
+  the bottom, so a long chemical name doesn't shove the structure image
+  around.
+
+---
+
 ## 12.8.0 — August 2026
 
 **Heat map tooltips that tell you what's in the well.**

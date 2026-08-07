@@ -13,6 +13,16 @@ import {
     getSampleFields
 } from "./field-resolvers.js";
 
+// Typed table purity as a percent string ("98.2"), or null. The row keeps
+// purity as a fraction; exactly 1 is the untyped 100 % default, which we
+// deliberately read as "nothing typed" (a hand-typed 100 is
+// indistinguishable and stays un-captured — harmless).
+function resolveTablePurity(row) {
+    const p = Number(row?.purity);
+    if (!Number.isFinite(p) || p === 1) return null;
+    return String(Number((p * 100).toFixed(6)));
+}
+
 export function extractRowsFromReactionFeature(feature, reactionIndex) {
     const stoichTable = feature?.data?.stoichiometryTable;
     const rows = Array.isArray(stoichTable?.rows) ? stoichTable.rows : [];
@@ -60,14 +70,22 @@ export function extractRowsFromReactionFeature(feature, reactionIndex) {
             hasSample,
             // Values already sitting in the table row (user-entered); used
             // to decide whether the fill buttons are offered and what the
-            // density-memory capture may remember.
+            // density-memory capture may remember. Verified against the
+            // live eln/v2 payload: density is the typed string in
+            // userInput; purity is a row-level FRACTION (0.982 = 98.2 %,
+            // and exactly 1 is CDD's untyped 100 % default); concentration
+            // is a row-level number, always in mol/L (the editor popup has
+            // no unit selector).
             tableDensity: row?.userInput?.density ?? null,
-            tablePurity: row?.userInput?.purity ?? null,
-            tableConcentration: row?.userInput?.concentration ?? null,
+            tablePurity: resolveTablePurity(row),
+            tableConcentration:
+                row?.concentration != null && row.concentration !== ""
+                    ? String(row.concentration)
+                    : null,
             tableConcentrationUnits:
-                row?.userInput?.concentrationUnits ??
-                row?.userInput?.concentrationUnit ??
-                null,
+                row?.concentration != null && row.concentration !== ""
+                    ? "mol/L"
+                    : null,
             name: resolveRowName(row),
             location: resolveRowLocation(row),
             ...batchFields,      // purity, density, internalID

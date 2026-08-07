@@ -186,8 +186,8 @@
         </div>
     </section>
 
-    <!-- 5 · Remembered densities -->
-    <section class="card" aria-labelledby="col-densities-heading">
+    <!-- 5 · Remembered batch values -->
+    <section class="card card--wide" aria-labelledby="col-densities-heading">
         <header class="card__head">
             <span class="tile" aria-hidden="true">
                 <span class="tile__no">5</span>
@@ -207,9 +207,11 @@
         <div class="card__body">
             <label class="field-item auto-fill-toggle">
                 <input type="checkbox" id="autoFillEnabled" />
-                <span><strong>Experimental:</strong> fill missing values into
-                tables automatically (runs the same fills the buttons offer,
-                without the click)</span>
+                <span><strong>Experimental:</strong> auto-fill values into rows
+                you <strong>add while working</strong>. Rows that already existed
+                when the entry loaded are never touched automatically — use the
+                card buttons or the panel's <em>Fill all</em> button for those.
+                Every write goes through CDD's own editor and autosave.</span>
             </label>
             <p class="density-memory-count">
                 <span id="densityMemoryCount">0</span> / 100 remembered

@@ -606,6 +606,17 @@ body {
     margin-bottom: 10px;
 }
 
+/* The remembered-values list has six columns — give the card room. */
+.card--wide {
+    grid-column: span 2;
+}
+
+@media (max-width: 640px) {
+    .card--wide {
+        grid-column: auto;
+    }
+}
+
 .density-memory-name {
     font-weight: 600;
     overflow: hidden;

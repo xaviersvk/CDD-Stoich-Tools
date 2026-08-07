@@ -181,10 +181,24 @@ export function ensurePanel() {
     status.className = "cdd-stoich-status";
     status.textContent = "Waiting for reaction data...";
 
+    // "Fill all" — one deliberate click runs every offer the cards show,
+    // sequentially. The conscious counterpart to the (new-rows-only)
+    // auto-fill: existing rows are never written without this click.
+    const fillAllBtn = document.createElement("button");
+    fillAllBtn.id = `${PANEL_ID}-fill-all`;
+    fillAllBtn.type = "button";
+    fillAllBtn.className = "cdd-fill-all-btn";
+    fillAllBtn.hidden = true;
+    fillAllBtn.addEventListener("click", async (event) => {
+        event.stopPropagation();
+        await runAllOffers(fillAllBtn);
+    });
+
     const list = document.createElement("div");
     list.className = "cdd-stoich-list";
 
     body.appendChild(status);
+    body.appendChild(fillAllBtn);
     body.appendChild(list);
 
     panel.appendChild(header);
@@ -414,6 +428,27 @@ export function ensurePanel() {
     line-height: 1.35;
     color: #f59e0b;
     opacity: 0.95;
+  }
+
+  #${PANEL_ID} .cdd-fill-all-btn {
+    margin: 0 10px 8px;
+    padding: 5px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 6px;
+    border: 1px solid rgba(56, 189, 248, 0.55);
+    background: rgba(56, 189, 248, 0.18);
+    color: #7dd3fc;
+    cursor: pointer;
+  }
+
+  #${PANEL_ID} .cdd-fill-all-btn:hover:not(:disabled) {
+    background: rgba(56, 189, 248, 0.3);
+  }
+
+  #${PANEL_ID} .cdd-fill-all-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
   }
 `;
 
@@ -696,6 +731,54 @@ function buildFillButton(sample, offer) {
     return btn;
 }
 
+// Sequential run of every offer on every card — the "Fill all" button.
+// One deliberate click, many writes, each through CDD's own editor with
+// per-step verification; a failed offer skips the rest of its row.
+async function runAllOffers(btn) {
+    if (btn.dataset.running === "1") return;
+    btn.dataset.running = "1";
+    btn.disabled = true;
+
+    let filled = 0;
+    let failed = 0;
+
+    const samples = STATE.lastPayload?.samples || [];
+    for (const sample of samples) {
+        for (const offer of computeFillOffers(sample)) {
+            btn.textContent = `Filling ${offer.field} — ${sample.name}…`;
+            const result = await runFillOffer(sample, offer);
+            if (result.ok) {
+                filled += 1;
+                markOfferFilled(sample, offer);
+                if (offer.source === "memory") touchValueUsed(sample.batchId);
+            } else {
+                failed += 1;
+                setStatus(`Fill all: ${offer.field} for ${sample.name}: ${result.reason || "failed"}`);
+                break;   // skip the rest of this row, continue with the next
+            }
+            await new Promise((resolve) => setTimeout(resolve, 400));
+        }
+    }
+
+    delete btn.dataset.running;
+    btn.disabled = false;
+    setStatus(`Fill all: ${filled} value(s) filled${failed ? `, ${failed} failed` : ""}.`);
+    renderFromState();
+}
+
+// Keep the "Fill all (N)" label in sync with what the cards offer; hidden
+// when there is nothing to fill. No-ops mid-run so progress text survives
+// re-renders.
+function updateFillAllButton() {
+    const btn = document.getElementById(`${PANEL_ID}-fill-all`);
+    if (!btn || btn.dataset.running === "1") return;
+
+    const samples = STATE.lastPayload?.samples || [];
+    const count = samples.reduce((n, s) => n + computeFillOffers(s).length, 0);
+    btn.hidden = count === 0;
+    btn.textContent = `⤵ Fill all missing values (${count})`;
+}
+
 // Amber nudge under memory-sourced fill buttons: the right long-term home
 // for these values is the batch/sample record, not this extension's
 // storage.
@@ -753,6 +836,7 @@ export function renderSamples(payload) {
         emptyCard.className = "cdd-stoich-card";
         emptyCard.textContent = "No samples found in reaction block.";
         list.appendChild(emptyCard);
+        updateFillAllButton();
         return;
     }
 
@@ -871,6 +955,8 @@ export function renderSamples(payload) {
         groupEl.appendChild(groupBody);
         list.appendChild(groupEl);
     }
+
+    updateFillAllButton();
 }
 
 export function renderFromState() {

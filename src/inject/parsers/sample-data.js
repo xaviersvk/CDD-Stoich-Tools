@@ -76,7 +76,13 @@ export function extractRowsFromReactionFeature(feature, reactionIndex) {
             // and exactly 1 is CDD's untyped 100 % default); concentration
             // is a row-level number, always in mol/L (the editor popup has
             // no unit selector).
-            tableDensity: row?.userInput?.density ?? null,
+            // Effective density: the typed value, or the row-level one CDD
+            // keeps/derives itself (molecule data, or a typed value it has
+            // moved out of userInput on some edit paths). Either way the
+            // table HAS a density — no fill offer needed.
+            tableDensity: row?.userInput?.density ?? row?.density ?? null,
+            // Only the typed value is worth remembering.
+            typedDensity: row?.userInput?.density ?? null,
             tablePurity: resolveTablePurity(row),
             tableConcentration:
                 row?.concentration != null && row.concentration !== ""

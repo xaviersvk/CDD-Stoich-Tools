@@ -262,7 +262,7 @@ export function captureValuesFromSamples(samples) {
         const toRemember = {};
 
         if (has(sample.density)) toForget.push("density");
-        else if (has(sample.tableDensity) && gate) toRemember.density = String(sample.tableDensity);
+        else if (has(sample.typedDensity) && gate) toRemember.density = String(sample.typedDensity);
 
         if (has(sample.purity)) toForget.push("purity");
         else if (has(sample.tablePurity) && gate) toRemember.purity = String(sample.tablePurity);

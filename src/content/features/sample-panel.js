@@ -2,6 +2,11 @@ import { copyTextWithFeedback } from "../utils/clipboard.js";
 import { normalizeValue } from "../utils/format.js";
 import { STATE } from "../state.js";
 import { fillDensityIntoTable } from "./density-fill.js";
+import {
+    captureDensitiesFromSamples,
+    getRememberedDensity,
+    touchDensityUsed,
+} from "../../shared/density-memory.js";
 import { isElnEntryPage } from "../../shared/page-detection.js";
 import { PANEL_ID, REACTION_COLORS } from "../../shared/plugin-constants.js";
 import { updatePanelVisibilityForOverlays } from "../overlay-watcher.js";
@@ -725,6 +730,10 @@ export function renderSamples(payload) {
     }
 
     persistDiscoveredCustomFields(samples);
+    // Passive capture: remember user-typed densities for batches that lack
+    // one, drop entries whose batch now carries its own. No-ops when
+    // nothing changed, so the enrichment re-render can't loop storage.
+    captureDensitiesFromSamples(samples);
 
     const groups = groupSamplesByReaction(samples);
 

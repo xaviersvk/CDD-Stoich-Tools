@@ -16,6 +16,22 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [12.8.5] — 2026-08-09
+
+### Fixed
+- **Plate map CSV export left Batch ID/Sample ID unsplit for mixed
+  alphanumeric sample codes.** `splitBatchAndSample()` accepted a sample
+  code only if it matched `^[A-Za-z]+\d+$` — letters, then digits, and
+  nothing else. Real codes interleave the two, so
+  `I88-SM-0060050-005-I88S034537` failed the test: the whole name landed
+  in **Batch ID** and **Sample ID** came out empty. The test is now simply
+  "the last dash-segment starts with a letter", which is what distinguishes
+  a sample code from a batch's trailing `-001`. Batch-only ids
+  (`PHA-0334442-001`) still stay unsplit, and `S003559` / `SM003035`
+  behave exactly as before.
+
+---
+
 ## [12.8.4] — 2026-08-07
 
 ### Changed

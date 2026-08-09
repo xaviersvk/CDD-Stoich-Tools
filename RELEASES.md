@@ -13,6 +13,18 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 12.8.5 — August 2026
+
+**Plate map export splits every sample code, not just some.**
+
+- Fixed: in **Export Plate Map (CSV)**, wells whose sample code mixes
+  letters and digits — like `I88-SM-0060050-005-I88S034537` — dumped the
+  whole name into the **Batch ID** column and left **Sample ID** blank.
+  Both columns are now filled correctly. Wells that carry only a batch id
+  (`PHA-0334442-001`) still show it whole, with Sample ID empty.
+
+---
+
 ## 12.8.4 — August 2026
 
 **Heat map tooltip starts blank — you choose.**

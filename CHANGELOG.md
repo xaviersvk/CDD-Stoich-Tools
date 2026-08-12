@@ -16,6 +16,39 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [12.8.6] — 2026-08-12
+
+### Fixed
+- **The printed stoichiometry sheet dropped the solvent of every solution
+  row.** A reagent used as a stock solution (`rowType === "solution"`, e.g.
+  *N-methyl(3-bromo-2-nitrophenyl)amine* in benzene) keeps its solvent
+  **nested** under `row.solvent` — a complete row object of its own with
+  `role === "solutionSolvent"` — instead of as a member of
+  `stoichiometryTable.rows`. `extractRows()` only mapped the top-level array,
+  so the solvent never reached the content script and the sheet printed the
+  reagent as if it were neat material. `resolveSolventRow()`
+  (`src/inject/parsers/print-data.js`) now resolves the nested row one level
+  deep, and `renderSolventRowHtml()`
+  (`src/content/features/print-buttons.js`) prints it as an indented
+  **Solvent** sub-row directly under its parent — name, CAS-RN, FW, density,
+  boiling point, mass, volume and mole — mirroring CDD's own on-screen
+  layout. A solution whose solvent has no molecule picked yet still prints,
+  as `Solvent: not specified`, with whatever volume was typed.
+  - `extractRows()` passed `Array.prototype.map`'s index straight into the
+    new recursion-depth parameter; it now maps through an arrow so every row
+    is resolved at depth 0.
+
+### Added
+- **Concentration and reaction molarity on the printed sheet.** Solution rows
+  print `Concentration:` in the Properties column and solvent rows print
+  `Reaction molarity:` in the Calculation column. Both come from plain
+  payload numbers that CDD always keeps in mol/L (`row.concentration`,
+  `row.molarity`); `formatMolarity()` keeps that unit and trims trailing
+  zeros so the sheet reads exactly like the table on screen
+  (`0.6 mol/L`, not `600.00 mmol/L`).
+
+---
+
 ## [12.8.5] — 2026-08-09
 
 ### Fixed

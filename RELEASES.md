@@ -13,6 +13,23 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 12.8.6 — August 2026
+
+**Printed sheets no longer hide the solvent a reagent is dissolved in.**
+
+- Fixed: when a reagent is used as a **solution** — say
+  *N-methyl(3-bromo-2-nitrophenyl)amine* as a stock in benzene — the PDF
+  printed it as if you were weighing out the neat compound. The solvent is
+  now printed as its own indented **Solvent** line right under the reagent,
+  with CAS-RN, FW, density, boiling point, mass, volume and mole, just like
+  CDD shows it on screen. Solutions where the solvent has not been chosen
+  yet print as *Solvent: not specified*, keeping the volume you typed.
+- New: solution rows now also print their **Concentration**, and solvent
+  rows their **Reaction molarity** — both in mol/L, matching the table on
+  screen.
+
+---
+
 ## 12.8.5 — August 2026
 
 **Plate map export splits every sample code, not just some.**

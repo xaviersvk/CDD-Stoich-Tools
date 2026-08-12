@@ -97,6 +97,52 @@ function letterLabel(index) {
     return label;
 }
 
+function formatMolarity(value) {
+    if (value == null || value === "") return "—";
+
+    const num = Number(value);
+    if (Number.isNaN(num)) return escapeHtml(String(value));
+
+    // CDD stores and displays every concentration in mol/L — keep the unit and
+    // only drop the trailing zeros, so the sheet reads like the on-screen table
+    // ("0.6 mol/L", not "600.00 mmol/L").
+    return `${Number(num.toFixed(4))} mol/L`;
+}
+
+// The solvent of a solution row, printed as an indented sub-row directly under
+// its parent — mirroring how CDD stacks it in the on-screen table. Without it a
+// "reagent as a solution in benzene" printed as if it were neat material.
+function renderSolventRowHtml(solvent) {
+    if (!solvent) return "";
+
+    const fw = solvent.formulaWeight ?? solvent.molecularWeight;
+
+    return `
+          <tr class="solvent-row">
+            <td class="col-name solvent-name">
+              <div class="solvent-label">Solvent</div>
+              <div class="solvent-main">${escapeHtml(solvent.name || "not specified")}</div>
+              ${solvent.casNumber ? `<div class="muted">CAS-RN: ${escapeHtml(solvent.casNumber)}</div>` : ""}
+            </td>
+
+            <td class="col-properties">
+              ${fw != null && fw !== "" ? `<div><strong>FW:</strong> ${formatNumber(fw, 2)} g/mol</div>` : ""}
+              ${solvent.density != null && solvent.density !== "" ? `<div class="muted">Density: ${formatNumber(solvent.density, 3)} g/cm³</div>` : ""}
+              ${solvent.boilingPoint != null && solvent.boilingPoint !== "" ? `<div class="muted">Boiling point: ${formatNumber(solvent.boilingPoint, 0)} °C</div>` : ""}
+            </td>
+
+            <td class="col-amounts">
+              ${solvent.mass != null && solvent.mass !== "" ? `<div><strong>Mass:</strong> ${formatMass(solvent.mass)}</div>` : ""}
+              ${solvent.volume != null && solvent.volume !== "" ? `<div><strong>Volume:</strong> ${formatVolume(solvent.volume)}</div>` : ""}
+            </td>
+
+            <td class="col-calculation">
+              ${solvent.mole != null && solvent.mole !== "" ? `<div class="muted">Mole: ${formatMmol(solvent.mole)}</div>` : ""}
+            </td>
+          </tr>
+        `;
+}
+
 function renderRowHtml(row, { indexLabel = "", roleTag = "" } = {}) {
     const fw = row.formulaWeight ?? row.molecularWeight;
     const exactMass = row.exactMass;
@@ -136,6 +182,7 @@ function renderRowHtml(row, { indexLabel = "", roleTag = "" } = {}) {
               ${fw != null && fw !== "" ? `<div><strong>FW:</strong> ${formatNumber(fw, 2)} g/mol</div>` : ""}
               ${exactMass != null && exactMass !== "" ? `<div class="muted">Exact mass: ${formatNumber(exactMass, 6)} Da</div>` : ""}
               ${row.density != null && row.density !== "" ? `<div class="muted">Density: ${formatNumber(row.density, 3)} g/cm³</div>` : ""}
+              ${row.concentration != null && row.concentration !== "" ? `<div><strong>Concentration:</strong> ${formatMolarity(row.concentration)}</div>` : ""}
               ${row.boilingPoint != null && row.boilingPoint !== "" ? `<div class="muted">Boiling point: ${formatNumber(row.boilingPoint, 0)} °C</div>` : ""}
             </td>
 
@@ -149,6 +196,7 @@ function renderRowHtml(row, { indexLabel = "", roleTag = "" } = {}) {
               ${equivalent != null && equivalent !== "" ? `<div><strong>Equivalent:</strong> ${formatNumber(equivalent, 2)}</div>` : ""}
               ${mole != null && mole !== "" ? `<div><strong>Mole:</strong> ${formatMmol(mole)}</div>` : ""}
               ${effectiveMole != null && effectiveMole !== "" ? `<div class="muted">Effective mole: ${formatMmol(effectiveMole)}</div>` : ""}
+              ${row.molarity != null && row.molarity !== "" ? `<div class="muted">Reaction molarity: ${formatMolarity(row.molarity)}</div>` : ""}
               ${yieldValue != null && yieldValue !== "" ? `<div class="muted">Yield: ${formatNumber(yieldValue, 2)} %</div>` : ""}
             </td>
           </tr>
@@ -166,6 +214,7 @@ function renderRowHtml(row, { indexLabel = "", roleTag = "" } = {}) {
         }
   </td>
 </tr>
+${renderSolventRowHtml(row.solvent)}
         `;
 }
 
@@ -409,6 +458,38 @@ function buildPrintHtml(reactionPayload) {
               padding-top: 0;
               padding-left: 30px;
               padding-bottom: 8px;
+            }
+
+            /* Solvent of a solution row: no top border, so it reads as part of
+               the reagent above it rather than as a numbered entry of its own. */
+            .solvent-row {
+              border-top: none;
+            }
+
+            .solvent-row td {
+              padding-top: 0;
+              padding-bottom: 8px;
+            }
+
+            .solvent-name {
+              padding-left: 30px;
+              border-left: 2px solid #d1d5db;
+            }
+
+            .solvent-label {
+              font-size: 9px;
+              font-weight: 700;
+              text-transform: uppercase;
+              letter-spacing: 0.06em;
+              color: #6b7280;
+              margin-bottom: 2px;
+            }
+
+            .solvent-main {
+              font-weight: 700;
+              color: #374151;
+              line-height: 1.2;
+              word-break: break-word;
             }
 
             .location-line {

@@ -13,6 +13,30 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 13.0.0 — August 2026
+
+**Mark control layouts by dragging a rectangle — and save them for reuse.**
+
+- New: editing a control layout (**Run Details → Control Layouts → Edit this
+  layout**) no longer means clicking every well and cycling it through the
+  states until it lands on the right one. Pick **Positive control**,
+  **Negative control**, **Reference molecule** or **Clear** in the new
+  *Paint wells* bar, then **drag a rectangle** over the plate — every well
+  inside it changes as you drag. Pull the rectangle back and the wells you
+  passed over return exactly to what they were.
+- New: click a **row or column header** to fill that whole line, the empty
+  **corner header** to fill the entire plate, or **shift+click** to stretch a
+  rectangle from the last well you marked.
+- New: **Saved layouts.** Give the current plate a name, and load it back on
+  any run later — separate lists for 96-, 384- and 1536-well plates, so a
+  96-well layout can never land on a 384-well plate. Loading fills the grid;
+  CDD's own **Save changes** button is still what stores it in the vault.
+- Works on the 96/384/1536-well run defaults and on plate-specific layouts.
+- Click the highlighted colour button again to switch the whole thing off —
+  CDD's normal one-well-per-click behaviour comes straight back.
+
+---
+
 ## 12.8.8 — August 2026
 
 **The samples panel stays where you put it.**

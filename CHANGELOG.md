@@ -16,6 +16,74 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [13.0.0] — 2026-08-12
+
+### Added
+- **Rectangle selection and saved layouts for CDD's control-layout editor.**
+  Editing a control layout (`Run Details` → *Control Layouts* → *Edit this
+  layout*, for the 96/384/1536-well run defaults and for plate-specific
+  layouts) meant clicking every well individually and cycling it through
+  *empty → positive → negative → reference* until it landed on the state you
+  wanted. Marking a 1536-well plate that way is thousands of clicks. Two
+  toolbars now sit above every layout editor:
+  - **Paint wells** — arm *Positive control*, *Negative control*,
+    *Reference molecule* or *Clear*, then **drag a rectangle** across the
+    grid. Every well inside the band takes the armed state live, and the band
+    follows the pointer in all four directions; shrinking it restores the
+    wells it no longer covers to exactly the state they had. A row or column
+    header fills that whole line, the blank corner header fills the plate,
+    and shift+click extends a rectangle from the last well painted. Clicking
+    the armed button again disarms it and hands the grid straight back to
+    CDD.
+  - **Saved N-well layouts** — name the current grid, reload it later, delete
+    it. Presets live in `chrome.storage.local` under
+    `cddControlLayoutPresets`, keyed by the grid's own geometry (`8x12`,
+    `16x24`, `32x48`), so a 96-well layout cannot be loaded into a 384-well
+    plate by construction rather than by a runtime check. A row is stored as
+    one character per well (`.`/`+`/`-`/`#`), keeping a 1536-well preset at
+    roughly 1.5 kB. Loading only fills the grid — CDD's own **Save changes**
+    is still what writes it to the vault, and the status line says so.
+
+  New `src/shared/control-layout-presets.js` (storage, DOM-free) and
+  `src/content/features/control-layout/` (`layout-grid.js` — every selector
+  and the read/write of a well's hidden `control_layout[control_states][r][c]`
+  input; `painter.js` — the rubber band; `toolbar.js` — the two bars;
+  `styles.js`; `init.js` — discovery).
+
+  Notes on how it stays out of CDD's way:
+  - Wells are set through the hidden input CDD itself submits, never through
+    the class that paints them, so what gets POSTed is exactly what is on
+    screen.
+  - CDD delegates `click` for `.well-control-cell`, `.well-row-header` and
+    `.well-column-header` from `document`. The painter listens in the
+    **capture** phase on the table, so while a brush is armed the native
+    per-well cycle never fires; with no brush armed the feature adds no
+    listeners' worth of behaviour at all.
+  - Discovery is by DOM shape — a `table.plateLayout` holding wells with a
+    `control_layout[control_states]` input — not by URL, so plate-specific
+    layouts and any other page using the same editor are covered.
+  - Reopening a layout editor is hostile to anything the extension puts inside
+    CDD's `<form>`, in two different ways, so every scan sweeps before it
+    attaches. First, CDD swaps the `<table>` while keeping the form, orphaning
+    the toolbar next to it — untreated, *Edit → cancel → Edit* stacked a
+    second and third **Paint wells** bar. Second, a section restored after a
+    cancel is re-parsed from serialized HTML, which **clones** the toolbar:
+    identical markup, no event listeners, so every button is inert while
+    looking perfectly normal (pressing CDD's Save and reopening appeared to
+    "fix" it, because that path fetches the form from the server without a
+    toolbar in it). A toolbar therefore counts as live only if this instance
+    built it — tracked in a module-level `WeakSet` of toolbar nodes — not
+    merely because one is present. Replacing a toolbar we did not build is
+    capped per grid (`MAX_FOREIGN_REPLACEMENTS`), so a second installed copy
+    of the extension cannot end up trading toolbars with the first forever.
+  - The bars use the `hidden` attribute to swap the preset row for the
+    "Save as" row, and the stylesheet re-asserts `[hidden] { display: none }`
+    at class specificity: the bars' own `display: flex` rule would otherwise
+    outrank the UA default and leave both rows on screen permanently, Cancel
+    included.
+
+---
+
 ## [12.8.8] — 2026-08-12
 
 ### Reverted

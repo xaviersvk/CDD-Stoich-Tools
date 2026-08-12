@@ -34,6 +34,7 @@ import {initPlateListExport} from "./features/ui-fixes/plate-list-export";
 import {initPlateMapStructureTooltip} from "./features/ui-fixes/plate-map-structure-tooltip";
 import {initPlateMapExport} from "./features/ui-fixes/plate-map-export";
 import {initHeatMapWellFields} from "./features/ui-fixes/heat-map-well-fields";
+import {initControlLayoutTools} from "./features/control-layout/init";
 import {initRegistrationProjectMirror} from "./features/ui-fixes/registration-project-mirror";
 import {initRegistrationFormDefault} from "./features/ui-fixes/registration-form-default";
 import {initSlurpTypeDefault} from "./features/ui-fixes/slurp-type-default";
@@ -122,6 +123,13 @@ function init() {
   initPlateMapStructureTooltip();
   initPlateMapExport();
   initHeatMapWellFields();
+
+  // Control-layout editor: arm a control type, then drag a rectangle over the
+  // wells (or click a row/column header) to set them all at once, plus named
+  // layout presets per plate format. Inert until a brush is armed — CDD's
+  // one-well click cycling is untouched otherwise.
+  initControlLayoutTools();
+
   initRegistrationProjectMirror();
   initRegistrationFormDefault();
   initSlurpTypeDefault();

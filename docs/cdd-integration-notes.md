@@ -26,6 +26,19 @@ against https://app.collaborativedrug.com/vaults/6884/eln/entries/2504170.
     editor popup has no unit selector).
   - equivalent → `row.equivalent`, row level.
   - `userInput` otherwise carries things like `msample` ("19.5 mg").
+- **`row.rowType` is `"default"` | `"solution"` | `"solvent"`** — it, not
+  `role`, tells a stock solution apart from neat material. A `"solution"`
+  row carries its stock strength in `row.concentration` (mol/L) and its
+  **solvent NESTED under `row.solvent`**: a complete row object of its own
+  (`role === "solutionSolvent"`, `rowType === "solvent"`, with `name`,
+  `casNumber`, `molecularWeight`, `density`, `boilingPoint`, `mass`,
+  `volume`, `mole`). It is **not** a member of `stoichiometryTable.rows`,
+  so anything that only walks that array silently loses it — that was the
+  12.8.6 print bug. A solvent with no molecule picked yet still carries the
+  typed `volume`, and the table labels it "Solvent: Required".
+  A *standalone* solvent row (a reaction solvent) is an ordinary top-level
+  row with `rowType === "solvent"` and a `row.molarity` (mol/L) — the
+  reaction molarity it contributes.
 - Batch metafields for batch-only rows are NOT in the entry payload —
   `batch-field-enrichment.js` fetches the molecule page and parses
   `RegistrationFormRenderer` react_props. A molecule page that loads but

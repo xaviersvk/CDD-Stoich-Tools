@@ -16,6 +16,25 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [12.8.7] — 2026-08-12
+
+### Fixed
+- **The CDD Samples panel could go missing after the browser window was
+  made smaller.** `makePanelDraggable()` clamps the panel to the viewport
+  while it is being dragged, but `ensurePanel()` restored the position saved
+  in `localStorage` (`cdd-stoich-panel-state`) verbatim. A panel dragged to
+  `left: 2389px` on a wide monitor therefore reappeared at 2389 px in a
+  1537 px-wide window — entirely off-screen, and unreachable, since the only
+  way to move it is to drag its header. It looked exactly like the panel had
+  failed to load, even though it was in the DOM and fully populated. New
+  `clampPanelIntoView()` pulls it back inside the window on creation and on
+  every `resize`, then persists the correction so the next load starts from a
+  reachable spot. A panel taller than the window keeps at least its header —
+  and with it the drag handle, Refresh/Print/CSV and the collapse button — on
+  screen.
+
+---
+
 ## [12.8.6] — 2026-08-12
 
 ### Fixed

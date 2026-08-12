@@ -13,6 +13,21 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 12.8.7 — August 2026
+
+**The CDD Samples panel can no longer hide outside the window.**
+
+- Fixed: if you dragged the panel somewhere on a large screen and later
+  worked in a smaller window, the panel was restored at its old position —
+  off the right edge, out of reach. It looked as if the plugin had stopped
+  working, even though the panel was there with all its samples loaded.
+  It is now pulled back into view whenever it would fall outside the
+  window, including when you resize the window, and the corrected position
+  is remembered. If the panel is taller than the window, its header row
+  stays visible so you can always grab and move it.
+
+---
+
 ## 12.8.6 — August 2026
 
 **Printed sheets no longer hide the solvent a reagent is dissolved in.**

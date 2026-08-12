@@ -17,6 +17,7 @@ to the project (and, in places, new to browser extensions in general).
 | [ADDING_NEW_FIELDS.md](./ADDING_NEW_FIELDS.md) | A step-by-step, self-contained guide to adding a new Sample-Panel field (CDD JSON → resolver → flatSample → registry → popup), with three worked examples. | You want to add or change a panel field. |
 | [LEARNING_GUIDE.md](./LEARNING_GUIDE.md) | A teaching guide to **browser-extension architecture** (content scripts, page scripts, `postMessage`, `MutationObserver`, `chrome.storage`, popups, `manifest.json`, Vite) using this project as a real-world example. | You want to *learn the concepts*, not just this codebase. |
 | [RELEASE_NOTES.md](./RELEASE_NOTES.md) | User-facing release notes for the current release. | You're cutting or reviewing a release. |
+| [BACKLOG.md](./BACKLOG.md) | Requests that are understood but deliberately not built yet, each with the investigation already done and why it was parked. | You're picking the next thing to work on, or wondering whether an idea was already looked at. |
 
 ## Suggested reading order
 

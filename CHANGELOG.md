@@ -16,6 +16,37 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [13.1.0] — 2026-08-12
+
+### Added
+- **Ctrl+click a search results column header to copy the whole column.** New
+  `src/content/features/ui-fixes/search-column-copy.js`: Ctrl+click (Cmd+click
+  on macOS) any header of `table.search_results_table` and every value in that
+  column goes to the clipboard, one per line, ready to paste into Excel. The
+  copied cells flash green and a toast reports how many rows were taken.
+  - **The column cannot be read with `row.cells[n]`.** CDD merges the select
+    and molecule columns across all of a molecule's batches via `rowSpan` — in
+    the test vault one molecule spans **828** rows — so only the first row of
+    each molecule has 7 cells and every continuation row has 5. `cellIndex`
+    and the visual column therefore drift apart after the first molecule, and
+    a naive read returns the Owner where Batch Name was asked for. Both the
+    header and the body are mapped onto a real grid (`buildGrid()`) that
+    repeats each cell across every slot its colspan/rowspan covers.
+  - Values are **row-aligned**: a merged cell repeats down its rows, so every
+    column yields the same line count (933 in the test search) and two copied
+    columns line up when pasted side by side.
+  - `readCellText()` prefers the single `a[href*="/molecules/"]` in a cell, so
+    the Molecule column copies as `TEST-0260386` rather than
+    `TEST-0260386 ITR Sandbox` — its raw text also carries the project chips.
+  - Newlines inside a cell are collapsed to spaces; a cell wrapping onto two
+    lines would otherwise shift every later value out of step.
+  - The listener is delegated on `documentElement` in the **capture** phase:
+    the headers are `<a>` links that also carry CDD's sort handler, so without
+    intercepting first, the copy would re-sort the table or open the search in
+    a new tab.
+
+---
+
 ## [13.0.1] — 2026-08-12
 
 ### Changed

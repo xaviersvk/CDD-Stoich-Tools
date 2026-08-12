@@ -13,6 +13,24 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 13.1.0 — August 2026
+
+**Copy a whole column from search results with one click.**
+
+- New: on a search results table, hold **Ctrl** (**Cmd** on a Mac) and click a
+  column header — *Batch Name*, *Molecule-Batch ID*, *Internal ID*, whatever —
+  and the entire column is copied to the clipboard, one value per line. Paste
+  straight into Excel. The cells flash green and a short message tells you how
+  many rows were copied.
+- Columns line up: where a molecule spans several batch rows, its value is
+  repeated for each row, so you can copy two columns one after the other and
+  paste them next to each other without anything shifting.
+- The *Molecule* column copies just the identifier (`TEST-0260386`), not the
+  project name shown beside it.
+- A normal click on the header still sorts as usual — only Ctrl+click copies.
+
+---
+
 ## 13.0.1 — August 2026
 
 **The heat map well popup got wider.**

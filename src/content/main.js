@@ -40,6 +40,7 @@ import {initRegistrationFormDefault} from "./features/ui-fixes/registration-form
 import {initSlurpTypeDefault} from "./features/ui-fixes/slurp-type-default";
 import {initOptionsMenuLink} from "./features/ui-fixes/options-menu-link";
 import {initSavedSearchCopyLinks} from "./features/savedSearchCopyLinks/savedSearchCopyLinks";
+import {initSearchColumnCopy} from "./features/ui-fixes/search-column-copy";
 import {initElnTitle} from "./features/eln-title";
 import {initBoxSelection} from "./features/box-selection/init";
 import {initMultiPositionSampleCreate} from "./features/multi-position-sample-create/init";
@@ -135,6 +136,7 @@ function init() {
   initSlurpTypeDefault();
   initOptionsMenuLink();
   initSavedSearchCopyLinks();
+  initSearchColumnCopy();
   initElnTitle();
 
   // Box Selection Framework (Phase 1): injects styles + a console debug handle.

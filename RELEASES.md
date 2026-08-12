@@ -13,6 +13,20 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 13.0.1 — August 2026
+
+**The heat map well popup got wider.**
+
+- Changed: the balloon that opens when you click a well on a run heat map is
+  now **1.4× wider**. Since you can add your own batch fields to it, its rows
+  kept wrapping onto two lines — even short ones like *Batch name: 001*. The
+  text column roughly doubles (136 → 223 px on a real popup), so most rows now
+  fit on one line. Very tall content is still capped by CDD's own limit, and a
+  popup opened near the right edge of the window is nudged left so it stays
+  fully visible.
+
+---
+
 ## 13.0.0 — August 2026
 
 **Mark control layouts by dragging a rectangle — and save them for reuse.**

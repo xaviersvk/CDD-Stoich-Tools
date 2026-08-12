@@ -16,6 +16,34 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [13.0.1] — 2026-08-12
+
+### Changed
+- **The heat map well balloon is 1.4× wider, so its rows stop wrapping.** CDD
+  sizes `#balloon` to its own content, which left the `.details-popup` body
+  around 140 px wide. Once the configurable batch rows (12.8.0+) were added,
+  almost every line wrapped onto a second row — even short ones like
+  `Batch name: 001`. New `widenBalloon()` in
+  `heat-map-well-fields.js` multiplies the width CDD picked by
+  `BALLOON_WIDTH_FACTOR = 1.4`; measured on a live popup that takes the usable
+  text column from 136 px to **223 px** (+64 %, since the fixed padding no
+  longer eats a proportional share). CDD's own `max-width: 600px` still caps
+  the result.
+  - Only `#balloon` gets the new width: `#contents` carries the visible box
+    (background + border) and has no width of its own, so it follows, while
+    the `#topRight` / `#bottomRight` / `#bottomLeft` siblings turned out to be
+    fully transparent skin remnants — no background, no border — so their
+    stale geometry needs no patching.
+  - The guard sits on `.details-popup`, which CDD rebuilds for every well;
+    `#balloon` is a single reused element, so a flag there would only widen
+    the first popup, and re-running on it would compound 1.4× each time.
+  - Applied before the extra rows are inserted, so they lay out at the final
+    width, and whether or not any fields are configured — CDD's own rows wrap
+    too. A balloon near the right edge of the window is nudged left, since CDD
+    placed it while it was still narrow.
+
+---
+
 ## [13.0.0] — 2026-08-12
 
 ### Added

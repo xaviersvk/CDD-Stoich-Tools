@@ -33,6 +33,12 @@ const MOLECULE_HREF_RE = /\/vaults\/(\d+)\/molecules\/(\d+)/;
 // radius as the plate-map structure tooltip.
 const PREFETCH_RADIUS = 2;
 
+// CDD sizes the balloon to its own content, which on a heat map well leaves the
+// popup body around 140 px wide. That is narrow enough that the extra batch
+// rows wrap onto a second line almost every time — even short ones like
+// "Batch name: 001" — so give the balloon this much more room.
+const BALLOON_WIDTH_FACTOR = 1.4;
+
 let started = false;
 
 /* ------------------------------------------------------------------ *
@@ -179,6 +185,37 @@ async function augment(popup, link) {
     }
 }
 
+// Widen CDD's balloon so the popup rows stop wrapping. Only `#balloon` needs
+// the new width: its `#contents` child carries the visible box (background and
+// border) and has no width of its own, so it follows. The sibling
+// `#topRight` / `#bottomRight` / `#bottomLeft` divs are fully transparent
+// remnants of the balloon skin — nothing visible hangs off them, so their now
+// stale geometry can be left alone.
+//
+// The flag lives on the popup, not the balloon: `#balloon` is one reused
+// element, while `.details-popup` is rebuilt for every well, which resets the
+// guard exactly when CDD resets the width.
+function widenBalloon(balloon, popup) {
+    if (popup.dataset.cddWideDone) return;
+
+    const natural = balloon.getBoundingClientRect().width;
+    if (!natural) return;
+
+    popup.dataset.cddWideDone = "1";
+    balloon.style.width = `${Math.round(natural * BALLOON_WIDTH_FACTOR)}px`;
+
+    // CDD placed the balloon while it was still narrow, so near the right edge
+    // of the window the wider box would now hang off screen. (CDD's own
+    // `max-width: 600px` still caps how wide it can get.)
+    const rect = balloon.getBoundingClientRect();
+    const overflow = rect.right - (document.documentElement.clientWidth - 8);
+    if (overflow > 0) {
+        const left = parseFloat(balloon.style.left);
+        const current = Number.isFinite(left) ? left : rect.left;
+        balloon.style.left = `${Math.max(8, current - overflow)}px`;
+    }
+}
+
 // The balloon shows many things across CDD; only touch it when it holds a
 // well details popup AND the page renders a heat map table.
 function maybeAugment() {
@@ -186,12 +223,18 @@ function maybeAugment() {
     if (!balloon) return;
 
     const popup = balloon.querySelector(".details-popup");
-    if (!popup || popup.dataset.cddExtraDone) return;
+    if (!popup) return;
 
     const link = popup.querySelector('a[href*="/molecules/"]');
     if (!link) return;
 
     if (!document.querySelector("table.plateLayout.heatMap")) return;
+
+    // Before the extra rows go in, so they are laid out at the final width.
+    // Runs whether or not any fields are configured — CDD's own rows wrap too.
+    widenBalloon(balloon, popup);
+
+    if (popup.dataset.cddExtraDone) return;
 
     augment(popup, link).catch((err) =>
         console.warn(`${LOG_PREFIX} heat map tooltip fields failed`, err)

@@ -57,42 +57,6 @@ function savePanelState(partialState) {
 }
 
 
-// Pull a dragged panel back inside the window. A position saved on a wide
-// monitor used to be restored verbatim, so in a narrower window the panel sat
-// entirely off-screen — indistinguishable from "the panel never loaded", and
-// unreachable, since the only way to move it is to drag its header.
-// Runs on creation and on every resize; the default (right-anchored) position
-// needs no help, it follows the viewport by itself.
-function clampPanelIntoView(panel) {
-    if (!panel) return;
-
-    const left = parseFloat(panel.style.left);
-    const top = parseFloat(panel.style.top);
-    if (!Number.isFinite(left) || !Number.isFinite(top)) return;
-
-    const width = panel.offsetWidth || 300;
-    // Worst case (a panel taller than the window) still leaves the header —
-    // and with it the drag handle and every button — on screen.
-    const headerHeight =
-        panel.querySelector(".cdd-stoich-header")?.offsetHeight || 36;
-
-    const nextLeft = Math.max(0, Math.min(left, Math.max(0, window.innerWidth - width)));
-    const nextTop = Math.max(0, Math.min(top, Math.max(0, window.innerHeight - headerHeight)));
-
-    if (nextLeft === left && nextTop === top) return;
-
-    panel.style.left = `${nextLeft}px`;
-    panel.style.top = `${nextTop}px`;
-
-    // Persist the correction, so the next page load starts from a sane spot
-    // instead of re-clamping a position that can never be reached again.
-    savePanelState({
-        left: panel.style.left,
-        top: panel.style.top,
-        right: "auto",
-    });
-}
-
 export function makePanelDraggable(panel) {
     const header = panel.querySelector(".cdd-stoich-header");
     if (!header) return;
@@ -521,10 +485,6 @@ export function ensurePanel() {
 
     document.documentElement.appendChild(style);
     document.documentElement.appendChild(panel);
-
-    // Only measurable once it is in the document.
-    clampPanelIntoView(panel);
-    window.addEventListener("resize", () => clampPanelIntoView(panel));
 
     makePanelDraggable(panel);
 

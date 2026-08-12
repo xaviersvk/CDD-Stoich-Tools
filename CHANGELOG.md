@@ -16,6 +16,28 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [12.8.8] — 2026-08-12
+
+### Reverted
+- **12.8.7's `clampPanelIntoView()` is gone.** Pulling the panel back inside
+  the window on every `resize` meant it moved on its own while you worked:
+  it drifted away from wherever you had deliberately dragged it each time the
+  window changed size, which is worse than the problem it solved.
+  `sample-panel.js` is back to its 12.8.6 state — the panel is dragged by its
+  header, `left`/`top` are saved to `localStorage` on mouse-up and restored
+  verbatim, and nothing repositions it behind your back.
+  - The original trap therefore stands: a position picked on a wide monitor
+    can leave the panel off-screen in a much narrower window, recoverable by
+    clearing `cdd-stoich-panel-state` in localStorage. A clamp applied **only
+    when the panel is created** would close that hole without any
+    move-while-you-work behaviour, should it ever become a nuisance.
+- Panel collapse state was never part of this and is untouched: it is
+  remembered as it always has been — `savePanelState({ collapsed })` on
+  toggle (`sample-panel.js:543`), read back in `ensurePanel()`
+  (`sample-panel.js:210`).
+
+---
+
 ## [12.8.7] — 2026-08-12
 
 ### Fixed

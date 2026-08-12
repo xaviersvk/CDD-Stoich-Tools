@@ -13,6 +13,23 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 12.8.8 — August 2026
+
+**The samples panel stays where you put it.**
+
+- Reverted: 12.8.7 made the panel jump back inside the window whenever the
+  window was resized. In practice that meant the panel kept moving on its
+  own, away from the spot you had chosen for it. That is gone — you drag the
+  panel by its header exactly as before, and it stays there.
+- Unchanged: the panel still remembers both its position and whether you
+  left it collapsed, so it comes back the way you left it.
+- Note: as before 12.8.7, a position chosen on a large screen can put the
+  panel out of reach if you later work in a much smaller window. If that
+  happens, clear `cdd-stoich-panel-state` in the browser's local storage for
+  the CDD site, and the panel returns to its default top-right corner.
+
+---
+
 ## 12.8.7 — August 2026
 
 **The CDD Samples panel can no longer hide outside the window.**

@@ -13,6 +13,67 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+# What's new in 13.1.1
+
+*Everything that changed since **12.8.5**, the previous public release.*
+
+### Mark control layouts by dragging a rectangle — and save them for reuse
+
+Editing a control layout (**Run Details → Control Layouts → Edit this layout**)
+no longer means clicking every well and cycling it through the states. Pick
+**Positive control**, **Negative control**, **Reference molecule** or **Clear**
+in the new *Paint wells* bar, then **drag a rectangle** over the plate — every
+well inside it changes as you drag, and pulling the rectangle back restores
+what was there.
+
+- Click a **row or column header** to fill that whole line, the empty **corner
+  header** for the entire plate, or **shift+click** to stretch a rectangle from
+  the last well you marked.
+- **Saved layouts:** name the current plate and load it back on any run later.
+  Separate lists per plate format (96 / 384 / 1536), so a 96-well layout can
+  never land on a 384-well plate. CDD's own **Save changes** still stores it.
+- Click the highlighted colour button again to switch it off — CDD's normal
+  one-well-per-click behaviour comes straight back.
+
+### Copy a whole column — or a whole section — from search results
+
+Hold **Ctrl** (**Cmd** on a Mac) and click a column header on a search results
+table, and the entire column lands on the clipboard, one value per line, ready
+to paste into Excel. The cells flash green and a short message says how many
+rows were copied.
+
+- Ctrl+click a **section heading** — *Properties*, *Batch Fields* — and you get
+  the whole block at once, all its columns, laid out as columns in Excel with
+  the column names on the first line.
+- Columns stay aligned: where a molecule spans several batch rows, its value
+  repeats for each row, so two columns copied one after the other paste next to
+  each other without shifting.
+- The *Molecule* column copies just the identifier (`TEST-0260386`), without
+  the project name shown beside it.
+- A normal click still sorts, and the toolbar buttons above the table are
+  untouched.
+
+### Printed stoichiometry sheets no longer hide the solvent
+
+When a reagent is used as a **solution** — say a stock in benzene — the PDF used
+to print it as if you were weighing out the neat compound. The solvent now gets
+its own indented **Solvent** line right under the reagent, with CAS-RN, FW,
+density, boiling point, mass, volume and mole, just as CDD shows it on screen.
+Solutions whose solvent has not been picked yet print as *Solvent: not
+specified*, keeping the volume you typed.
+
+Solution rows also print their **Concentration**, and solvent rows their
+**Reaction molarity** — both in mol/L, matching the table on screen.
+
+### The heat map well popup is wider
+
+The balloon that opens when you click a well on a run heat map is **1.4×
+wider**. Since you can add your own batch fields to it, its rows kept wrapping
+onto two lines — even short ones like *Batch name: 001*. The text column
+roughly doubles, so most rows now fit on one line.
+
+---
+
 ## 13.1.1 — August 2026
 
 **Ctrl+click a section heading to copy the whole block of columns.**

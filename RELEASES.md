@@ -13,6 +13,23 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 13.1.1 — August 2026
+
+**Ctrl+click a section heading to copy the whole block of columns.**
+
+- New: the search results table groups its columns under headings like
+  **Properties** and **Batch Fields**. Ctrl+click one of those and you get the
+  entire block at once — all 30 property columns, or all 5 batch columns —
+  laid out as columns when pasted into Excel, with the column names on the
+  first line. Ctrl+click on a single column header works exactly as before,
+  and pastes as a plain list without a heading.
+- Fixed: Ctrl+click on the toolbar above the table (*Export*, *Add to
+  collection*, *Save this search*…) did nothing in 13.1.0, because the toolbar
+  sits inside the table header and the copy feature captured the click. Those
+  buttons work again.
+
+---
+
 ## 13.1.0 — August 2026
 
 **Copy a whole column from search results with one click.**

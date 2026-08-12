@@ -60,19 +60,44 @@ function getBodyRows(table) {
     return rows;
 }
 
-// The leftmost grid column the header cell occupies.
-function findColumnIndex(table, th) {
-    if (!table.tHead) return -1;
+// Which grid columns a header cell covers. A leaf header ("Batch Name") spans
+// one; a section header ("Properties", "Batch Fields") spans all of its
+// columns, so clicking it copies the whole block.
+// Returns { start, span, labels } or null.
+function findColumnSpan(table, th) {
+    if (!table.tHead) return null;
 
     const grid = buildGrid([...table.tHead.rows]);
+    const lastRow = grid[grid.length - 1] || [];
+    const totalColumns = lastRow.length;
 
+    let start = -1;
     for (const gridRow of grid) {
         if (!gridRow) continue;
         const index = gridRow.indexOf(th);
-        if (index !== -1) return index;
+        if (index !== -1) {
+            start = index;
+            break;
+        }
+    }
+    if (start === -1) return null;
+
+    // The toolbar row ("N Selected: Launch Visualization · Export · …") lives in
+    // the thead too and spans every column. It holds real controls, so treat a
+    // full-width cell — or any cell carrying a form control — as "not a column
+    // header" and let the click through untouched.
+    const span = Math.max(1, Math.min(th.colSpan, totalColumns - start));
+    if (span >= totalColumns) return null;
+    if (th.querySelector("button, input, select, textarea")) return null;
+
+    // The leaf labels under the section, for the header line of a block copy.
+    const labels = [];
+    for (let c = start; c < start + span; c += 1) {
+        const cell = lastRow[c];
+        labels.push(cell ? (cell.innerText || "").replace(/\s+/g, " ").trim() : "");
     }
 
-    return -1;
+    return { start, span, labels };
 }
 
 // The Molecule cell holds the structure image, the molecule link and the
@@ -90,24 +115,28 @@ function readCellText(cell) {
 // One line per body ROW. Newlines inside a cell are collapsed to spaces: a cell
 // that broke into two lines would otherwise shift every following value out of
 // step with the other columns.
-function readColumn(table, columnIndex) {
+function readColumns(table, start, span) {
     const rows = getBodyRows(table);
     const grid = buildGrid(rows);
 
-    const values = [];
+    const lines = [];
     const cells = new Set();
 
     rows.forEach((_row, r) => {
-        const cell = grid[r]?.[columnIndex];
-        if (!cell) {
-            values.push("");
-            return;
+        const line = [];
+        for (let c = start; c < start + span; c += 1) {
+            const cell = grid[r]?.[c];
+            if (!cell) {
+                line.push("");
+                continue;
+            }
+            cells.add(cell);
+            line.push(readCellText(cell));
         }
-        cells.add(cell);
-        values.push(readCellText(cell));
+        lines.push(line);
     });
 
-    return { values, cells };
+    return { lines, cells };
 }
 
 function flashCells(cells) {
@@ -132,26 +161,38 @@ function showToast(message) {
     toast.dataset.timer = setTimeout(() => toast.classList.remove("visible"), 1800);
 }
 
-async function copyColumn(table, th) {
-    const columnIndex = findColumnIndex(table, th);
-    if (columnIndex === -1) return;
+async function copyColumns(table, th) {
+    const span = findColumnSpan(table, th);
+    if (!span) return false;
 
     const label = (th.innerText || "").replace(/\s+/g, " ").trim() || "column";
-    const { values, cells } = readColumn(table, columnIndex);
+    const { lines, cells } = readColumns(table, span.start, span.span);
 
-    if (!values.some((value) => value !== "")) {
+    if (!lines.some((line) => line.some((value) => value !== ""))) {
         showToast(`"${label}" has nothing to copy`);
-        return;
+        return true;
     }
 
-    const ok = await copyText(values.join("\n"));
+    // Tab-separated, which is what a spreadsheet splits into columns. A block
+    // copy leads with the leaf labels — pasting 30 unlabelled property columns
+    // would be unreadable — while a single column stays pure data, so a list of
+    // IDs pastes without a stray heading.
+    const body = lines.map((line) => line.join("\t"));
+    const text = span.span > 1 ? [span.labels.join("\t"), ...body].join("\n") : body.join("\n");
+
+    const ok = await copyText(text);
     if (!ok) {
         showToast("Copy failed");
-        return;
+        return true;
     }
 
     flashCells(cells);
-    showToast(`Copied ${values.length} rows from "${label}"`);
+    showToast(
+        span.span > 1
+            ? `Copied ${lines.length} rows × ${span.span} columns from "${label}"`
+            : `Copied ${lines.length} rows from "${label}"`
+    );
+    return true;
 }
 
 function injectStyles() {
@@ -211,11 +252,16 @@ export function initSearchColumnCopy() {
             const table = th.closest(TABLE_SELECTOR);
             if (!table) return;
 
+            // Resolve the columns BEFORE swallowing the event: on a header cell
+            // that is not a column heading (the toolbar row) this is null, and
+            // the click has to reach CDD's own control untouched.
+            if (!findColumnSpan(table, th)) return;
+
             event.preventDefault();
             event.stopPropagation();
             event.stopImmediatePropagation();
 
-            copyColumn(table, th).catch((err) =>
+            copyColumns(table, th).catch((err) =>
                 console.warn("[CDD Stoich Tools] column copy failed", err)
             );
         },

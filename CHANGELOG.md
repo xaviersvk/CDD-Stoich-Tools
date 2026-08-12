@@ -16,6 +16,30 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [13.1.1] — 2026-08-12
+
+### Added
+- **Ctrl+click a section header to copy the whole block.** The search results
+  thead has a grouping row above the column labels — `Properties`
+  (`colSpan` 30) and `Batch Fields` (`colSpan` 5) on a 37-column table.
+  `findColumnSpan()` now returns the cell's whole span instead of a single
+  index, so clicking a section copies every column under it: tab-separated
+  (which is what a spreadsheet splits into columns) and led by the leaf labels,
+  since 30 unlabelled property columns would be unreadable. A single column is
+  unchanged — still pure data with no heading, so a list of IDs pastes clean.
+
+### Fixed
+- **13.1.0 swallowed Ctrl+clicks on the search results toolbar.** That toolbar
+  (`N Selected: Launch Visualization · Export · Add to collection · Save this
+  search …`) lives inside the `thead` as one full-width `th`, so the handler
+  treated it as a column header: it called `preventDefault()` and
+  `stopImmediatePropagation()`, and the button did nothing. The column span is
+  now resolved **before** the event is swallowed, and a header cell is skipped
+  when it spans the entire table or contains a `button` / `input` / `select` /
+  `textarea` — those clicks reach CDD untouched.
+
+---
+
 ## [13.1.0] — 2026-08-12
 
 ### Added

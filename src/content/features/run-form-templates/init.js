@@ -26,6 +26,7 @@ import {
     attachRunFormTemplates,
     destroyToolbar,
     isStaleToolbar,
+    refreshToolbarState,
 } from "./toolbar.js";
 import { ANNOTATOR_SELECTOR, isRunDefinition, readProps } from "./form-model.js";
 import { ROOT_CLASS } from "./styles.js";
@@ -42,11 +43,22 @@ export function initRunFormTemplates() {
         scheduled = false;
 
         for (const root of document.querySelectorAll(`.${ROOT_CLASS}`)) {
-            if (!isStaleToolbar(root)) continue;
+            if (isStaleToolbar(root)) {
+                try {
+                    destroyToolbar(root);
+                } catch (err) {
+                    console.warn("[CDD Stoich Tools] run form template bar cleanup failed", err);
+                }
+                continue;
+            }
+
+            // The writing buttons follow the form in and out of edit mode.
+            // Doing it here means this feature keeps no state of its own —
+            // the scan already runs on every mutation batch.
             try {
-                destroyToolbar(root);
+                refreshToolbarState(root);
             } catch (err) {
-                console.warn("[CDD Stoich Tools] run form template bar cleanup failed", err);
+                console.warn("[CDD Stoich Tools] run form template bar refresh failed", err);
             }
         }
 

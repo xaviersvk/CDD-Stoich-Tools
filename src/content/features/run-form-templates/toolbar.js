@@ -13,6 +13,7 @@
 
 import {
     deleteRunFormTemplate,
+    getRunFormStash,
     getRunFormTemplates,
     isExtensionContextAlive,
     isWritableKind,
@@ -20,9 +21,10 @@ import {
     MAX_TEMPLATE_NAME_LENGTH,
     onRunFormTemplatesChanged,
     saveRunFormTemplate,
+    setRunFormStash,
 } from "../../../shared/run-form-templates.js";
 import {
-    openEditor,
+    isEditMode,
     protocolLabel,
     readEditControls,
     readFilledFields,
@@ -93,6 +95,31 @@ export function destroyToolbar(root) {
     root.remove();
 }
 
+/**
+ * Enable the two WRITING buttons only while CDD's editor is open.
+ *
+ * Reading a run definition is fine from the read-only view — that is where
+ * you are when you decide to reuse it. Writing is not: a button that quietly
+ * opened the editor for you would put the run into an editable, unsaved
+ * state you never asked for. So Fill and Paste wait until you are already
+ * in edit mode, and say so until then.
+ *
+ * Called from the discovery scan, which already runs on every mutation
+ * batch — so the buttons follow the form in and out of edit mode without
+ * this feature keeping any state of its own.
+ */
+export function refreshToolbarState(root) {
+    const annotator = root.nextElementSibling;
+    const editing = isEditMode(annotator);
+
+    for (const btn of root.querySelectorAll("[data-needs-edit]")) {
+        btn.disabled = !editing;
+        btn.title = editing
+            ? btn.dataset.titleReady || ""
+            : "Click “Edit run definition” first — this writes into the form.";
+    }
+}
+
 export function attachRunFormTemplates(annotator, props) {
     const previous = annotator.previousElementSibling;
     if (previous && previous.classList?.contains(ROOT_CLASS)) return;
@@ -119,19 +146,17 @@ function buildToolbar(root, annotator) {
         "⤓ Save these values as a template",
         "Stores the values this run's definition already carries, under a name you choose. Nothing on the run changes."
     );
-    const fillBtn = button(
-        "⤒ Fill from template",
-        "Loads a saved template into this run's definition. Empty fields are filled; anything already filled is shown for you to decide. CDD's own Save is never pressed."
-    );
+    const fillBtn = button("⤒ Fill from template");
+    fillBtn.dataset.needsEdit = "1";
+    fillBtn.dataset.titleReady = "Loads a saved template into this run's definition. Empty fields are filled; anything already filled is shown for you to decide. CDD's own Save is never pressed.";
 
     const copyBtn = button(
         "⧉ Copy",
         "Puts these values on the clipboard as name/value lines — paste them into another run, or into Excel to edit first."
     );
-    const pasteBtn = button(
-        "⎘ Paste into form",
-        "Pastes name/value lines into this run's definition. Unlike a template fill, this OVERWRITES fields that already have a value. CDD's own Save is still never pressed."
-    );
+    const pasteBtn = button("⎘ Paste into form");
+    pasteBtn.dataset.needsEdit = "1";
+    pasteBtn.dataset.titleReady = "Writes what Copy last put down into this run's definition. Unlike a template fill, this OVERWRITES fields that already have a value. CDD's own Save is still never pressed.";
 
     mainBar.append(saveBtn, fillBtn, copyBtn, pasteBtn, status);
 
@@ -176,15 +201,25 @@ function buildToolbar(root, annotator) {
             return;
         }
 
-        const ok = await copyText(formatFields(fields));
+        const text = formatFields(fields);
+        const ok = await copyText(text);
+
+        // Also kept where our own Paste button can reach it without the
+        // `clipboardRead` permission — see setRunFormStash.
+        await setRunFormStash(text, {
+            protocolName: protocolLabel(readProps(annotator)).protocolName,
+            fieldCount: fields.length,
+        });
+
         setStatus(ok
-            ? `Copied ${fields.length} field(s). Paste into another run, or into a spreadsheet.`
-            : "Could not reach the clipboard.", !ok);
+            ? `Copied ${fields.length} field(s) — paste into another run, or into a spreadsheet.`
+            : `Kept ${fields.length} field(s) for “Paste into form”, but could not reach the system clipboard.`,
+        !ok);
     });
 
     pasteBtn.addEventListener("click", () => {
         setStatus("");
-        renderPastePanel(panel, annotator, setStatus, closePanel);
+        runPaste(panel, annotator, setStatus, closePanel);
     });
 
     // Another tab (or a second run page) editing the list should not leave a
@@ -310,68 +345,87 @@ function renderSavePanel(panel, annotator, setStatus, closePanel) {
 }
 
 /* ------------------------------------------------------------------ *
- * Paste panel — a box to paste into, then a hard overwrite
+ * Paste — one click, straight into the open form
  *
- * A textarea rather than reading the clipboard ourselves: clipboard READ
- * needs a permission this extension does not ask for, and behaves
- * differently in Chrome and Firefox. Ctrl+V into a box works the same
- * everywhere, needs no permission, and lets the values be edited on the
- * way in.
+ * "Paste" means paste. It takes what Copy last put down and writes it; there
+ * is no box to paste into and no second button, because there is nothing to
+ * ask. The box below exists only for the other route — lines that went out
+ * to a spreadsheet, got edited there, and are coming back — and it stays out
+ * of the way behind a link until someone wants it.
  * ------------------------------------------------------------------ */
 
-function renderPastePanel(panel, annotator, setStatus, closePanel) {
-    panel.dataset.mode = "paste";
-    panel.replaceChildren();
+async function pasteLines(text, panel, annotator, setStatus) {
+    const { pairs, unparsed } = parseFields(text);
+    if (!pairs.length) {
+        setStatus("Nothing to paste — expected lines of “name<TAB>value”.", true);
+        return;
+    }
+
+    panel.replaceChildren(el("div", NOTE_CLASS, "Writing…"));
     panel.hidden = false;
 
-    panel.append(el("div", LABEL_CLASS,
-        "Paste name/value lines here (one field per line, name and value separated by a tab):"));
+    const plan = planPaste(readProps(annotator), pairs, readEditControls(annotator));
+    const { changed, unchanged, failed } = await applyPaste(plan);
 
-    const box = document.createElement("textarea");
-    box.className = NAME_INPUT_CLASS;
-    box.rows = 8;
-    box.style.width = "100%";
-    box.style.fontFamily = "monospace";
-    panel.append(box);
+    renderPasteOutcome(panel, plan, { changed, unchanged, failed, unparsed }, setStatus);
+}
 
+async function runPaste(panel, annotator, setStatus, closePanel) {
+    panel.dataset.mode = "paste";
+
+    const stash = await getRunFormStash();
+    if (!stash) {
+        panel.replaceChildren();
+        panel.hidden = false;
+        panel.append(el("div", NOTE_CLASS,
+            "Nothing copied yet — open a run whose definition is filled in and press Copy."));
+        appendEditedLinesLink(panel, annotator, setStatus, closePanel);
+        return;
+    }
+
+    await pasteLines(stash.text, panel, annotator, setStatus);
+    appendEditedLinesLink(panel, annotator, setStatus, closePanel);
+}
+
+// The spreadsheet round-trip: values that left as a Copy, were edited
+// somewhere else, and are coming back. A link rather than a step, so the
+// ordinary case stays one click.
+function appendEditedLinesLink(panel, annotator, setStatus, closePanel) {
     const bar = el("div", BAR_CLASS);
-    const apply = button("Paste into form (overwrites)", "", PRIMARY_CLASS);
-    const cancel = button("Cancel");
-    bar.append(apply, cancel);
-    panel.append(bar);
+    const open = button("Paste edited lines instead…",
+        "For values you copied out, changed in a spreadsheet, and want to bring back.");
+    const close = button("Close");
 
-    const results = el("div");
-    panel.append(results);
+    open.addEventListener("click", () => {
+        panel.replaceChildren();
+        panel.append(el("div", LABEL_CLASS,
+            "Paste your lines here — one field per line, name and value separated by a tab:"));
 
-    cancel.addEventListener("click", closePanel);
+        const box = document.createElement("textarea");
+        box.className = NAME_INPUT_CLASS;
+        box.rows = 8;
+        box.style.width = "100%";
+        box.style.fontFamily = "monospace";
+        panel.append(box);
 
-    apply.addEventListener("click", async () => {
-        const { pairs, unparsed } = parseFields(box.value);
-        if (!pairs.length) {
-            setStatus("Nothing to paste — expected lines of “name<TAB>value”.", true);
-            return;
-        }
+        const applyBar = el("div", BAR_CLASS);
+        const apply = button("Write into form (overwrites)", "", PRIMARY_CLASS);
+        const cancel = button("Cancel");
+        applyBar.append(apply, cancel);
+        panel.append(applyBar);
 
-        apply.disabled = true;
-        results.replaceChildren(el("div", NOTE_CLASS, "Opening the editor…"));
+        cancel.addEventListener("click", closePanel);
+        apply.addEventListener("click", async () => {
+            apply.disabled = true;
+            await pasteLines(box.value, panel, annotator, setStatus);
+        });
 
-        if (!(await openEditor(annotator))) {
-            apply.disabled = false;
-            results.replaceChildren(el("div", NOTE_CLASS,
-                "Could not open the run definition editor — is this run editable?"));
-            return;
-        }
-
-        // Opening the editor replaces the annotator's whole subtree, so the
-        // controls have to be read AFTER it, never before.
-        const plan = planPaste(readProps(annotator), pairs, readEditControls(annotator));
-        const { changed, unchanged, failed } = await applyPaste(plan);
-
-        apply.disabled = false;
-        renderPasteOutcome(results, plan, { changed, unchanged, failed, unparsed }, setStatus);
+        box.focus();
     });
 
-    box.focus();
+    close.addEventListener("click", closePanel);
+    bar.append(open, close);
+    panel.append(bar);
 }
 
 function renderPasteOutcome(results, plan, { changed, unchanged, failed, unparsed }, setStatus) {
@@ -483,17 +537,8 @@ async function renderFillPanel(panel, annotator, setStatus, closePanel) {
         if (!template) return;
 
         fill.disabled = true;
-        results.replaceChildren(el("div", NOTE_CLASS, "Opening the editor…"));
+        results.replaceChildren(el("div", NOTE_CLASS, "Working…"));
 
-        if (!(await openEditor(annotator))) {
-            fill.disabled = false;
-            results.replaceChildren(el("div", NOTE_CLASS,
-                "Could not open the run definition editor — is this run editable?"));
-            return;
-        }
-
-        // Opening the editor replaces the annotator's whole subtree, so the
-        // controls have to be read AFTER it, never before.
         const controls = readEditControls(annotator);
         const plan = planFill(annotator, template, controls);
         const { written, failed } = await applyEmpty(plan);

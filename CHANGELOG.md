@@ -40,15 +40,32 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   ceremony than the job needs. *Copy* puts the method fields on the
   clipboard as `name<TAB>value` lines — tab-separated so the block pastes
   into a spreadsheet, gets edited there and comes back unchanged. *Paste*
-  takes those lines and **overwrites**, deliberately: it is aimed at a form
-  the chemist is already looking at, and it reports every field it changed
-  as `old → new`.
-- Paste reads from a textarea rather than the clipboard itself: clipboard
-  *read* needs a permission this extension does not ask for and differs
-  between Chrome and Firefox, while Ctrl+V into a box behaves the same
-  everywhere.
+  is **one click**: it writes what Copy last put down and **overwrites**,
+  deliberately, reporting every field it changed as `old → new`. Lines that
+  went out to a spreadsheet and were edited there come back through a box
+  behind the *paste edited lines* link.
+- **Reading works anywhere, writing waits for the editor.** *Save* and
+  *Copy* work from the read-only view — that is where you are when you
+  decide to reuse a definition. *Fill* and *Paste* stay disabled until
+  **Edit run definition** is open: a button that silently opened the editor
+  would leave the run in an editable, unsaved state nobody asked for.
+- **Run definition values are click-to-copy** outside edit mode, the same as
+  the fields on batches, samples and entities. In edit mode those cells hold
+  form controls, and the existing interactive-content guard leaves them —
+  and the batch links — alone.
 
 ### Technical
+- Copy writes its text twice: to the system clipboard, and to a small stash
+  in `chrome.storage.local`. Reading the system clipboard back would need
+  the `clipboardRead` permission, which reads as "read data you copy and
+  paste" and would make every installed copy ask for consent again on
+  update — a one-click Paste is not worth that.
+- The two writing buttons are re-enabled from the discovery scan, which
+  already runs on every mutation batch, so the bar follows the form in and
+  out of edit mode without this feature tracking any state of its own.
+- The run definition's `td` cells got their own container/selector pair in
+  `copyable-fields.js` rather than a bare `td` added to the shared list,
+  which would have made every table cell on the molecule pages copyable.
 - A template field carries BOTH `defId` (CDD's `run_field_definition_id`,
   exact within a protocol) and `name` (portable to a different protocol
   rendering the same form). The fill tries the id, then the name, so neither

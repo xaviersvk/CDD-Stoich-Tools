@@ -19,6 +19,18 @@ const VALUE_SELECTORS = [
     ".value-text",
 ];
 
+// A run's Run Definition prints its values in plain <td>s beside a <th>
+// label, so it needs a bare `td` selector — kept in its OWN pair rather than
+// added to VALUE_SELECTORS, where it would quietly make every table cell on
+// the molecule pages copyable too.
+//
+// Nothing extra is needed to leave the editor alone: in edit mode those same
+// cells hold inputs, and the interactive-content guard already refuses any
+// cell containing one. The batch links (Probe, Protein) are refused by the
+// same guard, which is what keeps them navigable.
+const RUN_DEFINITION_CONTAINERS = [".protocolAnnotator"];
+const RUN_DEFINITION_VALUE_SELECTOR = "tr > td";
+
 // Sample header title (e.g. "IXX-NUC-0000009-001-SM003059"). Lives in a
 // `.label-text` span that also contains the collapse/expand toggle button, so it
 // can't go through the generic path (labels are excluded, and the button trips
@@ -111,6 +123,12 @@ function findCopyableFieldNodes() {
         VALUE_SELECTORS.forEach((valueSelector) => {
             const found = Array.from(container.querySelectorAll(valueSelector));
             nodes.push(...found);
+        });
+    });
+
+    RUN_DEFINITION_CONTAINERS.forEach((containerSelector) => {
+        document.querySelectorAll(containerSelector).forEach((container) => {
+            nodes.push(...container.querySelectorAll(RUN_DEFINITION_VALUE_SELECTOR));
         });
     });
 

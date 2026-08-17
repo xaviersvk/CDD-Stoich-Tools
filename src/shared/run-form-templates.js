@@ -203,6 +203,55 @@ export async function deleteRunFormTemplate(name) {
     return putRunFormTemplates(next);
 }
 
+/* ------------------------------------------------------------------ *
+ * The copy stash — what "Copy" put down, so "Paste" is one click.
+ *
+ * Reading the SYSTEM clipboard would need the `clipboardRead` permission,
+ * which shows up as "read data you copy and paste" and would make every
+ * installed copy ask for consent again on update. Copy therefore writes the
+ * same text twice: to the clipboard (so it still pastes into a spreadsheet
+ * or another app) and here (so our own Paste button needs no permission at
+ * all). Text edited outside CDD comes back through the panel's own box.
+ * ------------------------------------------------------------------ */
+
+export const RUN_FORM_STASH_KEY = "cddRunFormStash";
+
+export async function setRunFormStash(text, meta = {}) {
+    try {
+        await chrome.storage.local.set({
+            [RUN_FORM_STASH_KEY]: {
+                text: String(text ?? ""),
+                protocolName: String(meta.protocolName ?? "").trim(),
+                fieldCount: Number.isFinite(meta.fieldCount) ? meta.fieldCount : 0,
+                savedAt: Date.now(),
+            },
+        });
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+export async function getRunFormStash() {
+    try {
+        const result = await chrome.storage.local.get(RUN_FORM_STASH_KEY);
+        const stash = result?.[RUN_FORM_STASH_KEY];
+        if (!stash || typeof stash !== "object") return null;
+
+        const text = String(stash.text ?? "");
+        if (!text.trim()) return null;
+
+        return {
+            text,
+            protocolName: String(stash.protocolName ?? "").trim(),
+            fieldCount: Number.isFinite(stash.fieldCount) ? stash.fieldCount : 0,
+            savedAt: Number.isFinite(stash.savedAt) ? stash.savedAt : 0,
+        };
+    } catch {
+        return null;
+    }
+}
+
 // Fires whenever the template list changes anywhere (another tab, the
 // options page). Returns an unsubscribe function.
 export function onRunFormTemplatesChanged(cb) {

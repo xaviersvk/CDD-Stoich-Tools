@@ -29,11 +29,15 @@ them into the next run. You tick what belongs to the method when you save —
   `what's there → what the template has`, and you take the template's value
   for that one field, or for all at once.
 - **The plugin never presses Save.** It loads the form and stops, so you read
-  it before anything reaches CDD — Cancel still throws it all away.
+  it before anything reaches CDD — Cancel still throws it all away. *Save*
+  and *Copy* work from the read-only view; *Fill* and *Paste* wait until you
+  have opened **Edit run definition** yourself.
 - **Copy** and **Paste into form** cover the one-off case: the settings go on
-  the clipboard as name/value lines, so they paste into another run directly,
-  or into Excel if you want to edit them first. Paste *overwrites*, and lists
-  every field it changed.
+  the clipboard as name/value lines, so they paste into another run in one
+  click, or into Excel if you want to edit them first. Paste *overwrites*,
+  and lists every field it changed.
+- On the read-only view the run definition values are **click-to-copy**, the
+  same as fields on batches, samples and entities.
 - A template also works on another protocol that shows the same form. Fields
   that form doesn't have are reported as skipped, never dropped in silence.
 
@@ -130,12 +134,17 @@ roughly doubles, so most rows now fit on one line.
 - **The plugin never presses Save.** It loads the form and stops, so you
   read the whole thing before anything reaches CDD. Cancel throws it all
   away as usual.
+- **Save** and **Copy** work from the normal read-only view. **Fill** and
+  **Paste** stay greyed out until you open **Edit run definition** yourself
+  — they write into the form, so you should already be in the editor.
 - New: **Copy** and **Paste into form**, for when a named template is more
   fuss than the job needs. Copy puts the settings on the clipboard as
-  name/value lines — paste them straight into another run, or into Excel to
-  edit first, then paste them back. Unlike a template fill, **Paste
-  overwrites** what is already there, and tells you exactly which fields it
-  changed.
+  name/value lines; Paste writes them into the open form in **one click**.
+  Unlike a template fill, **Paste overwrites** what is already there, and
+  tells you exactly which fields it changed. Copied lines also paste into
+  Excel — edit them there and bring them back via *paste edited lines*.
+- New: on the read-only view the run definition values are **click-to-copy**,
+  the same as fields on batches, samples and entities.
 - Templates work across protocols too, as long as the other protocol shows
   the same form. Fields the target form doesn't have are reported as
   skipped rather than silently dropped.

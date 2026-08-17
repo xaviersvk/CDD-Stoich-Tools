@@ -19,16 +19,22 @@
 // is kept as-is: fetching through it skips a redirect.
 
 const MENTION_LINK_SELECTOR =
-    'a[href*="#molecule-batches/"], a[href*="#molecule-inventory_samples/"]';
+    'a[href*="#molecule-batches"], a[href*="#molecule-inventory_samples"]';
 
+// The trailing record id is OPTIONAL. Some links CDD writes stop at the
+// section — `…#molecule-inventory_samples` with no `/<id>` — while still
+// naming the record in their text ("RGT-0000641-006-I004392"). Requiring the
+// id silently dropped those, so they are matched by name later instead.
 const HREF_PATTERN =
-    /\/vaults\/(\d+)\/molecules\/(\d+)#molecule-(batches|inventory_samples)\/(\d+)/;
+    /\/vaults\/(\d+)\/molecules\/(\d+)#molecule-(batches|inventory_samples)(?:\/(\d+))?/;
 
 export const KIND_BATCH = "batch";
 export const KIND_SAMPLE = "sample";
 
+// Identity for deduping. An id-less link has only its text to go by, which
+// is exactly what will resolve it later.
 export function mentionKey(mention) {
-    return `${mention.kind}:${mention.id}`;
+    return `${mention.kind}:${mention.id ?? `name=${(mention.text || "").toLowerCase()}`}`;
 }
 
 function parseHref(href) {
@@ -39,7 +45,7 @@ function parseHref(href) {
         vaultId: match[1],
         moleculeId: match[2],
         kind: match[3] === "batches" ? KIND_BATCH : KIND_SAMPLE,
-        id: match[4],
+        id: match[4] ?? null,
     };
 }
 
@@ -61,11 +67,19 @@ export function scanMentions(panelRoot) {
         const parsed = parseHref(link.getAttribute("href"));
         if (!parsed) continue;
 
-        const key = mentionKey(parsed);
+        const mention = {
+            ...parsed,
+            text: (link.textContent || "").replace(/\s+/g, " ").trim(),
+        };
+
+        // An id-less link with no text names nothing and can never resolve.
+        if (!mention.id && !mention.text) continue;
+
+        const key = mentionKey(mention);
         if (seen.has(key)) continue;
         seen.add(key);
 
-        out.push({ ...parsed, text: (link.textContent || "").replace(/\s+/g, " ").trim() });
+        out.push(mention);
     }
 
     return out;

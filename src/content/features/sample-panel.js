@@ -15,8 +15,8 @@ import { getPurityWarnThreshold } from "../../shared/purity-threshold.js";
 import { isShowProductsEnabled } from "../../shared/show-products-flag.js";
 import { isElnEntryPage } from "../../shared/page-detection.js";
 import { PANEL_ID, REACTION_COLORS } from "../../shared/plugin-constants.js";
-import { isTableRowsEnabled } from "../../shared/panel-sources-flag.js";
 import { getMentionSamples } from "./mentions/state.js";
+import { getPanelContents } from "./panel-contents.js";
 import { updatePanelVisibilityForOverlays } from "../overlay-watcher.js";
 import { printPanel } from "./panel-print.js";
 import { exportPanelCsv } from "./panel-csv.js";
@@ -126,8 +126,20 @@ export function makePanelDraggable(panel) {
     });
 }
 
+/**
+ * Is there anything for the panel to show on this page?
+ *
+ * A stoichiometry table OR a batch/sample linked in the entry text. It used
+ * to be the table alone, which meant an entry that only *writes about* its
+ * materials got no panel at all — and that is exactly the entry the mention
+ * cards were added for.
+ */
+export function shouldShowPanel() {
+    return STATE.hasReactionFeature || getMentionSamples().length > 0;
+}
+
 export function ensurePanel() {
-    if (!STATE.hasReactionFeature) return null;
+    if (!shouldShowPanel()) return null;
 
     let panel = document.getElementById(PANEL_ID);
     if (panel) return panel;
@@ -1145,18 +1157,22 @@ export function renderFromState() {
     if (!isElnEntryPage()) return;
     if (STATE.isKetcherOpen) return;
 
-    const mentions = getMentionSamples();
-
-    // An entry with no stoichiometry table but a batch linked in its text is
-    // a real entry worth a panel, so the reaction gate now lets mentions
-    // through as well.
-    if (!STATE.hasReactionFeature && !mentions.length) return;
+    // Losing the last reason to exist takes the panel away — a leftover
+    // panel over an entry with neither a table nor a link would just be a
+    // stale box.
+    if (!shouldShowPanel()) {
+        removePanel();
+        return;
+    }
 
     ensurePanel();
 
-    const tableSamples = isTableRowsEnabled() ? (STATE.lastPayload?.samples || []) : [];
+    // Writing a bottle into the text AND putting it in the table is the
+    // normal way to record an experiment; showing it twice is not. The CSV
+    // and print flows read this same function, so all three agree.
+    const { tableSamples, mentions, hidden, samples } = getPanelContents();
 
-    if (!STATE.lastPayload && !mentions.length) {
+    if (!STATE.lastPayload && !samples.length) {
         setStatus("No reaction data captured yet. Wait for page API response.");
         return;
     }
@@ -1167,9 +1183,12 @@ export function renderFromState() {
         parts.push(`${tableSamples.length} sample(s) from ${reactionCount} reaction(s)`);
     }
     if (mentions.length) parts.push(`${mentions.length} mentioned in text`);
+    // Said out loud: a card that is simply gone is indistinguishable from a
+    // scan that failed.
+    if (hidden) parts.push(`${hidden} mention(s) already in the table`);
 
     setStatus(parts.length ? `Loaded ${parts.join(" · ")}.` : "Nothing to show — check the panel sources in the settings.");
-    renderSamples({ ...STATE.lastPayload, samples: [...tableSamples, ...mentions] });
+    renderSamples({ ...STATE.lastPayload, samples });
 }
 
 

@@ -29,6 +29,10 @@ into the text.
   **batch** card shows the batch and deliberately no location or amount —
   the entry mentioned the batch, not one particular bottle.
 - A bottle since used up still gets a card, with the usual **DEPLETED** badge.
+- **Nothing appears twice**: a substance already in a stoichiometry table is
+  not shown again as a mention, and the status line says how many were
+  hidden.
+- **Print and CSV** from the panel include the mentions too.
 - Mentions are display-only: there is no table row to fill.
 - In the settings you choose what the panel draws from — **stoichiometry
   table rows**, **links in the entry text**, or both. Both start on.
@@ -149,6 +153,12 @@ roughly doubles, so most rows now fit on one line.
   amount**: the entry mentioned the batch, not one particular bottle.
 - A sample that has since been used up still gets its card, with the usual
   **DEPLETED** badge.
+- **Nothing appears twice.** If a substance is already a row in a
+  stoichiometry table, its mention in the text is not shown again — writing
+  about a bottle *and* putting it in the table is the normal way to record
+  an experiment. The status line says how many were hidden, so nothing
+  disappears without a word.
+- **Print and CSV** from the panel now include the mentions too.
 - Mentions are display-only — there is no table row to fill, so no fill
   buttons.
 - New in the settings: choose what the panel draws from — **stoichiometry

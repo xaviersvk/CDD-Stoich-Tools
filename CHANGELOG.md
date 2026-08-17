@@ -77,10 +77,35 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 - `include_depleted=true`: a mention of a bottle since used up still
   resolves, and the panel already knows how to badge it. Filtering it out
   would leave a card with a name and no explanation.
+- **A substance already in a stoichiometry table is not shown again as a
+  mention.** Writing "we used RGT-0000204-002-I003520" in the text AND
+  putting that bottle in the table is the normal way to record an
+  experiment, so the duplicate is the common case, not the odd one.
+  Matching is by **id, never by name**: the two sources name the same record
+  differently — the table row calls that bottle `I003520` (its
+  `sample_identifier`) while the link calls it `RGT-0000204-002-I003520`
+  (its full name) — so a name comparison would miss exactly the case it
+  exists for. Both the sample id and the batch id are checked, so it fires
+  whichever of the two the ELN row happens to carry. Hidden mentions are
+  **counted in the status line**; a card that is simply gone is
+  indistinguishable from a scan that failed.
+- **The trailing record id in the href is optional.** Some links CDD writes
+  stop at the section — `…#molecule-inventory_samples` with no `/<id>` —
+  while still naming the record in their text. Requiring the id dropped
+  those silently; they are now resolved by matching the link's text against
+  the record's `name`, `sample_identifier` or `molecule_batch_identifier`.
+- **Print and CSV now export what the panel shows**, mentions included.
+  Both read `STATE.lastPayload` before, which holds only the stoichiometry
+  rows — everything linked in the entry's text was missing from every sheet
+  and every export. All three now read one function, so they cannot
+  disagree.
 - **Panel sources are now a setting** — stoichiometry table rows and
   in-text mentions, independently. Both default ON.
 - An entry with no stoichiometry table but a batch linked in its text now
-  gets a panel at all; the reaction gate lets mentions through.
+  gets a panel at all. Three gates had to agree, not one: `renderFromState`,
+  `ensurePanel` (which refused to build a panel without a reaction) and the
+  message router (which *deleted* the panel the moment reaction visibility
+  went false). They now share a single `shouldShowPanel()`.
 - **A Copy button on every row of a protocol's Run Data table.** That table
   is the one place where every run of a protocol is visible at once, so it
   is the natural place to say "that one, give me those settings" without

@@ -161,6 +161,16 @@ against https://app.collaborativedrug.com/vaults/6884/eln/entries/2504170.
   (`div.slate-a[data-slate-inline]` wrapping the `<a>`); a link that came with
   an embedded card sits in a `molecule-names__container` and is not Slate at
   all. Match on the href, never on the wrapper.
+- **The trailing `/<id>` is OPTIONAL.** Verified live: the same entry can hold
+  `…#molecule-inventory_samples/576131` and a bare
+  `…#molecule-inventory_samples` whose link text is the record's full name
+  (`RGT-0000641-006-I004392`). Anchoring the regex on the id silently drops
+  the second kind; resolve those by matching the link text against `name` /
+  `sample_identifier` / `batch.molecule_batch_identifier`.
+- A **depleted** sample comes back from the API with `location: null`, while
+  an ELN row for the same bottle keeps the location it had when it was
+  consumed. Same record, two snapshots — do not treat the mismatch as
+  evidence of two different samples.
 - **The vault in the href is the molecule's HOME vault**, routinely NOT the
   entry's vault (ELN 6884 → registration 6885 / 7965). Fetch through it to
   skip a redirect; one entry can mention molecules from several vaults.

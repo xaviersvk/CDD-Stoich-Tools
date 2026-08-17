@@ -1,7 +1,7 @@
 // content/features/panel-print.js
-import { STATE } from "../state.js";
 import { escapeHtml } from "../utils/dom.js";
 import { EVENT_SOURCE, EVENTS } from "../../shared/event-types";
+import { getVisibleSamples } from "./panel-contents.js";
 import { isShowProductsEnabled } from "../../shared/show-products-flag.js";
 import {
     SAMPLE_PANEL_FIELDS,
@@ -57,8 +57,11 @@ export function buildPrintColumns(samples, visibleFields) {
 }
 
 export function printPanel(visibleFields = {}) {
-    const payload = STATE.lastPayload;
-    if (!payload?.samples?.length) {
+    // Whatever the panel is showing, mentions included — not
+    // STATE.lastPayload, which holds only the stoichiometry rows and would
+    // quietly drop everything linked in the entry's text.
+    const visible = getVisibleSamples();
+    if (!visible.length) {
         alert("No sample data available.");
         return;
     }
@@ -66,7 +69,7 @@ export function printPanel(visibleFields = {}) {
     // Products only when the option is on; the Type column appears only
     // when there is a product to label.
     const showProducts = isShowProductsEnabled();
-    const samples = payload.samples.filter((s) => showProducts || !s.isProduct);
+    const samples = visible.filter((s) => showProducts || !s.isProduct);
     const anyProduct = samples.some((s) => s.isProduct);
     const columns = buildPrintColumns(samples, visibleFields);
 

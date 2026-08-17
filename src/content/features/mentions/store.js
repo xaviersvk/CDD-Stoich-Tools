@@ -41,9 +41,19 @@ export const MENTIONS_GROUP_LABEL = "Mentioned in text";
 // evicted so a later scan can retry.
 const moleculeSamplesCache = new Map();
 
+const nameKey = (value) => String(value ?? "").replace(/\s+/g, " ").trim().toLowerCase();
+
 function indexSamples(list) {
     const bySampleId = new Map();
     const byBatchId = new Map();
+    // For links whose href stops at the section and names the record only in
+    // its text. Every name a record answers to, pointing at that record.
+    const byName = new Map();
+
+    const remember = (key, sample) => {
+        const k = nameKey(key);
+        if (k && !byName.has(k)) byName.set(k, sample);
+    };
 
     for (const sample of Array.isArray(list) ? list : []) {
         if (sample?.id != null) bySampleId.set(String(sample.id), sample);
@@ -55,9 +65,13 @@ function indexSamples(list) {
         if (batchId != null && !byBatchId.has(String(batchId))) {
             byBatchId.set(String(batchId), sample);
         }
+
+        remember(sample?.name, sample);
+        remember(sample?.sample_identifier, sample);
+        remember(sample?.batch?.molecule_batch_identifier, sample);
     }
 
-    return { bySampleId, byBatchId };
+    return { bySampleId, byBatchId, byName };
 }
 
 export function fetchMoleculeSamples(vaultId, moleculeId) {
@@ -85,10 +99,12 @@ export function fetchMoleculeSamples(vaultId, moleculeId) {
     return promise;
 }
 
-function moleculeUrl(mention) {
-    const fragment = mention.kind === KIND_SAMPLE
-        ? `#molecule-inventory_samples/${mention.id}`
-        : `#molecule-batches/${mention.id}`;
+function moleculeUrl(mention, recordId) {
+    const section = mention.kind === KIND_SAMPLE ? "inventory_samples" : "batches";
+    const id = mention.id ?? recordId;
+    const fragment = id != null
+        ? `#molecule-${section}/${id}`
+        : `#molecule-${section}`;
     return `/vaults/${mention.vaultId}/molecules/${mention.moleculeId}${fragment}`;
 }
 
@@ -124,9 +140,19 @@ function batchHalf(record) {
  * discovery, the depleted badge, the CSV export — works unchanged.
  */
 export function buildMentionSample(mention, index) {
-    const record = mention.kind === KIND_SAMPLE
-        ? index.bySampleId.get(String(mention.id))
-        : index.byBatchId.get(String(mention.id));
+    // With an id, the lookup is exact. Without one — a link that stopped at
+    // the section — the link's own text is the only handle, and it is the
+    // record's name.
+    let record = null;
+    if (mention.id != null) {
+        record = mention.kind === KIND_SAMPLE
+            ? index.bySampleId.get(String(mention.id))
+            : index.byBatchId.get(String(mention.id));
+    } else {
+        record = index.byName?.get(nameKey(mention.text)) || null;
+    }
+
+    const recordId = mention.kind === KIND_SAMPLE ? record?.id : record?.batch_id;
 
     const base = {
         reactionIndex: MENTIONS_REACTION_INDEX,
@@ -135,7 +161,7 @@ export function buildMentionSample(mention, index) {
         mentionKind: mention.kind,
         isProduct: false,
         moleculeId: mention.moleculeId,
-        mentionUrl: moleculeUrl(mention),
+        mentionUrl: moleculeUrl(mention, recordId),
         // Nothing to fill INTO: a mention is prose, not a table row. The
         // absence of a rowNumber is what keeps the fill machinery away.
         rowNumber: null,
@@ -144,7 +170,7 @@ export function buildMentionSample(mention, index) {
     if (!record) {
         return {
             ...base,
-            name: mention.text || `${mention.kind} ${mention.id}`,
+            name: mention.text || `${mention.kind} ${mention.id ?? ""}`.trim(),
             batchId: mention.kind === KIND_SAMPLE ? null : mention.id,
             sampleId: mention.kind === KIND_SAMPLE ? mention.id : null,
             hasSample: mention.kind === KIND_SAMPLE,
@@ -178,7 +204,9 @@ export function buildMentionSample(mention, index) {
         ...base,
         ...batch,
         name: batch.batchName || mention.text,
-        batchId: String(mention.id),
+        // The href's id when it had one, otherwise the batch the name
+        // resolved to. Either way this is what the dedupe matches on.
+        batchId: String(mention.id ?? record.batch_id ?? ""),
         sampleId: null,
         hasSample: false,
     };

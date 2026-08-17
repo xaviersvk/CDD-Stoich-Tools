@@ -5,8 +5,8 @@
 // separator, dot decimals, RFC 4180 quoting) plus a UTF-8 BOM so Excel
 // reads the diacritics correctly.
 
-import { STATE } from "../state.js";
 import { buildPrintColumns } from "./panel-print.js";
+import { getVisibleSamples } from "./panel-contents.js";
 import { isShowProductsEnabled } from "../../shared/show-products-flag.js";
 
 // Quote when the value could otherwise break the row: separator, quote,
@@ -58,14 +58,15 @@ function downloadCsv(filename, csv) {
 }
 
 export function exportPanelCsv(visibleFields = {}) {
-    const payload = STATE.lastPayload;
-    if (!payload?.samples?.length) {
+    // Same source as the panel and the print sheet — mentions included.
+    const visible = getVisibleSamples();
+    if (!visible.length) {
         alert("No sample data available.");
         return;
     }
 
     const showProducts = isShowProductsEnabled();
-    const samples = payload.samples.filter((s) => showProducts || !s.isProduct);
+    const samples = visible.filter((s) => showProducts || !s.isProduct);
     const anyProduct = samples.some((s) => s.isProduct);
     const columns = buildPrintColumns(samples, visibleFields);
 

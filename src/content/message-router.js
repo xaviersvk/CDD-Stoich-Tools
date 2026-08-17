@@ -1,6 +1,6 @@
 // content/message-router.js
 import { STATE } from "./state.js";
-import { renderFromState, removePanel } from "./features/sample-panel.js";
+import { renderFromState } from "./features/sample-panel.js";
 import { enrichBatchOnlySamples } from "./features/batch-field-enrichment.js";
 import { onSamplePayload } from "./features/auto-fill.js";
 import { ensurePrintButtons } from "./features/print-buttons.js";
@@ -23,11 +23,11 @@ export function handleMessage(event) {
         case EVENTS.REACTION_VISIBILITY: {
             STATE.hasReactionFeature = !!data.payload?.visible;
 
-            if (!STATE.hasReactionFeature) {
-                removePanel();
-            } else {
-                renderFromState();
-            }
+            // "No reaction" is no longer the same as "nothing to show": an
+            // entry can earn its panel purely by linking to a batch or a
+            // sample in its text. renderFromState() takes the panel away
+            // itself when neither reason is left.
+            renderFromState();
             break;
         }
 

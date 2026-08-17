@@ -35,6 +35,11 @@ import {
     buildPickerPanel,
     positionPanel,
 } from "./field-picker-core.js";
+import {
+    buildChipSpec,
+    initFormFilterChips,
+    refreshChipsWhenReady,
+} from "./form-filter-chips.js";
 
 // The single marker that identifies THIS menu (and separates it from CDD's
 // operator/style selects, the columns editor, and every other MUI menu, which
@@ -120,11 +125,19 @@ function parseNativeItems(ul) {
             label: rawLabel,
             required,
             selected: li.getAttribute("aria-selected") === "true",
+            kind: category, // for the registration-form chip filter
             li,
         });
     }
 
     return buckets;
+}
+
+// How the chip filter reads an item's column kind. Here it's just the bucket the
+// item was sorted into, which already comes from CDD's authoritative data-value
+// prefix (SAMPLE/BATCH/MOLECULE/EVENT).
+function itemKind(item) {
+    return item?.kind || "";
 }
 
 /* --------------------------------------------------------------------------- */
@@ -188,9 +201,13 @@ function enhance(paper) {
 
     const buckets = parseNativeItems(ul);
     // Escape/dismissal is owned by MUI's Modal here, so no onEscape.
-    const { panel, input } = buildPickerPanel(COLUMNS, buckets, {
+    const { panel, input, setChips } = buildPickerPanel(COLUMNS, buckets, {
+        chips: buildChipSpec(itemKind),
         onSelect: (item) => selectNative(item.li),
     });
+
+    // Cold open: fill the chips in once the harvested map lands.
+    refreshChipsWhenReady(setChips, itemKind);
 
     // Insert our panel where the list was, inside the Paper (see file header).
     paper.insertBefore(panel, ul);
@@ -239,6 +256,7 @@ export function initFilterFieldPicker() {
     started = true;
 
     injectPickerStyles();
+    initFormFilterChips();
 
     const observer = new MutationObserver(() => scan());
     // <html>, not <body>: Turbo swaps <body> on in-app navigation.

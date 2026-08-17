@@ -108,6 +108,65 @@ export function injectPickerStyles() {
             box-shadow: 0 0 0 3px rgba(0, 119, 204, 0.15);
         }
 
+        /* Registration-form filter: a wrapping row of chips between the search
+           box and the columns. Optional — panels built without a chip spec have
+           no such row at all. */
+        .${PANEL_CLASS}__forms {
+            flex: 0 0 auto;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            background: #fbfcfd;
+            border-bottom: 1px solid #e3e7ec;
+        }
+        .${PANEL_CLASS}__forms-label {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: #7b8794;
+            margin-right: 2px;
+        }
+        .${PANEL_CLASS}__forms-note {
+            font-size: 12px;
+            font-style: italic;
+            color: #9aa5b1;
+        }
+        .${PANEL_CLASS}__chip {
+            border: 1px solid #c6ccd4;
+            border-radius: 999px;
+            background: #fff;
+            padding: 3px 10px;
+            font-family: inherit;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #3e4c59;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .${PANEL_CLASS}__chip:hover:not([disabled]) {
+            background: #eef5fb;
+            border-color: #9fb3c8;
+        }
+        .${PANEL_CLASS}__chip:focus,
+        .${PANEL_CLASS}__chip:focus-visible {
+            outline: none;
+            border-color: #0077cc;
+            box-shadow: 0 0 0 3px rgba(0, 119, 204, 0.15);
+        }
+        .${PANEL_CLASS}__chip.is-active {
+            background: #0077cc;
+            border-color: #0077cc;
+            color: #fff;
+            font-weight: 600;
+        }
+        .${PANEL_CLASS}__chip[disabled] {
+            opacity: 0.55;
+            cursor: default;
+        }
+
         /* Columns fill the remaining height; each scrolls on its own so the
            panel height stays capped and the page behind stays visible. Empty
            categories aren't rendered at all, so the track count follows the
@@ -296,13 +355,15 @@ export function injectPickerStyles() {
 //             and item = { label, required, selected, …payload } — `label` may
 //             carry a leading "*" required marker; any extra fields (an <li>, a
 //             value, …) are opaque and handed straight back to onSelect.
-//   opts    : { placeholder, onSelect(item), onEscape() }
+//   opts    : { placeholder, onSelect(item), onEscape(), chips }
+//             `chips` is optional; see buildChipRow for its shape.
 //
-// Returns { panel, input }. Selection, dismissal and positioning are the
-// caller's to wire (via onSelect/onEscape and positionPanel) — this function
-// owns only the panel's own DOM, search and in-panel keyboard nav.
+// Returns { panel, input, refresh, setChips }. Selection, dismissal and
+// positioning are the caller's to wire (via onSelect/onEscape and
+// positionPanel) — this function owns only the panel's own DOM, search and
+// in-panel keyboard nav.
 export function buildPickerPanel(columns, buckets, opts = {}) {
-    const { placeholder = "Search attributes…", onSelect, onEscape } = opts;
+    const { placeholder = "Search attributes…", onSelect, onEscape, chips } = opts;
 
     const panel = document.createElement("div");
     panel.className = PANEL_CLASS;
@@ -320,6 +381,10 @@ export function buildPickerPanel(columns, buckets, opts = {}) {
     input.spellcheck = false;
     searchRow.appendChild(input);
     panel.appendChild(searchRow);
+
+    // --- Registration-form chips (optional) -------------------------------
+    const chipRow = chips ? buildChipRow(panel, chips) : null;
+    if (chipRow) panel.appendChild(chipRow.row);
 
     // --- Columns ----------------------------------------------------------
     const columnsEl = document.createElement("div");
@@ -393,10 +458,133 @@ export function buildPickerPanel(columns, buckets, opts = {}) {
     none.textContent = "No matching fields";
     panel.appendChild(none);
 
-    wireSearch(panel, input);
+    const refresh = wireSearch(panel, input);
     wireKeyboard(panel, input, onEscape);
 
-    return { panel, input };
+    // The chip row drives visibility through the same refresh pass the search
+    // box uses, so the two filters compose instead of fighting (see setItemFilter).
+    if (chipRow) chipRow.bind(refresh);
+
+    return {
+        panel,
+        input,
+        refresh,
+        setChips: chipRow ? chipRow.update : () => {},
+    };
+}
+
+/* --------------------------------------------------------------------------- */
+/* Registration-form chip row                                                  */
+/* --------------------------------------------------------------------------- */
+
+// Mark items the current chip excludes. This is a SECOND, independent input to
+// visibility: `hidden` stays the one channel that actually shows/hides, and both
+// the search path and the browse path consult this flag — otherwise typing in
+// the search box would un-hide everything the chip just filtered out.
+export function setItemFilter(panel, predicate) {
+    for (const btn of panel.querySelectorAll(`[data-cdd-ffp-item]`)) {
+        const keep = typeof predicate === "function" ? predicate(btn._ffpItem) : true;
+        if (keep) delete btn.dataset.cddFfpOff;
+        else btn.dataset.cddFfpOff = "1";
+    }
+}
+
+// True when this item is excluded by the chip filter.
+function isFilteredOut(btn) {
+    return btn.dataset.cddFfpOff === "1";
+}
+
+/**
+ * A wrapping row of chips that narrows the picker to one registration form.
+ *
+ *   spec = {
+ *     label,                       // row caption, e.g. "Form"
+ *     items: [{ key, label }],     // chips, left to right
+ *     activeKey,                   // which one is on
+ *     note,                        // shown instead of chips when items is empty
+ *     onPick(key),                 // told about the user's choice (persistence)
+ *     predicate(key, item),        // is this picker item visible under `key`?
+ *   }
+ *
+ * The row renders even with no items (showing `note`), so a picker whose map is
+ * still loading says so rather than silently looking unfiltered.
+ */
+function buildChipRow(panel, spec) {
+    const row = document.createElement("div");
+    row.className = `${PANEL_CLASS}__forms`;
+
+    let current = spec;
+    let refresh = null;
+
+    const applyCurrentFilter = () => {
+        const { activeKey, predicate } = current;
+        setItemFilter(
+            panel,
+            typeof predicate === "function"
+                ? (item) => predicate(activeKey, item)
+                : null
+        );
+        if (refresh) refresh();
+    };
+
+    const render = () => {
+        row.replaceChildren();
+
+        if (current.label) {
+            const caption = document.createElement("span");
+            caption.className = `${PANEL_CLASS}__forms-label`;
+            caption.textContent = current.label;
+            row.appendChild(caption);
+        }
+
+        const items = Array.isArray(current.items) ? current.items : [];
+
+        if (!items.length) {
+            const note = document.createElement("span");
+            note.className = `${PANEL_CLASS}__forms-note`;
+            note.textContent = current.note || "";
+            row.appendChild(note);
+            return;
+        }
+
+        for (const item of items) {
+            const chip = document.createElement("button");
+            chip.type = "button";
+            chip.className = `${PANEL_CLASS}__chip`;
+            chip.textContent = item.label;
+            const active = item.key === current.activeKey;
+            chip.classList.toggle("is-active", active);
+            chip.setAttribute("aria-pressed", active ? "true" : "false");
+
+            chip.addEventListener("click", () => {
+                if (item.key === current.activeKey) return;
+                current = { ...current, activeKey: item.key };
+                render();
+                applyCurrentFilter();
+                current.onPick?.(item.key);
+            });
+
+            row.appendChild(chip);
+        }
+    };
+
+    render();
+
+    return {
+        row,
+        // Called once the panel is wired, so the initial chip is applied through
+        // the same pass a click would use.
+        bind: (fn) => {
+            refresh = fn;
+            applyCurrentFilter();
+        },
+        // Late-arriving data (the field map landed after the picker opened).
+        update: (next) => {
+            current = { ...current, ...next };
+            render();
+            applyCurrentFilter();
+        },
+    };
 }
 
 function buildItem(item, onSelect) {
@@ -418,6 +606,7 @@ function buildItem(item, onSelect) {
     btn._ffpName = nameOnly; // original text as displayed
     btn._ffpRequired = item.required;
     btn._ffpFold = fold;
+    btn._ffpItem = item; // opaque payload, handed to the chip-row predicate
 
     if (typeof onSelect === "function") {
         btn.addEventListener("click", () => onSelect(item));
@@ -555,8 +744,14 @@ export function syncColumnsHeight(panel) {
 
     // 1px tolerance for fractional layouts at odd browser zooms.
     if (panel.scrollHeight - panel.clientHeight > 1) {
-        const search = panel.querySelector(`.${PANEL_CLASS}__search`);
-        const height = panel.clientHeight - (search ? search.offsetHeight : 0);
+        // Everything that is not the columns grid is fixed chrome above it —
+        // the search row, and the chip row when there is one. Summing whatever
+        // is actually there keeps this correct as rows are added.
+        let chromeHeight = 0;
+        for (const child of panel.children) {
+            if (child !== columns) chromeHeight += child.offsetHeight;
+        }
+        const height = panel.clientHeight - chromeHeight;
         if (height > 0) columns.style.height = `${height}px`;
     }
 
@@ -594,7 +789,11 @@ function wireSearch(panel, input) {
             // (ties keep their original order).
             const scored = [];
             for (const btn of col.querySelectorAll(`[data-cdd-ffp-item]`)) {
-                const score = scoreLabel(btn.dataset.search, query);
+                // A chip-filtered item scores 0 no matter what was typed, so the
+                // search box can never resurrect what the form filter removed.
+                const score = isFilteredOut(btn)
+                    ? 0
+                    : scoreLabel(btn.dataset.search, query);
                 btn.hidden = score === 0;
                 if (score > 0) {
                     paintItem(btn, query); // highlight the matched slice
@@ -623,30 +822,74 @@ function wireSearch(panel, input) {
     };
 
     input.addEventListener("input", apply);
+
+    // Handed back so the chip row can re-run the current query after changing
+    // the filter, instead of duplicating any of this.
+    return apply;
 }
 
 // Empty query: put every column back into its original grouped order and show
-// all items/headers again.
+// everything again — everything, that is, except what the chip filter excludes.
 function restoreBrowseView(panel, columns, cols) {
     panel.classList.remove("is-empty");
     // Clear the inline template so the CSS grid (incl. data-cols + responsive
     // rules) governs the browse view again.
     columns.style.gridTemplateColumns = "";
 
+    let liveColumns = 0;
+
     for (const col of cols) {
-        col.hidden = false;
         const body = col.querySelector(`.${PANEL_CLASS}__col-body`);
         const order = ORIGINAL_ORDER.get(body);
         if (order) {
             for (const node of order) body.appendChild(node);
         }
+
+        let live = 0;
+        let lastGroup = null;
+        let lastGroupLive = 0;
+
         for (const node of body.children) {
-            if (node.dataset.cddFfpEmpty) node.hidden = true;
-            else node.hidden = false;
+            if (node.dataset.cddFfpEmpty) {
+                node.hidden = true;
+                continue;
+            }
+            if (node.dataset.cddFfpGroup) {
+                // Settle the previous group before opening the next one: a group
+                // whose every field was filtered out must not leave a stray
+                // sub-heading behind.
+                if (lastGroup) lastGroup.hidden = lastGroupLive === 0;
+                lastGroup = node;
+                lastGroupLive = 0;
+                continue;
+            }
+            if (!node.dataset.cddFfpItem) {
+                node.hidden = false;
+                continue;
+            }
+
+            const off = isFilteredOut(node);
+            node.hidden = off;
+            if (!off) {
+                live++;
+                lastGroupLive++;
+            }
             // Drop any leftover highlight from the previous query.
-            if (node.dataset.cddFfpItem) paintItem(node, "");
+            paintItem(node, "");
         }
+
+        if (lastGroup) lastGroup.hidden = lastGroupLive === 0;
+
+        // A column the filter emptied is dropped entirely, exactly as an empty
+        // category is at build time.
+        col.hidden = live === 0;
+        if (live) liveColumns++;
     }
+
+    // Keep the grid sizing to the columns that survived. data-cols (not an
+    // inline template) so the responsive collapse below 901px still governs.
+    columns.dataset.cols = String(liveColumns);
+    panel.classList.toggle("is-empty", liveColumns === 0);
 }
 
 /* --------------------------------------------------------------------------- */

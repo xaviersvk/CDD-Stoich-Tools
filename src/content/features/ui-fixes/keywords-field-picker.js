@@ -46,6 +46,11 @@ import {
     HOST_CLASS,
     PANEL_CLASS,
 } from "./field-picker-core.js";
+import {
+    buildChipSpec,
+    initFormFilterChips,
+    refreshChipsWhenReady,
+} from "./form-filter-chips.js";
 
 // Only the Keywords field selector — never the operator select
 // (.molecule_criteria__query_style) or anything else on the page.
@@ -67,6 +72,14 @@ function columnHeading(headingLabel) {
     return headingLabel.trim().replace(/\s+Fields$/i, "");
 }
 
+// The heading, folded into the kind the registration-form filter speaks:
+// "Entity Fields" -> "entity", "Batch Fields" -> "batch". A vault emitting
+// "Sample Fields" lands on "sample" for free; anything the filter doesn't know
+// is simply never filtered.
+function columnKind(headingLabel) {
+    return columnHeading(headingLabel).toLowerCase();
+}
+
 // True if a bare option is a section heading (rather than a real field). CDD
 // encodes headings two ways we can read from the DOM alone: they introduce
 // dash-indented child options, and they read "<Object> Fields". Requiring
@@ -77,12 +90,13 @@ function isSectionHeading(raw, nextRaw) {
     return /\sFields$/i.test(raw);
 }
 
-function makeItem(select, opt, label) {
+function makeItem(select, opt, label, kind) {
     return {
         label, // keeps any leading "*"; core strips it for scoring/highlight
         required: label.startsWith("*"),
         selected: opt.selected,
         value: opt.value, // CDD's internal index — preserved verbatim
+        kind, // column kind, for the registration-form chip filter
         select,
     };
 }
@@ -104,7 +118,7 @@ function makeItem(select, opt, label) {
 // ordered [{key, heading}] list and `buckets` maps each key to a single group
 // (label "" so only the column head names it).
 function parseFieldSelect(select) {
-    const general = { key: "general", heading: "General", items: [] };
+    const general = { key: "general", heading: "General", kind: "general", items: [] };
     const sections = [general];
     let current = general;
 
@@ -116,7 +130,9 @@ function parseFieldSelect(select) {
 
         if (raw.startsWith("-")) {
             // Indented child field of the current section.
-            current.items.push(makeItem(select, opt, raw.replace(/^-\s*/, "")));
+            current.items.push(
+                makeItem(select, opt, raw.replace(/^-\s*/, ""), current.kind)
+            );
             continue;
         }
 
@@ -129,14 +145,19 @@ function parseFieldSelect(select) {
             // under General — preserving its internal value — while it ALSO
             // switches the active section for the "- …" fields that follow. It is
             // never additionally rendered as a child of its own section.
-            general.items.push(makeItem(select, opt, raw));
-            current = { key: `sec-${i}`, heading: columnHeading(raw), items: [] };
+            general.items.push(makeItem(select, opt, raw, general.kind));
+            current = {
+                key: `sec-${i}`,
+                heading: columnHeading(raw),
+                kind: columnKind(raw),
+                items: [],
+            };
             sections.push(current);
             continue;
         }
 
         // Standalone bare field of the current section.
-        current.items.push(makeItem(select, opt, raw));
+        current.items.push(makeItem(select, opt, raw, current.kind));
     }
 
     const columns = [];
@@ -147,6 +168,13 @@ function parseFieldSelect(select) {
         buckets[sec.key] = [{ label: "", items: sec.items }];
     }
     return { columns, buckets };
+}
+
+// How the chip filter reads an item's column kind. Recorded per item at parse
+// time, because the Search page's sections are discovered from heading text
+// rather than being a fixed set.
+function itemKind(item) {
+    return item?.kind || "general";
 }
 
 /* --------------------------------------------------------------------------- */
@@ -201,8 +229,9 @@ function openPickerFor(select, seedChar) {
     host.style.left = "-9999px";
     host.style.top = "-9999px";
 
-    const { panel, input } = buildPickerPanel(columns, buckets, {
+    const { panel, input, setChips } = buildPickerPanel(columns, buckets, {
         placeholder: "Search fields…",
+        chips: buildChipSpec(itemKind),
         onSelect: (item) => {
             applySelection(item.select, item.value);
             closePicker();
@@ -211,6 +240,13 @@ function openPickerFor(select, seedChar) {
     });
     host.appendChild(panel);
     document.body.appendChild(host);
+
+    // Cold open (nothing cached yet): fill the chips in once the map lands, and
+    // re-fit the panel — the row that appears is fixed chrome above the columns.
+    refreshChipsWhenReady((spec) => {
+        setChips(spec);
+        if (host.isConnected) positionHost(host, select);
+    }, itemKind);
 
     // Dismiss on any pointer/focus outside the host, on Tab out of it, and keep
     // the host glued to the select while the page scrolls or resizes.
@@ -414,6 +450,7 @@ export function initKeywordsFieldPicker() {
     started = true;
 
     injectPickerStyles();
+    initFormFilterChips();
 
     document.addEventListener("mousedown", onDocMouseDown, true);
     document.addEventListener("keydown", onDocKeyDown, true);

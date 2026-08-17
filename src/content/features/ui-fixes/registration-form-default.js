@@ -34,10 +34,24 @@ import {
     REG_FORM_MODE_KEY,
     REG_FORM_FIXED_KEY,
 } from "../../../shared/registration-form.js";
+import { harvestFromLiveDom } from "../../api/registration-form-fields.js";
 
 const SELECT_SELECTOR = "#registration-form-select";
 
 let started = false;
+
+// This page also carries, in its RegistrationFormRenderer props, the map of
+// which fields each form uses — which the Search/Inventory field pickers filter
+// by. Harvesting it here is free: the props are already in the DOM, so the
+// pickers never have to fetch this 1 MB page themselves. Once per page load.
+let harvested = false;
+
+function harvestFieldMapOnce() {
+    if (harvested) return;
+    if (!document.querySelector('[component_class="RegistrationFormRenderer"]')) return;
+    harvested = true;
+    harvestFromLiveDom();
+}
 
 // The settings snapshot the sync pass reads. Kept in module scope because the
 // MutationObserver callback is synchronous and cannot await storage.
@@ -157,6 +171,7 @@ function sync() {
     const select = getSelect();
     if (!select || !settings) return;
 
+    harvestFieldMapOnce();
     discoverNames(select);
     applyOrder(select);
     applyDefault(select);

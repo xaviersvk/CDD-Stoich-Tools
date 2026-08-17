@@ -16,6 +16,44 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [Unreleased]
+
+### Added
+- **The field pickers can be narrowed to one registration form.** Both the
+  Search page's *Keywords* selector and Inventory's *Filter Entries* selector
+  list every field the vault owns — 129 options in the vault this was built
+  against. A row of chips above the columns (`All`, `Molecule`, `Plasmid`,
+  `Antibody`, …) cuts that to the fields the chosen form actually uses:
+  **21–46 options**, i.e. 3–6× shorter. Default is `All`; the choice is
+  remembered per vault, and the chips follow the form order already
+  configurable on the options page.
+- The map of which fields each form uses is **scraped from
+  `/vaults/<v>/molecules/new`**, out of the `RegistrationFormRenderer`
+  `react_props`: each `registration_form_definitions[].components` is a nested
+  layout tree whose leaves carry a `fieldID`, joined against
+  `molecule_field_definitions` / `batch_field_definitions` /
+  `inventory_sample_field_definitions`. There is no JSON API for this —
+  `/api/v1/vaults/<v>/fields` wants an API token and 401s on a session cookie.
+- **That page is ~1 MB and takes the server ~10 s**, so it is never on the
+  critical path. It is harvested for free from the live DOM whenever the user
+  is on the Create Entity page anyway; the fetch only happens if nothing is
+  cached *and* a picker is actually opened, never on page load. A stale map is
+  served immediately and refreshed behind the user's back (7-day TTL).
+- Matching is **by field name**, because the Search `<option value>` is a plain
+  array index into CDD's own list, not a field id. Verified exact across both
+  pickers; the handful of labels that don't match are CDD built-ins (Entity
+  Name, Salt, Formula Weight, Current Amount, …). Those are detected as
+  "not a vault-defined field" rather than from a hardcoded list, so they stay
+  visible in a vault we've never seen. `Event` fields are never filtered —
+  events belong to no registration form.
+- The chip filter is a **second, independent input to visibility**, so it
+  composes with the search box instead of fighting it: a chip-filtered field
+  scores 0 no matter what is typed, and the browse view drops emptied groups
+  and columns. See [`docs/REGISTRATION_FORM_FIELD_FILTER.md`](./docs/REGISTRATION_FORM_FIELD_FILTER.md)
+  for the measurements and the full design record.
+
+---
+
 ## [13.4.0] — 2026-08-17
 
 ### Added

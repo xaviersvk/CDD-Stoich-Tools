@@ -86,11 +86,20 @@ against https://app.collaborativedrug.com/vaults/6884/eln/entries/2504170.
   carries `placeholder="Select solvent"`. Typing filters CDD's 38 built-in
   solvents; **an empty box lists them all**, but only as a *second* event —
   React ignores an input event that doesn't change the value, and the box
-  starts empty. Options live in
-  `[data-autotest-id="solvent-row-name-selector-popup"]`, one per
-  `[data-autotest-id="solvent-<label>"]`. The list's `Create "…"` entry has
-  **no autotest id**, which is exactly what keeps an automated pick from
-  registering a new solvent in the vault.
+  starts empty. The filter is a **case-insensitive substring of the whole
+  label**, so `EtOH`, `chloride` and `ethanol` all narrow it correctly.
+  Options live in `[data-autotest-id="solvent-row-name-selector-popup"]`,
+  one per `[data-autotest-id="solvent-<label>"]`.
+- **The list is a convenience, not a constraint.** A solvent may be **any
+  string** — the popup's `Create "<typed>"` entry names the solvent on
+  *that row* as free text (verified: the row then reads
+  `Solvent: EtOAc/Hexane 1:1`); it does **not** add anything to the vault's
+  solvent list. That entry has **no autotest id**, so it is matched by its
+  label, and only when the quoted text equals what was typed. CDD offers it
+  **alongside** real matches, which is why a list match must be tried first
+  — otherwise `ethanol` would be created as text next to the real entry.
+  A list pick carries CAS-RN, FW, density and boiling point; free text
+  carries none of them.
 - **Picker label ≠ stored name.** The list says `Ethanol (EtOH)`; the
   payload calls the same thing `ethanol`. Match on the label, the label
   minus its trailing parenthesis, and each comma-separated abbreviation

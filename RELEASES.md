@@ -27,9 +27,11 @@ stock solution the same way, and offers them together: one click on
 
 - If a row is already a solution but its solvent line still says
   *Solvent: Required*, a **Fill solvent** button appears on its own.
-- The solvent always comes from CDD's own list — the plugin never creates a
-  new one. If the remembered name isn't on that list, the concentration is
-  written anyway and the button says the solvent was skipped.
+- **The solvent doesn't have to be on CDD's list.** One of the 38 built-in
+  solvents is picked from the list, so it brings its CAS-RN, FW, density and
+  boiling point along. Anything else — *EtOAc/Hexane 1:1*, a buffer, a
+  mixture — is written as plain text, exactly as if you typed it yourself.
+  Neither way adds anything to the vault's solvent list.
 - The settings page lists the remembered solvent next to the density, purity
   and concentration.
 
@@ -101,9 +103,11 @@ roughly doubles, so most rows now fit on one line.
   ethanol) into table*. It clicks **Make solution** for you, as before.
 - New: if a row is already a solution but its solvent line says
   *Solvent: Required*, you get a **Fill solvent** button on its own.
-- The solvent is only ever chosen from CDD's own list — the plugin will never
-  create a new one. If what was remembered isn't on that list, the
-  concentration is still written and the button says the solvent was skipped.
+- The solvent doesn't have to be one of CDD's 38 built-in ones. If it is, it
+  is picked from the list and brings its CAS-RN, FW, density and boiling
+  point along; anything else — *EtOAc/Hexane 1:1*, a buffer, a mixture — is
+  written as plain text, just as if you typed it. Nothing is ever added to
+  the vault's solvent list.
 - The settings page shows the remembered solvent alongside density, purity
   and concentration, and the ✕ still forgets the whole batch at once.
 - As always, a value the sample record itself carries wins over the

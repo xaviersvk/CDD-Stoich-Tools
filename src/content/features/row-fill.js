@@ -417,7 +417,9 @@ async function writeFieldViaPopup(ctx, label, popupLabelRe, value, placeholderOn
  * ="stoichiometry-table-solutionSolvent"`. "Make solution" creates that row
  * (labelled "Solvent: Required") and "Remove solvent" takes it away.
  * Clicking its Solvent link opens a picker whose text box filters CDD's 38
- * built-in solvents; an EMPTY box lists them all.
+ * built-in solvents; an EMPTY box lists them all. The list is a
+ * convenience, not a constraint — CDD accepts any string through the
+ * `Create "…"` entry, so a remembered "EtOAc/Hexane 1:1" is fillable too.
  * ------------------------------------------------------------------ */
 const SOLVENT_ROW_MARKER = "stoichiometry-table-solutionSolvent";
 const SOLVENT_PICKER_POPUP = '[data-autotest-id="solvent-row-name-selector-popup"]';
@@ -450,9 +452,9 @@ function solventAliases(label) {
     return names.map(normalizeSolvent).filter(Boolean);
 }
 
-// The picker entry for `value`, or null. Only elements carrying a
-// `solvent-…` autotest id count — that is exactly what excludes the
-// list's `Create "…"` entry, so a fill can never register a new solvent.
+// The LIST entry for `value`, or null. Only elements carrying a
+// `solvent-…` autotest id count, which keeps the list's `Create "…"` entry
+// out of this search — the two are picked deliberately, never by accident.
 function findSolventOption(value) {
     const popup = document.querySelector(SOLVENT_PICKER_POPUP);
     if (!popup) return null;
@@ -461,6 +463,27 @@ function findSolventOption(value) {
     for (const el of popup.querySelectorAll('[data-autotest-id^="solvent-"]')) {
         const label = el.getAttribute("data-autotest-id").slice("solvent-".length);
         if (solventAliases(label).includes(wanted)) return { el, label };
+    }
+    return null;
+}
+
+// The `Create "…"` entry, which names the solvent on THIS row as free text.
+// CDD offers it for any string that is not on the list (and alongside the
+// matches, which is why a list match has to be tried first — otherwise
+// "ethanol" would be created as text next to the real Ethanol entry).
+// Nothing is added to the vault's solvent list.
+//
+// It carries no autotest id, so it is found by its own label — and only
+// when the quoted text is exactly what we typed, so a list still showing
+// the previous query can never be clicked.
+function findCreateEntry(value) {
+    const popup = document.querySelector(SOLVENT_PICKER_POPUP);
+    if (!popup) return null;
+
+    for (const el of popup.querySelectorAll("*")) {
+        if (el.children.length) continue;
+        const quoted = (el.textContent || "").trim().match(/^Create\s+"(.*)"$/);
+        if (quoted && quoted[1] === value) return el;
     }
     return null;
 }
@@ -481,27 +504,40 @@ async function writeSolventViaPicker(ctx, value) {
     const input = await waitFor(() => findEditorInput(/^\s*Solvent\s*$/i));
     if (!input) return { ok: false, reason: "solvent picker did not open" };
 
-    // Typed text filters the list; clearing it shows all 38. Try the
-    // filtered list first (a remembered "ethanol" finds "Ethanol (EtOH)"
-    // straight away), then the full one — which is why the box has to be
-    // typed into FIRST: React ignores an input event that does not change
-    // the value, and the box already starts empty.
+    // CDD's own list comes FIRST: a list entry brings CAS-RN, FW, density
+    // and boiling point with it, free text brings nothing. Typed text
+    // filters the list (case-insensitive, anywhere in the label); clearing
+    // the box shows all 38, which catches an alias the filter would hide.
+    // The box has to be typed into BEFORE it is cleared — React ignores an
+    // input event that does not change the value, and it starts empty.
     setNativeInputValue(input, value);
     let option = await waitFor(() => findSolventOption(value));
     if (!option) {
         setNativeInputValue(input, "");
         option = await waitFor(() => findSolventOption(value));
     }
-    if (!option) return { ok: false, reason: `"${value}" is not one of CDD's solvents` };
 
-    mouseClick(option.el);
+    if (option) {
+        mouseClick(option.el);
+    } else {
+        // Not on the list — which is allowed: a solvent may be any string
+        // ("EtOAc/Hexane 1:1"), and that is what the chemist typed here
+        // before. Retype it, because the box may still be holding the full
+        // list from the step above, then take the `Create "…"` entry.
+        setNativeInputValue(input, value);
+        const create = await waitFor(() => findCreateEntry(value));
+        if (!create) return { ok: false, reason: `could not set solvent "${value}"` };
+        mouseClick(create);
+    }
 
-    // The row now prints the picker's own label ("Ethanol (EtOH)") — never
-    // compare it numerically, "2,2,2-Trifluoroethanol" parses as a number.
+    // A list pick prints the picker's own label ("Ethanol (EtOH)"), free
+    // text prints itself. Never compare numerically —
+    // "2,2,2-Trifluoroethanol" parses as a number.
+    const expected = option ? option.label : value;
     const confirmed = await waitFor(() => {
         const tr = findSolventRow(container, name, rowNumber);
         const text = tr ? readFieldText(tr, "Solvent:") : null;
-        return text && normalizeSolvent(text) === normalizeSolvent(option.label) ? tr : null;
+        return text && normalizeSolvent(text) === normalizeSolvent(expected) ? tr : null;
     });
     return confirmed ? { ok: true } : { ok: false, reason: "solvent did not stick" };
 }

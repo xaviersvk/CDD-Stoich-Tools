@@ -33,8 +33,14 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   produces a complete stock solution. The button says which solvent it will
   use — *Fill remembered concentration (0.4 mol/L in ethanol) into table*.
   The solvent is best-effort: the concentration is already written, so a
-  solvent that cannot be matched comes back as a note on a successful fill,
-  never as a failure.
+  solvent the picker refuses outright comes back as a note on a successful
+  fill, never as a failure.
+- **Any string works as a solvent, not just CDD's list.** A remembered
+  solvent is matched against the 38 built-in entries first — those carry
+  CAS-RN, FW, density and boiling point — and anything else is set as free
+  text through the picker's `Create "…"` entry, exactly as a chemist typing
+  "EtOAc/Hexane 1:1" would. That names the solvent on that row only; the
+  vault's solvent list is never added to.
 - **A solvent fill of its own**, offered when the row already *is* a solution
   (it has a concentration) but no solvent was ever picked — the state CDD
   labels *Solvent: Required*. A row that is not a solution gets no such
@@ -51,9 +57,11 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   first and falls back to the full list — in that order, because React
   ignores an input event that does not change the value and the box already
   starts empty.
-- Only entries carrying a `solvent-…` autotest id are clickable candidates.
-  That is what excludes the list's `Create "…"` entry, so a fill can never
-  register a new solvent in the vault.
+- The list search and the free-text `Create "…"` entry are looked up
+  separately — the list by `solvent-…` autotest id, `Create` by its own
+  label with the quoted text checked against what was typed. CDD offers
+  `Create` alongside real matches, so trying the list first is what keeps
+  "ethanol" from being created as text next to the real Ethanol entry.
 - Picker labels and stored names disagree by design: the list says
   *Ethanol (EtOH)*, the payload says *ethanol*. A match is tried against the
   whole label, the label without its trailing parenthesis, and each

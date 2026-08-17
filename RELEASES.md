@@ -13,9 +13,27 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
-# What's new in 13.3.0
+# What's new in 13.4.0
 
 *Everything that changed since **12.8.5**, the previous public release.*
+
+### The panel sees what you link in the entry text
+
+A batch or sample linked anywhere in an ELN entry's body now gets its own card
+in the **CDD Samples** panel, in a *Mentioned in text* group under the
+reactions — with the same fields as any other card. Links into another vault
+work too, and so do links that came with an embedded card rather than typed
+into the text.
+
+- A **sample** card shows that bottle: where it is, how much is left. A
+  **batch** card shows the batch and deliberately no location or amount —
+  the entry mentioned the batch, not one particular bottle.
+- A bottle since used up still gets a card, with the usual **DEPLETED** badge.
+- Mentions are display-only: there is no table row to fill.
+- In the settings you choose what the panel draws from — **stoichiometry
+  table rows**, **links in the entry text**, or both. Both start on.
+- An entry with no reaction table now gets a panel too, if it links to
+  something.
 
 ### Reuse a run definition instead of retyping it
 
@@ -113,6 +131,39 @@ The balloon that opens when you click a well on a run heat map is **1.4×
 wider**. Since you can add your own batch fields to it, its rows kept wrapping
 onto two lines — even short ones like *Batch name: 001*. The text column
 roughly doubles, so most rows now fit on one line.
+
+---
+
+## 13.4.0 — August 2026
+
+**The panel now sees the batches and samples you link in the entry text.**
+
+- New: a batch or sample linked anywhere in an ELN entry's body gets its own
+  card in the **CDD Samples** panel, in a *Mentioned in text* group under the
+  reactions — with the same fields as any other card: location, purity,
+  amount, concentration, your own batch and sample fields.
+- Both kinds of link count: one you typed into the text, and one that came
+  with an embedded card. Links into another vault work too.
+- A card for a **sample** shows that bottle — where it is, how much is left.
+  A card for a **batch** shows the batch, and deliberately **no location or
+  amount**: the entry mentioned the batch, not one particular bottle.
+- A sample that has since been used up still gets its card, with the usual
+  **DEPLETED** badge.
+- Mentions are display-only — there is no table row to fill, so no fill
+  buttons.
+- New in the settings: choose what the panel draws from — **stoichiometry
+  table rows**, **links in the entry text**, or both. Both are on to start
+  with.
+- An entry with no reaction table at all now gets a panel too, as long as it
+  links to something.
+
+**Copy a run's parameters straight from the protocol page.**
+
+- On a protocol's **Run Data** tab, every run row has a small **copy** link.
+  It puts that run's parameters on the clipboard exactly as the run page's
+  own Copy does, so you can go to another run and press **Paste into form**.
+  The *Molecules* and *Plates* columns are counts, not settings, and are left
+  out — as are the run's own date and person.
 
 ---
 

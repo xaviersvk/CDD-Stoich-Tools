@@ -26,6 +26,9 @@ function solventSource(sample, entry) {
 
 export function computeFillOffers(sample) {
     if (sample?.isProduct) return [];   // products are display-only
+    // A mention is prose, not a row: there is no table cell to fill and no
+    // row number to find one by.
+    if (sample?.isMention) return [];
 
     const offers = [];
     const entry = sample?.batchId ? getRememberedValues(sample.batchId) : null;

@@ -150,6 +150,48 @@ against https://app.collaborativedrug.com/vaults/6884/eln/entries/2504170.
   batch identifier. Picking one puts CDD's own `batch_link_id` in the hidden
   field (verified: `PRO-0000017-001` → `190898728`).
 
+## Entity links in an ELN entry body
+
+- A batch or sample referenced in the body renders as an ordinary `<a>` whose
+  href is a deep link into the molecule page:
+  `/vaults/<vault>/molecules/<molecule>#molecule-batches/<batchId>` or
+  `…#molecule-inventory_samples/<sampleId>`. That href is the whole identity,
+  so nothing has to parse the editor's document model.
+- **Two DOM shapes, one href.** A link typed inline is a Slate inline
+  (`div.slate-a[data-slate-inline]` wrapping the `<a>`); a link that came with
+  an embedded card sits in a `molecule-names__container` and is not Slate at
+  all. Match on the href, never on the wrapper.
+- **The vault in the href is the molecule's HOME vault**, routinely NOT the
+  entry's vault (ELN 6884 → registration 6885 / 7965). Fetch through it to
+  skip a redirect; one entry can mention molecules from several vaults.
+- **`/vaults/<v>/molecules/<m>/inventory_samples.json?include_depleted=<bool>`**
+  is the one endpoint that answers both kinds. Returns
+  `{inventory_samples, sample_limit_hit, depleted_samples_count}`; each sample
+  carries `id`, `batch_id`, `name`, `sample_identifier`, `location{id,
+  position, value}`, `current_amount` + `units`, `depleted`, `fields` (sample
+  metafields), `batch_fields`, `molecule_fields` and a nested `batch`
+  (`molecule_batch_identifier`, `molecule_name`, `formula_weight`, salt,
+  synonyms). So a sample mention is a direct hit and a batch mention reads
+  the batch half of any sample of that batch.
+- **The molecule page's HTML does NOT contain its samples.** `SampleDataView`
+  fetches the JSON above at runtime; a background `fetch()` of the page gets
+  the pre-JS markup, where the sample ids simply are not present. (The page's
+  `RegistrationFormRenderer` blocks DO carry batch fields — that is what
+  `batch-field-enrichment.js` scrapes.)
+
+## The protocol page (`/vaults/<id>/protocols/<id>`)
+
+- Carries **two** `.protocolAnnotator`s: one with `resourceType === "protocol"`
+  (Name / Category / Description) and one with `resourceType === "run"` that is
+  the blank new-run form — 65 fields with nothing filled in. Neither holds a
+  real run's values.
+- The **Run Data** tab is a `table.SimpleDataTable` with a `tr.header-row` of
+  field names and one body row per run — the only place every run of a
+  protocol is visible at once. Its last column is empty (spare).
+- Its columns include `Molecules` and `Plates`, which are row COUNTS, not
+  fields. Rather than blocklisting them, take the valid names from the run
+  annotator's own `protocolFields` on the same page.
+
 ## Extension architecture gotchas
 
 - **Every `chrome.storage` write re-renders the panel** (via `onChanged` →

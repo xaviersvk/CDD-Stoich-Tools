@@ -29,6 +29,7 @@ import {
     refreshToolbarState,
 } from "./toolbar.js";
 import { ANNOTATOR_SELECTOR, isRunDefinition, readProps } from "./form-model.js";
+import { scanProtocolRunTables } from "./protocol-runs.js";
 import { ROOT_CLASS } from "./styles.js";
 
 let started = false;
@@ -77,6 +78,15 @@ export function initRunFormTemplates() {
             } catch (err) {
                 console.warn("[CDD Stoich Tools] run form template bar attach failed", err);
             }
+        }
+
+        // A protocol page shows every run of the protocol as a table row —
+        // each one gets a Copy of its own, producing exactly what the run
+        // page's Copy produces.
+        try {
+            scanProtocolRunTables();
+        } catch (err) {
+            console.warn("[CDD Stoich Tools] protocol run table scan failed", err);
         }
     }
 

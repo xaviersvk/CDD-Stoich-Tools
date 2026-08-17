@@ -16,6 +16,60 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [13.4.0] — 2026-08-17
+
+### Added
+- **Batches and samples linked in an entry's text now reach the Samples
+  panel**, in their own *Mentioned in text* group below the reactions. Both
+  shapes count: a link typed inline into the body (a Slate `.slate-a`) and
+  one that is part of an embedded card. They look nothing alike in the DOM
+  but carry the same href, which is the whole identity —
+  `/vaults/<v>/molecules/<m>#molecule-batches/<id>` or
+  `#molecule-inventory_samples/<id>` — so nothing here has to understand the
+  editor's document model.
+- One endpoint answers both kinds:
+  `/vaults/<v>/molecules/<m>/inventory_samples.json`. Each entry carries its
+  own `id` AND its `batch_id`, plus `location`, `current_amount`/`units`,
+  `fields`, `batch_fields` and a nested `batch` — so a sample mention is a
+  direct hit and a batch mention reads the batch half of any sample of that
+  batch. One GET per molecule, cached, whichever way.
+- **A batch mention deliberately shows no location, amount or
+  concentration.** Those belong to one bottle and the entry did not mention
+  a bottle; borrowing an arbitrary sample's shelf would be an invented fact.
+- `include_depleted=true`: a mention of a bottle since used up still
+  resolves, and the panel already knows how to badge it. Filtering it out
+  would leave a card with a name and no explanation.
+- **Panel sources are now a setting** — stoichiometry table rows and
+  in-text mentions, independently. Both default ON.
+- An entry with no stoichiometry table but a batch linked in its text now
+  gets a panel at all; the reaction gate lets mentions through.
+- **A Copy button on every row of a protocol's Run Data table.** That table
+  is the one place where every run of a protocol is visible at once, so it
+  is the natural place to say "that one, give me those settings" without
+  opening the run. It produces exactly what the run page's Copy produces,
+  so *Paste into form* does not care where the values came from.
+
+### Technical
+- Mention cards are built in the SAME shape the stoichiometry parser
+  produces, so the field registry, custom-field discovery, the depleted
+  badge and the CSV export all work on them unchanged.
+- `computeFillOffers` returns nothing for a mention: it is prose, not a row
+  — there is no table cell to write to and no row number to find one by.
+- The scan compares a signature of what it found before doing anything. The
+  entry body is a live editor that re-renders on every autosave, and
+  rendering the panel is itself a mutation, so an autosave that moved the
+  DOM without touching a link must cost one `querySelectorAll` and stop —
+  otherwise the observer feeds itself.
+- The cards live in their own tiny module. The panel reads them and the
+  scanner writes them; keeping both in the scanner would have meant the
+  panel importing the scanner while the scanner imports the panel.
+- Which columns of the protocol's run table are real fields is read from
+  that page's own run annotator, not guessed from the headers — so
+  `Molecules` and `Plates`, which are row counts, drop out on their own
+  rather than by a hand-maintained blocklist.
+
+---
+
 ## [13.3.0] — 2026-08-17
 
 ### Added

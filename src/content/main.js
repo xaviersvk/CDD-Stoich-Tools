@@ -51,6 +51,8 @@ import {initAutoFill} from "./features/auto-fill.js";
 import {initPurityThresholds, onPurityThresholdChanged} from "../shared/purity-threshold.js";
 import {initShowProducts, onShowProductsChanged} from "../shared/show-products-flag.js";
 import {initHeatMapFieldsConfig} from "../shared/heat-map-fields.js";
+import {initPanelSources, onPanelSourcesChanged} from "../shared/panel-sources-flag.js";
+import {initElnMentions} from "./features/mentions/init.js";
 
 
 function isSupportedHost() {
@@ -179,6 +181,14 @@ function init() {
   // Optional products section (panel + print).
   initShowProducts().then(() => {
     onShowProductsChanged(() => renderFromState());
+  });
+
+  // Which sources the panel draws from (stoichiometry tables / entity links
+  // written into the entry body). The mention scan starts only once the flag
+  // is known, so a disabled scan never fires a single request.
+  initPanelSources().then(() => {
+    onPanelSourcesChanged(() => renderFromState());
+    initElnMentions();
   });
 
   // Extra rows in the heat-map well tooltip. Fire-and-forget: hovers before

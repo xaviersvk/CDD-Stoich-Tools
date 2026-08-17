@@ -15,6 +15,8 @@ import { getPurityWarnThreshold } from "../../shared/purity-threshold.js";
 import { isShowProductsEnabled } from "../../shared/show-products-flag.js";
 import { isElnEntryPage } from "../../shared/page-detection.js";
 import { PANEL_ID, REACTION_COLORS } from "../../shared/plugin-constants.js";
+import { isTableRowsEnabled } from "../../shared/panel-sources-flag.js";
+import { getMentionSamples } from "./mentions/state.js";
 import { updatePanelVisibilityForOverlays } from "../overlay-watcher.js";
 import { printPanel } from "./panel-print.js";
 import { exportPanelCsv } from "./panel-csv.js";
@@ -523,6 +525,12 @@ export function removePanel() {
     if (panel) panel.remove();
 }
 
+// The panel's own root, or null before it exists. The mention scan uses it
+// to exclude itself from the search for entity links.
+export function getPanelRoot() {
+    return document.getElementById(PANEL_ID);
+}
+
 export function getPanelParts() {
     const panel = ensurePanel();
     if (!panel) {
@@ -998,7 +1006,11 @@ export function renderSamples(payload) {
 
         const groupCount = document.createElement("span");
         groupCount.className = "cdd-stoich-group-count";
-        groupCount.textContent = `${regulars.length} sample(s)` +
+        // "3 sample(s)" is wrong for the mention group — nothing there came
+        // out of a stoichiometry table.
+        groupCount.textContent = group.items.every((s) => s.isMention)
+            ? `${group.items.length} mention(s)`
+            : `${regulars.length} sample(s)` +
             (products.length ? ` · ${products.length} product(s)` : "");
 
         groupHeader.appendChild(groupTitle);
@@ -1131,21 +1143,33 @@ export function renderSamples(payload) {
 
 export function renderFromState() {
     if (!isElnEntryPage()) return;
-    if (!STATE.hasReactionFeature) return;
     if (STATE.isKetcherOpen) return;
+
+    const mentions = getMentionSamples();
+
+    // An entry with no stoichiometry table but a batch linked in its text is
+    // a real entry worth a panel, so the reaction gate now lets mentions
+    // through as well.
+    if (!STATE.hasReactionFeature && !mentions.length) return;
 
     ensurePanel();
 
-    if (!STATE.lastPayload) {
+    const tableSamples = isTableRowsEnabled() ? (STATE.lastPayload?.samples || []) : [];
+
+    if (!STATE.lastPayload && !mentions.length) {
         setStatus("No reaction data captured yet. Wait for page API response.");
         return;
     }
 
-    const count = STATE.lastPayload.samples?.length || 0;
-    const reactionCount = STATE.lastPayload.reactionCount || 0;
+    const reactionCount = STATE.lastPayload?.reactionCount || 0;
+    const parts = [];
+    if (isTableRowsEnabled()) {
+        parts.push(`${tableSamples.length} sample(s) from ${reactionCount} reaction(s)`);
+    }
+    if (mentions.length) parts.push(`${mentions.length} mentioned in text`);
 
-    setStatus(`Loaded ${count} sample(s) from ${reactionCount} reaction(s).`);
-    renderSamples(STATE.lastPayload);
+    setStatus(parts.length ? `Loaded ${parts.join(" · ")}.` : "Nothing to show — check the panel sources in the settings.");
+    renderSamples({ ...STATE.lastPayload, samples: [...tableSamples, ...mentions] });
 }
 
 

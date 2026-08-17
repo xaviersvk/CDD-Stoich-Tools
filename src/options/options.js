@@ -42,6 +42,10 @@ import {
     saveShowProducts,
 } from "../shared/show-products-flag.js";
 import {
+    getPanelSources,
+    savePanelSources,
+} from "../shared/panel-sources-flag.js";
+import {
     HEAT_MAP_DISCOVERED_KEY,
     SYNONYMS_LABEL,
     getHeatMapFields,
@@ -602,6 +606,25 @@ async function initShowProductsUI() {
     showProductsCheckbox.checked = await getShowProducts();
 }
 
+const tableRowsCheckbox = document.getElementById("panelSourceTableRows");
+const mentionsCheckbox = document.getElementById("panelSourceMentions");
+
+function savePanelSourcesFromUI() {
+    savePanelSources({
+        tableRows: tableRowsCheckbox.checked,
+        mentions: mentionsCheckbox.checked,
+    });
+}
+
+tableRowsCheckbox.addEventListener("change", savePanelSourcesFromUI);
+mentionsCheckbox.addEventListener("change", savePanelSourcesFromUI);
+
+async function initPanelSourcesUI() {
+    const sources = await getPanelSources();
+    tableRowsCheckbox.checked = sources.tableRows;
+    mentionsCheckbox.checked = sources.mentions;
+}
+
 /* ==================================================== 5 · Heat map tooltip */
 
 const heatMapFieldListEl = document.getElementById("heatMapFieldList");
@@ -793,4 +816,5 @@ initDensityMemoryUI();
 initAutoFillUI();
 initPurityThresholdUI();
 initShowProductsUI();
+initPanelSourcesUI();
 initHeatMapFieldsUI();

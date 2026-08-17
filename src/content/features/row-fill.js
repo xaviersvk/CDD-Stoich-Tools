@@ -8,10 +8,11 @@
 //   → set the popup input natively (React value-tracker aware) → Enter
 //   → click the empty page margin to leave edit mode.
 //
-// Three public fills share that machinery: density (empty fields only),
+// Four public fills share that machinery: density (empty fields only),
 // purity (snapshots the row's Equivalent first and restores it after CDD's
-// recalculation) and concentration (clicks "Make solution" first when the
-// row is not a solution yet).
+// recalculation), concentration (clicks "Make solution" first when the row
+// is not a solution yet, and sets the solvent on the way) and solvent (a
+// dropdown, not a text field — see writeSolventViaPicker).
 //
 // Every step re-verifies the DOM it expects and aborts cleanly when CDD's
 // markup has changed — the worst case is that nothing gets written (the one
@@ -408,6 +409,103 @@ async function writeFieldViaPopup(ctx, label, popupLabelRe, value, placeholderOn
     return confirmed ? { ok: true } : { ok: false, reason: "value did not stick" };
 }
 
+/* ------------------------------------------------------------------ *
+ * Solvent — the one field that is a dropdown, not a text box.
+ *
+ * CDD renders the solvent of a solution row as a <tr> OF ITS OWN directly
+ * under it: no row number, marked `data-autotest-id
+ * ="stoichiometry-table-solutionSolvent"`. "Make solution" creates that row
+ * (labelled "Solvent: Required") and "Remove solvent" takes it away.
+ * Clicking its Solvent link opens a picker whose text box filters CDD's 38
+ * built-in solvents; an EMPTY box lists them all.
+ * ------------------------------------------------------------------ */
+const SOLVENT_ROW_MARKER = "stoichiometry-table-solutionSolvent";
+const SOLVENT_PICKER_POPUP = '[data-autotest-id="solvent-row-name-selector-popup"]';
+
+function findSolventRow(container, name, rowNumber) {
+    const tr = findTargetRow(container, name, rowNumber);
+    const next = tr?.nextElementSibling;
+    if (!next || !next.cells || next.cells.length < 4) return null;
+    return next.getAttribute("data-autotest-id") === SOLVENT_ROW_MARKER ? next : null;
+}
+
+function normalizeSolvent(value) {
+    return String(value ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+// The names one picker entry answers to. The list LABELS a solvent
+// "Ethanol (EtOH)", but the payload — and therefore what we remember —
+// calls the same thing "ethanol", so the label alone never matches. Accept
+// the whole label, the label without its trailing parenthesis, and each
+// comma-separated abbreviation inside that parenthesis ("Dichloromethane
+// (methylene chloride,DCM,CH2Cl2)" → dichloromethane / methylene chloride /
+// DCM / CH2Cl2).
+function solventAliases(label) {
+    const names = [label];
+    const parenthesised = String(label).match(/^(.*?)\s*\(([^()]*)\)\s*$/);
+    if (parenthesised) {
+        names.push(parenthesised[1]);
+        names.push(...parenthesised[2].split(","));
+    }
+    return names.map(normalizeSolvent).filter(Boolean);
+}
+
+// The picker entry for `value`, or null. Only elements carrying a
+// `solvent-…` autotest id count — that is exactly what excludes the
+// list's `Create "…"` entry, so a fill can never register a new solvent.
+function findSolventOption(value) {
+    const popup = document.querySelector(SOLVENT_PICKER_POPUP);
+    if (!popup) return null;
+
+    const wanted = normalizeSolvent(value);
+    for (const el of popup.querySelectorAll('[data-autotest-id^="solvent-"]')) {
+        const label = el.getAttribute("data-autotest-id").slice("solvent-".length);
+        if (solventAliases(label).includes(wanted)) return { el, label };
+    }
+    return null;
+}
+
+// Pick `value` in the solvent row's dropdown. Expects the row to BE a
+// solution already (the caller either found the field or clicked "Make
+// solution" first).
+async function writeSolventViaPicker(ctx, value) {
+    const { container, name, rowNumber } = ctx;
+    const link = await waitFor(() => {
+        const tr = findSolventRow(container, name, rowNumber);
+        return tr ? findFieldValueLink(tr, "Solvent:", false) : null;
+    });
+    if (!link) return { ok: false, reason: "row has no Solvent field" };
+
+    mouseClick(link);
+
+    const input = await waitFor(() => findEditorInput(/^\s*Solvent\s*$/i));
+    if (!input) return { ok: false, reason: "solvent picker did not open" };
+
+    // Typed text filters the list; clearing it shows all 38. Try the
+    // filtered list first (a remembered "ethanol" finds "Ethanol (EtOH)"
+    // straight away), then the full one — which is why the box has to be
+    // typed into FIRST: React ignores an input event that does not change
+    // the value, and the box already starts empty.
+    setNativeInputValue(input, value);
+    let option = await waitFor(() => findSolventOption(value));
+    if (!option) {
+        setNativeInputValue(input, "");
+        option = await waitFor(() => findSolventOption(value));
+    }
+    if (!option) return { ok: false, reason: `"${value}" is not one of CDD's solvents` };
+
+    mouseClick(option.el);
+
+    // The row now prints the picker's own label ("Ethanol (EtOH)") — never
+    // compare it numerically, "2,2,2-Trifluoroethanol" parses as a number.
+    const confirmed = await waitFor(() => {
+        const tr = findSolventRow(container, name, rowNumber);
+        const text = tr ? readFieldText(tr, "Solvent:") : null;
+        return text && normalizeSolvent(text) === normalizeSolvent(option.label) ? tr : null;
+    });
+    return confirmed ? { ok: true } : { ok: false, reason: "solvent did not stick" };
+}
+
 // Fill `value` into the sample's row Density field (empty fields only).
 // Returns { ok: true } or { ok: false, reason }.
 export async function fillDensityIntoTable(sample, value) {
@@ -485,8 +583,9 @@ export async function fillPurityIntoTable(sample, value) {
 
 // Fill `value` (+ optional `units`) into the row's Concentration field.
 // The field only exists on solution rows — "Make solution" converts the
-// row first when needed.
-export async function fillConcentrationIntoTable(sample, value, units) {
+// row first when needed. `solvent` (optional) is picked afterwards, in the
+// solvent row the conversion created.
+export async function fillConcentrationIntoTable(sample, value, units, solvent) {
     value = value != null ? String(value).trim() : "";
     if (!value) return { ok: false, reason: "no concentration value on this card" };
 
@@ -526,6 +625,39 @@ export async function fillConcentrationIntoTable(sample, value, units) {
 
     const result = await writeFieldViaPopup(
         ctx, "Concentration:", /Concentration/i, value, false, units || null);
+    if (!result.ok) {
+        pressEscape();
+        return result;
+    }
+
+    // Best effort from here on: the concentration IS written, so a solvent
+    // that cannot be picked must not turn the whole fill into a failure —
+    // it comes back as a note the caller can show.
+    let note = null;
+    if (solvent) {
+        const picked = await writeSolventViaPicker(ctx, String(solvent).trim());
+        if (!picked.ok) {
+            pressEscape();
+            note = picked.reason;
+        }
+    }
+
+    clickOutside(ctx.container);
+    return note ? { ok: true, note } : { ok: true };
+}
+
+// Fill `value` into the Solvent field of a row that is ALREADY a solution.
+// Deliberately no "Make solution" here: turning a plain row into a solution
+// is the concentration fill's job, and a solution with a solvent but no
+// concentration would be a half-made row nobody asked for.
+export async function fillSolventIntoTable(sample, value) {
+    value = value != null ? String(value).trim() : "";
+    if (!value) return { ok: false, reason: "no solvent on this card" };
+
+    const ctx = await openRow(sample);
+    if (!ctx) return { ok: false, reason: "table row not found" };
+
+    const result = await writeSolventViaPicker(ctx, value);
     if (!result.ok) {
         pressEscape();
         return result;

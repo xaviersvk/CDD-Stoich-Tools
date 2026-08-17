@@ -1,7 +1,12 @@
 import { copyTextWithFeedback } from "../utils/clipboard.js";
 import { normalizeValue } from "../utils/format.js";
 import { STATE } from "../state.js";
-import { computeFillOffers, runFillOffer, markOfferFilled } from "./fill-offers.js";
+import {
+    computeFillOffers,
+    runFillOffer,
+    markOfferFilled,
+    offerUsesMemory,
+} from "./fill-offers.js";
 import {
     captureValuesFromSamples,
     touchValueUsed,
@@ -725,7 +730,11 @@ function isSampleDepleted(sample) {
 // user typed for this batch before). One click, one write, visible
 // outcome; the DOM automation lives in row-fill.js.
 function buildFillButton(sample, offer) {
-    const shown = offer.units ? `${offer.value} ${offer.units}` : offer.value;
+    const withUnits = offer.units ? `${offer.value} ${offer.units}` : offer.value;
+    // A concentration fill makes the solution and picks its solvent in one
+    // go — the label has to say so, or the row gains a solvent nobody
+    // clicked for.
+    const shown = offer.solvent ? `${withUnits} in ${offer.solvent}` : withUnits;
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "cdd-density-fill-btn";
@@ -754,9 +763,13 @@ function buildFillButton(sample, offer) {
         const result = await runFillOffer(sample, offer);
 
         if (result.ok) {
-            markOfferFilled(sample, offer);
-            if (offer.source === "memory") touchValueUsed(sample.batchId);
-            btn.textContent = `✓ ${offer.field} filled`;
+            markOfferFilled(sample, offer, result);
+            if (offerUsesMemory(offer)) touchValueUsed(sample.batchId);
+            // A concentration fill reports a solvent it could not pick
+            // rather than failing over it — say so instead of a bare ✓.
+            btn.textContent = result.note
+                ? `✓ ${offer.field} filled — solvent: ${result.note}`
+                : `✓ ${offer.field} filled`;
         } else {
             btn.textContent = `✗ ${result.reason || "couldn't fill"} — edit the row manually`;
             btn.disabled = false;
@@ -791,8 +804,11 @@ async function runAllOffers(btn) {
             const result = await runFillOffer(sample, offer);
             if (result.ok) {
                 filled += 1;
-                markOfferFilled(sample, offer);
-                if (offer.source === "memory") touchValueUsed(sample.batchId);
+                markOfferFilled(sample, offer, result);
+                if (offerUsesMemory(offer)) touchValueUsed(sample.batchId);
+                if (result.note) {
+                    setStatus(`Fill all: ${sample.name} — solvent: ${result.note}`);
+                }
             } else {
                 failed += 1;
                 setStatus(`Fill all: ${offer.field} for ${sample.name}: ${result.reason || "failed"}`);
@@ -1061,7 +1077,7 @@ export function renderSamples(payload) {
             for (const offer of offers) {
                 card.appendChild(buildFillButton(sample, offer));
             }
-            if (offers.some((o) => o.source === "memory")) {
+            if (offers.some(offerUsesMemory)) {
                 card.appendChild(buildDensityMemoryNote());
             }
 

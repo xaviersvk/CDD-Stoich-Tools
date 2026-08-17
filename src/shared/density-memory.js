@@ -17,14 +17,16 @@ export const DENSITY_MEMORY_STORAGE_KEY = "cddDensityMemoryV1";
 export const DENSITY_MEMORY_LIMIT = 100;
 
 // The value fields a batch entry can remember. concentrationUnits is a
-// ride-along of concentration, not a value of its own.
-export const VALUE_FIELDS = ["density", "purity", "concentration"];
+// ride-along of concentration, not a value of its own. `solvent` is a value
+// of its own: a row can be a solution with a concentration and still have no
+// solvent picked, so the two are remembered and offered independently.
+export const VALUE_FIELDS = ["density", "purity", "concentration", "solvent"];
 
 // Normalise an arbitrary stored value into a clean map
 // Record<batchId, {density?, purity?, concentration?, concentrationUnits?,
-// name, savedAt, lastUsedAt}>. Used on every read AND write so neither
-// context ever trusts raw storage. Entries written by 12.4.0 (density
-// only) sanitize into the same shape. Pure.
+// solvent?, name, savedAt, lastUsedAt}>. Used on every read AND write so
+// neither context ever trusts raw storage. Entries written by 12.4.0
+// (density only) sanitize into the same shape. Pure.
 export function sanitizeDensityMemory(raw) {
     const out = {};
     if (!raw || typeof raw !== "object") return out;
@@ -275,6 +277,13 @@ export function captureValuesFromSamples(samples) {
                 toRemember.concentrationUnits = String(sample.tableConcentrationUnits);
             }
         }
+
+        // The solvent of a solution row, same rule: the sample record wins,
+        // otherwise the one picked in the table is worth keeping. It lives
+        // in the payload directly (nested under the row), so like
+        // concentration it needs no enrichment gate.
+        if (has(sample.solvent)) toForget.push("solvent");
+        else if (has(sample.tableSolvent)) toRemember.solvent = String(sample.tableSolvent);
 
         if (toForget.length) forgetValues(sample.batchId, toForget);
         if (Object.keys(toRemember).length) {

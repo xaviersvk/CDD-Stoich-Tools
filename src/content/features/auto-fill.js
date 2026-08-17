@@ -14,7 +14,12 @@
 
 import { STATE } from "../state.js";
 import { setStatus, renderFromState } from "./sample-panel.js";
-import { computeFillOffers, runFillOffer, markOfferFilled } from "./fill-offers.js";
+import {
+    computeFillOffers,
+    runFillOffer,
+    markOfferFilled,
+    offerUsesMemory,
+} from "./fill-offers.js";
 import { touchValueUsed } from "../../shared/density-memory.js";
 import { AUTO_FILL_STORAGE_KEY, getAutoFillEnabled } from "../../shared/auto-fill-flag.js";
 
@@ -97,8 +102,11 @@ async function runQueue() {
                 const result = await runFillOffer(sample, offer);
                 if (result.ok) {
                     filled += 1;
-                    markOfferFilled(sample, offer);
-                    if (offer.source === "memory") touchValueUsed(sample.batchId);
+                    markOfferFilled(sample, offer, result);
+                    if (offerUsesMemory(offer)) touchValueUsed(sample.batchId);
+                    if (result.note) {
+                        setStatus(`Auto-fill for ${sample.name} — solvent: ${result.note}`);
+                    }
                 } else {
                     setStatus(`Auto-fill ${offer.field} for ${sample.name}: ${result.reason || "failed"} — use the card button or edit manually.`);
                     break;   // stop this row, keep going with the next

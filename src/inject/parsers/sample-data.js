@@ -51,6 +51,16 @@ function resolveTablePurity(row) {
     return String(Number((p * 100).toFixed(6)));
 }
 
+// The solvent a solution row was made with, as the name CDD stores it
+// ("ethanol"). A solution keeps its solvent NESTED under `row.solvent` — a
+// row object of its own, never a member of stoichiometryTable.rows. The
+// nested row exists from the moment "Make solution" is clicked; until a
+// molecule is picked it carries no name, which reads here as "no solvent".
+function resolveTableSolvent(row) {
+    const name = row?.solvent?.name;
+    return typeof name === "string" && name.trim() ? name.trim() : null;
+}
+
 export function extractRowsFromReactionFeature(feature, reactionIndex) {
     const stoichTable = feature?.data?.stoichiometryTable;
     const rows = Array.isArray(stoichTable?.rows) ? stoichTable.rows : [];
@@ -129,6 +139,7 @@ export function extractRowsFromReactionFeature(feature, reactionIndex) {
                 row?.concentration != null && row.concentration !== ""
                     ? "mol/L"
                     : null,
+            tableSolvent: resolveTableSolvent(row),
             name: resolveRowName(row),
             location: resolveRowLocation(row),
             ...batchFields,      // purity, density, internalID

@@ -73,6 +73,29 @@ against https://app.collaborativedrug.com/vaults/6884/eln/entries/2504170.
   row's **Make solution** link creates it (the row then shows
   "Remove solvent"). Editing purity makes CDD recalculate that row's
   Equivalent — snapshot before, restore after.
+- **A solution's solvent is a `<tr>` of its own**, rendered directly after
+  the solution row with an **empty first cell** (no printed number) and
+  `data-autotest-id="stoichiometry-table-solutionSolvent"`. Present in view
+  mode too. `Make solution` creates it labelled *Solvent: Required*;
+  `Remove solvent` deletes it and turns the row back into a plain one,
+  **taking the concentration with it**. Its `Solvent:` value is a normal
+  `<b>` label, so `findFieldValueLink` reads it — but the row itself is
+  invisible to `findTargetRow`, which keys on the printed number.
+- **The solvent editor is a DROPDOWN, not a text field** — the only fill
+  that is. Its MuiPaper label is the bare word `Solvent` and its input
+  carries `placeholder="Select solvent"`. Typing filters CDD's 38 built-in
+  solvents; **an empty box lists them all**, but only as a *second* event —
+  React ignores an input event that doesn't change the value, and the box
+  starts empty. Options live in
+  `[data-autotest-id="solvent-row-name-selector-popup"]`, one per
+  `[data-autotest-id="solvent-<label>"]`. The list's `Create "…"` entry has
+  **no autotest id**, which is exactly what keeps an automated pick from
+  registering a new solvent in the vault.
+- **Picker label ≠ stored name.** The list says `Ethanol (EtOH)`; the
+  payload calls the same thing `ethanol`. Match on the label, the label
+  minus its trailing parenthesis, and each comma-separated abbreviation
+  inside it (`Dichloromethane (methylene chloride,DCM,CH2Cl2)`). Compare as
+  stripped strings — `2,2,2-Trifluoroethanol` parses as a *number*.
 - A click on our panel button is a click OUTSIDE the table, which CDD's
   document-level handler treats as "leave edit mode" — stop propagation
   and defer the fill sequence until the click has settled.

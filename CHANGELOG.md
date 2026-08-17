@@ -16,6 +16,53 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [13.2.0] — 2026-08-17
+
+### Added
+- **The value memory now remembers a batch's solvent too.** `solvent` joins
+  `density`, `purity` and `concentration` in `VALUE_FIELDS`, captured by the
+  same rule as the rest: the sample record's own *Solvent* field wins and
+  frees the slot, otherwise the one picked in the table is kept. The table
+  value comes from `row.solvent.name` — the solvent of a solution row is a
+  nested row object, never a member of `stoichiometryTable.rows`, so
+  `sample-data.js` now resolves it into `tableSolvent` (the same shape
+  `print-data.js` has read since 12.8.6).
+- **A concentration fill picks the solvent on the way.** `Make solution`
+  creates the solution *and* an empty solvent row; filling the concentration
+  now goes on to pick the remembered solvent in that row, so one click
+  produces a complete stock solution. The button says which solvent it will
+  use — *Fill remembered concentration (0.4 mol/L in ethanol) into table*.
+  The solvent is best-effort: the concentration is already written, so a
+  solvent that cannot be matched comes back as a note on a successful fill,
+  never as a failure.
+- **A solvent fill of its own**, offered when the row already *is* a solution
+  (it has a concentration) but no solvent was ever picked — the state CDD
+  labels *Solvent: Required*. A row that is not a solution gets no such
+  offer: turning it into one is the concentration fill's job.
+- The settings page lists the remembered solvent next to the density, purity
+  and concentration columns.
+
+### Technical
+- `row-fill.js` gained the first fill that drives a **dropdown** rather than a
+  text field. The solvent of a solution row is its own `<tr>` directly under
+  it (`data-autotest-id="stoichiometry-table-solutionSolvent"`, no row
+  number); its picker filters CDD's 38 built-in solvents as you type and
+  lists them all when the box is empty. The fill types the remembered name
+  first and falls back to the full list — in that order, because React
+  ignores an input event that does not change the value and the box already
+  starts empty.
+- Only entries carrying a `solvent-…` autotest id are clickable candidates.
+  That is what excludes the list's `Create "…"` entry, so a fill can never
+  register a new solvent in the vault.
+- Picker labels and stored names disagree by design: the list says
+  *Ethanol (EtOH)*, the payload says *ethanol*. A match is tried against the
+  whole label, the label without its trailing parenthesis, and each
+  comma-separated abbreviation inside it — so *ethanol*, *EtOH*, *DMSO* and
+  *dichloromethane* all resolve. Confirmation compares the stripped strings,
+  never numerically: `2,2,2-Trifluoroethanol` parses as a number.
+
+---
+
 ## [13.1.1] — 2026-08-12
 
 ### Added

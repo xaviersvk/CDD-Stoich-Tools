@@ -512,6 +512,11 @@ function createDensityRow(batchId, entry) {
         : "—";
     conc.title = "Concentration";
 
+    const solvent = document.createElement("span");
+    solvent.className = "density-memory-value";
+    solvent.textContent = entry.solvent || "—";
+    solvent.title = "Solvent";
+
     const saved = document.createElement("span");
     saved.className = "density-memory-date";
     saved.textContent = entry.savedAt
@@ -530,7 +535,7 @@ function createDensityRow(batchId, entry) {
         renderDensityMemory(map);
     });
 
-    wrapper.append(name, density, purity, conc, saved, deleteBtn);
+    wrapper.append(name, density, purity, conc, solvent, saved, deleteBtn);
     return wrapper;
 }
 

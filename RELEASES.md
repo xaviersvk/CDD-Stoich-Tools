@@ -13,9 +13,25 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
-# What's new in 13.1.1
+# What's new in 13.2.0
 
 *Everything that changed since **12.8.5**, the previous public release.*
+
+### Stock solutions fill themselves — solvent included
+
+The plugin already remembered a density, purity or concentration you typed for
+a batch that had none on its record. It now remembers the **solvent** of a
+stock solution the same way, and offers them together: one click on
+*Fill remembered concentration (0.4 mol/L in ethanol) into table* clicks
+**Make solution** for you, writes the concentration and picks the solvent.
+
+- If a row is already a solution but its solvent line still says
+  *Solvent: Required*, a **Fill solvent** button appears on its own.
+- The solvent always comes from CDD's own list — the plugin never creates a
+  new one. If the remembered name isn't on that list, the concentration is
+  written anyway and the button says the solvent was skipped.
+- The settings page lists the remembered solvent next to the density, purity
+  and concentration.
 
 ### Mark control layouts by dragging a rectangle — and save them for reuse
 
@@ -71,6 +87,28 @@ The balloon that opens when you click a well on a run heat map is **1.4×
 wider**. Since you can add your own batch fields to it, its rows kept wrapping
 onto two lines — even short ones like *Batch name: 001*. The text column
 roughly doubles, so most rows now fit on one line.
+
+---
+
+## 13.2.0 — August 2026
+
+**The remembered values now include the solvent of a stock solution.**
+
+- New: type a concentration into a row and pick its solvent, and the plugin
+  remembers **both** for that batch. Next time the same batch turns up
+  without them, one click writes the concentration *and* the solvent — the
+  button tells you which: *Fill remembered concentration (0.4 mol/L in
+  ethanol) into table*. It clicks **Make solution** for you, as before.
+- New: if a row is already a solution but its solvent line says
+  *Solvent: Required*, you get a **Fill solvent** button on its own.
+- The solvent is only ever chosen from CDD's own list — the plugin will never
+  create a new one. If what was remembered isn't on that list, the
+  concentration is still written and the button says the solvent was skipped.
+- The settings page shows the remembered solvent alongside density, purity
+  and concentration, and the ✕ still forgets the whole batch at once.
+- As always, a value the sample record itself carries wins over the
+  remembered one — and once the record has it, the remembered copy is
+  dropped.
 
 ---
 

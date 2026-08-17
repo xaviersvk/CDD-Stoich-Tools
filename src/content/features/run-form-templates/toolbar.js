@@ -50,6 +50,7 @@ import {
     OLD_VALUE_CLASS,
     PANEL_CLASS,
     PRIMARY_CLASS,
+    QUIET_CLASS,
     ROOT_CLASS,
     SELECT_CLASS,
     STATUS_CLASS,
@@ -118,6 +119,18 @@ export function refreshToolbarState(root) {
             ? btn.dataset.titleReady || ""
             : "Click “Edit run definition” first — this writes into the form.";
     }
+
+    // Leaving edit mode — by Save or by Cancel — ends the session a fill or
+    // paste report was describing. Keeping "Overwritten: …" on screen next
+    // to a form that is no longer editable says nothing true about what is
+    // there now, so it goes. The save-as-template panel stays: it works
+    // outside the editor and is the one panel that still means something.
+    const panel = root.querySelector(`.${PANEL_CLASS}`);
+    if (!editing && panel && (panel.dataset.mode === "fill" || panel.dataset.mode === "paste")) {
+        panel.replaceChildren();
+        panel.hidden = true;
+        delete panel.dataset.mode;
+    }
 }
 
 export function attachRunFormTemplates(annotator, props) {
@@ -158,7 +171,15 @@ function buildToolbar(root, annotator) {
     pasteBtn.dataset.needsEdit = "1";
     pasteBtn.dataset.titleReady = "Writes what Copy last put down into this run's definition. Unlike a template fill, this OVERWRITES fields that already have a value. CDD's own Save is still never pressed.";
 
-    mainBar.append(saveBtn, fillBtn, copyBtn, pasteBtn, status);
+    // A second way IN to pasting — for lines that went out to a spreadsheet
+    // and were edited there. It belongs beside the other entry points, not
+    // after a result: "paste edited lines instead" makes no sense offered
+    // once the pasting is already done.
+    const pasteLinesBtn = button("paste edited lines…", "", QUIET_CLASS);
+    pasteLinesBtn.dataset.needsEdit = "1";
+    pasteLinesBtn.dataset.titleReady = "For values you copied out, changed in a spreadsheet, and want to bring back.";
+
+    mainBar.append(saveBtn, fillBtn, copyBtn, pasteBtn, pasteLinesBtn, status);
 
     const panel = el("div", PANEL_CLASS);
     panel.hidden = true;
@@ -220,6 +241,11 @@ function buildToolbar(root, annotator) {
     pasteBtn.addEventListener("click", () => {
         setStatus("");
         runPaste(panel, annotator, setStatus, closePanel);
+    });
+
+    pasteLinesBtn.addEventListener("click", () => {
+        setStatus("");
+        renderEditedLinesPanel(panel, annotator, setStatus, closePanel);
     });
 
     // Another tab (or a second run page) editing the list should not leave a
@@ -379,52 +405,53 @@ async function runPaste(panel, annotator, setStatus, closePanel) {
         panel.hidden = false;
         panel.append(el("div", NOTE_CLASS,
             "Nothing copied yet — open a run whose definition is filled in and press Copy."));
-        appendEditedLinesLink(panel, annotator, setStatus, closePanel);
+        appendClose(panel, closePanel);
         return;
     }
 
     await pasteLines(stash.text, panel, annotator, setStatus);
-    appendEditedLinesLink(panel, annotator, setStatus, closePanel);
+    appendClose(panel, closePanel);
 }
 
 // The spreadsheet round-trip: values that left as a Copy, were edited
-// somewhere else, and are coming back. A link rather than a step, so the
-// ordinary case stays one click.
-function appendEditedLinesLink(panel, annotator, setStatus, closePanel) {
+// somewhere else, and are coming back.
+function renderEditedLinesPanel(panel, annotator, setStatus, closePanel) {
+    panel.dataset.mode = "paste";
+    panel.replaceChildren();
+    panel.hidden = false;
+
+    panel.append(el("div", LABEL_CLASS,
+        "Paste your lines here — one field per line, name and value separated by a tab:"));
+
+    const box = document.createElement("textarea");
+    box.className = NAME_INPUT_CLASS;
+    box.rows = 8;
+    box.style.width = "100%";
+    box.style.fontFamily = "monospace";
+    panel.append(box);
+
     const bar = el("div", BAR_CLASS);
-    const open = button("Paste edited lines instead…",
-        "For values you copied out, changed in a spreadsheet, and want to bring back.");
-    const close = button("Close");
+    const apply = button("Write into form (overwrites)", "", PRIMARY_CLASS);
+    const cancel = button("Cancel");
+    bar.append(apply, cancel);
+    panel.append(bar);
 
-    open.addEventListener("click", () => {
-        panel.replaceChildren();
-        panel.append(el("div", LABEL_CLASS,
-            "Paste your lines here — one field per line, name and value separated by a tab:"));
-
-        const box = document.createElement("textarea");
-        box.className = NAME_INPUT_CLASS;
-        box.rows = 8;
-        box.style.width = "100%";
-        box.style.fontFamily = "monospace";
-        panel.append(box);
-
-        const applyBar = el("div", BAR_CLASS);
-        const apply = button("Write into form (overwrites)", "", PRIMARY_CLASS);
-        const cancel = button("Cancel");
-        applyBar.append(apply, cancel);
-        panel.append(applyBar);
-
-        cancel.addEventListener("click", closePanel);
-        apply.addEventListener("click", async () => {
-            apply.disabled = true;
-            await pasteLines(box.value, panel, annotator, setStatus);
-        });
-
-        box.focus();
+    cancel.addEventListener("click", closePanel);
+    apply.addEventListener("click", async () => {
+        apply.disabled = true;
+        await pasteLines(box.value, panel, annotator, setStatus);
+        appendClose(panel, closePanel);
     });
 
+    box.focus();
+}
+
+// A finished report needs exactly one control: a way to dismiss it.
+function appendClose(panel, closePanel) {
+    const bar = el("div", BAR_CLASS);
+    const close = button("Close");
     close.addEventListener("click", closePanel);
-    bar.append(open, close);
+    bar.append(close);
     panel.append(bar);
 }
 

@@ -207,22 +207,10 @@ export function isEditMode(annotator) {
     return !!annotator?.querySelector(`input[name^="${FIELD_PREFIX}"]`);
 }
 
-export function findEditLink() {
-    return Array.from(document.querySelectorAll("a"))
-        .find((a) => /edit run definition/i.test(a.textContent || "")) || null;
-}
-
-// Open the editor and wait for the Rails controls to render. Safe to call
-// when it is already open.
-export async function openEditor(annotator) {
-    if (isEditMode(annotator)) return true;
-
-    const link = findEditLink();
-    if (!link) return false;
-
-    mouseClick(link);
-    return !!(await waitFor(() => (isEditMode(annotator) ? true : null), 20));
-}
+// There is deliberately no openEditor() here. Opening CDD's editor is the
+// chemist's move, not ours: a fill that let itself in would leave the run
+// editable and dirty without anyone deciding to edit it. The writing
+// buttons wait for `isEditMode` instead.
 
 // A BatchLink renders as a MUI autocomplete sitting next to a HIDDEN rails
 // input: the hidden field is what Rails submits, the combobox is what a user

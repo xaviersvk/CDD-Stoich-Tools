@@ -29,6 +29,7 @@ export const VALUE_CLASS = "cdd-rft-value";
 export const OLD_VALUE_CLASS = "cdd-rft-old";
 export const NEW_VALUE_CLASS = "cdd-rft-new";
 export const NOTE_CLASS = "cdd-rft-note";
+export const QUIET_CLASS = "cdd-rft-quiet";
 
 export function injectRunFormTemplateStyles() {
     if (document.getElementById(STYLE_ID)) return;
@@ -59,35 +60,65 @@ export function injectRunFormTemplateStyles() {
             color: #666;
             margin-right: 2px;
         }
+        /* Borrowed from CDD's own \`.buttony\`: Arial bold 12px, 4px radius
+           and its \`.buttony-small\` padding — enough that the bar reads as
+           part of the page. Its classes are not reused directly: \`.buttony\`
+           carries \`float: left\`, which would break a flex bar, and a class
+           we do not own could be restyled under us at any release.
+
+           Only the CONFIRM action wears CDD's blue. The rest stay quiet: a
+           row of solid blue buttons above the card would pull harder than
+           anything here deserves, since none of them is the thing you came
+           to the page to do.
+
+           Nothing here is ever green. Green is what CDD paints its own Save,
+           and no button in this bar saves to CDD — they all stop at the form
+           and leave the saving to the chemist. */
         .${ROOT_CLASS} .${BUTTON_CLASS} {
             display: inline-flex;
             align-items: center;
             gap: 5px;
-            padding: 3px 9px;
-            border: 1px solid #c3c3c3;
-            border-radius: 3px;
+            padding: 6px 12px;
+            border: 1px solid #c3ccd4;
+            border-radius: 4px;
             background: #fff;
-            color: #333;
+            color: #33475b;
+            font-family: Arial, helvetica, sans-serif;
             font-size: 12px;
-            line-height: 16px;
+            font-weight: bold;
+            line-height: 15px;
+            white-space: nowrap;
             cursor: pointer;
         }
         .${ROOT_CLASS} .${BUTTON_CLASS}:hover {
-            background: #f0f4f8;
+            border-color: #0077cc;
+            color: #0077cc;
         }
-        .${ROOT_CLASS} .${BUTTON_CLASS}:disabled {
-            opacity: .5;
+        /* CDD's own disabled buttony. */
+        .${ROOT_CLASS} .${BUTTON_CLASS}:disabled,
+        .${ROOT_CLASS} .${BUTTON_CLASS}:disabled:hover {
+            border-color: #e0e6ea;
+            background: #f0f4f7;
+            color: #b6bec6;
             cursor: default;
-            background: #fff;
         }
+        /* CDD's .buttony, minus the float. */
         .${ROOT_CLASS} .${PRIMARY_CLASS} {
-            border-color: #4a76b8;
-            background: #e6effa;
+            border-color: #0077cc;
+            background: #0077cc;
+            color: #fff;
+            box-shadow: 0 3px 1px -2px rgba(0, 0, 0, .2), 0 2px 2px 0 rgba(0, 0, 0, .14);
         }
+        .${ROOT_CLASS} .${PRIMARY_CLASS}:hover,
+        .${ROOT_CLASS} .${PRIMARY_CLASS}:active {
+            border-color: #1262b3;
+            background: #1262b3;
+            color: #fff;
+        }
+        /* CDD's .buttony-red, kept for the one destructive action. */
         .${ROOT_CLASS} .${DANGER_CLASS}:hover {
-            border-color: #c23030;
-            color: #c23030;
-            background: #fdf0f0;
+            border-color: #e6364c;
+            color: #e6364c;
         }
         .${ROOT_CLASS} .${SELECT_CLASS} {
             min-width: 200px;
@@ -148,6 +179,31 @@ export function injectRunFormTemplateStyles() {
         .${ROOT_CLASS} .${NOTE_CLASS} {
             color: #777;
             font-style: italic;
+        }
+        /* A secondary way in, not a second first choice: reads as a link so
+           it never competes with the button beside it. */
+        .${ROOT_CLASS} .${QUIET_CLASS} {
+            border-color: transparent;
+            background: none;
+            color: #0077cc;
+            font-weight: normal;
+            text-decoration: underline;
+            padding: 6px 4px;
+        }
+        /* These three restate border and background because the base
+           button's :hover and :disabled rules carry a pseudo-class and
+           therefore outrank a bare .${QUIET_CLASS}. */
+        .${ROOT_CLASS} .${QUIET_CLASS}:hover {
+            border-color: transparent;
+            background: none;
+            color: #1262b3;
+        }
+        .${ROOT_CLASS} .${QUIET_CLASS}:disabled,
+        .${ROOT_CLASS} .${QUIET_CLASS}:disabled:hover {
+            border-color: transparent;
+            background: none;
+            color: #b6bec6;
+            text-decoration: none;
         }
     `;
 

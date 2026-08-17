@@ -35,6 +35,7 @@ import {initPlateMapStructureTooltip} from "./features/ui-fixes/plate-map-struct
 import {initPlateMapExport} from "./features/ui-fixes/plate-map-export";
 import {initHeatMapWellFields} from "./features/ui-fixes/heat-map-well-fields";
 import {initControlLayoutTools} from "./features/control-layout/init";
+import {initRunFormTemplates} from "./features/run-form-templates/init";
 import {initRegistrationProjectMirror} from "./features/ui-fixes/registration-project-mirror";
 import {initRegistrationFormDefault} from "./features/ui-fixes/registration-form-default";
 import {initSlurpTypeDefault} from "./features/ui-fixes/slurp-type-default";
@@ -130,6 +131,7 @@ function init() {
   // layout presets per plate format. Inert until a brush is armed — CDD's
   // one-well click cycling is untouched otherwise.
   initControlLayoutTools();
+  initRunFormTemplates();
 
   initRegistrationProjectMirror();
   initRegistrationFormDefault();

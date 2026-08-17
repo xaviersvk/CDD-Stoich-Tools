@@ -16,6 +16,66 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [13.3.0] — 2026-08-17
+
+### Added
+- **Run definition templates.** A bar above a run's *Run Definition* card
+  saves the values it already holds under a name, and replays them into the
+  next run — `chrome.storage.local`, up to 50, same storage split as the
+  control-layout presets (`shared/run-form-templates.js` is DOM-free so the
+  options page could list them later).
+- **Saving picks the fields.** Everything with a value is listed with its
+  value; fields that belong to one run rather than to the method (*Run
+  Date*, *Person*) start unticked, and a `File` cannot be ticked at all —
+  an uploaded file lives on CDD's server and no remembered string brings it
+  back.
+- **Filling never overwrites silently.** Empty fields are written straight
+  away; a field already holding something *different* is left alone and
+  listed as `current → template`, with a button per row and a *use all*.
+  Identical values, fields this form does not render, and non-replayable
+  kinds are reported as skipped. **CDD's Save is never pressed** — the form
+  is loaded and handed back for review, which is also why this is safe on a
+  run somebody already started.
+- **Copy / Paste for the one-off case**, when a saved template is more
+  ceremony than the job needs. *Copy* puts the method fields on the
+  clipboard as `name<TAB>value` lines — tab-separated so the block pastes
+  into a spreadsheet, gets edited there and comes back unchanged. *Paste*
+  takes those lines and **overwrites**, deliberately: it is aimed at a form
+  the chemist is already looking at, and it reports every field it changed
+  as `old → new`.
+- Paste reads from a textarea rather than the clipboard itself: clipboard
+  *read* needs a permission this extension does not ask for and differs
+  between Chrome and Firefox, while Ctrl+V into a box behaves the same
+  everywhere.
+
+### Technical
+- A template field carries BOTH `defId` (CDD's `run_field_definition_id`,
+  exact within a protocol) and `name` (portable to a different protocol
+  rendering the same form). The fill tries the id, then the name, so neither
+  case has to be known in advance. No CDD row id is stored, so a template
+  can never carry a stale reference into a run it does not belong to.
+- The bar is inserted as a **sibling** of `div.protocolAnnotator`, never
+  inside it: the annotator is a React root that re-renders wholesale on
+  edit/cancel, and a node of ours among its children would be destroyed on
+  the next render — or make React throw while removing children it does not
+  own. Stale bars are swept the same way the control-layout toolbar sweeps
+  its own.
+- `react_props` is a ~400 kB JSON string and the scan runs on every mutation
+  batch, so it is parsed only when a bar is actually missing.
+- The `BatchLink` picker needed three separate concessions, each found the
+  hard way against the live form: it **ignores input on an unfocused box**,
+  it treats a `change` event as a commit and **discards the typed text**
+  (so its writes send `input` only), and it wants to be **clicked open**
+  first. Its results are a remote search portaled to `<body>`.
+- A `BatchLink` is typed straight OVER its current value and never cleared
+  first — clearing would leave a moment holding nothing, and a search that
+  then found no match would make that moment permanent. On failure only the
+  display text is put back; CDD's committed selection is never touched.
+- Every multi-field write runs in SEQUENCE. A BatchLink drives CDD's shared
+  search picker, so two at once would type into each other's dropdown.
+
+---
+
 ## [13.2.0] — 2026-08-17
 
 ### Added

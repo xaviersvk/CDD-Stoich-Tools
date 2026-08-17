@@ -13,9 +13,29 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
-# What's new in 13.2.0
+# What's new in 13.3.0
 
 *Everything that changed since **12.8.5**, the previous public release.*
+
+### Reuse a run definition instead of retyping it
+
+**Run Details → Run Definition** has a new bar. **Save these values as a
+template** stores the settings under a name; **Fill from template** loads
+them into the next run. You tick what belongs to the method when you save —
+*Run Date* and *Person* start unticked, because they belong to that one run.
+
+- Filling writes the **empty** fields and leaves everything else alone. A
+  field already holding a different value is shown as
+  `what's there → what the template has`, and you take the template's value
+  for that one field, or for all at once.
+- **The plugin never presses Save.** It loads the form and stops, so you read
+  it before anything reaches CDD — Cancel still throws it all away.
+- **Copy** and **Paste into form** cover the one-off case: the settings go on
+  the clipboard as name/value lines, so they paste into another run directly,
+  or into Excel if you want to edit them first. Paste *overwrites*, and lists
+  every field it changed.
+- A template also works on another protocol that shows the same form. Fields
+  that form doesn't have are reported as skipped, never dropped in silence.
 
 ### Stock solutions fill themselves — solvent included
 
@@ -89,6 +109,36 @@ The balloon that opens when you click a well on a run heat map is **1.4×
 wider**. Since you can add your own batch fields to it, its rows kept wrapping
 onto two lines — even short ones like *Batch name: 001*. The text column
 roughly doubles, so most rows now fit on one line.
+
+---
+
+## 13.3.0 — August 2026
+
+**Stop retyping the same run definition.**
+
+- New: a bar above **Run Details → Run Definition** with four buttons.
+  **Save these values as a template** keeps the settings under a name you
+  choose; **Fill from template** loads them into the next run.
+- When you save, you see every filled field with its value and tick what
+  belongs to the *method*. **Run Date** and **Person** start unticked —
+  they belong to that one run. An uploaded file cannot be ticked; a file
+  lives on CDD's server and no saved text brings it back.
+- When you fill, **empty fields are filled and nothing else is touched**. A
+  field that already holds a *different* value is listed as
+  `what's there → what the template has`, with a button to take the
+  template's value for that one field, or for all of them at once.
+- **The plugin never presses Save.** It loads the form and stops, so you
+  read the whole thing before anything reaches CDD. Cancel throws it all
+  away as usual.
+- New: **Copy** and **Paste into form**, for when a named template is more
+  fuss than the job needs. Copy puts the settings on the clipboard as
+  name/value lines — paste them straight into another run, or into Excel to
+  edit first, then paste them back. Unlike a template fill, **Paste
+  overwrites** what is already there, and tells you exactly which fields it
+  changed.
+- Templates work across protocols too, as long as the other protocol shows
+  the same form. Fields the target form doesn't have are reported as
+  skipped rather than silently dropped.
 
 ---
 

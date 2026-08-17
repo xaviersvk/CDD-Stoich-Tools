@@ -109,6 +109,47 @@ against https://app.collaborativedrug.com/vaults/6884/eln/entries/2504170.
   document-level handler treats as "leave edit mode" — stop propagation
   and defer the fill sequence until the click has settled.
 
+## The run definition form (`/vaults/<id>/runs/<id>` → Run Details)
+
+- **Reading needs no click.** `div.protocolAnnotator` carries the whole form
+  in a `react_props` attribute (~400 kB of JSON): `protocolFields[] =
+  {label, value, definition}`, plus `protocolId`, `schemaPrefix` (the form
+  definition id — `510` is "FP assay") and `resourceType`. Test
+  `resourceType === "run"`, never the URL: the same component renders for
+  other resources. Parse it only when you are about to use it — the scan
+  runs on every mutation batch.
+- A field's value object is `{id, run_id, run_field_definition_id,
+  float_value, text_value, date_value, uploaded_file_id, pick_list_value_id,
+  batch_link_id}`. Which slot holds it depends on
+  `definition.data_type_name`: `Text` / `LongText` / `PickList` / `BatchLink`
+  → `text_value`, `Number` → `float_value`, `File` → `uploaded_file_id`. The
+  run's own date is the ONE entry with `definition: null`.
+- **Writing goes through a plain RAILS form** that "Edit run definition"
+  swaps in — there is no autosave, there is a Save button. Each field is a
+  triplet of inputs sharing an index `N`:
+  `run[editable_fields_including_blanks_attributes][N][field_definition_id]`
+  (hidden, the only stable key), `…[N][value]` (the control) and `…[N][id]`
+  (the existing value row, empty when unset). The run date is separate:
+  `run[run_date]`.
+- **`N` is neither the display order nor stable between forms** — on one
+  assay Lab=0, Person=1, Protein=2, Conditions=5, Reaction temp=11,
+  Quality=15, Plate Type=31, Probe=34, G factor=57. Key by the definition
+  id and find the control by the shared index.
+- The form renders only a SUBSET of `protocolFields` (17 of 65 on that
+  assay), so a value can exist in the payload with no control to write it
+  to.
+- A `PickList` is a `select.pick-list` whose **option value equals its
+  visible text** ("1536", "Optimization") — no id mapping needed.
+- **A `BatchLink` is a MUI autocomplete backed by a hidden rails input**
+  (`input[data-testid="rails-hidden-fields"]`) in the same `<td>`. Writing
+  the hidden input directly would submit a batch React never resolved, so
+  drive the picker: it **ignores input on an unfocused box**, it treats a
+  `change` event as a commit and **throws the typed text away**, and its
+  results are a REMOTE search portaled to `<body>` as
+  `#<comboId>-listbox` with `li[role="option"]` children whose text is the
+  batch identifier. Picking one puts CDD's own `batch_link_id` in the hidden
+  field (verified: `PRO-0000017-001` → `190898728`).
+
 ## Extension architecture gotchas
 
 - **Every `chrome.storage` write re-renders the panel** (via `onChanged` →

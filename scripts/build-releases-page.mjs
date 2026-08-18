@@ -114,11 +114,13 @@ function renderTile(release, status) {
     const [major] = release.versionLabel.split(".");
 
     const pill =
-        status === "latest"
+        status.kind === "latest"
             ? '<span class="pill">Latest</span>'
-            : status === "unreleased"
+            : status.kind === "unreleased"
               ? '<span class="pill pill--unreleased">Not yet released</span>'
-              : "";
+              : status.kind === "folded"
+                ? `<span class="pill pill--folded">Went out in ${escapeHtml(status.carrier)}</span>`
+                : "";
 
     return `      <div class="rail">
         <span class="tile">
@@ -151,19 +153,44 @@ ${renderMarkdown(body)
     </article>`;
 }
 
-// "latest" -> the version the stores serve; "unreleased" -> written up in
-// RELEASES.md but newer than that, so nobody can install it yet; "" -> history.
-//
-// Absence of a tag proves nothing on its own: the 8.x and 9.0.0 releases shipped
-// before this repo tagged anything. Only a version ABOVE the shipping one is
-// genuinely unreleased.
-function statusOf(release, shipping) {
-    if (!release.version) return "";
-    if (release.version === shipping) return "latest";
-    return compareSemver(release.version, shipping) > 0 ? "unreleased" : "";
+// The first tag cut after publish.yml (2026-07-07) made pushing a tag the thing
+// that publishes. From here on a missing tag means "this number never went out";
+// before it releases were cut by hand, so a missing tag proves nothing — 8.x and
+// 9.0.0 shipped without one.
+const TAG_ERA_FROM = "12.1.2";
+
+/**
+ * What to say about a version, given every tag the repo has.
+ *
+ *   latest      the version the stores serve right now
+ *   unreleased  written up but newer than any tag, so nobody can install it
+ *   folded      never tagged: its changes reached people inside `carrier`, the
+ *               next version that was tagged
+ *   ""          an ordinary past release, or old enough that tags say nothing
+ *
+ * `folded` is the case this page used to get wrong. Comparing against the
+ * shipping version alone, a version that was never tagged still sorted below it
+ * once something newer shipped, so it rendered as an ordinary past release —
+ * three of them at 14.0.0, each an entry a reader could go looking for and
+ * never find. A version is released because it has a TAG, not because something
+ * newer exists.
+ */
+function statusOf(release, tags) {
+    const shipping = tags.at(-1);
+    if (!release.version || !shipping) return { kind: "" };
+
+    if (release.version === shipping) return { kind: "latest" };
+    if (compareSemver(release.version, shipping) > 0) return { kind: "unreleased" };
+    if (tags.includes(release.version)) return { kind: "" };
+    if (compareSemver(release.version, TAG_ERA_FROM) < 0) return { kind: "" };
+
+    // Tags are sorted ascending, so the first one above this version is the
+    // release that carried it.
+    const carrier = tags.find((tag) => compareSemver(tag, release.version) > 0);
+    return carrier ? { kind: "folded", carrier } : { kind: "" };
 }
 
-function renderPage(releases, version, assets) {
+function renderPage(releases, version, tags, assets) {
     return `<!doctype html>
 <html lang="en">
 <head>
@@ -197,7 +224,7 @@ function renderPage(releases, version, assets) {
 
 <main class="wrap">
 ${releases
-            .map((release) => renderRelease(release, statusOf(release, version)))
+            .map((release) => renderRelease(release, statusOf(release, tags)))
             .join("\n\n")}
 </main>
 
@@ -273,10 +300,10 @@ const fingerprint = (path) =>
 
 const assets = { style: fingerprint(cssSource), icon: fingerprint(iconSource) };
 
-writeFileSync(resolve(outDir, "index.html"), renderPage(releases, version, assets));
+writeFileSync(resolve(outDir, "index.html"), renderPage(releases, version, tags, assets));
 
 const unreleased = releases
-    .filter((release) => statusOf(release, version) === "unreleased")
+    .filter((release) => statusOf(release, tags).kind === "unreleased")
     .map((release) => release.version);
 
 console.log(

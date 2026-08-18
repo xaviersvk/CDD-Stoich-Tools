@@ -281,6 +281,18 @@ main.wrap {
     color: var(--muted);
 }
 
+/* Never released under this number — it went out inside a later one. Same
+   outlined treatment as --unreleased, and deliberately not uppercase: it names
+   a version, and "WENT OUT IN 13.1.1" shouts at a reader who is only trying to
+   work out whether they ever had this one. */
+.pill--folded {
+    background: none;
+    border: 1px solid var(--rule);
+    color: var(--muted);
+    letter-spacing: 0.02em;
+    text-transform: none;
+}
+
 .notes {
     min-width: 0;
 }

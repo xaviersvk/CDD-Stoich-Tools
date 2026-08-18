@@ -15,7 +15,7 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 # What's new in 14.0.0
 
-*Everything that changed since **12.8.5**, the previous public release.*
+*Everything that changed since **13.1.1**, the previous public release.*
 
 ### Both field pickers can be narrowed to one registration form
 
@@ -94,68 +94,21 @@ solution** for you, writes the concentration and picks the solvent.
   — is written as plain text, exactly as if you typed it yourself. Neither way
   adds anything to the vault's solvent list.
 
-### Mark control layouts by dragging a rectangle — and save them for reuse
+### Two fixes to the CDD Samples panel
 
-Editing a control layout (**Run Details → Control Layouts → Edit this layout**)
-no longer means clicking every well and cycling it through the states. Pick
-**Positive control**, **Negative control**, **Reference molecule** or **Clear**
-in the *Paint wells* bar, then **drag a rectangle** over the plate — every well
-inside it changes as you drag, and pulling the rectangle back restores what was
-there.
-
-- Click a **row or column header** to fill that whole line, the empty **corner
-  header** for the entire plate, or **shift+click** to stretch a rectangle from
-  the last well you marked.
-- **Saved layouts:** name the current plate and load it back on any run later.
-  Separate lists per plate format (96 / 384 / 1536), so a 96-well layout can
-  never land on a 384-well plate. CDD's own **Save changes** still stores it.
-- Click the highlighted colour button again and CDD's normal one-well-per-click
-  behaviour comes straight back.
-
-### Copy a whole column — or a whole section — from search results
-
-Hold **Ctrl** (**Cmd** on a Mac) and click a column header on a search results
-table, and the entire column lands on the clipboard, one value per line, ready
-to paste into Excel. Ctrl+click a **section heading** — *Properties*, *Batch
-Fields* — and you get the whole block at once, laid out as columns with the
-column names on the first line.
-
-- Where a molecule spans several batch rows, its value repeats for each row, so
-  two columns copied one after the other paste next to each other without
-  shifting.
-- The *Molecule* column copies just the identifier (`TEST-0260386`), without
-  the project name shown beside it.
-- A normal click still sorts, and the toolbar buttons above the table are
-  untouched.
-
-### Printed stoichiometry sheets no longer hide the solvent
-
-When a reagent is used as a **solution** — say a stock in benzene — the PDF used
-to print it as if you were weighing out the neat compound. The solvent now gets
-its own indented **Solvent** line right under the reagent, with CAS-RN, FW,
-density, boiling point, mass, volume and mole, just as CDD shows it on screen.
-Solutions whose solvent has not been picked yet print as *Solvent: not
-specified*, keeping the volume you typed.
-
-Solution rows also print their **Concentration**, and solvent rows their
-**Reaction molarity** — both in mol/L, matching the table on screen.
-
-### Smaller things, and two fixes
-
-- The balloon that opens when you click a well on a run heat map is **1.4×
-  wider**, so its rows — including the batch fields you add yourself — mostly
-  fit on one line instead of wrapping.
-- **Fixed:** the **CDD Samples** panel could sit on *Waiting for reaction
-  data…* and never show its cards.
-- **Fixed:** the panel stayed on screen after you navigated away from an ELN
-  entry, still listing that entry's samples.
+- The panel could sit on *Waiting for reaction data…* and never show its cards
+  — on any entry that had something to show.
+- The panel stayed on screen after you navigated away from an ELN entry, still
+  listing that entry's samples. It now goes away when you leave and comes back
+  when you return.
 
 ---
 
 ## 14.0.0 — August 2026
 
-*The first release to reach the stores since 12.8.5, so it carries 13.0.0
-through 13.4.0 below as well as the changes listed here.*
+*13.2.0, 13.3.0 and 13.4.0 were never tagged and so never went out. This
+release carries all three — see their sections below — as well as the changes
+listed here.*
 
 **Both field pickers can be narrowed to one registration form.**
 

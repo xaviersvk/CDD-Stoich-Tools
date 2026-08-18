@@ -18,8 +18,9 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ## [14.0.0] — 2026-08-18
 
-First release to reach the stores since **12.8.5** — it carries everything
-tagged `13.0.0` through `13.4.0` in this file as well as the entries below.
+`13.2.0`, `13.3.0` and `13.4.0` were built and tested but never tagged, so none
+of them reached the stores. This release carries all three — the last public
+one was `13.1.1` — as well as the entries below.
 
 ### Added
 - **The field pickers can be narrowed to one registration form.** Both the

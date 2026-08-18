@@ -15,17 +15,20 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 # What's new in 14.0.0
 
-*A cumulative release. **13.1.1** was the last version that reached the stores;
-13.2.0, 13.3.0 and 13.4.0 were built and tested but never published, so
-everything they added arrives here too. It is all in the **14.0.0** section
-just below — the older sections are kept as a record of when each piece was
-written.*
+*A cumulative release. **13.1.1** was the last version that reached the stores.
+The 13.2.0, 13.3.0 and 13.4.0 numbers were used while the work was being
+written and never published on their own, so they get no section of their own
+here — what they added is part of 14.0.0 below.
+[`CHANGELOG.md`](./CHANGELOG.md) still records each of them separately, for
+anyone tracing when a change was made.*
 
 ---
 
 ## 14.0.0 — August 2026
 
-*Everything since 13.1.1, the last version that reached the stores.*
+*Everything since 13.1.1, the last version that reached the stores. The 13.2.0,
+13.3.0 and 13.4.0 numbers were used while this work was being written and never
+published on their own — what they added is here.*
 
 **The Samples panel now sees what you link in an entry's text.**
 
@@ -89,104 +92,6 @@ written.*
 - The panel stayed on screen after you navigated away from an ELN entry, still
   listing that entry's samples. It now goes when you leave and comes back when
   you return.
-
----
-
-## 13.4.0 — August 2026
-
-**The panel now sees the batches and samples you link in the entry text.**
-
-- New: a batch or sample linked anywhere in an ELN entry's body gets its own
-  card in the **CDD Samples** panel, in a *Mentioned in text* group under the
-  reactions — with the same fields as any other card: location, purity,
-  amount, concentration, your own batch and sample fields.
-- Both kinds of link count: one you typed into the text, and one that came
-  with an embedded card. Links into another vault work too.
-- A card for a **sample** shows that bottle — where it is, how much is left.
-  A card for a **batch** shows the batch, and deliberately **no location or
-  amount**: the entry mentioned the batch, not one particular bottle.
-- A sample that has since been used up still gets its card, with the usual
-  **DEPLETED** badge.
-- **Nothing appears twice.** If a substance is already a row in a
-  stoichiometry table, its mention in the text is not shown again — writing
-  about a bottle *and* putting it in the table is the normal way to record
-  an experiment. The status line says how many were hidden, so nothing
-  disappears without a word.
-- **Print and CSV** from the panel now include the mentions too.
-- Mentions are display-only — there is no table row to fill, so no fill
-  buttons.
-- New in the settings: choose what the panel draws from — **stoichiometry
-  table rows**, **links in the entry text**, or both. Both are on to start
-  with.
-- An entry with no reaction table at all now gets a panel too, as long as it
-  links to something.
-
-**Copy a run's parameters straight from the protocol page.**
-
-- On a protocol's **Run Data** tab, every run row has a small **copy** link.
-  It puts that run's parameters on the clipboard exactly as the run page's
-  own Copy does, so you can go to another run and press **Paste into form**.
-  The *Molecules* and *Plates* columns are counts, not settings, and are left
-  out — as are the run's own date and person.
-
----
-
-## 13.3.0 — August 2026
-
-**Stop retyping the same run definition.**
-
-- New: a bar above **Run Details → Run Definition** with four buttons.
-  **Save these values as a template** keeps the settings under a name you
-  choose; **Fill from template** loads them into the next run.
-- When you save, you see every filled field with its value and tick what
-  belongs to the *method*. **Run Date** and **Person** start unticked —
-  they belong to that one run. An uploaded file cannot be ticked; a file
-  lives on CDD's server and no saved text brings it back.
-- When you fill, **empty fields are filled and nothing else is touched**. A
-  field that already holds a *different* value is listed as
-  `what's there → what the template has`, with a button to take the
-  template's value for that one field, or for all of them at once.
-- **The plugin never presses Save.** It loads the form and stops, so you
-  read the whole thing before anything reaches CDD. Cancel throws it all
-  away as usual.
-- **Save** and **Copy** work from the normal read-only view. **Fill** and
-  **Paste** stay greyed out until you open **Edit run definition** yourself
-  — they write into the form, so you should already be in the editor.
-- New: **Copy** and **Paste into form**, for when a named template is more
-  fuss than the job needs. Copy puts the settings on the clipboard as
-  name/value lines; Paste writes them into the open form in **one click**.
-  Unlike a template fill, **Paste overwrites** what is already there, and
-  tells you exactly which fields it changed. Copied lines also paste into
-  Excel — edit them there and bring them back via *paste edited lines*.
-- New: on the read-only view the run definition values are **click-to-copy**,
-  the same as fields on batches, samples and entities.
-- Templates work across protocols too, as long as the other protocol shows
-  the same form. Fields the target form doesn't have are reported as
-  skipped rather than silently dropped.
-
----
-
-## 13.2.0 — August 2026
-
-**The remembered values now include the solvent of a stock solution.**
-
-- New: type a concentration into a row and pick its solvent, and the plugin
-  remembers **both** for that batch. Next time the same batch turns up
-  without them, one click writes the concentration *and* the solvent — the
-  button tells you which: *Fill remembered concentration (0.4 mol/L in
-  ethanol) into table*. It clicks **Make solution** for you, as before.
-- New: if a row is already a solution but its solvent line says
-  *Solvent: Required*, you get a **Fill solvent** button on its own.
-- The solvent doesn't have to be one of CDD's 38 built-in ones. If it is, it
-  is picked from the list and brings its CAS-RN, FW, density and boiling
-  point along; anything else — *EtOAc/Hexane 1:1*, a buffer, a mixture — is
-  written as plain text, just as if you typed it. Nothing is ever added to
-  the vault's solvent list.
-- The settings page shows the remembered solvent alongside density, purity
-  and concentration, and the ✕ still forgets the whole batch at once.
-- As always, a value the sample record itself carries wins over the
-  remembered one — and once the record has it, the remembered copy is
-  dropped.
 
 ---
 

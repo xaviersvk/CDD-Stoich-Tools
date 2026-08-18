@@ -69,6 +69,26 @@ export function extractRowsFromReactionFeature(feature, reactionIndex) {
 
     const displayRowNumbers = computeDisplayRowNumbers(rows);
 
+    // A parallel ("bulk") reaction keeps the template rows it was drawn from.
+    // The two slots the enumeration replaces are rendered by CDD as "Variable
+    // reagent" and "Variable product" — but the payload still carries the
+    // structures that were drawn BEFORE the parallel block existed. In entry
+    // 2504170 that is acetic acid and its acetamide: compounds that appear
+    // nowhere in the entry.
+    //
+    // The variable reagent never gets this far (no sample, no batch — the
+    // guard below drops it). The variable product would, and it arrives with
+    // no identity of its own at all: no molecule, no batch, no sample, only
+    // the drawn `iupacName` that resolveRowName then falls back to.
+    //
+    // The parallel precondition is what makes this safe: an ORDINARY
+    // reaction's unregistered product has exactly the same empty shape, and
+    // CDD does display that one by its drawn name (feature 80 of the same
+    // entry), so it must keep its card.
+    const hasParallelProducts = rows.some(
+        (row) => String(row?.role || "").toLowerCase() === "parallelproduct"
+    );
+
     for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
         const row = rows[rowIndex];
         const hasSample = !!row?.sample;
@@ -86,6 +106,15 @@ export function extractRowsFromReactionFeature(feature, reactionIndex) {
         // decided content-side by the show-products option.
         if (!hasSample && !isProduct && !rowBatchId) continue;
         if (isProduct && !rowBatchId && !row?.moleculeName && !rowUid) continue;
+
+        // The "Variable product" placeholder — see hasParallelProducts above.
+        if (
+            hasParallelProducts &&
+            role === "product" &&
+            !hasSample &&
+            !rowBatchId &&
+            row?.moleculeId == null
+        ) continue;
         const sampleId =
             row?.sample?.id ??
             row?.sampleId ??

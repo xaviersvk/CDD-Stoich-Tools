@@ -35,6 +35,25 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
   is what gets saved. Clear a field on purpose and it stays cleared. Click into
   the middle of the value and the cursor stays where you put it.
 
+**The Samples panel's CSV button now opens.**
+
+- `CSV` still downloads the whole table in one click. The small arrow next to
+  it adds **Products only** — just the reaction products, for when the sheet
+  you need is the one about what came out.
+- That export gives you the products whether or not the panel is currently
+  showing them, since asking for them is answer enough. If the entry has no
+  product rows, it tells you instead of handing you an empty file. It saves as
+  `cdd-products-…`, so it will not overwrite your ordinary export.
+
+**Bulk reactions no longer invent a product.**
+
+- A parallel (bulk) reaction remembers the scheme it was drawn from, and CDD
+  shows the varying slots as *Variable reagent* and *Variable product*. The
+  panel used to read the leftover structure behind that product slot and give
+  it a card — a compound that appears in no table on the page, which then
+  followed you into Print and CSV. It is gone. The real enumerated products are
+  all still there.
+
 ---
 
 ## 14.0.0 — August 2026

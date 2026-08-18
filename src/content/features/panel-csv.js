@@ -57,7 +57,11 @@ function downloadCsv(filename, csv) {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-export function exportPanelCsv(visibleFields = {}) {
+/**
+ * @param visibleFields  the panel's enabled columns
+ * @param productsOnly   export the reaction PRODUCT rows and nothing else
+ */
+export function exportPanelCsv(visibleFields = {}, { productsOnly = false } = {}) {
     // Same source as the panel and the print sheet — mentions included.
     const visible = getVisibleSamples();
     if (!visible.length) {
@@ -65,14 +69,26 @@ export function exportPanelCsv(visibleFields = {}) {
         return;
     }
 
+    // "Products only" is an explicit ask, so it overrides the Show products
+    // option: the panel may well be hiding the very rows the click wants.
     const showProducts = isShowProductsEnabled();
-    const samples = visible.filter((s) => showProducts || !s.isProduct);
-    const anyProduct = samples.some((s) => s.isProduct);
+    const samples = productsOnly
+        ? visible.filter((s) => s.isProduct)
+        : visible.filter((s) => showProducts || !s.isProduct);
+
+    if (!samples.length) {
+        alert(productsOnly ? "No product rows in this entry." : "No sample data available.");
+        return;
+    }
+
+    // The Type column exists to pick products out from among reagents. With
+    // nothing but products it would repeat one word all the way down.
+    const typeColumn = !productsOnly && samples.some((s) => s.isProduct);
     const columns = buildPrintColumns(samples, visibleFields);
 
     const header = [
         "Reaction",
-        ...(anyProduct ? ["Type"] : []),
+        ...(typeColumn ? ["Type"] : []),
         ...columns.map((column) => column.label),
     ];
 
@@ -80,10 +96,12 @@ export function exportPanelCsv(visibleFields = {}) {
     samples.forEach((sample, index) => {
         lines.push(csvRow([
             sample.reactionLabel || "",
-            ...(anyProduct ? [sample.isProduct ? "Product" : ""] : []),
+            ...(typeColumn ? [sample.isProduct ? "Product" : ""] : []),
             ...columns.map((column) => column.getText(sample, index)),
         ]));
     });
 
-    downloadCsv(`cdd-samples-${resolveEntryId()}-${today()}.csv`, lines.join("\r\n"));
+    // A distinct name so the two exports don't shadow each other in Downloads.
+    const prefix = productsOnly ? "cdd-products" : "cdd-samples";
+    downloadCsv(`${prefix}-${resolveEntryId()}-${today()}.csv`, lines.join("\r\n"));
 }

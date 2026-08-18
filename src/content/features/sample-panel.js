@@ -188,11 +188,45 @@ export function ensurePanel() {
     printBtn.type = "button";
     printBtn.textContent = "Print";
 
+    // Split button: CSV exports the whole table as before, the caret opens
+    // the narrower exports.
+    const csvGroup = document.createElement("div");
+    csvGroup.className = "cdd-csv-split";
+
     const csvBtn = document.createElement("button");
     csvBtn.id = `${PANEL_ID}-csv`;
     csvBtn.type = "button";
     csvBtn.textContent = "CSV";
     csvBtn.title = "Download this table as a CSV file (opens in Excel).";
+
+    const csvMenuBtn = document.createElement("button");
+    csvMenuBtn.id = `${PANEL_ID}-csv-menu`;
+    csvMenuBtn.type = "button";
+    csvMenuBtn.textContent = "▾";
+    csvMenuBtn.title = "Other CSV exports";
+    csvMenuBtn.setAttribute("aria-haspopup", "true");
+    csvMenuBtn.setAttribute("aria-expanded", "false");
+
+    // Fixed rather than absolute: the panel clips its overflow, and collapsed
+    // it is no taller than the header — a menu placed inside its box would be
+    // cut off. Fixed escapes that, and gets positioned from the caret's rect.
+    const csvMenu = document.createElement("div");
+    csvMenu.className = "cdd-csv-menu";
+    csvMenu.hidden = true;
+    // The header is the drag handle and this menu sits inside it.
+    csvMenu.addEventListener("mousedown", (event) => event.stopPropagation());
+
+    const csvProductsBtn = document.createElement("button");
+    csvProductsBtn.id = `${PANEL_ID}-csv-products`;
+    csvProductsBtn.type = "button";
+    csvProductsBtn.textContent = "Products only";
+    csvProductsBtn.title =
+        "Download just the reaction product rows, whether or not the panel is showing them.";
+    csvMenu.appendChild(csvProductsBtn);
+
+    csvGroup.appendChild(csvBtn);
+    csvGroup.appendChild(csvMenuBtn);
+    csvGroup.appendChild(csvMenu);
 
     const toggleBtn = document.createElement("button");
     toggleBtn.id = `${PANEL_ID}-toggle`;
@@ -206,7 +240,7 @@ export function ensurePanel() {
 
     actions.appendChild(refreshBtn);
     actions.appendChild(printBtn);
-    actions.appendChild(csvBtn);
+    actions.appendChild(csvGroup);
     actions.appendChild(toggleBtn);
 
     header.appendChild(title);
@@ -293,6 +327,55 @@ export function ensurePanel() {
 
   #${PANEL_ID} button:hover {
     background: #4b5563;
+  }
+
+  #${PANEL_ID} .cdd-csv-split {
+    display: flex;
+  }
+
+  #${PANEL_ID} .cdd-csv-split > button:first-child {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  #${PANEL_ID} .cdd-csv-split > button:nth-child(2) {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-left: 1px solid #6b7280;
+    padding: 4px 5px;
+    font-size: 10px;
+    line-height: 1.4;
+  }
+
+  #${PANEL_ID} .cdd-csv-menu {
+    position: fixed;
+    z-index: 2147483647;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 130px;
+    padding: 4px;
+    background: #1f2937;
+    border: 1px solid #4b5563;
+    border-radius: 8px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.45);
+  }
+
+  #${PANEL_ID} .cdd-csv-menu[hidden] {
+    display: none;
+  }
+
+  #${PANEL_ID} .cdd-csv-menu button {
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 8px;
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  #${PANEL_ID} .cdd-csv-menu button:hover {
+    background: #374151;
   }
 
   #${PANEL_ID} .cdd-stoich-body {
@@ -526,6 +609,56 @@ export function ensurePanel() {
 
     csvBtn.addEventListener("click", () => {
         exportPanelCsv(visibleFields);
+    });
+
+    // Document-level listeners live only while the menu is open, so a panel
+    // that is torn down and rebuilt cannot accumulate them.
+    const closeCsvMenuOnOutside = (event) => {
+        if (csvGroup.contains(event.target)) return;
+        closeCsvMenu();
+    };
+
+    const closeCsvMenuOnEscape = (event) => {
+        if (event.key === "Escape") closeCsvMenu();
+    };
+
+    function closeCsvMenu() {
+        if (csvMenu.hidden) return;
+        csvMenu.hidden = true;
+        csvMenuBtn.setAttribute("aria-expanded", "false");
+        document.removeEventListener("mousedown", closeCsvMenuOnOutside, true);
+        document.removeEventListener("keydown", closeCsvMenuOnEscape, true);
+        window.removeEventListener("scroll", closeCsvMenu, true);
+        window.removeEventListener("resize", closeCsvMenu);
+    }
+
+    function openCsvMenu() {
+        csvMenu.hidden = false;
+        csvMenuBtn.setAttribute("aria-expanded", "true");
+
+        // Right-aligned to the caret so the menu grows inward, away from the
+        // screen edge the panel usually sits against. Measured after the
+        // unhide, or offsetWidth would be zero.
+        const rect = csvMenuBtn.getBoundingClientRect();
+        csvMenu.style.top = `${rect.bottom + 4}px`;
+        csvMenu.style.left = `${Math.max(4, rect.right - csvMenu.offsetWidth)}px`;
+
+        document.addEventListener("mousedown", closeCsvMenuOnOutside, true);
+        document.addEventListener("keydown", closeCsvMenuOnEscape, true);
+        window.addEventListener("scroll", closeCsvMenu, true);
+        window.addEventListener("resize", closeCsvMenu);
+    }
+
+    csvMenuBtn.addEventListener("click", (event) => {
+        event.stopPropagation();
+        if (csvMenu.hidden) openCsvMenu();
+        else closeCsvMenu();
+    });
+
+    csvProductsBtn.addEventListener("click", (event) => {
+        event.stopPropagation();
+        closeCsvMenu();
+        exportPanelCsv(visibleFields, { productsOnly: true });
     });
 
     toggleBtn.addEventListener("click", () => {

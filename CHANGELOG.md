@@ -33,6 +33,24 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   Enter, a bare number in a field that *had* a unit gets that unit back first.
   A typed `25 mg` is committed exactly as typed, and a field emptied on purpose
   stays empty.
+- **The Samples panel's CSV button opens.** It is now a split button: `CSV`
+  still downloads the whole table in one click, and the caret next to it offers
+  **Products only** — the reaction product rows on their own. That export
+  deliberately ignores the *Show products* option, since asking for products is
+  already the answer to the question that option poses; an entry with no product
+  rows says so instead of downloading an empty sheet. The `Type` column is
+  dropped from it (every row would repeat "Product"), and the file is named
+  `cdd-products-…` so the two exports do not shadow each other in Downloads.
+
+### Fixed
+- **A bulk (parallel) reaction no longer contributes a product that is nowhere
+  in the entry.** CDD keeps the template rows a parallel reaction was drawn
+  from and renders the two slots the enumeration replaces as *Variable reagent*
+  and *Variable product* — but the payload still carries the structures drawn
+  **before** the parallel block existed. In entry 2504170 that meant a card, a
+  printed row and a CSV line for an acetamide that appears in no table on the
+  page. The panel now drops that placeholder, and the enumerated products are
+  untouched.
 
 ### Technical
 - `src/content/features/ui-fixes/stoich-amount-editing.js`, initialised from
@@ -51,6 +69,28 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   same popups pass through untouched.
 - Whether CDD also commits on click-outside is unverified; the `focusout`
   branch corrects the value there as a best effort and re-dispatches nothing.
+- `exportPanelCsv(visibleFields, { productsOnly })` in
+  `content/features/panel-csv.js`; the default path is unchanged apart from
+  refusing to write a header-only file when the filter leaves nothing. The menu
+  in `sample-panel.js` is `position: fixed` and placed from the caret's rect —
+  the panel clips its overflow and is no taller than its header when collapsed,
+  so a menu laid out inside its box would be cut off. Its document-level
+  close listeners are attached only while it is open, so a panel torn down and
+  rebuilt cannot accumulate them.
+- The parallel placeholder is dropped in `inject/parsers/sample-data.js`: a
+  `product` row is skipped when the table also holds `parallelProduct` rows
+  **and** the row has no identity of its own (no `moleculeId`, no batch id, no
+  sample). The parallel precondition is what makes it safe — an ordinary
+  reaction's unregistered, drawn-only product has exactly the same empty shape,
+  and CDD *does* display that one, so it keeps its card. Verified against all
+  three reaction features of entry 2504170: the rule drops that one row and no
+  other. Row numbering is computed from the full row list and so still matches
+  what CDD prints, placeholder included.
+- Not fixed, and worth knowing: nothing in the payload distinguishes the
+  template reactant CDD labels *Variable reagent* from a real one — it carries
+  a full `moleculeId`/`moleculeName`. Today it never reaches the panel (no
+  sample, no batch id), so it costs nothing; an entry where that row does carry
+  a batch would need a rule we cannot yet derive.
 
 ## [14.0.0] — 2026-08-18
 

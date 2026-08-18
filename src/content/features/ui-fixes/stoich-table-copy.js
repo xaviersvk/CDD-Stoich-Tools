@@ -10,9 +10,17 @@
 //      molecule name started an HTML5 drag of the whole reaction block.
 //      The browser never got as far as firing `selectstart`.
 //
-// Lift both and the table reads like text: drag across it, it goes blue,
-// Ctrl+C copies. CDD's click-to-edit popup is untouched — it opens from a
-// click, and a click is not a drag.
+// Lift both and the table reads like text: drag across it and it goes blue.
+// CDD's click-to-edit popup is untouched — it opens from a click, and a
+// click is not a drag.
+//
+// Ctrl+C then needs taking back off Slate, which owns the copy: its React
+// handler runs on the editor root, calls preventDefault(), and writes its
+// OWN serialisation of the selection — and a void node has nothing inside
+// it for Slate's model to serialise, so Ctrl+C over a whole reaction put
+// three empty lines on the clipboard. A capture-phase `copy` listener on
+// `document` runs before anything mounted under it, which is where the
+// clipboard gets filled with a real grid instead.
 //
 // On top of that, Ctrl/Cmd+click on a field copies that one field's value
 // (add Shift for "Label: value"). That is the one-gesture way to lift a
@@ -256,6 +264,103 @@ function onGestureEvent(event) {
     }
 }
 
+/* ------------------------------------------------------------------ *
+ * Part C — hand the clipboard something Excel can read
+ *
+ * This runs in the capture phase on `document`, ahead of Slate's handler
+ * on the editor root, and stops the event there. Without it the clipboard
+ * gets Slate's empty serialisation of a void node.
+ * ------------------------------------------------------------------ */
+
+const CELL_SELECTOR = "td, th";
+
+// Fields inside one cell, flattened onto a single line. A cell holds
+// several at once — Properties carries FW, Density, Concentration and
+// Exact mass — and a newline between them would break the TSV back into
+// rows, so the plain-text side joins them with a separator instead. The
+// labels stay: stripped of them, four numbers in a cell mean nothing.
+const FIELD_JOIN = " | ";
+
+function selectionTable(selection) {
+    if (!selection || selection.isCollapsed || selection.rangeCount === 0) return null;
+
+    const node = selection.getRangeAt(0).commonAncestorContainer;
+    const element = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+
+    return element?.closest(`.${TABLE_CLASS}`) ?? null;
+}
+
+function cellText(cell, join) {
+    const fields = cell.querySelectorAll(FIELD_SELECTOR);
+
+    if (!fields.length) {
+        return (cell.textContent ?? "").replace(/\s+/g, " ").trim();
+    }
+
+    return [...fields]
+        .map((field) => fieldText(field, true))
+        .filter(Boolean)
+        .join(join);
+}
+
+// The selected cells, grouped by their row, in document order.
+function selectedCellRows(table, range) {
+    const rows = [];
+
+    table.querySelectorAll("tr").forEach((tr) => {
+        const cells = [...tr.querySelectorAll(CELL_SELECTOR)]
+            .filter((cell) => range.intersectsNode(cell));
+
+        if (cells.length) rows.push(cells);
+    });
+
+    return rows;
+}
+
+function escapeHtml(text) {
+    return text.replace(/[&<>]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[ch]);
+}
+
+function onCopy(event) {
+    const selection = window.getSelection();
+    const table = selectionTable(selection);
+    if (!table) return;
+
+    const rows = selectedCellRows(table, selection.getRangeAt(0));
+    const cellCount = rows.reduce((total, cells) => total + cells.length, 0);
+
+    // Slate would take this over even for a name highlighted inside one
+    // cell, so the event is claimed either way — only what goes on the
+    // clipboard differs.
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+
+    // One cell means someone highlighted a name or a number. That is
+    // already exactly what they asked for; a grid would be an answer to a
+    // question nobody put.
+    if (cellCount < 2) {
+        event.clipboardData?.setData("text/plain", selection.toString().trim());
+        return;
+    }
+
+    const plain = rows
+        .map((cells) => cells.map((cell) => cellText(cell, FIELD_JOIN)).join("\t"))
+        .join("\n");
+
+    // Excel prefers the HTML flavour when both are on the clipboard, and
+    // it is the one that can keep a cell's fields on separate lines.
+    const html = "<table>"
+        + rows.map((cells) => "<tr>"
+            + cells.map((cell) =>
+                `<td>${escapeHtml(cellText(cell, "\n")).replace(/\n/g, "<br>")}</td>`).join("")
+            + "</tr>").join("")
+        + "</table>";
+
+    event.clipboardData?.setData("text/plain", plain);
+    event.clipboardData?.setData("text/html", html);
+}
+
 // `cursor: copy` the moment the modifier goes down, so the gesture is
 // discoverable without anyone having to be told it exists.
 function updateArmed(event) {
@@ -285,6 +390,11 @@ export function initStoichTableCopy() {
     GESTURE_EVENTS.forEach((type) => {
         document.addEventListener(type, onGestureEvent, true);
     });
+
+    // Capture, so it lands ahead of Slate's own copy handler on the
+    // editor root. Bubble phase would be too late — Slate has already
+    // called preventDefault() and written the clipboard by then.
+    document.addEventListener("copy", onCopy, true);
 
     document.addEventListener("keydown", updateArmed, true);
     document.addEventListener("keyup", updateArmed, true);

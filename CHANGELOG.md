@@ -16,6 +16,34 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [14.4.0] — 2026-08-18
+
+### Fixed
+- **`Ctrl+C` over a stoichiometry table now actually copies it.** 14.2.0 made
+  the table selectable, but the clipboard still came out empty — pasting into
+  Excel gave nothing. Selecting the text was only half the job: **Slate owns the
+  copy**. Its React handler runs on the editor root, calls `preventDefault()`,
+  and writes its own serialisation of the selection — and the table is a *void*
+  node, so Slate's model has nothing inside it to serialise. What reached the
+  clipboard was three empty lines (`text/plain: "\n\n\n"`, alongside an
+  `application/x-slate-fragment`).
+
+  A capture-phase `copy` listener on `document` runs ahead of anything mounted
+  under it, so the clipboard is filled there and the event stopped before Slate
+  ever sees it. What it writes:
+  - **A selection spanning more than one cell** becomes a real grid — tab-
+    separated `text/plain` plus a `<table>` in `text/html`, which is the flavour
+    Excel prefers. One output row per table row, one cell per column. Fields
+    inside a cell are joined with ` | ` in the plain text (a newline there would
+    break the TSV back into rows) and kept on separate lines in the HTML.
+    Labels are kept: a Properties cell carries FW, Density, Concentration and
+    Exact mass at once, and four bare numbers in a cell mean nothing.
+  - **A selection inside one cell** — a compound name, a mass — is copied
+    exactly as highlighted. That is already what was asked for; a grid would
+    answer a question nobody put.
+  - **A selection anywhere else on the page** is left entirely alone, Slate
+    included.
+
 ## [14.3.0] — 2026-08-18
 
 ### Added

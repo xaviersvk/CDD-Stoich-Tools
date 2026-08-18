@@ -13,7 +13,27 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
-# What's new in 14.3.0
+# What's new in 14.4.0
+
+---
+
+## 14.4.0 — August 2026
+
+**`Ctrl+C` on a stoichiometry table now actually puts it on the clipboard.**
+
+- The last version let you highlight the table, but pasting gave you nothing —
+  an empty cell in Excel. Being able to select the text turned out to be only
+  half the job: CDD's editor takes the copy over for itself, and because it
+  does not consider the reaction table to be text it had nothing to hand
+  across. The plugin now fills the clipboard before the editor gets a chance.
+- **Highlight several cells and you get a table.** Paste into Excel and the
+  rows and columns land where you would expect them — one spreadsheet row per
+  table row, one column per column. Everything in a cell keeps its label, so
+  `FW: 231.05 g/mol | Density: 1.23 g/cm3` stays readable instead of turning
+  into two loose numbers.
+- **Highlight inside a single cell — a compound name, a mass — and you get
+  exactly what you highlighted**, nothing added around it.
+- Copying anywhere else in the entry works exactly as it did before.
 
 ---
 

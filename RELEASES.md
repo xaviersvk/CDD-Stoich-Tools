@@ -13,9 +13,23 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
-# What's new in 13.4.0
+# What's new in 14.0.0
 
 *Everything that changed since **12.8.5**, the previous public release.*
+
+### Both field pickers can be narrowed to one registration form
+
+The Search page's **Keywords** selector and Inventory's **Filter Entries**
+selector list every field the vault owns — 129 of them in the vault this was
+built against. A row of chips above the columns (`All`, `Molecule`, `Plasmid`,
+`Antibody`, …) cuts the list to the fields the chosen form actually uses:
+**21–46 options**, three to six times shorter.
+
+- Default is `All`; your choice is remembered per vault, and the chips follow
+  the form order you set on the options page.
+- CDD's own built-in columns — *Entity Name*, *Salt*, *Current Amount* — stay
+  visible whichever form you pick, and *Event* fields are never filtered out.
+- The chips and the search box work together rather than against each other.
 
 ### The panel sees what you link in the entry text
 
@@ -26,69 +40,68 @@ work too, and so do links that came with an embedded card rather than typed
 into the text.
 
 - A **sample** card shows that bottle: where it is, how much is left. A
-  **batch** card shows the batch and deliberately no location or amount —
-  the entry mentioned the batch, not one particular bottle.
+  **batch** card shows the batch and deliberately no location or amount — the
+  entry mentioned the batch, not one particular bottle.
 - A bottle since used up still gets a card, with the usual **DEPLETED** badge.
 - **Nothing appears twice**: a substance already in a stoichiometry table is
-  not shown again as a mention, and the status line says how many were
-  hidden.
-- **Print and CSV** from the panel include the mentions too.
-- Mentions are display-only: there is no table row to fill.
-- In the settings you choose what the panel draws from — **stoichiometry
-  table rows**, **links in the entry text**, or both. Both start on.
+  not shown again as a mention, and the status line says how many were hidden.
+- **Print and CSV** from the panel include the mentions too. Mentions are
+  display-only — there is no table row to fill.
+- In the settings you choose what the panel draws from: **stoichiometry table
+  rows**, **links in the entry text**, or both. Both start on.
 - An entry with no reaction table now gets a panel too, if it links to
   something.
 
 ### Reuse a run definition instead of retyping it
 
 **Run Details → Run Definition** has a new bar. **Save these values as a
-template** stores the settings under a name; **Fill from template** loads
-them into the next run. You tick what belongs to the method when you save —
-*Run Date* and *Person* start unticked, because they belong to that one run.
+template** stores the settings under a name; **Fill from template** loads them
+into the next run. You tick what belongs to the method when you save — *Run
+Date* and *Person* start unticked, because they belong to that one run.
 
-- Filling writes the **empty** fields and leaves everything else alone. A
-  field already holding a different value is shown as
-  `what's there → what the template has`, and you take the template's value
-  for that one field, or for all at once.
+- Filling writes the **empty** fields and leaves everything else alone. A field
+  already holding a different value is shown as
+  `what's there → what the template has`, and you take the template's value for
+  that one field, or for all at once.
 - **The plugin never presses Save.** It loads the form and stops, so you read
-  it before anything reaches CDD — Cancel still throws it all away. *Save*
-  and *Copy* work from the read-only view; *Fill* and *Paste* wait until you
-  have opened **Edit run definition** yourself.
+  it before anything reaches CDD — Cancel still throws it all away. *Save* and
+  *Copy* work from the read-only view; *Fill* and *Paste* wait until you have
+  opened **Edit run definition** yourself.
 - **Copy** and **Paste into form** cover the one-off case: the settings go on
   the clipboard as name/value lines, so they paste into another run in one
-  click, or into Excel if you want to edit them first. Paste *overwrites*,
-  and lists every field it changed.
-- On the read-only view the run definition values are **click-to-copy**, the
-  same as fields on batches, samples and entities.
+  click, or into Excel if you want to edit them first. Paste *overwrites*, and
+  lists every field it changed.
 - A template also works on another protocol that shows the same form. Fields
   that form doesn't have are reported as skipped, never dropped in silence.
+- On a protocol's **Run Data** tab, every run row has a small **copy** link
+  that puts that run's parameters on the clipboard.
+- On the read-only view, run definition values are **click-to-copy**, the same
+  as fields on batches, samples and entities.
 
 ### Stock solutions fill themselves — solvent included
 
 The plugin already remembered a density, purity or concentration you typed for
 a batch that had none on its record. It now remembers the **solvent** of a
-stock solution the same way, and offers them together: one click on
-*Fill remembered concentration (0.4 mol/L in ethanol) into table* clicks
-**Make solution** for you, writes the concentration and picks the solvent.
+stock solution the same way, and offers them together: one click on *Fill
+remembered concentration (0.4 mol/L in ethanol) into table* clicks **Make
+solution** for you, writes the concentration and picks the solvent.
 
-- If a row is already a solution but its solvent line still says
-  *Solvent: Required*, a **Fill solvent** button appears on its own.
+- If a row is already a solution but its solvent line still says *Solvent:
+  Required*, a **Fill solvent** button appears on its own.
 - **The solvent doesn't have to be on CDD's list.** One of the 38 built-in
   solvents is picked from the list, so it brings its CAS-RN, FW, density and
-  boiling point along. Anything else — *EtOAc/Hexane 1:1*, a buffer, a
-  mixture — is written as plain text, exactly as if you typed it yourself.
-  Neither way adds anything to the vault's solvent list.
-- The settings page lists the remembered solvent next to the density, purity
-  and concentration.
+  boiling point along. Anything else — *EtOAc/Hexane 1:1*, a buffer, a mixture
+  — is written as plain text, exactly as if you typed it yourself. Neither way
+  adds anything to the vault's solvent list.
 
 ### Mark control layouts by dragging a rectangle — and save them for reuse
 
 Editing a control layout (**Run Details → Control Layouts → Edit this layout**)
 no longer means clicking every well and cycling it through the states. Pick
 **Positive control**, **Negative control**, **Reference molecule** or **Clear**
-in the new *Paint wells* bar, then **drag a rectangle** over the plate — every
-well inside it changes as you drag, and pulling the rectangle back restores
-what was there.
+in the *Paint wells* bar, then **drag a rectangle** over the plate — every well
+inside it changes as you drag, and pulling the rectangle back restores what was
+there.
 
 - Click a **row or column header** to fill that whole line, the empty **corner
   header** for the entire plate, or **shift+click** to stretch a rectangle from
@@ -96,22 +109,20 @@ what was there.
 - **Saved layouts:** name the current plate and load it back on any run later.
   Separate lists per plate format (96 / 384 / 1536), so a 96-well layout can
   never land on a 384-well plate. CDD's own **Save changes** still stores it.
-- Click the highlighted colour button again to switch it off — CDD's normal
-  one-well-per-click behaviour comes straight back.
+- Click the highlighted colour button again and CDD's normal one-well-per-click
+  behaviour comes straight back.
 
 ### Copy a whole column — or a whole section — from search results
 
 Hold **Ctrl** (**Cmd** on a Mac) and click a column header on a search results
 table, and the entire column lands on the clipboard, one value per line, ready
-to paste into Excel. The cells flash green and a short message says how many
-rows were copied.
+to paste into Excel. Ctrl+click a **section heading** — *Properties*, *Batch
+Fields* — and you get the whole block at once, laid out as columns with the
+column names on the first line.
 
-- Ctrl+click a **section heading** — *Properties*, *Batch Fields* — and you get
-  the whole block at once, all its columns, laid out as columns in Excel with
-  the column names on the first line.
-- Columns stay aligned: where a molecule spans several batch rows, its value
-  repeats for each row, so two columns copied one after the other paste next to
-  each other without shifting.
+- Where a molecule spans several batch rows, its value repeats for each row, so
+  two columns copied one after the other paste next to each other without
+  shifting.
 - The *Molecule* column copies just the identifier (`TEST-0260386`), without
   the project name shown beside it.
 - A normal click still sorts, and the toolbar buttons above the table are
@@ -129,12 +140,45 @@ specified*, keeping the volume you typed.
 Solution rows also print their **Concentration**, and solvent rows their
 **Reaction molarity** — both in mol/L, matching the table on screen.
 
-### The heat map well popup is wider
+### Smaller things, and two fixes
 
-The balloon that opens when you click a well on a run heat map is **1.4×
-wider**. Since you can add your own batch fields to it, its rows kept wrapping
-onto two lines — even short ones like *Batch name: 001*. The text column
-roughly doubles, so most rows now fit on one line.
+- The balloon that opens when you click a well on a run heat map is **1.4×
+  wider**, so its rows — including the batch fields you add yourself — mostly
+  fit on one line instead of wrapping.
+- **Fixed:** the **CDD Samples** panel could sit on *Waiting for reaction
+  data…* and never show its cards.
+- **Fixed:** the panel stayed on screen after you navigated away from an ELN
+  entry, still listing that entry's samples.
+
+---
+
+## 14.0.0 — August 2026
+
+*The first release to reach the stores since 12.8.5, so it carries 13.0.0
+through 13.4.0 below as well as the changes listed here.*
+
+**Both field pickers can be narrowed to one registration form.**
+
+- The Search page's **Keywords** selector and Inventory's **Filter Entries**
+  selector list every field the vault owns — 129 in the vault this was built
+  against. A row of chips above the columns (`All`, `Molecule`, `Plasmid`,
+  `Antibody`, …) cuts that to the fields the chosen form actually uses: **21–46
+  options**, three to six times shorter.
+- Default is `All`; the choice is remembered per vault, and the chips follow
+  the form order you already set on the options page.
+- CDD's own built-in columns — *Entity Name*, *Salt*, *Current Amount* — stay
+  visible whichever form you pick, and *Event* fields are never filtered out.
+- The chips are a second, independent filter, so they compose with the search
+  box instead of fighting it.
+
+**Fixed: the CDD Samples panel.**
+
+- The panel could sit on *Waiting for reaction data…* and never show its cards
+  — on any entry that had something to show. This one was introduced in 13.4.0
+  and never reached anybody.
+- The panel stayed on screen after you navigated away from an ELN entry, still
+  listing that entry's samples, until the next full page load. It now goes away
+  when you leave and comes back when you return.
 
 ---
 

@@ -16,7 +16,10 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
-## [Unreleased]
+## [14.0.0] — 2026-08-18
+
+First release to reach the stores since **12.8.5** — it carries everything
+tagged `13.0.0` through `13.4.0` in this file as well as the entries below.
 
 ### Added
 - **The field pickers can be narrowed to one registration form.** Both the
@@ -51,6 +54,33 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   scores 0 no matter what is typed, and the browse view drops emptied groups
   and columns. See [`docs/REGISTRATION_FORM_FIELD_FILTER.md`](./docs/REGISTRATION_FORM_FIELD_FILTER.md)
   for the measurements and the full design record.
+
+### Fixed
+- **The Samples panel never rendered at all.** `renderFromState()` called
+  `isTableRowsEnabled()` without importing it, so it threw a `ReferenceError`
+  on every entry that had anything to show. `ensurePanel()` had already built
+  the panel a few lines earlier, which is why it sat on its initial
+  *"Waiting for reaction data…"* status with no cards — on an entry whose
+  mention links had in fact resolved. Nothing reached the console either: the
+  mention scan's `refresh().catch()`, there so a failed scan cannot break the
+  page, swallowed the programming error along with it. Introduced in 13.4.0
+  and never published.
+- **The panel outlived the entry.** It hangs off `<html>` rather than `<body>`
+  so that Turbo's `<body>` swap cannot take it away, which also means nothing
+  removes it on its own — and `renderFromState()` returned on
+  `!isElnEntryPage()` *before* reaching the branch that would have. After an
+  in-app navigation the panel stayed on screen, still listing the previous
+  entry's samples, until the next full page load. The page check moved into
+  `shouldShowPanel()`, the one question both callers already ask:
+  `ensurePanel()` now refuses to build a panel off an entry, and
+  `renderFromState()` takes the old one down. It runs before the Ketcher
+  guard, so leaving an entry with the structure editor open removes the panel
+  rather than freezing it.
+- `updatePanelVisibilityForOverlays()` sets `STATE.isKetcherOpen` **before** it
+  looks for the panel. Returning early when there was no panel left the flag
+  stuck at `true` — harmless while the panel was never removed, a trap once it
+  is: closing the structure editor on a page without a panel would have meant
+  never getting a panel on the next entry.
 
 ---
 

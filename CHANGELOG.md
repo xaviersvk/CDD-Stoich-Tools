@@ -16,6 +16,34 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [14.5.0] — 2026-08-18
+
+### Added
+- **The carried ELN ID drops the vault prefix.** CDD offers three ELN identifier
+  formats — Global Identifier, Vault Identifier, Vault-User Identifier — and on
+  the last of these an entry ID reads `<vault>-<user>-<number>`
+  (`PHA-MDX-0095`). The vault prefix is the same on every entry in the vault, so
+  it says nothing a batch registered there does not already say: the entity is
+  now registered as `MDX-0095`, and the second stoichiometry table of that entry
+  as `MDX-0095B`. The other two formats are carried whole — they have no such
+  repeated piece to lose.
+
+  The trim happens before the table letter is added, so the letter always sits
+  on the end of whatever the ID has been cut down to.
+
+  Two dashes are required for a cut. An ID with fewer is left whole, however the
+  format is set: better to carry one prefix too many than to saw a real ID in
+  half because the setting says one thing and the vault does another.
+
+### Settings
+- **Registration form → From the ELN → ELN identifier format.** The same three
+  choices CDD lists under its own ELN settings, defaulting to **Vault-User
+  Identifier**. It is a plugin setting rather than something read off the page
+  because CDD keeps that choice on a settings page only an admin can open — a
+  normal session cannot see it, so the user names it once instead.
+
+---
+
 ## [14.4.0] — 2026-08-18
 
 ### Fixed

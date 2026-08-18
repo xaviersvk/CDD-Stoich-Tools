@@ -11,11 +11,18 @@
 // the registration form's "Internal ID" field (the label is configurable -- see
 // shared/eln-id-carry.js).
 //
+// How much of the ID travels depends on the vault's ELN identifier format. On
+// "Vault-User Identifier" the ID reads <vault>-<user>-<number>, and the vault
+// prefix is the same on every entry in the vault -- so IDEMO-MDX-0014 registers
+// as MDX-0014. The other two formats are carried whole. CDD keeps that choice on
+// an admin-only settings page, so it is a plugin setting rather than something
+// read off the page.
+//
 // An entry can hold several reactions, and a product registered from the second
 // table is not the product of the first. So the table the Register link sits in
 // is carried too, as a letter on the end:
 //
-//   1st table -> PHA-MDX-0095     2nd -> PHA-MDX-0095B     3rd -> PHA-MDX-0095C
+//   1st table -> MDX-0095     2nd -> MDX-0095B     3rd -> MDX-0095C
 //
 // The first stays bare -- one reaction is the ordinary case and reads the way it
 // always has.
@@ -50,7 +57,10 @@ import { isElnEntryPage } from "../../../shared/page-detection.js";
 import {
     ELN_ID_CARRY_ENABLED_KEY,
     ELN_ID_CARRY_FIELD_KEY,
+    ELN_ID_FORMAT_KEY,
     ELN_ID_PARAM,
+    applyIdentifierFormat,
+    DEFAULT_ELN_ID_FORMAT,
     fieldLabelsMatch,
     getElnIdCarrySettings,
     tableSuffix,
@@ -85,7 +95,11 @@ let started = false;
 
 // The settings snapshot the synchronous listeners and the observer callback
 // read; storage cannot be awaited from either.
-let settings = { enabled: true, fieldLabel: "Internal ID" };
+let settings = {
+    enabled: true,
+    fieldLabel: "Internal ID",
+    format: DEFAULT_ELN_ID_FORMAT,
+};
 
 // Inputs already filled, by node identity. A re-render hands us a new node (fill
 // it again -- it lost OUR value); a field the user emptied is the same node
@@ -124,9 +138,14 @@ function stampLink(target) {
     const entryId = readElnEntryId();
     if (!entryId) return;
 
+    // Trim first, THEN letter: the letter marks the table and belongs on the end
+    // of whatever the ID has been cut down to.
+    const trimmed = applyIdentifierFormat(entryId, settings.format);
+    if (!trimmed) return;
+
     // The finished value, suffix and all — the registration page only has to
     // type out what it is handed.
-    const value = `${entryId}${tableSuffix(tableIndexOf(link))}`;
+    const value = `${trimmed}${tableSuffix(tableIndexOf(link))}`;
 
     // `location.href` as the base: the href is root-relative, and a URL object
     // is what keeps the existing `eln_attached_structure_id` intact.
@@ -243,7 +262,13 @@ export async function initElnIdToRegistration() {
 
     chrome.storage.onChanged.addListener((changes, areaName) => {
         if (areaName !== "local") return;
-        if (!changes[ELN_ID_CARRY_ENABLED_KEY] && !changes[ELN_ID_CARRY_FIELD_KEY]) return;
+        if (
+            !changes[ELN_ID_CARRY_ENABLED_KEY] &&
+            !changes[ELN_ID_CARRY_FIELD_KEY] &&
+            !changes[ELN_ID_FORMAT_KEY]
+        ) {
+            return;
+        }
 
         getElnIdCarrySettings().then((fresh) => {
             settings = fresh;

@@ -67,6 +67,7 @@ import {
     getElnIdCarrySettings,
     saveElnIdCarryEnabled,
     saveElnIdCarryFieldLabel,
+    saveElnIdFormat,
 } from "../shared/eln-id-carry.js";
 
 const ELN_TITLE_MODE_KEY = "cddPluginElnTitleMode";
@@ -508,11 +509,22 @@ elnIdCarryFieldInput.addEventListener("blur", async () => {
     elnIdCarryFieldInput.value = await saveElnIdCarryFieldLabel("");
 });
 
+const elnIdFormatRadios = [...document.querySelectorAll('input[name="elnIdFormat"]')];
+
+for (const radio of elnIdFormatRadios) {
+    radio.addEventListener("change", () => {
+        if (radio.checked) saveElnIdFormat(radio.value);
+    });
+}
+
 async function initElnIdCarryUI() {
     const settings = await getElnIdCarrySettings();
 
     elnIdCarryCheckbox.checked = settings.enabled;
     elnIdCarryFieldInput.value = settings.fieldLabel;
+
+    const format = elnIdFormatRadios.find((radio) => radio.value === settings.format);
+    if (format) format.checked = true;
 }
 
 /* ==================================================== 5 · Remembered densities */

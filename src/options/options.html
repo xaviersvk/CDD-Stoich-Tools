@@ -179,6 +179,40 @@
                     marker doesn't count — <code>Internal ID</code> matches
                     <code>*Internal ID</code>.
                 </p>
+
+                <fieldset class="choices eln-id-carry__format">
+                    <legend class="eyebrow">ELN identifier format</legend>
+
+                    <p class="note eln-id-carry__format-note">
+                        The same three CDD offers under ELN settings. Only an
+                        admin can see which one this vault is on, so pick the
+                        one it uses.
+                    </p>
+
+                    <label class="choice">
+                        <input type="radio" name="elnIdFormat" value="vault-user" />
+                        <span class="choice__text">
+                            <span class="choice__label">Vault-User Identifier</span>
+                            <span class="choice__sample">PHA-MDX-0095 registers as MDX-0095</span>
+                        </span>
+                    </label>
+
+                    <label class="choice">
+                        <input type="radio" name="elnIdFormat" value="vault" />
+                        <span class="choice__text">
+                            <span class="choice__label">Vault Identifier</span>
+                            <span class="choice__sample">Carried whole</span>
+                        </span>
+                    </label>
+
+                    <label class="choice">
+                        <input type="radio" name="elnIdFormat" value="global" />
+                        <span class="choice__text">
+                            <span class="choice__label">Global Identifier</span>
+                            <span class="choice__sample">Carried whole</span>
+                        </span>
+                    </label>
+                </fieldset>
             </div>
 
             <fieldset class="choices">

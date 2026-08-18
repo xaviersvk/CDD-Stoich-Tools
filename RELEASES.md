@@ -13,7 +13,28 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
-# What's new in 14.4.0
+# What's new in 14.5.0
+
+---
+
+## 14.5.0 — August 2026
+
+**The ID carried into a new entity now leaves the vault prefix behind.**
+
+- Registering from a stoichiometry row filled in the whole entry ID —
+  `PHA-MDX-0095`. The `PHA-` in front is the same on every entry in the vault,
+  so it told you nothing you did not already know from where the batch lives.
+  The entity now registers as **`MDX-0095`**, and from the entry's second
+  stoichiometry table as **`MDX-0095B`**.
+- **Settings → Registration form → From the ELN → ELN identifier format.** The
+  same three choices CDD lists under its own ELN settings — *Global Identifier*,
+  *Vault Identifier*, *Vault-User Identifier*. Only the last one has a vault
+  prefix to drop; the other two are carried whole. It is set here rather than
+  read from CDD because that page needs admin rights to open.
+- New installs start on **Vault-User Identifier**. If your vault is on one of
+  the other two, switch it there and nothing is trimmed.
+- An ID that does not actually read `vault-user-number` is left whole whatever
+  the setting says, so a differently shaped ID can never come out cut in half.
 
 ---
 

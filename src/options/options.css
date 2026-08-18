@@ -644,6 +644,14 @@ body {
     margin-bottom: 8px;
 }
 
+.eln-id-carry__format {
+    margin-top: 12px;
+}
+
+.eln-id-carry__format-note {
+    margin-bottom: 8px;
+}
+
 .eln-id-carry__field label {
     color: var(--muted);
     font-size: 12.5px;

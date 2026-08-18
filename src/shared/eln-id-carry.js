@@ -30,6 +30,21 @@ export const ELN_ID_CARRY_FIELD_KEY = "cddElnIdCarryFieldLabel";
 
 export const DEFAULT_ELN_ID_CARRY_FIELD = "Internal ID";
 
+// "global" | "vault" | "vault-user" — which of CDD's three ELN identifier
+// formats this vault is set to. CDD keeps that choice on a settings page only an
+// admin can open, so it cannot be read from a normal session; the user tells us
+// instead, and the wording here matches CDD's own so the two are picked from the
+// same list.
+export const ELN_ID_FORMAT_KEY = "cddElnIdFormat";
+
+export const ELN_ID_FORMATS = ["global", "vault", "vault-user"];
+
+// Vault-User is what the vaults this plugin is written for are set to, so it is
+// what a fresh install assumes. A vault on one of the other two formats has
+// nothing to cut anyway: applyIdentifierFormat() only ever cuts an ID that
+// actually reads <vault>-<user>-<number>.
+export const DEFAULT_ELN_ID_FORMAT = "vault-user";
+
 /* ------------------------------------------------------------------ *
  * The wire between the two pages
  * ------------------------------------------------------------------ */
@@ -61,6 +76,33 @@ export function normalizeFieldLabel(label) {
 export function fieldLabelsMatch(a, b) {
     const left = normalizeFieldLabel(a);
     return left !== "" && left === normalizeFieldLabel(b);
+}
+
+// The part of the entry ID worth carrying, given the vault's identifier format.
+//
+//   Vault-User Identifier   IDEMO-MDX-0014 -> MDX-0014
+//   Vault Identifier        left alone
+//   Global Identifier       left alone
+//
+// The vault-user format reads <vault>-<user>-<number>, and the vault prefix is
+// the same on every entry in the vault -- it says nothing a batch registered
+// there does not already say, so it goes. The other two formats carry no such
+// repeated piece, so nothing is cut from them.
+//
+// The cut needs TWO dashes to be a vault-user ID, and an ID with fewer is left
+// whole: better to carry one prefix too many than to saw a real ID in half
+// because the setting says one thing and the vault does another.
+export function applyIdentifierFormat(entryId, format) {
+    const id = String(entryId ?? "").trim();
+    if (format !== "vault-user") return id;
+
+    const firstDash = id.indexOf("-");
+    if (firstDash <= 0) return id;
+
+    const rest = id.slice(firstDash + 1);
+    if (!rest.includes("-")) return id;
+
+    return rest;
 }
 
 // Which stoichiometry table of the entry the registration came from, as a
@@ -106,6 +148,7 @@ export async function getElnIdCarrySettings() {
         const stored = await chrome.storage.local.get({
             [ELN_ID_CARRY_ENABLED_KEY]: true,
             [ELN_ID_CARRY_FIELD_KEY]: DEFAULT_ELN_ID_CARRY_FIELD,
+            [ELN_ID_FORMAT_KEY]: DEFAULT_ELN_ID_FORMAT,
         });
 
         return {
@@ -114,10 +157,29 @@ export async function getElnIdCarrySettings() {
             fieldLabel:
                 String(stored[ELN_ID_CARRY_FIELD_KEY] ?? "").trim() ||
                 DEFAULT_ELN_ID_CARRY_FIELD,
+            format: ELN_ID_FORMATS.includes(stored[ELN_ID_FORMAT_KEY])
+                ? stored[ELN_ID_FORMAT_KEY]
+                : DEFAULT_ELN_ID_FORMAT,
         };
     } catch {
-        return { enabled: true, fieldLabel: DEFAULT_ELN_ID_CARRY_FIELD };
+        return {
+            enabled: true,
+            fieldLabel: DEFAULT_ELN_ID_CARRY_FIELD,
+            format: DEFAULT_ELN_ID_FORMAT,
+        };
     }
+}
+
+export async function saveElnIdFormat(value) {
+    const format = ELN_ID_FORMATS.includes(value) ? value : DEFAULT_ELN_ID_FORMAT;
+
+    try {
+        await chrome.storage.local.set({ [ELN_ID_FORMAT_KEY]: format });
+    } catch {
+        // Orphaned content script — nothing useful to do.
+    }
+
+    return format;
 }
 
 export async function saveElnIdCarryEnabled(value) {

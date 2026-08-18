@@ -14,6 +14,7 @@ import {
 import { getPurityWarnThreshold } from "../../shared/purity-threshold.js";
 import { isShowProductsEnabled } from "../../shared/show-products-flag.js";
 import { isElnEntryPage } from "../../shared/page-detection.js";
+import { isTableRowsEnabled } from "../../shared/panel-sources-flag.js";
 import { PANEL_ID, REACTION_COLORS } from "../../shared/plugin-constants.js";
 import { getMentionSamples } from "./mentions/state.js";
 import { getPanelContents } from "./panel-contents.js";
@@ -133,8 +134,16 @@ export function makePanelDraggable(panel) {
  * to be the table alone, which meant an entry that only *writes about* its
  * materials got no panel at all — and that is exactly the entry the mention
  * cards were added for.
+ *
+ * The page check belongs HERE rather than in the callers: the panel hangs off
+ * <html> so that Turbo's <body> swap cannot take it away, which also means
+ * nothing removes it on its own when an in-app navigation leaves the entry.
+ * Asking one question — "should this page have a panel?" — is what lets
+ * ensurePanel refuse to build one off an entry and renderFromState take the
+ * old one down.
  */
 export function shouldShowPanel() {
+    if (!isElnEntryPage()) return false;
     return STATE.hasReactionFeature || getMentionSamples().length > 0;
 }
 
@@ -1154,16 +1163,18 @@ export function renderSamples(payload) {
 }
 
 export function renderFromState() {
-    if (!isElnEntryPage()) return;
-    if (STATE.isKetcherOpen) return;
-
     // Losing the last reason to exist takes the panel away — a leftover
-    // panel over an entry with neither a table nor a link would just be a
-    // stale box.
+    // panel over an entry with neither a table nor a link, or over the
+    // Search page the user just navigated to, would just be a stale box.
+    // This runs BEFORE the Ketcher check on purpose: leaving an entry with
+    // the structure editor open must still take the panel down, and the
+    // editor belongs to the page we are leaving anyway.
     if (!shouldShowPanel()) {
         removePanel();
         return;
     }
+
+    if (STATE.isKetcherOpen) return;
 
     ensurePanel();
 

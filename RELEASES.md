@@ -26,6 +26,12 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
   one printed next to the entry title. CDD already carried the structure and
   the project across; the one thing that says *where this compound came from*
   is now carried too, so it no longer has to be copied out of the other tab.
+- **If the entry has more than one reaction, the table you registered from is
+  in the ID too.** The first stoichiometry table registers as
+  `PHA-MDX-0095`, the second as `PHA-MDX-0095B`, the third as `PHA-MDX-0095C` —
+  so months later it is still clear which reaction in the entry a batch came
+  out of. An entry with a single reaction reads exactly as before, with no
+  letter on the end.
 - **Only an empty field is filled.** If something is already in `Internal ID`,
   it stays. If you clear the field yourself, it stays cleared. If you are
   typing in it at that moment, nothing is touched.

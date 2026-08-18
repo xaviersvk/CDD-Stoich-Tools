@@ -11,6 +11,15 @@
 // the registration form's "Internal ID" field (the label is configurable -- see
 // shared/eln-id-carry.js).
 //
+// An entry can hold several reactions, and a product registered from the second
+// table is not the product of the first. So the table the Register link sits in
+// is carried too, as a letter on the end:
+//
+//   1st table -> PHA-MDX-0095     2nd -> PHA-MDX-0095B     3rd -> PHA-MDX-0095C
+//
+// The first stays bare -- one reaction is the ordinary case and reads the way it
+// always has.
+//
 // HOW THE ID TRAVELS
 //
 // The Register control is a plain anchor:
@@ -44,6 +53,7 @@ import {
     ELN_ID_PARAM,
     fieldLabelsMatch,
     getElnIdCarrySettings,
+    tableSuffix,
 } from "../../../shared/eln-id-carry.js";
 import { readElnEntryId } from "../../utils/eln-entry-id.js";
 
@@ -53,6 +63,14 @@ const FLASH_CLASS = "cdd-eln-id-filled";
 // Matches the Register link in a stoichiometry row and any other route to the
 // same page; the ELN-entry guard below is what keeps this narrow.
 const REGISTER_LINK_SELECTOR = 'a[href*="/molecules/new"]';
+
+// An entry can hold several reactions, each rendered as
+// <figure data-autotest-id="reaction"> around one
+// <div data-autotest-id="stoichiometry">. The TABLES are counted, not the
+// reactions: a reaction that carries only a scheme has no table and so cannot
+// shift the letters of the ones that do. CDD's own autotest hook, not the
+// emotion class hash next to it — that changes on every deploy.
+const TABLE_SELECTOR = '[data-autotest-id="stoichiometry"]';
 
 // CDD renders two `form#new_molecule` copies -- the live one and a hidden
 // template for the other registration types -- so every lookup is scoped to the
@@ -82,6 +100,16 @@ function isRegistrationPage() {
  * ELN entry side — put the ID into the link
  * ------------------------------------------------------------------ */
 
+// Document order is the order the tables are read in -- Slate renders the entry
+// body top to bottom. A link outside any table (a Register control CDD grows
+// somewhere else) counts as the first: no suffix, nothing invented.
+function tableIndexOf(link) {
+    const table = link.closest(TABLE_SELECTOR);
+    if (!table) return 0;
+
+    return [...document.querySelectorAll(TABLE_SELECTOR)].indexOf(table);
+}
+
 function stampLink(target) {
     if (!settings.enabled) return;
 
@@ -96,6 +124,10 @@ function stampLink(target) {
     const entryId = readElnEntryId();
     if (!entryId) return;
 
+    // The finished value, suffix and all — the registration page only has to
+    // type out what it is handed.
+    const value = `${entryId}${tableSuffix(tableIndexOf(link))}`;
+
     // `location.href` as the base: the href is root-relative, and a URL object
     // is what keeps the existing `eln_attached_structure_id` intact.
     let url;
@@ -105,9 +137,9 @@ function stampLink(target) {
         return;
     }
 
-    if (url.searchParams.get(ELN_ID_PARAM) === entryId) return;
+    if (url.searchParams.get(ELN_ID_PARAM) === value) return;
 
-    url.searchParams.set(ELN_ID_PARAM, entryId);
+    url.searchParams.set(ELN_ID_PARAM, value);
 
     // Same-origin, so the path+query form keeps the link as CDD wrote it.
     link.setAttribute("href", `${url.pathname}${url.search}`);
@@ -142,6 +174,8 @@ function injectStyles() {
     document.head.appendChild(style);
 }
 
+// The finished value, suffix and all — composed on the ELN side, so nothing
+// here has to know what a stoichiometry table is.
 function carriedElnId() {
     const raw = new URLSearchParams(location.search).get(ELN_ID_PARAM);
     return raw ? raw.trim() : "";
@@ -161,8 +195,8 @@ function findTargetInput() {
 function fillTargetField() {
     if (!settings.enabled) return;
 
-    const entryId = carriedElnId();
-    if (!entryId) return;
+    const value = carriedElnId();
+    if (!value) return;
 
     const input = findTargetInput();
     if (!input || filledInputs.has(input)) return;
@@ -178,11 +212,11 @@ function fillTargetField() {
 
     injectStyles();
 
-    input.value = entryId;
+    input.value = value;
     input.dispatchEvent(new Event("input", { bubbles: true }));
     input.dispatchEvent(new Event("change", { bubbles: true }));
 
-    input.title = `Filled from ELN entry ${entryId}`;
+    input.title = `Filled from the ELN entry this was registered from (${value})`;
     input.classList.add(FLASH_CLASS);
     window.setTimeout(() => input.classList.remove(FLASH_CLASS), 1800);
 }

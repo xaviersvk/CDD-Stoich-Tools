@@ -63,6 +63,31 @@ export function fieldLabelsMatch(a, b) {
     return left !== "" && left === normalizeFieldLabel(b);
 }
 
+// Which stoichiometry table of the entry the registration came from, as a
+// suffix on the entry ID:
+//
+//   table 1 -> PHA-MDX-0095      table 2 -> PHA-MDX-0095B
+//   table 3 -> PHA-MDX-0095C     table 4 -> PHA-MDX-0095D
+//
+// The first table is bare rather than "...A": an entry with one reaction is the
+// normal case, and it should read the way it always has. So the letters are the
+// spreadsheet column names of `index + 1` with the first one left off -- which
+// also settles what a 27th table gets (AA, then AB), instead of running off the
+// end of the alphabet.
+export function tableSuffix(index) {
+    if (!Number.isInteger(index) || index <= 0) return "";
+
+    let n = index + 1;
+    let out = "";
+
+    while (n > 0) {
+        out = String.fromCharCode(65 + ((n - 1) % 26)) + out;
+        n = Math.floor((n - 1) / 26);
+    }
+
+    return out;
+}
+
 // "ID: IDEMO-MDX-0014" -> "IDEMO-MDX-0014". Also copes with the bare value, so
 // a caller that already stripped the prefix is not punished for it.
 export function cleanElnEntryId(raw) {

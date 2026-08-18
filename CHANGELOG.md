@@ -27,6 +27,23 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   from the other tab. It is now written into the form's **Internal ID** field
   (`IDEMO-MDX-0014`) — and which field that is can be changed on the settings
   page.
+- **Which stoichiometry table it came from rides along, as a letter.** An entry
+  can hold several reactions, and a product registered from the second table is
+  not the product of the first. The first table registers bare
+  (`PHA-MDX-0095`), the second adds a `B` (`PHA-MDX-0095B`), the third a `C`.
+  The first is left bare deliberately: one reaction per entry is the ordinary
+  case and should read the way it always has. The letters are the spreadsheet
+  column names of `index + 1` with the first left off, which also settles what a
+  27th table gets (`AA`, then `AB`) instead of running off the end of the
+  alphabet.
+
+  Tables are counted, not reactions — CDD renders each reaction as
+  `<figure data-autotest-id="reaction">` around one
+  `<div data-autotest-id="stoichiometry">`, and counting the latter means a
+  reaction carrying only a scheme cannot shift the letters of the ones that do.
+  The index is the table's position in document order, which is the order the
+  entry reads in. A Register link outside any table counts as the first and gets
+  no letter.
 
   How the ID travels: the Register control is a plain
   `<a data-autotest-id="registerLink" target="_blank">`, and a new tab is a new

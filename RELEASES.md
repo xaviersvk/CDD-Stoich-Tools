@@ -13,7 +13,35 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
-# What's new in 14.1.0
+# What's new in 14.2.0
+
+---
+
+## 14.2.0 — August 2026
+
+**You can finally copy out of a stoichiometry table.**
+
+- **Drag across the table and it goes blue, like any other text on the web.**
+  Until now nothing in it could be highlighted — not a compound name, not a
+  mass, not a formula weight — because CDD switches text selection off for the
+  whole reaction block and turns any attempt to drag into a drag of the block
+  itself. Both are now out of the way. `Ctrl+C` copies what you highlighted,
+  and columns come across tab-separated, so a pasted selection lands in Excel
+  as a table rather than one long line.
+- **`Ctrl`+click (`⌘`+click on a Mac) a value and it is on your clipboard.**
+  One click, no popup opens, the field flashes green. This is the quick way to
+  lift a compound name out of a row. Add `Shift` to get the label too —
+  `Ctrl`+click gives `231.05 g/mol`, `Ctrl+Shift`+click gives
+  `FW: 231.05 g/mol`.
+- Inside the table `Ctrl`+click always means *copy*, batch links included:
+  `Ctrl`+clicking `PHA-0333427-001` copies the id instead of opening it in a
+  new tab. An ordinary click on the link still opens it as before.
+- A field that only shows `Optional` or `Required` copies nothing — you get no
+  clipboard full of the word "Required".
+- **Everything you did before still works.** A normal click still opens the
+  edit popup for that value; only a drag that actually highlighted something
+  stops the popup from appearing on release, so a selection you just made
+  doesn't get covered up.
 
 ---
 

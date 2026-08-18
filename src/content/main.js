@@ -39,6 +39,7 @@ import {initRunFormTemplates} from "./features/run-form-templates/init";
 import {initRegistrationProjectMirror} from "./features/ui-fixes/registration-project-mirror";
 import {initRegistrationFormDefault} from "./features/ui-fixes/registration-form-default";
 import {initStoichAmountEditing} from "./features/ui-fixes/stoich-amount-editing";
+import {initStoichTableCopy} from "./features/ui-fixes/stoich-table-copy";
 import {initSlurpTypeDefault} from "./features/ui-fixes/slurp-type-default";
 import {initOptionsMenuLink} from "./features/ui-fixes/options-menu-link";
 import {initSavedSearchCopyLinks} from "./features/savedSearchCopyLinks/savedSearchCopyLinks";
@@ -139,6 +140,13 @@ function init() {
   initRegistrationProjectMirror();
   initRegistrationFormDefault();
   initStoichAmountEditing();
+
+  // Selecting text in a stoichiometry table: CDD's Slate void turns
+  // user-select off and hijacks the mouse into a block drag, so nothing in
+  // the table could be copied. Both are lifted here, plus Ctrl/Cmd+click to
+  // copy a single field.
+  initStoichTableCopy();
+
   initSlurpTypeDefault();
   initOptionsMenuLink();
   initSavedSearchCopyLinks();

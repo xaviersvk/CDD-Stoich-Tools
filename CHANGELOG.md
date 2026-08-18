@@ -16,6 +16,42 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [14.2.0] — 2026-08-18
+
+### Added
+- **Text in a stoichiometry table can be selected and copied.** Nothing in the
+  table could be highlighted before — not a molecule name, not a mass, not a
+  formula weight. Two of CDD's own decisions were behind it, and both are now
+  lifted for the stoichiometry table only:
+  - The table sits inside a Slate *void* node — a `<figure>` that switches text
+    selection off for everything under it. Every one of the 398 elements in a
+    two-reaction table computed `user-select: none`.
+  - That same `<figure>` is `draggable`, so pressing the mouse down on a
+    molecule name started an HTML5 drag of the whole reaction block. The
+    browser never got as far as firing `selectstart`.
+
+  Drag across the table now and it highlights like any other text; `Ctrl+C`
+  copies it, tab-separated by column so it pastes into Excel as a table. The
+  `draggable` attribute is switched off for the length of a single mouse
+  gesture and restored on mouse-up, so Slate can still drag the reaction block
+  and every link on the page stays draggable.
+- **`Ctrl`/`⌘`+click on a field copies that field's value.** One gesture, no
+  popup, no menu — the field flashes green and the value is on the clipboard.
+  Hold `Shift` as well to get `Label: value` instead of the bare value. Fields
+  showing only a placeholder (`Optional`, `Required`) copy nothing rather than
+  the placeholder text. Inside this table the modifier means *copy*, links
+  included: `Ctrl`+clicking a batch id copies `PHA-0333427-001` instead of
+  opening it in a new tab, which is the point of the gesture. The pointer turns
+  into a copy cursor while the modifier is held, so the gesture is visible
+  before it is used.
+
+### Fixed
+- **A drag that selects text no longer opens the field editor on release.** A
+  drag that starts and ends inside one field still fires a click, and CDD's
+  edit popup would land straight on top of the text that was just highlighted.
+  Past 4 px of travel with a live selection, that click is dropped. A plain
+  click travels no distance, so click-to-edit is untouched.
+
 ## [14.1.0] — 2026-08-18
 
 ### Added

@@ -38,6 +38,7 @@ import {initControlLayoutTools} from "./features/control-layout/init";
 import {initRunFormTemplates} from "./features/run-form-templates/init";
 import {initRegistrationProjectMirror} from "./features/ui-fixes/registration-project-mirror";
 import {initRegistrationFormDefault} from "./features/ui-fixes/registration-form-default";
+import {initStoichAmountEditing} from "./features/ui-fixes/stoich-amount-editing";
 import {initSlurpTypeDefault} from "./features/ui-fixes/slurp-type-default";
 import {initOptionsMenuLink} from "./features/ui-fixes/options-menu-link";
 import {initSavedSearchCopyLinks} from "./features/savedSearchCopyLinks/savedSearchCopyLinks";
@@ -137,6 +138,7 @@ function init() {
 
   initRegistrationProjectMirror();
   initRegistrationFormDefault();
+  initStoichAmountEditing();
   initSlurpTypeDefault();
   initOptionsMenuLink();
   initSavedSearchCopyLinks();

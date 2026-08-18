@@ -20,3 +20,48 @@ export function splitAmount(value) {
     if (!match) return null;
     return { number: match[1], unit: match[2] };
 }
+
+// The popup's editable box: CDD's own input class, inside the floating
+// MuiPaper card, holding a number (possibly with a unit) or nothing at
+// all. Everything else on the page — the solvent picker, the field
+// pickers, the entry header forms — fails one of the three.
+function isAmountInput(el) {
+    if (!el || el.tagName !== "INPUT" || el.type !== "text" || el.readOnly) return false;
+    if (!/\bmaterial-input\b/.test(el.className || "")) return false;
+    if (!el.closest(".MuiPaper-root")) return false;
+    return el.value === "" || splitAmount(el.value) !== null;
+}
+
+// A click INTO the box is the user aiming the caret — most likely at the
+// unit, the one thing preselecting the number would put out of reach.
+// The popup's own auto-focus has no mousedown on the input at all, which
+// is what tells the two apart.
+const CLICK_WINDOW_MS = 500;
+let lastMouseDown = { target: null, at: 0 };
+
+function onMouseDown(event) {
+    if (!event.isTrusted) return;
+    lastMouseDown = { target: event.target, at: Date.now() };
+}
+
+function clickedInto(input) {
+    if (lastMouseDown.target !== input) return false;
+    return Date.now() - lastMouseDown.at < CLICK_WINDOW_MS;
+}
+
+function onFocusIn(event) {
+    const input = event.target;
+    if (!isAmountInput(input) || clickedInto(input)) return;
+
+    const parts = splitAmount(input.value);
+    if (!parts) return;                       // empty box: nothing to select
+
+    // Only the number. The unit stays in the box, after the caret, so
+    // typing a new number keeps it without any further machinery.
+    input.setSelectionRange(0, parts.number.length);
+}
+
+export function initStoichAmountEditing() {
+    document.addEventListener("mousedown", onMouseDown, true);
+    document.addEventListener("focusin", onFocusIn, true);
+}

@@ -16,6 +16,42 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [14.1.0] — 2026-08-18
+
+### Added
+- **Editing an amount in a stoichiometry row now starts on the number.** CDD's
+  one-field popup opens with the caret at the *end* of the value and nothing
+  selected, so changing `19 g` to `25 g` cost four backspaces before a single
+  digit could be typed — and the same in every other numeric field (Purity,
+  Density, Equivalent, Concentration). The number is now preselected and the
+  unit is left in the box *after* the caret, so typing a new number keeps the
+  unit by construction.
+- **A cleared field can no longer change the unit behind your back.** Mass and
+  Volume carry their unit inside the input text while the popup label states
+  the vault default (`Mass [mg]`), so a field cleared and retyped as `25` was
+  committed as 25 mg — a 1000× error that looked like an ordinary edit. On
+  Enter, a bare number in a field that *had* a unit gets that unit back first.
+  A typed `25 mg` is committed exactly as typed, and a field emptied on purpose
+  stays empty.
+
+### Technical
+- `src/content/features/ui-fixes/stoich-amount-editing.js`, initialised from
+  `content/main.js`. Four capture-phase `document` listeners (`mousedown`,
+  `focusin`, `keydown`, `focusout`) — no MutationObserver and no table
+  scraping. A popup box is recognised by shape (`input.material-input` inside a
+  `.MuiPaper-root`, value empty or a number with an optional unit), so the
+  solvent picker and the field pickers are never touched.
+- A `mousedown` on the box itself suppresses the preselection: that is the user
+  aiming the caret, most likely at the unit — the one thing preselecting the
+  number would put out of reach.
+- The unit correction swallows the Enter, writes the corrected value through
+  the React-aware native setter and re-sends Enter on the next frame; the
+  re-sent event is synthetic, so the handler ignores it and cannot loop. Both
+  branches act on `event.isTrusted` only, so `row-fill.js`'s own fills of these
+  same popups pass through untouched.
+- Whether CDD also commits on click-outside is unverified; the `focusout`
+  branch corrects the value there as a best effort and re-dispatches nothing.
+
 ## [14.0.0] — 2026-08-18
 
 `13.2.0`, `13.3.0` and `13.4.0` were built and tested but never tagged, so none

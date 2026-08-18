@@ -13,14 +13,27 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
-# What's new in 14.0.0
+# What's new in 14.1.0
 
-*A cumulative release. **13.1.1** was the last version that reached the stores.
-The 13.2.0, 13.3.0 and 13.4.0 numbers were used while the work was being
-written and never published on their own, so they get no section of their own
-here — what they added is part of 14.0.0 below.
-[`CHANGELOG.md`](./CHANGELOG.md) still records each of them separately, for
-anyone tracing when a change was made.*
+---
+
+## 14.1.0 — August 2026
+
+**Editing a number in a stoichiometry table stops fighting you.**
+
+- Click an amount and the **number is already selected** — type the new one and
+  you are done. No more deleting `19 g` character by character just to make it
+  `25 g`. The unit stays sitting after the cursor, so it survives the retype on
+  its own. This applies to every number in the row: Mass, Volume, Purity,
+  Density, Equivalent, Concentration.
+- **A cleared field can no longer change the unit without telling you.** Mass
+  and Volume keep their unit inside the box, but the popup's own label says
+  `Mass [mg]` — so wiping the field and typing `25` used to save **25 mg**, a
+  thousandfold off, looking exactly like a normal edit. Now the unit that was
+  there comes back when you press Enter.
+- If you *want* a different unit, nothing is in your way: type `25 mg` and that
+  is what gets saved. Clear a field on purpose and it stays cleared. Click into
+  the middle of the value and the cursor stays where you put it.
 
 ---
 

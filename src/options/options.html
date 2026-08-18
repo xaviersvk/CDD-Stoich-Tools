@@ -150,11 +150,36 @@
             </span>
             <div class="card__titles">
                 <h2 class="card__name" id="col-regform-heading">Registration form</h2>
-                <p class="card__desc">Which form the Create Entity page opens on, and in what order the list reads.</p>
+                <p class="card__desc">Which form the Create Entity page opens on, in what order the list reads, and what it already knows.</p>
             </div>
         </header>
 
         <div class="card__body card__body--scroll">
+            <div class="eln-id-carry">
+                <p class="eyebrow">From the ELN</p>
+
+                <label class="field-item eln-id-carry__toggle">
+                    <input type="checkbox" id="elnIdCarryEnabled" />
+                    <span>Registering from a stoichiometry row fills the
+                    entry's <strong>ID</strong> into the new entity
+                    — <code>IDEMO-MDX-0014</code>. Only an empty field is
+                    filled.</span>
+                </label>
+
+                <div class="eln-id-carry__field">
+                    <label for="elnIdCarryFieldLabel">Field it goes into</label>
+                    <input type="text" id="elnIdCarryFieldLabel"
+                           class="text-input" spellcheck="false"
+                           placeholder="Internal ID" />
+                </div>
+
+                <p class="note">
+                    The field's name on the Create Entity page. CDD's required
+                    marker doesn't count — <code>Internal ID</code> matches
+                    <code>*Internal ID</code>.
+                </p>
+            </div>
+
             <fieldset class="choices">
                 <legend class="eyebrow">Preselect</legend>
 

@@ -63,6 +63,11 @@ import {
     clearRegistrationFormLastUsed,
     orderNames,
 } from "../shared/registration-form.js";
+import {
+    getElnIdCarrySettings,
+    saveElnIdCarryEnabled,
+    saveElnIdCarryFieldLabel,
+} from "../shared/eln-id-carry.js";
 
 const ELN_TITLE_MODE_KEY = "cddPluginElnTitleMode";
 const DEFAULT_ELN_TITLE_MODE = "id-title";
@@ -483,6 +488,33 @@ async function initRegistrationFormUI() {
     renderMemory();
 }
 
+/* --------------------------------------------- 4b · ELN ID into the new entity */
+
+const elnIdCarryCheckbox = document.getElementById("elnIdCarryEnabled");
+const elnIdCarryFieldInput = document.getElementById("elnIdCarryFieldLabel");
+
+elnIdCarryCheckbox.addEventListener("change", () => {
+    saveElnIdCarryEnabled(elnIdCarryCheckbox.checked);
+});
+
+// Saved as you type, like everything else here. The blank-means-default repair
+// waits for blur: rewriting the box mid-word would fight the user.
+elnIdCarryFieldInput.addEventListener("input", () => {
+    saveElnIdCarryFieldLabel(elnIdCarryFieldInput.value);
+});
+
+elnIdCarryFieldInput.addEventListener("blur", async () => {
+    if (elnIdCarryFieldInput.value.trim()) return;
+    elnIdCarryFieldInput.value = await saveElnIdCarryFieldLabel("");
+});
+
+async function initElnIdCarryUI() {
+    const settings = await getElnIdCarrySettings();
+
+    elnIdCarryCheckbox.checked = settings.enabled;
+    elnIdCarryFieldInput.value = settings.fieldLabel;
+}
+
 /* ==================================================== 5 · Remembered densities */
 
 const densityListEl = document.getElementById("densityMemoryList");
@@ -812,6 +844,7 @@ initElnTitleUI();
 initSamplePanelFieldsUI();
 initPrefixColorsUI();
 initRegistrationFormUI();
+initElnIdCarryUI();
 initDensityMemoryUI();
 initAutoFillUI();
 initPurityThresholdUI();

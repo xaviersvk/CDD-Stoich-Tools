@@ -38,6 +38,7 @@ import {initControlLayoutTools} from "./features/control-layout/init";
 import {initRunFormTemplates} from "./features/run-form-templates/init";
 import {initRegistrationProjectMirror} from "./features/ui-fixes/registration-project-mirror";
 import {initRegistrationFormDefault} from "./features/ui-fixes/registration-form-default";
+import {initElnIdToRegistration} from "./features/ui-fixes/eln-id-to-registration";
 import {initStoichAmountEditing} from "./features/ui-fixes/stoich-amount-editing";
 import {initStoichTableCopy} from "./features/ui-fixes/stoich-table-copy";
 import {initSlurpTypeDefault} from "./features/ui-fixes/slurp-type-default";
@@ -139,6 +140,12 @@ function init() {
 
   initRegistrationProjectMirror();
   initRegistrationFormDefault();
+
+  // Registering a product straight out of a reaction: the Register link in a
+  // stoichiometry row carries the entry's own ID (IDEMO-MDX-0014) across in its
+  // URL, and the Create a New Entity page writes it into Internal ID.
+  initElnIdToRegistration();
+
   initStoichAmountEditing();
 
   // Selecting text in a stoichiometry table: CDD's Slate void turns

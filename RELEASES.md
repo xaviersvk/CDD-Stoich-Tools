@@ -13,7 +13,31 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
-# What's new in 14.2.0
+# What's new in 14.3.0
+
+---
+
+## 14.3.0 — August 2026
+
+**Register a product from a reaction and the entry ID is already in the form.**
+
+- **Click *Entity: Register* in a stoichiometry row and the new tab opens with
+  the ELN entry's ID already typed into `Internal ID`** — `IDEMO-MDX-0014`, the
+  one printed next to the entry title. CDD already carried the structure and
+  the project across; the one thing that says *where this compound came from*
+  is now carried too, so it no longer has to be copied out of the other tab.
+- **Only an empty field is filled.** If something is already in `Internal ID`,
+  it stays. If you clear the field yourself, it stays cleared. If you are
+  typing in it at that moment, nothing is touched.
+- **Switching the project or the registration form does not lose it.** CDD
+  rebuilds the whole form when either changes, which used to throw away
+  anything already in it — the ID is put back.
+- **It only happens when you started from an ELN entry.** Register links
+  elsewhere in CDD behave exactly as before.
+- **Settings → Registration form → From the ELN.** Switch it off there, or
+  change which field receives the ID if your vault calls it something else.
+  The star does not matter: `Internal ID` and `*Internal ID` are the same
+  field, and so are different capitalisation and spacing.
 
 ---
 

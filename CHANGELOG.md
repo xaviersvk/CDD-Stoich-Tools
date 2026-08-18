@@ -16,6 +16,60 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [14.3.0] — 2026-08-18
+
+### Added
+- **The ELN entry's ID follows you into the entity you register from it.**
+  Every unregistered row of a stoichiometry table offers *Entity: Register*,
+  which opens the Create a New Entity page in a new tab. CDD carries the
+  structure and the project across, but not the one thing that says where the
+  compound came from — the entry ID had to be typed in by hand, from memory or
+  from the other tab. It is now written into the form's **Internal ID** field
+  (`IDEMO-MDX-0014`) — and which field that is can be changed on the settings
+  page.
+
+  How the ID travels: the Register control is a plain
+  `<a data-autotest-id="registerLink" target="_blank">`, and a new tab is a new
+  JavaScript world, so the two pages cannot simply talk to each other. Storage
+  would work but would be a race against the new tab's load. Instead the ID
+  rides in the URL — `cdd_eln_id=...` is appended to the link's `href` in the
+  capture phase of `mousedown` (before the `click` that follows, and before
+  React can re-render the link back), and the registration page reads its own
+  query string. One click, one ID, no timing, and a reload still fills the
+  field. `mousedown` also covers middle-click and `Ctrl`+click, which fire
+  `auxclick` and never `click`.
+
+  The field is found by its label rather than by an id: the cell announces
+  itself as `data-editable-cell-label="*Internal ID"`, and CDD's required
+  marker is stripped before matching, so `Internal ID` and `*Internal ID` are
+  the same field. Only an **empty** field is written to, and only once per
+  rendered input — CDD rebuilds the whole form when the project or the
+  registration form changes, and the fresh (again empty) input is filled again
+  because the value the re-render discarded was ours. A field the user cleared
+  by hand is the same DOM node, so it stays cleared. A field the user is typing
+  in is never touched.
+
+  Off an ELN entry page nothing is stamped: the ID is read from the entry on
+  screen (`[data-autotest-id="entry-identifier"]`), so Register links elsewhere
+  in CDD are left exactly as CDD wrote them.
+
+### Settings
+- **Registration form → From the ELN.** A checkbox (on by default) and the name
+  of the field the ID goes into (`Internal ID` by default). The name is
+  per-vault configuration, not a constant — the label is matched ignoring case,
+  spacing and CDD's `*` marker, and emptying the box restores the default
+  rather than matching nothing.
+
+### Changed
+- **One reader for "the entry ID".** The tab-title feature scanned every `<div>`
+  on the page for text starting with `ID:`; that reader now lives in
+  `content/utils/eln-entry-id.js`, prefers CDD's own
+  `[data-autotest-id="entry-identifier"]` hook, and keeps the document scan only
+  as a fallback. Both the tab title and the carry-over ask it, so the two can
+  never disagree about what the entry ID is.
+
+---
+
 ## [14.2.0] — 2026-08-18
 
 ### Added

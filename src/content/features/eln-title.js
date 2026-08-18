@@ -1,4 +1,5 @@
 import { isElnEntryPage } from "../../shared/page-detection.js";
+import { readElnEntryId } from "../utils/eln-entry-id.js";
 
 let observer = null;
 let currentElnTitleMode = "id-title";
@@ -59,17 +60,6 @@ function runOnlyOnElnEntryPage() {
     updateElnTabTitle();
 }
 
-function getEntryId() {
-    const idElement = [...document.querySelectorAll("div")]
-        .find(el => el.textContent?.trim().startsWith("ID:"));
-
-    if (!idElement) return null;
-
-    return idElement.textContent
-        .replace("ID:", "")
-        .trim();
-}
-
 function startTitleObserver() {
     if (observer) return;
 
@@ -104,7 +94,7 @@ function updateElnTabTitle() {
     const elnTitle = titleElement.value?.trim();
     if (!elnTitle) return;
 
-    const entryId = getEntryId();
+    const entryId = readElnEntryId();
 
     let newTitle = null;
 

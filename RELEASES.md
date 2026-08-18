@@ -19,76 +19,9 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ## 14.5.0 — August 2026
 
-**The ID carried into a new entity now leaves the vault prefix behind.**
-
-- Registering from a stoichiometry row filled in the whole entry ID —
-  `PHA-MDX-0095`. The `PHA-` in front is the same on every entry in the vault,
-  so it told you nothing you did not already know from where the batch lives.
-  The entity now registers as **`MDX-0095`**, and from the entry's second
-  stoichiometry table as **`MDX-0095B`**.
-- **Settings → Registration form → From the ELN → ELN identifier format.** The
-  same three choices CDD lists under its own ELN settings — *Global Identifier*,
-  *Vault Identifier*, *Vault-User Identifier*. Only the last one has a vault
-  prefix to drop; the other two are carried whole. It is set here rather than
-  read from CDD because that page needs admin rights to open.
-- New installs start on **Vault-User Identifier**. If your vault is on one of
-  the other two, switch it there and nothing is trimmed.
-- An ID that does not actually read `vault-user-number` is left whole whatever
-  the setting says, so a differently shaped ID can never come out cut in half.
-
----
-
-## 14.4.0 — August 2026
-
-**`Ctrl+C` on a stoichiometry table now actually puts it on the clipboard.**
-
-- The last version let you highlight the table, but pasting gave you nothing —
-  an empty cell in Excel. Being able to select the text turned out to be only
-  half the job: CDD's editor takes the copy over for itself, and because it
-  does not consider the reaction table to be text it had nothing to hand
-  across. The plugin now fills the clipboard before the editor gets a chance.
-- **Highlight several cells and you get a table.** Paste into Excel and the
-  rows and columns land where you would expect them — one spreadsheet row per
-  table row, one column per column. Everything in a cell keeps its label, so
-  `FW: 231.05 g/mol | Density: 1.23 g/cm3` stays readable instead of turning
-  into two loose numbers.
-- **Highlight inside a single cell — a compound name, a mass — and you get
-  exactly what you highlighted**, nothing added around it.
-- Copying anywhere else in the entry works exactly as it did before.
-
----
-
-## 14.3.0 — August 2026
-
-**Register a product from a reaction and the entry ID is already in the form.**
-
-- **Click *Entity: Register* in a stoichiometry row and the new tab opens with
-  the ELN entry's ID already typed into `Internal ID`** — `IDEMO-MDX-0014`, the
-  one printed next to the entry title. CDD already carried the structure and
-  the project across; the one thing that says *where this compound came from*
-  is now carried too, so it no longer has to be copied out of the other tab.
-- **If the entry has more than one reaction, the table you registered from is
-  in the ID too.** The first stoichiometry table registers as
-  `PHA-MDX-0095`, the second as `PHA-MDX-0095B`, the third as `PHA-MDX-0095C` —
-  so months later it is still clear which reaction in the entry a batch came
-  out of. An entry with a single reaction reads exactly as before, with no
-  letter on the end.
-- **Only an empty field is filled.** If something is already in `Internal ID`,
-  it stays. If you clear the field yourself, it stays cleared. If you are
-  typing in it at that moment, nothing is touched.
-- **Switching the project or the registration form does not lose it.** CDD
-  rebuilds the whole form when either changes, which used to throw away
-  anything already in it — the ID is put back.
-- **It only happens when you started from an ELN entry.** Register links
-  elsewhere in CDD behave exactly as before.
-- **Settings → Registration form → From the ELN.** Switch it off there, or
-  change which field receives the ID if your vault calls it something else.
-  The star does not matter: `Internal ID` and `*Internal ID` are the same
-  field, and so are different capitalisation and spacing.
-
----
-
-## 14.2.0 — August 2026
+*Everything since 14.1.0, the last version that reached the stores. The 14.2.0,
+14.3.0 and 14.4.0 numbers were used while this work was being written and never
+published on their own — what they added is here.*
 
 **You can finally copy out of a stoichiometry table.**
 
@@ -96,9 +29,18 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
   Until now nothing in it could be highlighted — not a compound name, not a
   mass, not a formula weight — because CDD switches text selection off for the
   whole reaction block and turns any attempt to drag into a drag of the block
-  itself. Both are now out of the way. `Ctrl+C` copies what you highlighted,
-  and columns come across tab-separated, so a pasted selection lands in Excel
-  as a table rather than one long line.
+  itself. Both are now out of the way.
+- **`Ctrl+C` fills the clipboard for real.** Being able to highlight the table
+  turned out to be only half the job: CDD's editor takes the copy over for
+  itself, and because it does not consider the reaction table to be text it had
+  nothing to hand across — you could select the whole reaction and still paste
+  an empty cell. The plugin now gets there first.
+- **Highlight several cells and you get a table.** Paste into Excel and the rows
+  and columns land where you would expect them — one spreadsheet row per table
+  row, one column per column. Everything in a cell keeps its label, so
+  `FW: 231.05 g/mol | Density: 1.23 g/cm3` stays readable instead of turning
+  into two loose numbers. Highlight inside a single cell — a compound name, a
+  mass — and you get exactly what you highlighted, nothing added around it.
 - **`Ctrl`+click (`⌘`+click on a Mac) a value and it is on your clipboard.**
   One click, no popup opens, the field flashes green. This is the quick way to
   lift a compound name out of a row. Add `Shift` to get the label too —
@@ -112,7 +54,43 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 - **Everything you did before still works.** A normal click still opens the
   edit popup for that value; only a drag that actually highlighted something
   stops the popup from appearing on release, so a selection you just made
-  doesn't get covered up.
+  doesn't get covered up. Copying anywhere else in the entry is untouched.
+
+**Register a product from a reaction and the entry ID is already in the form.**
+
+- **Click *Entity: Register* in a stoichiometry row and the new tab opens with
+  the ELN entry's ID already typed into `Internal ID`.** CDD already carried the
+  structure and the project across; the one thing that says *where this compound
+  came from* is now carried too, so it no longer has to be copied out of the
+  other tab.
+- **The vault prefix is left behind.** On CDD's *Vault-User Identifier* format an
+  entry ID reads `PHA-MDX-0095`, and the `PHA-` in front is the same on every
+  entry in the vault — it says nothing you do not already know from where the
+  batch lives. What gets registered is **`MDX-0095`**.
+- **If the entry has more than one reaction, the table you registered from is in
+  the ID too.** The first stoichiometry table registers as `MDX-0095`, the second
+  as `MDX-0095B`, the third as `MDX-0095C` — so months later it is still clear
+  which reaction in the entry a batch came out of. An entry with a single
+  reaction gets no letter on the end.
+- **Only an empty field is filled.** If something is already in `Internal ID`, it
+  stays. If you clear the field yourself, it stays cleared. If you are typing in
+  it at that moment, nothing is touched.
+- **Switching the project or the registration form does not lose it.** CDD
+  rebuilds the whole form when either changes, which throws away anything already
+  in it — the ID is put back.
+- **It only happens when you started from an ELN entry.** Register links
+  elsewhere in CDD behave exactly as before.
+- **Settings → Registration form → From the ELN.** Switch the whole thing off
+  there, or change which field receives the ID if your vault calls it something
+  else — the star does not matter, `Internal ID` and `*Internal ID` are the same
+  field, and so are different capitalisation and spacing.
+- **Settings → … → ELN identifier format.** The same three choices CDD lists
+  under its own ELN settings — *Global Identifier*, *Vault Identifier*,
+  *Vault-User Identifier*. Only the last has a vault prefix to drop; the other
+  two are carried whole. New installs start on Vault-User. It is set here rather
+  than read from CDD because that page needs admin rights to open — and an ID
+  that does not actually read `vault-user-number` is left whole whatever the
+  setting says, so a differently shaped ID can never come out cut in half.
 
 ---
 

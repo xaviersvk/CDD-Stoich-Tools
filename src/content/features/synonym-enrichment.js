@@ -19,6 +19,7 @@ import {
 } from "./sample-panel.js";
 import { detectVaultId } from "../api/molecule-image.js";
 import { getMoleculeSynonym } from "../api/molecule-page.js";
+import { getMentionSamples } from "./mentions/state.js";
 
 const SYNONYM_FIELD_KEY = "synonym";
 
@@ -28,14 +29,22 @@ export function initSynonymEnrichment() {
     onPanelFieldsChanged(enrichSampleSynonyms);
 }
 
-// Called after every SAMPLE_DATA payload lands in STATE, and again whenever the
-// panel-field settings change. Safe to call often: already-resolved samples and
-// cached molecules cost nothing.
+// Called after every SAMPLE_DATA payload lands in STATE, after every mention
+// scan, and again whenever the panel-field settings change. Safe to call often:
+// already-resolved samples and cached molecules cost nothing.
 export function enrichSampleSynonyms() {
     if (!isPanelFieldVisible(SYNONYM_FIELD_KEY)) return;
 
-    const samples = STATE.lastPayload?.samples;
-    if (!Array.isArray(samples) || !samples.length) return;
+    // TWO sources, because the panel has two: the stoichiometry cards ride in
+    // the payload, while the "Mentioned in text" cards are built by the mention
+    // scanner into its own store and never enter STATE.lastPayload. Reading the
+    // payload alone left every mention card without a synonym.
+    const payloadSamples = STATE.lastPayload?.samples;
+    const samples = [
+        ...(Array.isArray(payloadSamples) ? payloadSamples : []),
+        ...getMentionSamples(),
+    ];
+    if (!samples.length) return;
 
     // The molecule's HOME vault may differ from the entry's (an ELN vault
     // links to a registration vault); the server redirects and fetch() follows
@@ -58,6 +67,7 @@ export function enrichSampleSynonyms() {
     if (!targetsByMolecule.size) return;
 
     const payloadAtStart = STATE.lastPayload;
+    const mentionsAtStart = getMentionSamples();
 
     Promise.all(
         Array.from(targetsByMolecule, async ([moleculeId, targets]) => {
@@ -83,8 +93,12 @@ export function enrichSampleSynonyms() {
             return synonym != null;
         })
     ).then((results) => {
-        // Re-render only if the enriched payload is still the one on screen.
-        if (results.some(Boolean) && STATE.lastPayload === payloadAtStart) {
+        if (!results.some(Boolean)) return;
+
+        // Re-render only if what was enriched is still what is on screen.
+        // Either source still being current is reason enough — a render draws
+        // both, and the mention list is replaced wholesale on every scan.
+        if (STATE.lastPayload === payloadAtStart || getMentionSamples() === mentionsAtStart) {
             renderFromState();
         }
     });

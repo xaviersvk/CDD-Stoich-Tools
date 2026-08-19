@@ -16,6 +16,7 @@ import { getPanelRoot, renderFromState } from "../sample-panel.js";
 import { mentionKey, mentionsSignature, scanMentions } from "./scan.js";
 import { setMentionSamples } from "./state.js";
 import { buildMentionSample, fetchMoleculeSamples } from "./store.js";
+import { enrichSampleSynonyms } from "../synonym-enrichment.js";
 
 let started = false;
 let signature = "";
@@ -84,6 +85,10 @@ async function refresh() {
     hasCards = cards.length > 0;
     setMentionSamples(cards);
     renderFromState();
+
+    // These cards never pass through SAMPLE_DATA, so nothing else would ever
+    // ask for their synonym. No-op unless the Synonym panel field is on.
+    enrichSampleSynonyms();
 }
 
 export function initElnMentions() {

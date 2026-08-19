@@ -13,7 +13,28 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
-# What's new in 14.6.0
+# What's new in 14.7.0
+
+---
+
+## 14.7.0 — August 2026
+
+**Three fixes from testing 14.6.0.**
+
+- **Synonyms now also show on the cards that come from links in the entry
+  text.** They were meant to from the start, but the lookup only ever ran for
+  the cards that come out of the stoichiometry table — the "Mentioned in text"
+  ones were skipped and their row stayed empty. They are included now, and so
+  is an entry whose panel is made of mentions alone. The field is still off
+  until you tick *Synonym* under Panel fields, and while it is off nothing is
+  looked up.
+- **"Create N Samples" no longer sits in the debit dialog with *Create sample
+  from debit* unticked.** With that box clear, saving records the debit and
+  creates no sample, so the button was offering something that could not
+  happen. It appears the moment you tick the box, with the wells you picked
+  still selected.
+- **Forgetting the last saved run-definition template no longer prints its
+  "nothing saved yet" note twice.**
 
 ---
 

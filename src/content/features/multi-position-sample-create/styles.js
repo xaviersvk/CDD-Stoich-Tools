@@ -30,6 +30,12 @@ export function injectMultiPositionStyles() {
         font-size: 0.875rem;
     }
 
+    /* The display: flex above would win over the [hidden] default, and the bar
+       hides itself while "Create sample from debit" is unticked. */
+    .cdd-mp-panel[hidden] {
+        display: none;
+    }
+
     /* Destination row: well label(s) + optional info icon */
     .cdd-mp-dest {
         display: flex;

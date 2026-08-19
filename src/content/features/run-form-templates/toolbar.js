@@ -511,12 +511,26 @@ function renderPasteOutcome(results, plan, { changed, unchanged, failed, unparse
  * Fill panel — choose a template, then decide on the conflicts
  * ------------------------------------------------------------------ */
 
+// Which render of the fill panel is the current one. Deleting a template
+// starts TWO: the Delete handler's own re-render, and the storage-change
+// listener's, since chrome.storage.onChanged fires in the writing tab as well.
+// Both clear the panel and then await the list, so both used to append their
+// own copy of whatever came back — the "No templates saved yet" note twice
+// after forgetting the last one. The later render wins; the earlier one stops
+// at its await.
+const fillRenderTokens = new WeakMap(); // panel -> latest render token
+
 async function renderFillPanel(panel, annotator, setStatus, closePanel) {
+    const token = (fillRenderTokens.get(panel) || 0) + 1;
+    fillRenderTokens.set(panel, token);
+
     panel.dataset.mode = "fill";
     panel.replaceChildren();
     panel.hidden = false;
 
     const templates = await getRunFormTemplates();
+    if (fillRenderTokens.get(panel) !== token) return;
+
     if (!templates.length) {
         panel.append(el("div", NOTE_CLASS,
             "No templates saved yet. Open a run whose definition is filled in and use “Save these values as a template”."));
@@ -556,7 +570,7 @@ async function renderFillPanel(panel, annotator, setStatus, closePanel) {
         const name = select.value;
         if (!window.confirm(`Forget the template "${name}"?`)) return;
         await deleteRunFormTemplate(name);
-        renderFillPanel(panel, annotator, setStatus, closePanel);
+        await renderFillPanel(panel, annotator, setStatus, closePanel);
     });
 
     fill.addEventListener("click", async () => {

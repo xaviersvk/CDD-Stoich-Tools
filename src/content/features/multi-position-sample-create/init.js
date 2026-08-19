@@ -136,6 +136,30 @@ function findDebitDialogRoot() {
     return null;
 }
 
+// Is the debit dialog's "Create sample from debit" box ticked?
+//   true  — ticked, CDD will create a child sample on Save
+//   false — clear, Save writes a debit and nothing else
+//   null  — no such checkbox (the plain "Create a New Sample" dialog), or its
+//           state could not be read; either way the bar stays visible, because
+//           hiding it on a guess is worse than showing it.
+function readDebitChecked(dialog) {
+    const marker = dialog.querySelector(DEBIT_MARKER_SELECTOR);
+    if (!marker) return null;
+
+    const input = marker.matches('input[type="checkbox"]')
+        ? marker
+        : marker.querySelector('input[type="checkbox"]');
+    if (input) return input.checked;
+
+    // No real input under the marker: fall back to what MUI puts on the
+    // wrapper instead.
+    const aria = marker.getAttribute("aria-checked");
+    if (aria === "true" || aria === "false") return aria === "true";
+    if (marker.classList.contains("Mui-checked")) return true;
+    if (marker.querySelector(".Mui-checked")) return true;
+    return null;
+}
+
 function isCreateSampleDialogOpen() {
     return (
         headings().some((t) => /create a new sample/i.test(t)) ||
@@ -303,6 +327,15 @@ function insertActionBar(dialog) {
     const bar = { panel, createBtn, clearBtn, result };
 
     function refresh() {
+        // In the debit dialog nothing is created unless "Create sample from
+        // debit" is ticked — Save just records the debit. Offering "Create N
+        // Samples" there would promise samples CDD is not going to make, so
+        // the whole bar waits for the tick. The selection itself is kept: tick
+        // the box and the same wells are still there.
+        const hidden = readDebitChecked(dialog) === false;
+        if (panel.hidden !== hidden) panel.hidden = hidden;
+        if (hidden) return;
+
         const { count, positions } = store.getState();
 
         if (count === 0) {
@@ -337,6 +370,12 @@ function insertActionBar(dialog) {
     }
 
     store.onChange(refresh);
+
+    // Ticking "Create sample from debit" has to bring the bar back on the spot.
+    // Delegated and on the capture phase: MUI replaces the input element on
+    // re-render, and React's own handler must not be able to swallow it first.
+    dialog.addEventListener("change", refresh, true);
+
     refresh();
 
     createBtn.addEventListener("click", () => runCreateN(dialog, bar));

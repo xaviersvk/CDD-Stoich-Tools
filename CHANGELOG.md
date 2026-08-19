@@ -16,6 +16,46 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [14.7.0] — 2026-08-19
+
+### Fixed
+- **Synonyms never reached the "Mentioned in text" cards.** 14.6.0 promised the
+  row on every kind of card, but the enrichment only ever walked
+  `STATE.lastPayload.samples` — and mention cards do not live there. They are
+  built by the mention scanner into its own store
+  (`features/mentions/state.js`) and joined to the payload cards at render
+  time, so no fetch was ever started for them and the row stayed empty.
+  `enrichSampleSynonyms()` now reads BOTH sources, and
+  `features/mentions/init.js` calls it after each scan, since those cards never
+  pass through `SAMPLE_DATA`. An entry whose panel is made of mentions alone is
+  covered too — the old "no payload samples, nothing to do" early return is
+  gone. Still one GET per distinct molecule, still nothing at all while the
+  Synonym field is unticked. The re-render guard now accepts either source
+  still being current.
+
+- **"No templates saved yet" appeared twice after forgetting the last
+  template.** Deleting starts two renders of the fill panel — the Delete
+  handler's own, and the one from the storage-change listener, because
+  `chrome.storage.onChanged` fires in the tab that wrote as well. Both cleared
+  the panel and then awaited the list, so both appended their own copy of the
+  result. `renderFillPanel()` now stamps each render with a token and the
+  earlier one stops at its await, so the panel is drawn once whatever starts
+  it.
+
+### Changed
+- **The multi-position action bar stays out of the debit dialog until "Create
+  sample from debit" is ticked.** With the box clear, CDD's Save records a
+  debit and creates nothing, so a "Create N Samples" button there offered
+  something that could not happen — and the selection survives the location
+  picker closing, so it could show up on a dialog the user never meant to
+  create from. The bar hides itself while the box is unticked and comes back
+  the moment it is ticked (a delegated, capture-phase `change` listener, since
+  MUI replaces the input on re-render). The selected wells are kept, not
+  cleared: ticking the box brings the same destinations back. The plain "Create
+  a New Sample" dialog has no such checkbox and is unaffected.
+
+---
+
 ## [14.6.0] — 2026-08-19
 
 ### Added

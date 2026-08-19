@@ -11,7 +11,8 @@ export default defineConfig({
             input: resolve(__dirname, "src/inject/main.js"),
             output: {
                 entryFileNames: "assets/inject.js",
-                inlineDynamicImports: true
+                // One file, no chunks: see vite.content.config.js.
+                codeSplitting: false
             }
         }
     }

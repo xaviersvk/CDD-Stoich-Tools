@@ -700,7 +700,7 @@ export function scoreLabel(label, query) {
 
 // True if `needle` appears in `haystack` bounded by non-alphanumeric edges
 // (i.e. as a whole word/phrase), e.g. "location" in "current sample location".
-function isWholeWord(haystack, needle) {
+export function isWholeWord(haystack, needle) {
     let i = haystack.indexOf(needle);
     while (i !== -1) {
         const before = i === 0 ? " " : haystack[i - 1];

@@ -75,10 +75,10 @@ export function findLocationField(formData, locId = LOCATION_FIELD_DEFINITION_ID
     const primary = [];
     formData.forEach((v, k) => {
         if (
-            /\[fields_attributes\]\[\d+\]\[field_definition_id\]$/.test(k) &&
+            /\[fields_attributes]\[\d+]\[field_definition_id]$/.test(k) &&
             String(v) === String(locId)
         ) {
-            const prefix = k.replace(/\[field_definition_id\]$/, "");
+            const prefix = k.replace(/\[field_definition_id]$/, "");
             const valueKey = `${prefix}[value]`;
             if (!formData.has(valueKey)) return;
             const raw = String(formData.get(valueKey));
@@ -95,7 +95,7 @@ export function findLocationField(formData, locId = LOCATION_FIELD_DEFINITION_ID
     // Fallback: a [value] entry shaped "digits,digits".
     formData.forEach((v, k) => {
         if (result) return;
-        if (/\[value\]$/.test(k) && /^\d+\s*,\s*\d+$/.test(String(v))) {
+        if (/\[value]$/.test(k) && /^\d+\s*,\s*\d+$/.test(String(v))) {
             const raw = String(v);
             const [boxId, position] = splitComposite(raw);
             result = { defKey: null, valueKey: k, raw, boxId, position, viaFallback: true };

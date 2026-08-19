@@ -16,6 +16,30 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [14.8.0] — 2026-08-19
+
+### Added
+- **Molecule-Batch ID as a panel field.** CDD's own identifier for a batch —
+  `RGT-0001620-001` — was the one thing the panel could not be told to show.
+  There was no reason for the gap: the value is simply not a single field in
+  the payload. A stoichiometry row carries the batch's own name, usually the
+  bare suffix `001`, beside the molecule name, and it is the pair that makes
+  the ID. `Batch name` (already in the list) is that suffix, which is why it
+  looked like the ID was there and was not.
+
+  The new field composes the two the same way `resolveRowName` already does
+  for batch-only rows, and returns an ID that already starts with the molecule
+  name untouched — which is what a "Mentioned in text" card carries, since
+  those get the full `molecule_batch_identifier` from the molecule's sample
+  list. CDD's placeholder `Unspecified` batch is not an identifier and is
+  skipped; so is a bare number with no molecule name to put in front of it.
+
+  Off by default, like every optional row, and it costs no request: both
+  halves are already in the payload. It joins the print sheets and the CSV
+  export with the rest.
+
+---
+
 ## [14.7.0] — 2026-08-19
 
 ### Fixed

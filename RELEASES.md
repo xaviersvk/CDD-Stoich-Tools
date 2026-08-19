@@ -13,7 +13,26 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
-# What's new in 14.7.0
+# What's new in 14.8.0
+
+---
+
+## 14.8.0 — August 2026
+
+**Molecule-Batch ID is now one of the panel fields.**
+
+- **Tick *Molecule-Batch ID* under Panel fields** and every card shows the
+  identifier CDD prints for the batch, e.g. `RGT-0001620-001`. It was missing
+  from the list until now — no reason beyond it never having been added.
+- **It is not the same as *Batch name*.** That row shows what the entry sends
+  for the batch on its own, usually just the `001` on the end; the new row is
+  the whole identifier, molecule name included. Cards that come from links in
+  the entry text already carry the full ID, and it is shown as it is.
+- Batches CDD calls *Unspecified* have no identifier, so those cards simply
+  have no row. The value is already in what the panel receives — nothing extra
+  is looked up.
+- Like every panel field, it also becomes a column in the print sheets and the
+  CSV export.
 
 ---
 

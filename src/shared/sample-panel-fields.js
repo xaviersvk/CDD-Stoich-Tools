@@ -79,6 +79,28 @@ function withUnit(value, unit) {
     return unit ? `${value} ${unit}` : String(value);
 }
 
+// The identifier CDD prints as "Molecule-Batch ID": "RGT-0001620-001".
+//
+// It is not one value in the payload. A stoichiometry row carries the batch's
+// own name — usually the bare suffix "001" — next to the molecule name, and it
+// is the pair that makes the ID; the panel's `name` row only shows it for
+// batch-only rows, since a row WITH a sample is named by its sample identifier
+// (SM00…). A mention card is the other way round: its `batchName` is already
+// the full `molecule_batch_identifier`, which is why an ID that already starts
+// with the molecule name is returned untouched.
+//
+// "Unspecified" is CDD's placeholder batch, not an identifier. A bare number
+// with no molecule name to put in front of it is not one either.
+function moleculeBatchId(sample) {
+    const molecule = String(sample?.moleculeName || "").trim();
+    const batch = String(sample?.batchName || "").trim();
+
+    if (!batch || /unspecified/i.test(batch)) return null;
+    if (!molecule) return /^\d+$/.test(batch) ? null : batch;
+
+    return batch.startsWith(molecule) ? batch : `${molecule}-${batch}`;
+}
+
 /* ------------------------------------------------------------------ *
  * Field registry
  *
@@ -194,6 +216,15 @@ export const SAMPLE_PANEL_FIELDS = [
         get: (s) => s?.synonym,
     },
     {
+        key: "moleculeBatchId",
+        label: "Molecule-Batch ID",
+        source: "batch",
+        defaultEnabled: false,
+        get: (s) => moleculeBatchId(s),
+    },
+    {
+        // The batch half alone, as the payload carries it — "001" on a
+        // stoichiometry row. Molecule-Batch ID above is the composed one.
         key: "batchName",
         label: "Batch name",
         source: "batch",

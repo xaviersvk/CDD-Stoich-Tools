@@ -16,6 +16,59 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [14.6.0] — 2026-08-19
+
+### Added
+- **Synonym as a panel field.** The floating ELN sample panel can now show a
+  molecule's synonym, on every kind of card — reagents, products and the
+  batches mentioned in the entry text alike. A molecule may carry several
+  synonyms; the **first** one is shown, using the same parser the inventory and
+  heat-map tooltips already use (`extractSynonym`), which turns `<br>`
+  separators into real ones and splits on a separator *followed by whitespace*
+  so a name like `N,N-diethylhydroxylamine` is not sawn in half.
+
+  The value does not exist in CDD's `eln_entry` JSON — it lives on the molecule
+  page — so showing it costs one HTML GET per distinct molecule in the entry.
+  That is why the field is **off by default** and why the whole enrichment
+  (`content/features/synonym-enrichment.js`) returns before touching the
+  network while the checkbox is clear: nobody who does not want the row pays
+  for it. Ticking the box fills in the entry that is already open rather than
+  waiting for the next one, via a new panel-fields change subscription in
+  `sample-panel.js`.
+
+  A new `content/api/molecule-page.js` does the fetching: one request and one
+  `DOMParser` pass per (vault, molecule) per session, failures evicted so a
+  later payload retries. It deliberately does not go through
+  `getMoleculeData()`, which would render a SMILES structure per molecule that
+  the panel never displays. "No synonym" and "the page failed" are kept apart —
+  the first is remembered as a final answer, the second is not.
+
+- **The panel is resizable.** Drag either side edge, the bottom edge, or a
+  bottom corner. Both sides are grabbable on purpose: the panel starts anchored
+  to the top right, where widening means pulling the *left* edge, but once it
+  has been dragged elsewhere the right edge is as likely to be the one facing
+  free space. Pulling the left edge keeps the right edge still, growing the
+  panel leftwards instead of sliding it.
+
+  The size is remembered next to the position in the same
+  `cdd-stoich-panel-state` localStorage record, and is capped to the current
+  window on load, so a size saved on a wide monitor cannot hand a laptop an
+  off-screen panel. Minimums are 240 x 160 px.
+
+### Changed
+- **Panel layout is now a flex column** (`.cdd-stoich-body` grows and scrolls
+  inside whatever height the panel has, `min-height: 0`) instead of the body
+  carrying its own `max-height: calc(100vh - 90px)`. That is what lets a
+  dragged height actually govern the panel. Size is applied through the
+  `--cdd-panel-width` / `--cdd-panel-height` custom properties rather than
+  inline width/height, so the stylesheet keeps the last word — which is how the
+  collapsed panel ignores a remembered height and shrinks back to its header.
+- **Panel position/size persistence moved** out of `sample-panel.js` into
+  `content/features/panel-state.js`, shared by the drag and the resize. Saving
+  a size can no longer forget a position, or the other way round.
+
+---
+
 ## [14.5.0] — 2026-08-18
 
 ### Added

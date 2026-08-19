@@ -36,34 +36,13 @@ import {
     parsePurity,
 } from "../../shared/sample-panel-fields.js";
 import { recordSampleIdPrefix } from "../../shared/prefix-colors.js";
+import { loadPanelState, savePanelState } from "./panel-state.js";
+import { makePanelResizable, applySavedPanelSize } from "./panel-resize.js";
 
 // Visible-field map, kept in sync with chrome.storage by initSamplePanelFields().
 // Starts from the registry defaults so the first paint is correct even before
 // the async storage read resolves.
 let visibleFields = getDefaultVisibleFields();
-
-const PANEL_STORAGE_KEY = "cdd-stoich-panel-state";
-
-function loadPanelState() {
-    try {
-        return JSON.parse(localStorage.getItem(PANEL_STORAGE_KEY) || "{}");
-    } catch {
-        return {};
-    }
-}
-
-function savePanelState(partialState) {
-    const currentState = loadPanelState();
-
-    localStorage.setItem(
-        PANEL_STORAGE_KEY,
-        JSON.stringify({
-            ...currentState,
-            ...partialState,
-        })
-    );
-}
-
 
 export function makePanelDraggable(panel) {
     const header = panel.querySelector(".cdd-stoich-header");
@@ -167,6 +146,8 @@ export function ensurePanel() {
         panel.style.right = "16px";
         panel.style.left = "auto";
     }
+
+    applySavedPanelSize(panel);
 
     const header = document.createElement("div");
     header.className = "cdd-stoich-header";
@@ -282,7 +263,12 @@ export function ensurePanel() {
     position: fixed;
     top: 16px;
     right: 16px;
-    width: 300px;
+    /* Both driven by panel-resize.js, which sets the custom properties from
+       the remembered size. Unset, they fall back to the original geometry. */
+    width: var(--cdd-panel-width, 300px);
+    height: var(--cdd-panel-height, auto);
+    display: flex;
+    flex-direction: column;
     max-height: calc(100vh - 32px);
     background: #111827;
     color: #f9fafb;
@@ -296,6 +282,8 @@ export function ensurePanel() {
 
   #${PANEL_ID} .cdd-stoich-header {
     display: flex;
+    /* Never give up height to the body when the panel is dragged small. */
+    flex: 0 0 auto;
     justify-content: space-between;
     align-items: center;
     padding: 10px 12px;
@@ -378,10 +366,14 @@ export function ensurePanel() {
     background: #374151;
   }
 
+  /* The body is the part that gives: it takes whatever height the panel has
+     left over and scrolls inside it. min-height:0 is what allows a flex child
+     to shrink below its content and actually scroll. */
   #${PANEL_ID} .cdd-stoich-body {
     padding: 10px;
     overflow: auto;
-    max-height: calc(100vh - 90px);
+    flex: 1 1 auto;
+    min-height: 0;
   }
 
   #${PANEL_ID} .cdd-stoich-status {
@@ -492,6 +484,12 @@ export function ensurePanel() {
     display: none;
   }
 
+  /* Collapsed means "just the header". A remembered height would otherwise
+     keep the panel its full size with nothing in it. */
+  #${PANEL_ID}.collapsed {
+    height: auto;
+  }
+
   #${PANEL_ID} .cdd-low-purity-badge {
     background: rgba(239, 68, 68, 0.15);
     color: #ef4444;
@@ -598,6 +596,7 @@ export function ensurePanel() {
     document.documentElement.appendChild(panel);
 
     makePanelDraggable(panel);
+    makePanelResizable(panel);
 
     refreshBtn.addEventListener("click", () => {
         renderFromState();
@@ -841,14 +840,40 @@ function persistDiscoveredCustomFields(samples) {
     });
 }
 
+// Is a panel field enabled right now? Asked by the enrichment modules that
+// only do work — network work — for a field the user actually shows. Reading
+// the live map rather than storage keeps the gate and the render in agreement.
+export function isPanelFieldVisible(key) {
+    return !!visibleFields[key];
+}
+
+// Notified whenever `visibleFields` is (re)loaded, so a field that was just
+// switched on can fetch what it needs for the entry ALREADY on screen instead
+// of staying blank until the next one is opened.
+const fieldsChangedListeners = new Set();
+
+export function onPanelFieldsChanged(listener) {
+    fieldsChangedListeners.add(listener);
+}
+
+function applyVisibleFields(map) {
+    visibleFields = map;
+    renderFromState();
+
+    for (const listener of fieldsChangedListeners) {
+        try {
+            listener();
+        } catch {
+            /* one bad listener must not stop the others */
+        }
+    }
+}
+
 // Load the saved field visibility and keep it live across popup changes.
 // Safe to call once at content-script startup.
 export function initSamplePanelFields() {
     getSamplePanelSettings()
-        .then((map) => {
-            visibleFields = map;
-            renderFromState();
-        })
+        .then(applyVisibleFields)
         .catch(() => {
             /* keep registry defaults */
         });
@@ -857,10 +882,7 @@ export function initSamplePanelFields() {
         chrome.storage.onChanged.addListener((changes, areaName) => {
             if (areaName !== "local" || !changes[SAMPLE_PANEL_SETTINGS_KEY]) return;
 
-            getSamplePanelSettings().then((map) => {
-                visibleFields = map;
-                renderFromState();
-            });
+            getSamplePanelSettings().then(applyVisibleFields);
         });
     }
 }

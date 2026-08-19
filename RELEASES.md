@@ -13,7 +13,36 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
-# What's new in 14.5.0
+# What's new in 14.6.0
+
+---
+
+## 14.6.0 — August 2026
+
+**The panel can tell you what a compound is also called.**
+
+- **Tick *Synonym* under Panel fields and every card gets its synonym.**
+  Reagents, products and the batches you linked in the entry text — all of
+  them. If a compound has several synonyms you get the first one, which is the
+  one CDD shows at the top of the molecule page.
+- **It is off until you switch it on, and that is deliberate.** The synonym is
+  not part of what CDD sends the panel; it has to be looked up on each
+  compound's own page. While the box is clear the plugin never makes those
+  lookups, so nobody pays for a row they do not want. Tick it and the panel you
+  already have open fills in — you do not have to reopen the entry.
+- The synonym travels with everything else: it becomes a column in the print
+  sheets and in the CSV export, exactly like any other panel field.
+
+**The CDD Samples panel resizes.**
+
+- **Grab an edge and pull.** Either side, the bottom, or a bottom corner. Pull
+  the left edge and the panel grows to the left — the right-hand side stays
+  where it is instead of the whole panel sliding across.
+- **The size is remembered, along with the position.** Come back tomorrow and
+  the panel is the shape you left it. If you move to a smaller screen it is
+  trimmed to fit rather than hanging off the edge.
+- Collapsing the panel still shrinks it to its title bar; your size comes back
+  when you expand it again.
 
 ---
 

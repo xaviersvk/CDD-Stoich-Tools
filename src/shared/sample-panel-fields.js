@@ -184,6 +184,16 @@ export const SAMPLE_PANEL_FIELDS = [
         get: (s) => s?.moleculeName,
     },
     {
+        // Off by default on purpose: the ELN payload carries no synonym, so
+        // enabling this row is what makes the panel fetch one molecule page
+        // per distinct molecule (see content/features/synonym-enrichment.js).
+        key: "synonym",
+        label: "Synonym",
+        source: "molecule",
+        defaultEnabled: false,
+        get: (s) => s?.synonym,
+    },
+    {
         key: "batchName",
         label: "Batch name",
         source: "batch",

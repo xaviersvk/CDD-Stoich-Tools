@@ -20,23 +20,30 @@ const LOG_PREFIX = "[CDD stoich plugin]";
 // cacheKey (`${vaultId}:${moleculeId}`) -> Promise<Document|null>
 const pageCache = new Map();
 
+// Split from fetchMoleculePage so the HTTP-status throw is raised OUTSIDE the
+// try that reports it: same two warnings, same rejection, but the throw is no
+// longer caught by its own catch.
+async function requestMoleculePage(vaultId, moleculeId) {
+    const res = await fetch(`/vaults/${vaultId}/molecules/${moleculeId}`, {
+        credentials: "include",
+        headers: { Accept: "text/html" },
+    });
+
+    if (!res.ok) {
+        console.warn(`${LOG_PREFIX} molecule page request failed`, {
+            vaultId,
+            moleculeId,
+            httpStatus: res.status,
+        });
+        throw new Error(`HTTP ${res.status}`);
+    }
+
+    return new DOMParser().parseFromString(await res.text(), "text/html");
+}
+
 async function fetchMoleculePage(vaultId, moleculeId) {
     try {
-        const res = await fetch(`/vaults/${vaultId}/molecules/${moleculeId}`, {
-            credentials: "include",
-            headers: { Accept: "text/html" },
-        });
-
-        if (!res.ok) {
-            console.warn(`${LOG_PREFIX} molecule page request failed`, {
-                vaultId,
-                moleculeId,
-                httpStatus: res.status,
-            });
-            throw new Error(`HTTP ${res.status}`);
-        }
-
-        return new DOMParser().parseFromString(await res.text(), "text/html");
+        return await requestMoleculePage(vaultId, moleculeId);
     } catch (err) {
         console.warn(`${LOG_PREFIX} failed to load molecule page`, {
             vaultId,

@@ -143,7 +143,7 @@ export function buildMentionSample(mention, index) {
     // With an id, the lookup is exact. Without one — a link that stopped at
     // the section — the link's own text is the only handle, and it is the
     // record's name.
-    let record = null;
+    let record;
     if (mention.id != null) {
         record = mention.kind === KIND_SAMPLE
             ? index.bySampleId.get(String(mention.id))

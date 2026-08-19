@@ -8,3 +8,16 @@ profile:
   name: qodana.recommended
 include:
   - name: CheckDependencyLicenses
+
+# The quality gate. The run fails when the count for a severity goes above its
+# number, which turns the "Qodana" check red and — once the check is required in
+# branch protection — blocks the merge.
+#
+# NOTE: these count EVERY result, because no baseline is configured yet. Take a
+# baseline (`--baseline qodana.sarif.json`) to make them count only what a
+# change ADDS, which is what you usually want on a project that already has
+# findings.
+failureConditions:
+  severityThresholds:
+    critical: 0
+    high: 0

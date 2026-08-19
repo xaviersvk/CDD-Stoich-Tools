@@ -78,7 +78,12 @@ function formatWellPreview(positions, cols, maxVisible = 6) {
 // location tree while the picker is open. Returns "" on any failure.
 function readLocationPath() {
     try {
-        const scope = document.querySelector(".locations-tree") || document;
+        // documentElement, not document, as the fallback: the walk below stops
+        // at `scope`, and an Element can never equal a Document, so a document
+        // fallback made that stop condition dead. <html> carries no treeitem
+        // role, so the labels collected are the same either way.
+        const scope =
+            document.querySelector(".locations-tree") || document.documentElement;
         const selected = scope.querySelector('[role="treeitem"][aria-checked="true"]');
         if (!selected) return "";
         const labels = [];

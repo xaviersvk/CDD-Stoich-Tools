@@ -24,7 +24,7 @@ export function injectBoxSelectionStyles() {
     style.textContent = `
     /* Empty, selectable well: pointer + faint hover so the user learns it's
        clickable, without fighting CDD's own well colours. */
-    .${"cdd-box-pos-selectable"} {
+    .cdd-box-pos-selectable {
         cursor: pointer !important;
     }
     .cdd-box-pos-selectable:hover {

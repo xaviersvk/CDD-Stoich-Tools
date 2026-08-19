@@ -31,8 +31,7 @@ const CREATE_FROM_DEBIT_URL_RE = /\/inventory_samples\/\d+\/create_sample_from_d
 function isCreateRequest(method, url) {
     if (!url) return false;
     if (method === "POST" && CREATE_URL_RE.test(url)) return true;
-    if (method === "PUT" && CREATE_FROM_DEBIT_URL_RE.test(url)) return true;
-    return false;
+    return method === "PUT" && CREATE_FROM_DEBIT_URL_RE.test(url);
 }
 
 // Monotonic id pairing a captured request with its captured response. A single

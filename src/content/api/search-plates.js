@@ -157,6 +157,7 @@ export async function collectAllPlates({
         });
 
         let doc;
+        let httpFailure = null;
         try {
             const res = await fetch(base.toString(), {
                 method: "PUT",
@@ -170,18 +171,26 @@ export async function collectAllPlates({
                 body: body.toString(),
                 signal,
             });
-            if (!res.ok) {
-                const msg = `results endpoint HTTP ${res.status}`;
-                console.warn(`${LOG_PREFIX} ${msg}`, { url: base.toString() });
-                if (page === 0) throw new Error(msg);
-                break;
+            if (res.ok) {
+                const html = await res.text();
+                doc = new DOMParser().parseFromString(html, "text/html");
+            } else {
+                // Recorded, not thrown: raising it here would land in this
+                // block's own catch. Handled just below, outside the try.
+                httpFailure = `results endpoint HTTP ${res.status}`;
+                console.warn(`${LOG_PREFIX} ${httpFailure}`, { url: base.toString() });
             }
-            const html = await res.text();
-            doc = new DOMParser().parseFromString(html, "text/html");
         } catch (err) {
             if (err?.name === "AbortError") break;
             if (page === 0) throw err;
             console.warn(`${LOG_PREFIX} failed to load results page`, { err });
+            break;
+        }
+
+        // A bad status on the first page is fatal; later on it just ends the
+        // scan with whatever has been collected so far.
+        if (httpFailure) {
+            if (page === 0) throw new Error(httpFailure);
             break;
         }
 

@@ -62,8 +62,9 @@ export async function createInventorySample(url, formData, method = "POST") {
     // (events come back newest-first). The plain create responds with the new
     // sample itself, so this only kicks in on the debit endpoint.
     if (/create_sample_from_debit/.test(url)) {
-        const childEvent = Array.isArray(json?.inventory_events)
-            ? json.inventory_events.find((e) => e?.child_sample_id != null)
+        const events = json?.inventory_events;
+        const childEvent = Array.isArray(events)
+            ? events.find((e) => e?.child_sample_id != null)
             : null;
         if (childEvent) {
             return {

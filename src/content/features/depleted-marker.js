@@ -62,11 +62,9 @@ export function markDepletedSamplesInSelector() {
 
         if (!wrapper) return;
 
-        const wrapperText = normalizeValue(wrapper.innerText || wrapper.textContent || "");
         const directMatch = depleted.has(value);
         const textMatch = !directMatch && wrapperMatchesDepleted(wrapper, depleted);
         const matched = directMatch || textMatch;
-
 
         wrapper.classList.toggle("cdd-depleted-sample", matched);
     });

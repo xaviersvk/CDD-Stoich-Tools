@@ -140,7 +140,7 @@ export async function initFormFilterChips() {
 
     // Memory-only warm-up: the remembered chip and any map already stored. No
     // network — see initRegistrationFormFields.
-    initRegistrationFormFields();
+    await initRegistrationFormFields();
 
     const settings = await getRegistrationFormSettings();
     preferredOrder = settings?.order || [];

@@ -160,9 +160,9 @@ function extractDepletedIdentifiers(payload) {
 
 
 
-        for (const [key, arr] of Object.entries(samples)) {
+        for (const arr of Object.values(samples)) {
 
-            // console.log("[CDD depleted][inject] sample bucket =", key, arr);//
+            // console.log("[CDD depleted][inject] sample bucket =", arr);//
             if (!Array.isArray(arr)) continue;
 
             for (const sample of arr) {

@@ -53,7 +53,7 @@ export function createResultsPanel(total) {
     }
     refreshProgress();
 
-    const controller = {
+    return {
         root,
 
         setTitle(text) {
@@ -113,6 +113,4 @@ export function createResultsPanel(total) {
             root.remove();
         },
     };
-
-    return controller;
 }

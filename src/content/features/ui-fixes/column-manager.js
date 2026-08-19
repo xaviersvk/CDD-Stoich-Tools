@@ -24,6 +24,12 @@
 // clear the filter the moment a drag handle is pressed, so rfd always measures
 // the full, unhidden list.
 
+import {
+    isWholeWord,
+    normalize,
+    normalizeQuery,
+} from "./field-picker-core.js";
+
 const STYLE_ID = "cdd-column-manager-style";
 const NS = "cdd-cm";
 const DIALOG_SELECTOR = ".ColumnsEditor-dialog";
@@ -46,29 +52,9 @@ let started = false;
 /* Text helpers                                                                */
 /* --------------------------------------------------------------------------- */
 
-function normalize(str) {
-    return str
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[̀-ͯ]/g, ""); // strip combining diacritical marks
-}
-
-function normalizeQuery(str) {
-    return normalize(str).replace(/\s+/g, " ").trim();
-}
-
-// A whole-word/phrase occurrence: bounded by non-alphanumeric edges.
-function isWholeWord(haystack, needle) {
-    let i = haystack.indexOf(needle);
-    while (i !== -1) {
-        const before = i === 0 ? " " : haystack[i - 1];
-        const after =
-            i + needle.length >= haystack.length ? " " : haystack[i + needle.length];
-        if (!/[a-z0-9]/.test(before) && !/[a-z0-9]/.test(after)) return true;
-        i = haystack.indexOf(needle, i + 1);
-    }
-    return false;
-}
+// normalize / normalizeQuery / isWholeWord are the filter-field picker's, so
+// the column manager's search folds case, diacritics and whitespace exactly the
+// way the picker's does. Only the fuzzy tier below is ours.
 
 // Fuzzy = every query char appears in order (not necessarily adjacent).
 function isSubsequence(haystack, needle) {

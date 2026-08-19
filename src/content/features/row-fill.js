@@ -19,6 +19,8 @@
 // exception, a failed equivalent restore AFTER purity landed, is reported
 // loudly in the button/status).
 
+import { mouseClick } from "../utils/dom.js";
+
 // Waiting is counted in POLL ATTEMPTS, not wall-clock: Chrome throttles
 // timers in a background tab to roughly one tick per minute, and a
 // wall-clock deadline then expires before the second poll even runs —
@@ -44,22 +46,6 @@ async function waitFor(probe, attempts = STEP_POLL_ATTEMPTS) {
     }
 
     return null;
-}
-
-function mouseClick(element) {
-    const rect = element.getBoundingClientRect();
-    const options = {
-        bubbles: true,
-        cancelable: true,
-        view: window,
-        clientX: rect.left + rect.width / 2,
-        clientY: rect.top + rect.height / 2,
-        button: 0,
-    };
-
-    element.dispatchEvent(new MouseEvent("mousedown", options));
-    element.dispatchEvent(new MouseEvent("mouseup", options));
-    element.dispatchEvent(new MouseEvent("click", options));
 }
 
 // Same fallback chain the print buttons use to find one container per

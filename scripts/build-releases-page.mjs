@@ -47,7 +47,7 @@ function renderInline(markdown) {
 
     html = escapeHtml(html)
         .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
-        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_match, text, href) => {
+        .replace(/\[([^\]]+)]\(([^)]+)\)/g, (_match, text, href) => {
             const url = href.startsWith("./")
                 ? `${REPO}/blob/main/${href.slice(2)}`
                 : href;

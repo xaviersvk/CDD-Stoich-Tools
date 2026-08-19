@@ -127,7 +127,9 @@ export default defineConfig({
             input: resolve(__dirname, "src/content/main.js"),
             output: {
                 entryFileNames: "assets/content.js",
-                inlineDynamicImports: true
+                // One file, no chunks: a content script is injected as a plain
+                // script, so it cannot import anything at runtime.
+                codeSplitting: false
             }
         }
     },

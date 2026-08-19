@@ -63,7 +63,7 @@ function getWellDetails() {
 
         for (const line of text.split("\n")) {
             const match = line.match(
-                /CDD\.HeatMap\.wellDetails\['(\d+)'\]\s*=\s*(\{.*\});?\s*$/
+                /CDD\.HeatMap\.wellDetails\['(\d+)']\s*=\s*(\{.*});?\s*$/
             );
             if (!match) continue;
             try {

@@ -28,6 +28,7 @@ import {
     KIND_FILE,
     KIND_NUMBER,
 } from "../../../shared/run-form-templates.js";
+import { mouseClick } from "../../utils/dom.js";
 
 export const ANNOTATOR_SELECTOR = ".protocolAnnotator";
 
@@ -56,21 +57,6 @@ async function waitFor(probe, attempts = POLL_ATTEMPTS) {
         await wait(POLL_MS);
     }
     return null;
-}
-
-function mouseClick(element) {
-    const rect = element.getBoundingClientRect();
-    const options = {
-        bubbles: true,
-        cancelable: true,
-        view: window,
-        clientX: rect.left + rect.width / 2,
-        clientY: rect.top + rect.height / 2,
-        button: 0,
-    };
-    element.dispatchEvent(new MouseEvent("mousedown", options));
-    element.dispatchEvent(new MouseEvent("mouseup", options));
-    element.dispatchEvent(new MouseEvent("click", options));
 }
 
 // React tracks an input's value on the DOM node itself; assigning `.value`
@@ -244,7 +230,7 @@ export function readEditControls(annotator) {
     if (!annotator) return map;
 
     for (const hidden of annotator.querySelectorAll('input[name$="[field_definition_id]"]')) {
-        const match = (hidden.getAttribute("name") || "").match(/\[(\d+)\]\[field_definition_id\]$/);
+        const match = (hidden.getAttribute("name") || "").match(/\[(\d+)]\[field_definition_id]$/);
         if (!match) continue;
 
         const index = match[1];

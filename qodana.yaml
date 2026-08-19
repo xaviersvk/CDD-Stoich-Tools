@@ -13,11 +13,21 @@ include:
 # number, which turns the "Qodana" check red and — once the check is required in
 # branch protection — blocks the merge.
 #
-# NOTE: these count EVERY result, because no baseline is configured yet. Take a
-# baseline (`--baseline qodana.sarif.json`) to make them count only what a
-# change ADDS, which is what you usually want on a project that already has
-# findings.
+# critical/high: none, ever.
+#
+# moderate: a RATCHET, not a target. The agreed ceiling is 20; the count today
+# is 79, so the number here is 80 — one above the current state. That keeps the
+# check green while still failing the moment a change ADDS a moderate finding,
+# which is the property worth having. Lower it as findings are cleared; the plan
+# and the verified triage behind it are in docs/BACKLOG.md ("Qodana findings").
+# Next rungs: 45 once the four items there are done, then 20.
+#
+# NOTE: these count EVERY result, because no baseline is configured yet. Taking
+# a baseline (`--baseline qodana.sarif.json`) would make them count only what a
+# change adds, at the price of freezing today's 79 out of sight. The ratchet
+# gives the same protection while keeping the debt visible.
 failureConditions:
   severityThresholds:
     critical: 0
     high: 0
+    moderate: 80

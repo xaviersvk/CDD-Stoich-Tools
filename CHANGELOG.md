@@ -7,16 +7,25 @@ project loosely follows [Semantic Versioning](https://semver.org/). Versions are
 taken from `manifest.json` bumps in the git history; dates are commit dates
 (UTC, `YYYY-MM-DD`).
 
-> **Version reconciliation:** `manifest.json` is now `8.5.0`. `package.json`
-> carries an unrelated `1.0.0` (build-only metadata). Two legacy git tags exist —
-> `7.7.0` (commit `b1c9f3c`) and `v7.7.0` (commit `6f8a861`, a **non-building**
-> checkout); a clean `8.0.0` tag should still be cut. See
+> **Version reconciliation:** `manifest.json` is the version that counts — now
+> `14.8.0`, and the publish workflow refuses a tag that does not match it.
+> `package.json` carries an unrelated `1.0.0` (build-only metadata). Releases are
+> tagged `vX.Y.Z`; two legacy tags predate that rule — `7.7.0` (commit `b1c9f3c`)
+> and `v7.7.0` (commit `6f8a861`, a **non-building** checkout). Not every
+> `manifest.json` bump becomes a tag: numbers used while work was being written
+> and tested ship under the next tagged version, and
+> [`RELEASES.md`](./RELEASES.md) folds them into that one section. See
 > [`DOCUMENTATION_AUDIT.md`](./DOCUMENTATION_AUDIT.md) §3 for the full version
 > analysis.
 
 ---
 
 ## [14.8.0] — 2026-08-19
+
+> **Shipped as one release.** `v14.5.0` was the last tag to reach the stores, so
+> 14.6.0, 14.7.0 and 14.8.0 all go out under this number. The sections below
+> stay per-version — that is the history the manifest bumps actually have —
+> while [`RELEASES.md`](./RELEASES.md) tells it as the single release users see.
 
 ### Added
 - **Molecule-Batch ID as a panel field.** CDD's own identifier for a batch —
@@ -37,6 +46,22 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   Off by default, like every optional row, and it costs no request: both
   halves are already in the payload. It joins the print sheets and the CSV
   export with the rest.
+
+### Internal
+- **Two Qodana rounds ride along** (PRs #3 and #4, neither carrying a version
+  bump of its own): redundant regex escapes dropped, two clone pairs merged
+  (`mouseClick` into `utils/dom.js`, `column-manager.js` onto
+  `field-picker-core.js`'s normalisers), vite `^7.3.1` → `^8.2.1` for
+  CVE-2026-39363/4/5, and six exception-as-control-flow / dead-condition
+  findings cleared — `selection-model.js#toggle`, `overlay.js#isSelectable`
+  (De Morgan, same truth table), `search-plates.js` (a bad HTTP status is now
+  recorded and handled outside the try that logs it, first page still fatal,
+  later pages still end the scan with what was collected),
+  `molecule-page.js` (the status throw split into `requestMoleculePage` so it
+  is no longer caught by its own catch — same warnings, same rejection), the
+  `readLocationPath` scope fallback, and missing `await`s in `toolbar.js` and
+  `options.js`. No behaviour was meant to change; the box-selection, plate
+  export, synonym, multi-position and template paths were all re-tested.
 
 ---
 

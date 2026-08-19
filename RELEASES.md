@@ -19,45 +19,9 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ## 14.8.0 — August 2026
 
-**Molecule-Batch ID is now one of the panel fields.**
-
-- **Tick *Molecule-Batch ID* under Panel fields** and every card shows the
-  identifier CDD prints for the batch, e.g. `RGT-0001620-001`. It was missing
-  from the list until now — no reason beyond it never having been added.
-- **It is not the same as *Batch name*.** That row shows what the entry sends
-  for the batch on its own, usually just the `001` on the end; the new row is
-  the whole identifier, molecule name included. Cards that come from links in
-  the entry text already carry the full ID, and it is shown as it is.
-- Batches CDD calls *Unspecified* have no identifier, so those cards simply
-  have no row. The value is already in what the panel receives — nothing extra
-  is looked up.
-- Like every panel field, it also becomes a column in the print sheets and the
-  CSV export.
-
----
-
-## 14.7.0 — August 2026
-
-**Three fixes from testing 14.6.0.**
-
-- **Synonyms now also show on the cards that come from links in the entry
-  text.** They were meant to from the start, but the lookup only ever ran for
-  the cards that come out of the stoichiometry table — the "Mentioned in text"
-  ones were skipped and their row stayed empty. They are included now, and so
-  is an entry whose panel is made of mentions alone. The field is still off
-  until you tick *Synonym* under Panel fields, and while it is off nothing is
-  looked up.
-- **"Create N Samples" no longer sits in the debit dialog with *Create sample
-  from debit* unticked.** With that box clear, saving records the debit and
-  creates no sample, so the button was offering something that could not
-  happen. It appears the moment you tick the box, with the wells you picked
-  still selected.
-- **Forgetting the last saved run-definition template no longer prints its
-  "nothing saved yet" note twice.**
-
----
-
-## 14.6.0 — August 2026
+*Everything since 14.5.0, the last version that reached the stores. The 14.6.0
+and 14.7.0 numbers were used while this work was being written and tested, and
+were never published on their own — what they added is here.*
 
 **The panel can tell you what a compound is also called.**
 
@@ -72,6 +36,19 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
   already have open fills in — you do not have to reopen the entry.
 - The synonym travels with everything else: it becomes a column in the print
   sheets and in the CSV export, exactly like any other panel field.
+
+**Molecule-Batch ID joins the panel fields too.**
+
+- **Tick *Molecule-Batch ID*** and every card shows the identifier CDD prints
+  for the batch, e.g. `RGT-0001620-001`. It was missing from the list until
+  now — no reason beyond it never having been added.
+- **It is not the same as *Batch name*.** That row shows what the entry sends
+  for the batch on its own, usually just the `001` on the end; the new row is
+  the whole identifier, molecule name included. Cards that come from links in
+  the entry text already carry the full ID, and it is shown as it is.
+- Batches CDD calls *Unspecified* have no identifier, so those cards simply
+  have no row. Both halves are already in what the panel receives — ticking
+  this one looks nothing up.
 
 **The CDD Samples panel resizes.**
 
@@ -95,6 +72,20 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 - The list settles when you open the settings page. Ticking a box does not make
   the others jump around under your cursor — the new order shows up next time
   you open it.
+
+**Two smaller fixes.**
+
+- **"Create N Samples" no longer sits in the debit dialog while *Create sample
+  from debit* is unticked.** With that box clear, saving records the debit and
+  creates no sample, so the button was offering something that could not
+  happen. It appears the moment you tick the box, with the wells you picked
+  still selected.
+- **Forgetting the last saved run-definition template no longer prints its
+  "nothing saved yet" note twice.**
+
+**Under the hood.** A pass over the whole code base with a static analyser:
+clearer control flow in a handful of places, no behaviour meant to change, and
+the build's own toolchain updated away from three published vulnerabilities.
 
 ---
 

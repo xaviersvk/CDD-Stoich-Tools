@@ -150,10 +150,9 @@ export function attachBoxSelection(gridOrPicker, options = {}) {
     function isSelectable(cell) {
         if (isFilledCell(cell)) return false;
         if (opts.allowFilled) return true;
-        if (usesEmptyClass && !cell.classList.contains("box-position-empty")) {
-            return false;
-        }
-        return true;
+        // When CDD marks empties with a class, only those are selectable;
+        // when it does not, everything that got this far is.
+        return !usesEmptyClass || cell.classList.contains("box-position-empty");
     }
 
     // ----- rectangle helpers -------------------------------------------------

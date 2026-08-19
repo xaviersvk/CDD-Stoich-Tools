@@ -831,7 +831,7 @@ chrome.storage.onChanged.addListener(async (changes, areaName) => {
     if (areaName !== "local") return;
 
     if (changes[SAMPLE_PANEL_CUSTOM_FIELDS_KEY]) {
-        initSamplePanelFieldsUI();
+        await initSamplePanelFieldsUI();
     }
 
     if (changes[PREFIX_COLORS_STORAGE_KEY]) {

@@ -556,7 +556,7 @@ async function renderFillPanel(panel, annotator, setStatus, closePanel) {
         const name = select.value;
         if (!window.confirm(`Forget the template "${name}"?`)) return;
         await deleteRunFormTemplate(name);
-        renderFillPanel(panel, annotator, setStatus, closePanel);
+        await renderFillPanel(panel, annotator, setStatus, closePanel);
     });
 
     fill.addEventListener("click", async () => {

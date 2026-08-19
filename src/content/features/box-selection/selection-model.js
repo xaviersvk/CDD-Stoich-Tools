@@ -58,7 +58,12 @@ export function createSelectionModel() {
     }
 
     function toggle(position) {
-        return has(position) ? (deselect(position), false) : (select(position), true);
+        if (has(position)) {
+            deselect(position);
+            return false;
+        }
+        select(position);
+        return true;
     }
 
     function clear() {

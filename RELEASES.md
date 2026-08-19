@@ -38,11 +38,23 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 - **Grab an edge and pull.** Either side, the bottom, or a bottom corner. Pull
   the left edge and the panel grows to the left — the right-hand side stays
   where it is instead of the whole panel sliding across.
+- **You can see where to grab.** There is a small grip mark in the bottom-right
+  corner, and any edge you can pull lights up as your cursor reaches it.
 - **The size is remembered, along with the position.** Come back tomorrow and
   the panel is the shape you left it. If you move to a smaller screen it is
   trimmed to fit rather than hanging off the edge.
 - Collapsing the panel still shrinks it to its title bar; your size comes back
   when you expand it again.
+
+**Panel fields is easier to read.**
+
+- **The fields you have switched on sit at the top**, in the order the panel
+  shows them. Everything you have not picked follows underneath in alphabetical
+  order, so finding one no longer means reading the whole list. The same goes
+  for your vault's own fields further down.
+- The list settles when you open the settings page. Ticking a box does not make
+  the others jump around under your cursor — the new order shows up next time
+  you open it.
 
 ---
 

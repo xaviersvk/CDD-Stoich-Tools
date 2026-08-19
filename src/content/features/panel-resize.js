@@ -46,17 +46,27 @@ function ensureStyles() {
     const style = document.createElement("style");
     style.id = STYLE_ID;
     style.textContent = `
+  /* A resize edge nobody can see is a resize edge nobody uses. The hit area
+     is deliberately wider than the mark it draws: 10px is grabbable without
+     aiming, while the visible tint stays a thin hint that only shows up under
+     the cursor. */
   #${PANEL_ID} .${HANDLE_CLASS} {
     position: absolute;
     z-index: 2;
     background: transparent;
+    transition: background-color 120ms ease;
+  }
+
+  #${PANEL_ID} .${HANDLE_CLASS}:hover,
+  #${PANEL_ID} .${HANDLE_CLASS}.is-resizing {
+    background: rgba(96, 165, 250, 0.45);
   }
 
   #${PANEL_ID} .${HANDLE_CLASS}--w,
   #${PANEL_ID} .${HANDLE_CLASS}--e {
     top: 0;
     bottom: 0;
-    width: 6px;
+    width: 10px;
     cursor: ew-resize;
   }
 
@@ -67,7 +77,7 @@ function ensureStyles() {
     left: 0;
     right: 0;
     bottom: 0;
-    height: 6px;
+    height: 10px;
     cursor: ns-resize;
   }
 
@@ -75,13 +85,33 @@ function ensureStyles() {
   #${PANEL_ID} .${HANDLE_CLASS}--sw,
   #${PANEL_ID} .${HANDLE_CLASS}--se {
     bottom: 0;
-    width: 14px;
-    height: 14px;
+    width: 18px;
+    height: 18px;
     z-index: 3;
   }
 
   #${PANEL_ID} .${HANDLE_CLASS}--sw { left: 0; cursor: nesw-resize; }
   #${PANEL_ID} .${HANDLE_CLASS}--se { right: 0; cursor: nwse-resize; }
+
+  /* The bottom-right corner gets a permanent grip: one visible mark that says
+     the whole panel can be resized, without outlining every edge. */
+  #${PANEL_ID} .${HANDLE_CLASS}--se::after {
+    content: "";
+    position: absolute;
+    /* Kept clear of the panel's 12px corner radius, which clips anything
+       nearer the tip than this. */
+    right: 5px;
+    bottom: 5px;
+    width: 8px;
+    height: 8px;
+    border-right: 2px solid #6b7280;
+    border-bottom: 2px solid #6b7280;
+    border-bottom-right-radius: 3px;
+  }
+
+  #${PANEL_ID} .${HANDLE_CLASS}--se:hover::after {
+    border-color: #f9fafb;
+  }
 
   /* Collapsed, the panel is only its header — there is no height to drag. */
   #${PANEL_ID}.collapsed .${HANDLE_CLASS}--s,
@@ -174,6 +204,7 @@ export function makePanelResizable(panel) {
     function onMouseUp() {
         if (!active) return;
 
+        active.handle.classList.remove("is-resizing");
         active = null;
         document.body.style.userSelect = "";
 
@@ -205,8 +236,11 @@ export function makePanelResizable(panel) {
             panel.style.top = `${rect.top}px`;
             panel.style.right = "auto";
 
+            handle.classList.add("is-resizing");
+
             active = {
                 edges,
+                handle,
                 startX: event.clientX,
                 startY: event.clientY,
                 startLeft: rect.left,

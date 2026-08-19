@@ -123,6 +123,27 @@ function createFieldCheckbox(field, checked, onToggle) {
     return label;
 }
 
+// Ticked fields first, in the order the registry lists them — that order is the
+// reading order of the panel itself, so the top of this list mirrors the card
+// the user is looking at. Everything still off is not a layout, it is a menu to
+// find something in, so it reads alphabetically.
+//
+// The order is settled when the list is BUILT, never on a click: reshuffling
+// under the cursor would move the next checkbox out from under the hand that is
+// ticking them.
+function orderFieldsForDisplay(fields, visibleMap) {
+    const selected = [];
+    const unselected = [];
+
+    for (const field of fields) {
+        (visibleMap[field.key] ? selected : unselected).push(field);
+    }
+
+    unselected.sort((a, b) => a.label.localeCompare(b.label));
+
+    return [...selected, ...unselected];
+}
+
 function renderCustomFieldsSection(customFields, visibleMap, onToggle) {
     customFieldListEl.replaceChildren();
     if (!customFields.length) return;
@@ -132,7 +153,7 @@ function renderCustomFieldsSection(customFields, visibleMap, onToggle) {
     heading.textContent = "From your vault";
     customFieldListEl.appendChild(heading);
 
-    for (const field of customFields) {
+    for (const field of orderFieldsForDisplay(customFields, visibleMap)) {
         customFieldListEl.appendChild(
             createFieldCheckbox(field, !!visibleMap[field.key], onToggle)
         );
@@ -157,7 +178,7 @@ async function initSamplePanelFieldsUI() {
     };
 
     fieldListEl.replaceChildren();
-    for (const field of SAMPLE_PANEL_FIELDS) {
+    for (const field of orderFieldsForDisplay(SAMPLE_PANEL_FIELDS, visibleMap)) {
         fieldListEl.appendChild(createFieldCheckbox(field, !!visibleMap[field.key], onToggle));
     }
 

@@ -55,6 +55,25 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   window on load, so a size saved on a wide monitor cannot hand a laptop an
   off-screen panel. Minimums are 240 x 160 px.
 
+  The edges announce themselves: a permanent grip mark in the bottom-right
+  corner, and a tint under the cursor on any grabbable edge. The first cut used
+  6px transparent strips and was, in testing, impossible to find or hit — the
+  hit area is now 10px on the edges and 18px in the corners, deliberately
+  larger than the mark it draws.
+
+### Settings
+- **Panel fields lists the ticked fields first, then everything else
+  alphabetically.** The ticked ones keep the registry's order, which is the
+  reading order of the panel card itself, so the top of the list mirrors what
+  the user is looking at. The rest is not a layout but a menu to find something
+  in — and it had grown long enough that finding a field in it meant reading
+  every line. Both lists follow the rule, the static registry and the "From
+  your vault" custom fields.
+
+  The order is settled when the list is built, never on a click: reshuffling
+  under the cursor would move the next checkbox out from under the hand ticking
+  them.
+
 ### Changed
 - **Panel layout is now a flex column** (`.cdd-stoich-body` grows and scrolls
   inside whatever height the panel has, `min-height: 0`) instead of the body

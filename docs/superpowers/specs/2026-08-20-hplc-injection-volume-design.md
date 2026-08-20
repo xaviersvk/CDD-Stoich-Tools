@@ -70,7 +70,8 @@ defaults, sanitizers, async load/save, a sync cache refreshed through
 |---|---|---|
 | `cddHplcAliquotVolumeUl` | 10 | finite, > 0, else default |
 | `cddHplcVialVolumeMl` | 1.5 | finite, > 0, else default |
-| `cddHplcTargetAmountNmol` | 0.2 | finite, > 0, else default |
+| `cddHplcTargetAmountNmol` | 2 | finite, > 0, else default |
+| `cddHplcBlockEnabled` | true | boolean, else default |
 
 The maths lives next door in **`src/shared/hplc-injection-math.js`**, split
 out because the inject bundle runs in page context — it needs
@@ -153,9 +154,11 @@ formula is visible to the reader.
 - **Mentions group** → no molarity, so no block, by the same rule.
 - **`V_inj` greater than the vial volume** → the value renders red with
   "exceeds vial volume". The dilution is too weak for the target.
-- **`V_inj` below 0.1 µL** → amber note "below typical injector minimum".
-  0.1 µL is the low end of common UPLC autosamplers; the threshold is a
-  constant in the block module, not a setting.
+- **The 0.5 µL floor kicked in** — the exact volume is below 0.25 µL, so
+  rounding to the nearest half would have given zero → amber note saying
+  the vial is too concentrated and this injection overshoots the target.
+- **The feature is switched off** → no block anywhere, and the panel
+  re-renders so blocks already on screen disappear at once.
 - **Non-numeric or non-positive input** → the sanitizer returns the
   default, and the input is repainted with it.
 - **Multiple reactions in one entry** → one block per reaction group,
@@ -163,10 +166,37 @@ formula is visible to the reader.
   Editing an input in one block therefore changes every block; the
   others repaint through the settings listener rather than going stale.
 
-## Formatting
+## Rounding and formatting
 
-Two decimals at or above 0.1 µL (`0.30 µL`), three below (`0.080 µL`).
-The molarity echo prints the effective value as CDD does, in mol/L.
+Nobody dials an arbitrary volume into a sequence, so the block leads with
+the **nearest 0.5 µL**, and 0.5 µL is also the floor — rounding 0.08 µL to
+the nearest half would give zero, which is not an injection.
+
+Rounding changes what reaches the column, so it is never silent. Under the
+big rounded number the block prints the exact volume and the amount that
+rounded injection actually delivers:
+
+```
+HPLC injection            3.00 µL
+exact 3.00 µL · 2 nmol on column
+```
+
+At the old 0.2 nmol target the same reaction reads `0.50 µL` with
+`exact 0.30 µL · 0.333 nmol on column` — a two-thirds overshoot, stated
+rather than hidden. The 2 nmol default was chosen because it lands the
+reference entry on exactly 3.00 µL, with no rounding at all.
+
+The exact volume keeps two decimals at or above 0.1 µL (`0.30 µL`) and
+three below (`0.080 µL`); amounts print to three significant figures with
+trailing zeros trimmed. The molarity echo prints the effective value as
+CDD does, in mol/L.
+
+## Colour
+
+The block takes its reaction group's own colour from `getReactionColor`,
+the same one the group border and the cards' left edges use. A hardcoded
+tint would make the block in reaction 2 look like it belonged to
+reaction 1.
 
 ## Verification
 

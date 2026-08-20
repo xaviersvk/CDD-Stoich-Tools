@@ -1207,7 +1207,8 @@ export function renderSamples(payload) {
         // how much of the diluted aliquot to inject. Returns null (and
         // nothing renders) when the reaction has no solvent molarity.
         const hplcBlock = createHplcInjectionBlock(
-            (payload?.reactions || []).find((r) => r.index === group.reactionIndex)
+            (payload?.reactions || []).find((r) => r.index === group.reactionIndex),
+            color
         );
         if (hplcBlock) groupBody.appendChild(hplcBlock);
 

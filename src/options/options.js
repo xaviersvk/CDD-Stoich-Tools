@@ -42,6 +42,7 @@ import {
     saveHplcAliquotVolumeUl,
     saveHplcVialVolumeMl,
     saveHplcTargetAmountNmol,
+    saveHplcBlockEnabled,
 } from "../shared/hplc-injection.js";
 import {
     getShowProducts,
@@ -667,6 +668,7 @@ async function initPurityThresholdUI() {
     purityWarnInput.value = thresholds.warn;
 }
 
+const hplcEnabledCheckbox = document.getElementById("hplcBlockEnabled");
 const hplcAliquotInput = document.getElementById("hplcAliquotVolume");
 const hplcVialInput = document.getElementById("hplcVialVolume");
 const hplcTargetInput = document.getElementById("hplcTargetAmount");
@@ -681,8 +683,13 @@ hplcTargetInput.addEventListener("change", () => {
     saveHplcTargetAmountNmol(hplcTargetInput.value);
 });
 
+hplcEnabledCheckbox.addEventListener("change", () => {
+    saveHplcBlockEnabled(hplcEnabledCheckbox.checked);
+});
+
 async function initHplcInjectionUI() {
     const settings = await loadHplcSettings();
+    hplcEnabledCheckbox.checked = settings.enabled;
     hplcAliquotInput.value = settings.aliquotUl;
     hplcVialInput.value = settings.vialMl;
     hplcTargetInput.value = settings.targetNmol;

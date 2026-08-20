@@ -13,10 +13,11 @@
 // hplc-injection.js, which only the content script and the options page
 // import.
 
-// The low end of a common UPLC autosampler. Below this the number is still
-// arithmetically right but not something an instrument can deliver, so the
-// block says so rather than pretending.
-export const HPLC_MIN_INJECTION_UL = 0.1;
+// Injections are dialled in half-microlitre steps, so the exact number off
+// the sum is not the number anyone types into the sequence. It is also the
+// FLOOR: rounding 0.08 µL to the nearest 0.5 would give zero, which is not
+// an injection.
+export const HPLC_INJECTION_STEP_UL = 0.5;
 
 // Every solvent row's reaction molarity, straight off the payload rows.
 //
@@ -82,21 +83,41 @@ export function computeInjectionVolume({ molarity, aliquotUl, vialMl, targetNmol
     if (!usable) return null;
 
     const volumeUl = (target * vialUl) / (1000 * m * aliquot);
+    const roundedUl = roundToInjectionStep(volumeUl);
+
+    // What the rounded injection actually puts on the column. The exact
+    // volume delivers the target by definition, so the rounded one delivers
+    // it in the same ratio.
+    const deliveredNmol = (target * roundedUl) / volumeUl;
 
     let warning = null;
-    if (volumeUl > vialUl) warning = "exceeds-vial";
-    else if (volumeUl < HPLC_MIN_INJECTION_UL) warning = "below-minimum";
+    if (roundedUl > vialUl) warning = "exceeds-vial";
+    // Rounding to the nearest 0.5 would have given zero, so the floor pushed
+    // it back up — the vial is far too concentrated for this target.
+    else if (volumeUl < HPLC_INJECTION_STEP_UL / 2) warning = "floored";
 
-    return { volumeUl, warning };
+    return { volumeUl, roundedUl, deliveredNmol, warning };
+}
+
+// The nearest half microlitre, never below one — see HPLC_INJECTION_STEP_UL.
+export function roundToInjectionStep(volumeUl) {
+    if (!Number.isFinite(volumeUl) || volumeUl <= 0) return null;
+    const stepped = Math.round(volumeUl / HPLC_INJECTION_STEP_UL) * HPLC_INJECTION_STEP_UL;
+    return Math.max(HPLC_INJECTION_STEP_UL, stepped);
 }
 
 // Two decimals down to 0.1 µL, three below it — "0.08 µL" loses the digit
 // that tells 0.08 from 0.084.
 export function formatInjectionVolume(volumeUl) {
     if (!Number.isFinite(volumeUl)) return null;
-    return volumeUl >= HPLC_MIN_INJECTION_UL
-        ? volumeUl.toFixed(2)
-        : volumeUl.toFixed(3);
+    return volumeUl >= 0.1 ? volumeUl.toFixed(2) : volumeUl.toFixed(3);
+}
+
+// An amount in nmol, three significant figures, trailing zeros trimmed
+// ("0.333", "2", "1.25").
+export function formatNmol(nmol) {
+    if (!Number.isFinite(nmol) || nmol <= 0) return null;
+    return String(Number(nmol.toPrecision(3)));
 }
 
 // The molarity echo, printed the way CDD prints it: a plain number in

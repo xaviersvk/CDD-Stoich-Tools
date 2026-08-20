@@ -19,10 +19,12 @@ import {
     computeInjectionVolume,
     formatInjectionVolume,
     formatMolarity,
-    HPLC_MIN_INJECTION_UL,
+    formatNmol,
+    HPLC_INJECTION_STEP_UL,
 } from "../../shared/hplc-injection-math.js";
 import {
     getHplcSettings,
+    isHplcBlockEnabled,
     onHplcSettingsChanged,
     saveHplcAliquotVolumeUl,
     saveHplcVialVolumeMl,
@@ -85,10 +87,16 @@ function describeSolvents(solvents) {
     return parts[0] || "";
 }
 
-// The block for one reaction, or null when the reaction has no solvent
-// molarity — there is nothing to compute from, and an empty block reads as
-// a bug rather than as an absence.
-export function createHplcInjectionBlock(reaction) {
+// The block for one reaction, or null when the feature is switched off, or
+// when the reaction has no solvent molarity — there is nothing to compute
+// from, and an empty block reads as a bug rather than as an absence.
+//
+// `color` is the reaction group's own colour (getReactionColor), so the
+// block sits in the same palette as the cards below it instead of claiming
+// one hardcoded blue across every reaction.
+export function createHplcInjectionBlock(reaction, color) {
+    if (!isHplcBlockEnabled()) return null;
+
     const molarity = effectiveMolarity(reaction?.solvents);
     if (molarity == null) return null;
 
@@ -96,6 +104,8 @@ export function createHplcInjectionBlock(reaction) {
 
     const block = document.createElement("div");
     block.className = "cdd-hplc-block";
+    if (color?.border) block.style.borderColor = color.border;
+    if (color?.glow) block.style.background = color.glow;
 
     const top = document.createElement("div");
     top.className = "cdd-hplc-top";
@@ -103,9 +113,13 @@ export function createHplcInjectionBlock(reaction) {
     const title = document.createElement("span");
     title.className = "cdd-hplc-title";
     title.textContent = "HPLC injection";
+    if (color?.border) title.style.color = color.border;
 
     const result = document.createElement("span");
     result.className = "cdd-hplc-result";
+
+    const exact = document.createElement("div");
+    exact.className = "cdd-hplc-exact";
 
     top.append(title, result);
 
@@ -140,7 +154,7 @@ export function createHplcInjectionBlock(reaction) {
     note.className = "cdd-hplc-note";
     note.hidden = true;
 
-    block.append(top, inputs, note);
+    block.append(top, exact, inputs, note);
 
     let copyValue = "";
     result.addEventListener("click", async () => {
@@ -172,13 +186,22 @@ export function createHplcInjectionBlock(reaction) {
             result.textContent = "—";
             result.classList.remove("cdd-hplc-result-warn");
             copyValue = "";
+            exact.textContent = "";
             note.hidden = true;
             return;
         }
 
-        const text = formatInjectionVolume(computed.volumeUl);
-        result.textContent = `${text} µL`;
-        copyValue = text;
+        // The big number is what gets dialled into the sequence: half-µL
+        // steps. The exact figure stays underneath, next to what that
+        // rounded injection really puts on the column — rounding 0.3 up to
+        // 0.5 is a third more compound, and that should not be invisible.
+        const rounded = computed.roundedUl.toFixed(2);
+        result.textContent = `${rounded} µL`;
+        copyValue = rounded;
+
+        exact.textContent =
+            `exact ${formatInjectionVolume(computed.volumeUl)} µL · ` +
+            `${formatNmol(computed.deliveredNmol)} nmol on column`;
 
         result.classList.toggle(
             "cdd-hplc-result-warn",
@@ -190,9 +213,10 @@ export function createHplcInjectionBlock(reaction) {
                 "Exceeds the vial volume — the dilution is too weak for this target.";
             note.className = "cdd-hplc-note cdd-hplc-note-error";
             note.hidden = false;
-        } else if (computed.warning === "below-minimum") {
+        } else if (computed.warning === "floored") {
             note.textContent =
-                `Below ${HPLC_MIN_INJECTION_UL} µL — under the typical injector minimum.`;
+                `Rounded up to the ${HPLC_INJECTION_STEP_UL} µL minimum — the vial is ` +
+                "too concentrated, so this injection overshoots the target.";
             note.className = "cdd-hplc-note cdd-hplc-note-warn";
             note.hidden = false;
         } else {
@@ -214,6 +238,13 @@ export const HPLC_BLOCK_STYLES = `
     border-radius: 10px;
     padding: 8px 10px;
     background: rgba(56, 189, 248, 0.07);
+  }
+
+  .cdd-hplc-exact {
+    margin-top: 2px;
+    font-size: 10px;
+    line-height: 1.3;
+    color: #94a3b8;
   }
 
   .cdd-hplc-top {

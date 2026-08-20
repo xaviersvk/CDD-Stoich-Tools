@@ -53,6 +53,7 @@ import {initPrefixColorCache} from "../shared/prefix-colors.js";
 import {initDensityMemory, onDensityMemoryChanged} from "../shared/density-memory.js";
 import {initAutoFill} from "./features/auto-fill.js";
 import {initPurityThresholds, onPurityThresholdChanged} from "../shared/purity-threshold.js";
+import {initHplcSettings} from "../shared/hplc-injection.js";
 import {initShowProducts, onShowProductsChanged} from "../shared/show-products-flag.js";
 import {initHeatMapFieldsConfig} from "../shared/heat-map-fields.js";
 import {initPanelSources, onPanelSourcesChanged} from "../shared/panel-sources-flag.js";
@@ -196,6 +197,12 @@ function init() {
   initPurityThresholds().then(() => {
     onPurityThresholdChanged(() => renderFromState());
   });
+
+  // The three HPLC injection parameters. Fire-and-forget: the block paints
+  // with the defaults until the (fast) storage read lands, and the block's
+  // own listener repaints it then — no panel re-render involved, which is
+  // what keeps focus in an input the user is typing in.
+  initHplcSettings();
 
   // Optional products section (panel + print).
   initShowProducts().then(() => {

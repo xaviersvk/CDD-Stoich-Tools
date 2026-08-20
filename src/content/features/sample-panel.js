@@ -38,6 +38,11 @@ import {
 import { recordSampleIdPrefix } from "../../shared/prefix-colors.js";
 import { loadPanelState, savePanelState } from "./panel-state.js";
 import { makePanelResizable, applySavedPanelSize } from "./panel-resize.js";
+import {
+    createHplcInjectionBlock,
+    resetHplcInjectionBlocks,
+    HPLC_BLOCK_STYLES,
+} from "./hplc-injection-block.js";
 
 // Visible-field map, kept in sync with chrome.storage by initSamplePanelFields().
 // Starts from the registry defaults so the first paint is correct even before
@@ -409,6 +414,8 @@ export function ensurePanel() {
     font-size: 11px;
     opacity: 0.85;
   }
+
+${HPLC_BLOCK_STYLES.replace(/^ {2}\./gm, `  #${PANEL_ID} .`)}
 
   #${PANEL_ID} .cdd-stoich-group-body {
     display: flex;
@@ -1138,6 +1145,7 @@ export function renderSamples(payload) {
     if (!list) return;
 
     list.replaceChildren();
+    resetHplcInjectionBlocks();
 
     const samples = payload?.samples || [];
     if (!samples.length) {
@@ -1194,6 +1202,15 @@ export function renderSamples(payload) {
 
         const groupBody = document.createElement("div");
         groupBody.className = "cdd-stoich-group-body";
+
+        // Per-reaction, so it belongs to the group rather than to any card:
+        // how much of the diluted aliquot to inject. Returns null (and
+        // nothing renders) when the reaction has no solvent molarity.
+        const hplcBlock = createHplcInjectionBlock(
+            (payload?.reactions || []).find((r) => r.index === group.reactionIndex),
+            color
+        );
+        if (hplcBlock) groupBody.appendChild(hplcBlock);
 
         for (const sample of regulars) {
             const card = document.createElement("div");

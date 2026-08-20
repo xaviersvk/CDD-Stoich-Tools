@@ -71,15 +71,52 @@ defaults, sanitizers, async load/save, a sync cache refreshed through
 | `cddHplcAliquotVolumeUl` | 10 | finite, > 0, else default |
 | `cddHplcVialVolumeMl` | 1.5 | finite, > 0, else default |
 | `cddHplcTargetAmountNmol` | 0.2 | finite, > 0, else default |
+| `cddHplcBlockEnabled` | **false** | boolean, else default |
 
-The same file carries the pure maths, so the calculation has exactly one
-home and no DOM dependency:
+These are **defaults, not values**. One assay takes a single 10 µL drop and
+the next takes two, and that is a property of the reaction in front of you,
+not a setting to flip back and forth. A block edits its own copy for its own
+reaction and never writes back here — see *Per-reaction overrides* below.
 
+The feature is off by default. It answers a question only some workflows
+ask, and a panel that grows a new box for everyone on upgrade is a worse
+default than one the people who want it switch on.
+
+## Per-reaction overrides
+
+Each block starts from the settings. Typing into one of its inputs sets an
+override for **that reaction only**, held in a module-level
+`Map(reactionIndex → {aliquotUl?, vialMl?, targetNmol?})` in the block
+module, and neither storage nor any other block is touched.
+
+- **Module state, not the DOM node.** `renderSamples` rebuilds every block
+  from scratch on each payload, field toggle and enrichment pass, so an
+  override kept on the element would be destroyed by a re-render nobody
+  asked for.
+- **Not persisted.** It is a recalculation for the reaction on screen, not a
+  preference, and carrying a "reaction 0" override into the next entry's
+  reaction 0 would be wrong. `clearHplcInjectionOverrides()` runs from the
+  url-watcher callback in `content/main.js`, next to `resetState()`.
+- **Visible.** An overridden input is tinted amber, and a `reset` chip
+  appears in the block header to drop the reaction's overrides and follow
+  the settings again.
+- **Typing the default back in clears the override**, so a field cannot be
+  stuck "overridden" with the same value the settings hold.
+- A settings change repaints every block; blocks with an override keep it,
+  the rest follow the new default.
+
+The maths lives next door in **`src/shared/hplc-injection-math.js`**, split
+out because the inject bundle runs in page context — it needs
+`collectReactionSolvents` and must not pull in `chrome.storage` code it can
+never call:
+
+- `collectReactionSolvents(rows)` → `[{ name, molarity }]`
 - `effectiveMolarity(solvents)` → number | null
 - `computeInjectionVolume({ molarity, aliquotUl, vialMl, targetNmol })`
-  → `{ volumeUl, warning }`, or `null` when `molarity` is null or not
-  positive. `warning` is `null`, `"exceeds-vial"` or `"below-minimum"`.
-- `formatInjectionVolume(volumeUl)` → string
+  → `{ volumeUl, warning }`, or `null` when any argument is not a finite
+  positive number. `warning` is `null`, `"exceeds-vial"` or `"below-minimum"`.
+- `formatInjectionVolume(volumeUl)` → string | null
+- `formatMolarity(molarity)` → string | null
 
 ### `src/inject/parsers/sample-data.js`
 
@@ -149,9 +186,11 @@ formula is visible to the reader.
 - **Mentions group** → no molarity, so no block, by the same rule.
 - **`V_inj` greater than the vial volume** → the value renders red with
   "exceeds vial volume". The dilution is too weak for the target.
-- **`V_inj` below 0.1 µL** → amber note "below typical injector minimum".
-  0.1 µL is the low end of common UPLC autosamplers; the threshold is a
-  constant in the block module, not a setting.
+- **The 0.5 µL floor kicked in** — the exact volume is below 0.25 µL, so
+  rounding to the nearest half would have given zero → amber note saying
+  the vial is too concentrated and this injection overshoots the target.
+- **The feature is switched off** → no block anywhere, and the panel
+  re-renders so blocks already on screen disappear at once.
 - **Non-numeric or non-positive input** → the sanitizer returns the
   default, and the input is repainted with it.
 - **Multiple reactions in one entry** → one block per reaction group,
@@ -159,10 +198,38 @@ formula is visible to the reader.
   Editing an input in one block therefore changes every block; the
   others repaint through the settings listener rather than going stale.
 
-## Formatting
+## Rounding and formatting
 
-Two decimals at or above 0.1 µL (`0.30 µL`), three below (`0.080 µL`).
-The molarity echo prints the effective value as CDD does, in mol/L.
+Nobody dials an arbitrary volume into a sequence, so the block leads with
+the **nearest 0.5 µL**, and 0.5 µL is also the floor — rounding 0.08 µL to
+the nearest half would give zero, which is not an injection.
+
+Rounding changes what reaches the column, so it is never silent. Under the
+big rounded number the block prints the exact volume and the amount that
+rounded injection actually delivers:
+
+```
+HPLC injection            3.00 µL
+exact 3.00 µL · 2 nmol on column
+```
+
+At the 0.2 nmol default the reference entry reads `0.50 µL` with
+`exact 0.30 µL · 0.333 nmol on column` — a two-thirds overshoot, stated
+rather than hidden. A 2 nmol target on the same reaction lands on exactly
+3.00 µL, with no rounding at all.
+
+The exact volume keeps two decimals at or above 0.1 µL (`0.30 µL`) and
+three below (`0.080 µL`); amounts print to three significant figures with
+trailing zeros trimmed. The molarity echo prints the effective value as
+CDD does, in mol/L.
+
+## Colour
+
+The block wears the same shell as `.cdd-stoich-card` — same background,
+same border, the reaction's colour on the thick left edge only. It belongs
+to its group; it is not a panel of its own, and a filled tint made it
+shout. The colour comes from `getReactionColor`, so the block in reaction 2
+cannot look like it belongs to reaction 1.
 
 ## Verification
 

@@ -53,6 +53,8 @@ import {initPrefixColorCache} from "../shared/prefix-colors.js";
 import {initDensityMemory, onDensityMemoryChanged} from "../shared/density-memory.js";
 import {initAutoFill} from "./features/auto-fill.js";
 import {initPurityThresholds, onPurityThresholdChanged} from "../shared/purity-threshold.js";
+import {initHplcSettings, onHplcBlockEnabledChanged} from "../shared/hplc-injection.js";
+import {clearHplcInjectionOverrides} from "./features/hplc-injection-block.js";
 import {initShowProducts, onShowProductsChanged} from "../shared/show-products-flag.js";
 import {initHeatMapFieldsConfig} from "../shared/heat-map-fields.js";
 import {initPanelSources, onPanelSourcesChanged} from "../shared/panel-sources-flag.js";
@@ -103,6 +105,9 @@ function init() {
 
   watchUrlChanges(() => {
     resetState();
+    // Per-reaction HPLC overrides describe the entry being left, not the one
+    // being opened — "reaction 1 took two drops" does not carry over.
+    clearHplcInjectionOverrides();
 
     ensurePanel();
     renderFromState();
@@ -196,6 +201,17 @@ function init() {
   initPurityThresholds().then(() => {
     onPurityThresholdChanged(() => renderFromState());
   });
+
+  // The HPLC injection parameters. Fire-and-forget: the block paints with
+  // the defaults until the (fast) storage read lands, and the block's own
+  // listener repaints it then — no panel re-render involved, which is what
+  // keeps focus in an input the user is typing in.
+  //
+  // The on/off flag is the exception: it adds and removes whole blocks, so
+  // it does need a re-render. It has its own subscription for exactly that
+  // reason — see the two listener sets in shared/hplc-injection.js.
+  initHplcSettings();
+  onHplcBlockEnabledChanged(() => renderFromState());
 
   // Optional products section (panel + print).
   initShowProducts().then(() => {

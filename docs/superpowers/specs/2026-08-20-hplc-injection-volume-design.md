@@ -48,13 +48,15 @@ Worked cases (these are the verification fixtures):
 
 | M_ef | aliquot | vial | target | V_inj |
 |---|---|---|---|---|
-| 0.1 mol/L | 10 µL | 1.5 mL | 0.2 nmol | 0.300 µL |
+| 0.1 mol/L | 10 µL | 1.5 mL | 0.2 nmol | 0.30 µL |
 | 0.1 mol/L | 10 µL | 1.5 mL | 1.0 nmol | 1.50 µL |
 | 0.5 mol/L | 5 µL | 1.0 mL | 0.2 nmol | 0.080 µL |
-| 0.2 + 0.2 mol/L (two solvents → M_ef 0.1) | 10 µL | 1.5 mL | 0.2 nmol | 0.300 µL |
+| 0.2 + 0.2 mol/L (two solvents → M_ef 0.1) | 10 µL | 1.5 mL | 0.2 nmol | 0.30 µL |
 
 Step check of row 1: the aliquot carries 0.1 mol/L × 10 µL = 1000 nmol;
-diluted to 1500 µL that is 0.6667 nmol/µL; 0.2 nmol is 0.300 µL.
+diluted to 1500 µL that is 0.6667 nmol/µL; 0.2 nmol is 0.30 µL.
+The table prints each result as the block would display it (see
+Formatting), not at full precision.
 
 ## Components
 
@@ -75,7 +77,8 @@ home and no DOM dependency:
 
 - `effectiveMolarity(solvents)` → number | null
 - `computeInjectionVolume({ molarity, aliquotUl, vialMl, targetNmol })`
-  → `{ volumeUl, warning }` | null
+  → `{ volumeUl, warning }`, or `null` when `molarity` is null or not
+  positive. `warning` is `null`, `"exceeds-vial"` or `"below-minimum"`.
 - `formatInjectionVolume(volumeUl)` → string
 
 ### `src/inject/parsers/sample-data.js`
@@ -153,6 +156,8 @@ formula is visible to the reader.
   default, and the input is repainted with it.
 - **Multiple reactions in one entry** → one block per reaction group,
   each with its own molarity, all sharing the three global parameters.
+  Editing an input in one block therefore changes every block; the
+  others repaint through the settings listener rather than going stale.
 
 ## Formatting
 

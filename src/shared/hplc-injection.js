@@ -1,12 +1,15 @@
-// shared/hplc-injection.js — the three parameters behind the panel's HPLC
-// injection block, all in chrome.storage.local:
+// shared/hplc-injection.js — the DEFAULTS behind the panel's HPLC injection
+// block, all in chrome.storage.local:
 //
 //   aliquot  µL   drawn out of the reaction mixture
 //   vial     mL   FINAL volume of the diluted sample (aliquot included)
 //   target   nmol wanted on the column
 //
-// There is exactly one copy of each: the panel's inline inputs and the
-// options page write the same keys, so editing either is the same edit.
+// Defaults, not values. One assay takes a single 10 µL drop and the next
+// takes two, and that is a property of the reaction in front of you, not a
+// setting to flip back and forth — so the panel block edits its OWN copy
+// per reaction and never writes back here. These three are only what a
+// block starts from. See content/features/hplc-injection-block.js.
 //
 // DOM-free; read by the content script (sync cache) and the options page
 // (async load/save). The arithmetic these feed lives in
@@ -19,11 +22,12 @@ export const HPLC_BLOCK_ENABLED_KEY = "cddHplcBlockEnabled";
 
 export const DEFAULT_HPLC_ALIQUOT_VOLUME_UL = 10;
 export const DEFAULT_HPLC_VIAL_VOLUME_ML = 1.5;
-export const DEFAULT_HPLC_TARGET_AMOUNT_NMOL = 2;
+export const DEFAULT_HPLC_TARGET_AMOUNT_NMOL = 0.2;
 
-// On by default: the block only appears on a reaction that HAS a solvent
-// molarity, so it stays out of the way on its own everywhere else.
-export const DEFAULT_HPLC_BLOCK_ENABLED = true;
+// OFF by default. The block answers a question only some workflows ask, and
+// a panel that grows a new box for everyone on upgrade is a worse default
+// than one the people who want it switch on.
+export const DEFAULT_HPLC_BLOCK_ENABLED = false;
 
 // Every one of the three is a positive volume or amount; zero and negatives
 // are not "small", they are unusable, and they fall back to the default.

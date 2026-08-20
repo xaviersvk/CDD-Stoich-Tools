@@ -70,8 +70,40 @@ defaults, sanitizers, async load/save, a sync cache refreshed through
 |---|---|---|
 | `cddHplcAliquotVolumeUl` | 10 | finite, > 0, else default |
 | `cddHplcVialVolumeMl` | 1.5 | finite, > 0, else default |
-| `cddHplcTargetAmountNmol` | 2 | finite, > 0, else default |
-| `cddHplcBlockEnabled` | true | boolean, else default |
+| `cddHplcTargetAmountNmol` | 0.2 | finite, > 0, else default |
+| `cddHplcBlockEnabled` | **false** | boolean, else default |
+
+These are **defaults, not values**. One assay takes a single 10 µL drop and
+the next takes two, and that is a property of the reaction in front of you,
+not a setting to flip back and forth. A block edits its own copy for its own
+reaction and never writes back here — see *Per-reaction overrides* below.
+
+The feature is off by default. It answers a question only some workflows
+ask, and a panel that grows a new box for everyone on upgrade is a worse
+default than one the people who want it switch on.
+
+## Per-reaction overrides
+
+Each block starts from the settings. Typing into one of its inputs sets an
+override for **that reaction only**, held in a module-level
+`Map(reactionIndex → {aliquotUl?, vialMl?, targetNmol?})` in the block
+module, and neither storage nor any other block is touched.
+
+- **Module state, not the DOM node.** `renderSamples` rebuilds every block
+  from scratch on each payload, field toggle and enrichment pass, so an
+  override kept on the element would be destroyed by a re-render nobody
+  asked for.
+- **Not persisted.** It is a recalculation for the reaction on screen, not a
+  preference, and carrying a "reaction 0" override into the next entry's
+  reaction 0 would be wrong. `clearHplcInjectionOverrides()` runs from the
+  url-watcher callback in `content/main.js`, next to `resetState()`.
+- **Visible.** An overridden input is tinted amber, and a `reset` chip
+  appears in the block header to drop the reaction's overrides and follow
+  the settings again.
+- **Typing the default back in clears the override**, so a field cannot be
+  stuck "overridden" with the same value the settings hold.
+- A settings change repaints every block; blocks with an override keep it,
+  the rest follow the new default.
 
 The maths lives next door in **`src/shared/hplc-injection-math.js`**, split
 out because the inject bundle runs in page context — it needs
@@ -181,10 +213,10 @@ HPLC injection            3.00 µL
 exact 3.00 µL · 2 nmol on column
 ```
 
-At the old 0.2 nmol target the same reaction reads `0.50 µL` with
+At the 0.2 nmol default the reference entry reads `0.50 µL` with
 `exact 0.30 µL · 0.333 nmol on column` — a two-thirds overshoot, stated
-rather than hidden. The 2 nmol default was chosen because it lands the
-reference entry on exactly 3.00 µL, with no rounding at all.
+rather than hidden. A 2 nmol target on the same reaction lands on exactly
+3.00 µL, with no rounding at all.
 
 The exact volume keeps two decimals at or above 0.1 µL (`0.30 µL`) and
 three below (`0.080 µL`); amounts print to three significant figures with
@@ -193,10 +225,11 @@ CDD does, in mol/L.
 
 ## Colour
 
-The block takes its reaction group's own colour from `getReactionColor`,
-the same one the group border and the cards' left edges use. A hardcoded
-tint would make the block in reaction 2 look like it belonged to
-reaction 1.
+The block wears the same shell as `.cdd-stoich-card` — same background,
+same border, the reaction's colour on the thick left edge only. It belongs
+to its group; it is not a panel of its own, and a filled tint made it
+shout. The colour comes from `getReactionColor`, so the block in reaction 2
+cannot look like it belongs to reaction 1.
 
 ## Verification
 

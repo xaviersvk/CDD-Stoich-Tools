@@ -20,6 +20,45 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [14.9.0] — 2026-08-20
+
+### Added
+- **HPLC injection volume in the panel.** Working out how much of a diluted
+  reaction sample to put on the column was arithmetic done by hand every
+  time, even though every number for it is already on the ELN page. A new
+  block at the top of each reaction group does it: an aliquot is drawn from
+  the mixture, diluted to the vial volume, and the injection is however much
+  of that carries the target amount.
+
+  The reaction molarity comes off the stoichiometry table's solvent row. It
+  could not come from the panel's own cards — the row filter drops any row
+  with neither a sample nor a registered batch, which is exactly what a
+  solvent row is — so the parser gained a second, unfiltered pass over the
+  same rows.
+
+- **Half-microlitre steps, with the exact figure kept in view.** Nobody dials
+  an arbitrary volume into a sequence, so the block leads with the nearest
+  0.5 µL and prints the exact volume underneath, next to what that rounded
+  injection really delivers: `exact 0.30 µL · 0.333 nmol on column`.
+  Rounding 0.30 up to 0.50 is two thirds more compound, and that is not
+  something to hide. 0.5 µL is also the floor — rounding 0.08 µL to the
+  nearest half would give zero, which is not an injection.
+
+- **Parameters are per reaction, not global.** One assay takes a single 10 µL
+  drop and the next takes two. The options page holds the defaults a block
+  starts from; typing into a block overrides them for that reaction alone,
+  marks the field, and offers a `reset` back to the defaults. Nothing is
+  written back to settings, and no other reaction moves.
+
+- **Reactions with several solvents** combine into one effective molarity,
+  `1 / Σ(1/Mᵢ)` — the concentration of the mixture the aliquot is actually
+  drawn from.
+
+- **Options card 7**, with an on/off switch and the three defaults (10 µL,
+  1.5 mL, 0.2 nmol). **The block is off by default**: it answers a question
+  only some workflows ask, and a panel that grows a new box for everyone on
+  upgrade is a worse default than one you switch on.
+
 ## [14.8.0] — 2026-08-19
 
 > **Shipped as one release.** `v14.5.0` was the last tag to reach the stores, so

@@ -372,8 +372,10 @@
                     from the reaction molarity CDD prints on the solvent row:
                     an aliquot of the mixture is diluted to the vial volume,
                     and the injection is however much of that carries the
-                    target amount. These three values are also editable
-                    directly in the panel block.
+                    target amount, rounded to the nearest 0.5 µL. The values
+                    below are <strong>starting points</strong> — a block can
+                    be recomputed for its own reaction (one drop or two)
+                    without changing these or any other reaction.
                 </p>
             </div>
         </header>
@@ -382,13 +384,13 @@
             <label class="field-item auto-fill-toggle">
                 <input type="checkbox" id="hplcBlockEnabled" />
                 <span>Show the <strong>HPLC injection</strong> block in the
-                Samples panel. Off hides it everywhere; the three values below
-                are kept.</span>
+                Samples panel. Off by default; the values below are kept
+                either way.</span>
             </label>
 
             <label class="field-item purity-threshold-row">
                 <span>
-                    <strong>Aliquot volume (µL)</strong> — how much is drawn
+                    <strong>Default aliquot volume (µL)</strong> — how much is drawn
                     out of the reaction mixture.
                 </span>
                 <input type="number" id="hplcAliquotVolume"
@@ -398,7 +400,7 @@
 
             <label class="field-item purity-threshold-row">
                 <span>
-                    <strong>HPLC vial volume (mL)</strong> — the final volume
+                    <strong>Default vial volume (mL)</strong> — the final volume
                     of the diluted sample, aliquot included.
                 </span>
                 <input type="number" id="hplcVialVolume"
@@ -408,7 +410,7 @@
 
             <label class="field-item purity-threshold-row">
                 <span>
-                    <strong>Target injected amount (nmol)</strong> — how much
+                    <strong>Default target amount (nmol)</strong> — how much
                     should reach the column.
                 </span>
                 <input type="number" id="hplcTargetAmount"

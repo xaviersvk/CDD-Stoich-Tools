@@ -13,7 +13,46 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
-# What's new in 14.8.0
+# What's new in 14.9.0
+
+---
+
+## 14.9.0 — August 2026
+
+**The panel can work out your HPLC injection volume.**
+
+Every number for it is already on the page — the stoichiometry table prints
+the reaction molarity on the solvent row — but the sum was still being done by
+hand each time. Now a block at the top of each reaction group does it: you draw
+an aliquot from the mixture, dilute it into an HPLC vial, and the block tells
+you how much of that to inject to land your target amount on the column.
+
+- **It gives you the number you can actually dial in.** Injections go in half
+  microlitres, so that is what the block leads with. The exact figure stays
+  underneath, next to what the rounded injection really delivers —
+  `exact 0.30 µL · 0.333 nmol on column`. Rounding 0.30 up to 0.50 is two
+  thirds more compound, and you should be able to see that rather than find
+  out later.
+
+- **Each reaction has its own numbers.** One assay takes a single drop, the
+  next takes two. Type a different aliquot into one block and only that
+  reaction changes — the settings and every other reaction stay where they
+  were. The field is marked while it differs, and a **reset** chip puts it
+  back.
+
+- **Several solvents are handled properly.** The block combines them into the
+  concentration of the mixture your aliquot actually comes from, rather than
+  picking one row and hoping.
+
+- **It warns instead of quietly lying.** An injection that would exceed the
+  vial volume turns red. One that had to be pushed up to the 0.5 µL minimum
+  says so, because it means the vial is too concentrated and you are
+  overshooting.
+
+**Switch it on in Settings → HPLC injection.** It is off by default — it
+answers a question only some workflows ask, and your panel should not sprout a
+new box because you updated. The card also holds the starting values every
+block begins from: aliquot 10 µL, vial 1.5 mL, target 0.2 nmol.
 
 ---
 

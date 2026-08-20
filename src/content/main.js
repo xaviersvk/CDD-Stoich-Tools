@@ -54,6 +54,7 @@ import {initDensityMemory, onDensityMemoryChanged} from "../shared/density-memor
 import {initAutoFill} from "./features/auto-fill.js";
 import {initPurityThresholds, onPurityThresholdChanged} from "../shared/purity-threshold.js";
 import {initHplcSettings, onHplcBlockEnabledChanged} from "../shared/hplc-injection.js";
+import {clearHplcInjectionOverrides} from "./features/hplc-injection-block.js";
 import {initShowProducts, onShowProductsChanged} from "../shared/show-products-flag.js";
 import {initHeatMapFieldsConfig} from "../shared/heat-map-fields.js";
 import {initPanelSources, onPanelSourcesChanged} from "../shared/panel-sources-flag.js";
@@ -104,6 +105,9 @@ function init() {
 
   watchUrlChanges(() => {
     resetState();
+    // Per-reaction HPLC overrides describe the entry being left, not the one
+    // being opened — "reaction 1 took two drops" does not carry over.
+    clearHplcInjectionOverrides();
 
     ensurePanel();
     renderFromState();

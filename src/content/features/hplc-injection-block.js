@@ -8,10 +8,16 @@
 // (see the solvent pass in inject/parsers/sample-data.js); the other three
 // numbers are settings.
 //
-// The inputs ARE the settings, not a local copy of them: typing here is the
-// same edit as typing in the options page. They write on `change` — blur or
-// Enter — so a half-typed "1." never reaches storage, comes back sanitised,
-// and lands under the caret.
+// The inputs are LOCAL to the reaction. One assay takes a single 10 µL drop
+// and the next takes two, so recomputing reaction 2 must not quietly rewrite
+// reaction 1 — or the settings. The options page holds the defaults a block
+// starts from; typing here overrides them for that reaction only, until the
+// entry is left or the value is reset.
+//
+// Overrides live in module state rather than on the element, because
+// renderSamples rebuilds every block from scratch on each payload, field
+// toggle and enrichment pass — an override kept on the DOM node would be
+// thrown away by a re-render the user did not ask for.
 
 import { copyTextWithFeedback } from "../utils/clipboard.js";
 import {
@@ -26,9 +32,9 @@ import {
     getHplcSettings,
     isHplcBlockEnabled,
     onHplcSettingsChanged,
-    saveHplcAliquotVolumeUl,
-    saveHplcVialVolumeMl,
-    saveHplcTargetAmountNmol,
+    sanitizeAliquotVolumeUl,
+    sanitizeVialVolumeMl,
+    sanitizeTargetAmountNmol,
 } from "../../shared/hplc-injection.js";
 
 // The blocks currently in the DOM. renderSamples clears this before it
@@ -37,8 +43,54 @@ import {
 let liveBlocks = [];
 let listenerAttached = false;
 
+// reactionIndex -> { aliquotUl?, vialMl?, targetNmol? }
+//
+// Deliberately NOT persisted. It is a recalculation for the reaction on
+// screen — "this one took two drops" — not a preference, and carrying a
+// reaction 0 override into the next entry's reaction 0 would be wrong.
+// Survives a re-render, cleared when the entry changes.
+const overrides = new Map();
+
 export function resetHplcInjectionBlocks() {
     liveBlocks = [];
+}
+
+// Called when the ELN entry changes — see the url-watcher callback in
+// content/main.js, next to resetState().
+export function clearHplcInjectionOverrides() {
+    overrides.clear();
+}
+
+const FIELDS = {
+    aliquotUl: { defaultOf: (s) => s.aliquotUl, sanitize: sanitizeAliquotVolumeUl },
+    vialMl: { defaultOf: (s) => s.vialMl, sanitize: sanitizeVialVolumeMl },
+    targetNmol: { defaultOf: (s) => s.targetNmol, sanitize: sanitizeTargetAmountNmol },
+};
+
+// The three numbers this block computes with: its own override where it has
+// one, the options-page default everywhere else.
+function effectiveParams(reactionIndex) {
+    const settings = getHplcSettings();
+    const local = overrides.get(reactionIndex) || {};
+
+    const out = {};
+    for (const [name, field] of Object.entries(FIELDS)) {
+        out[name] = local[name] ?? field.defaultOf(settings);
+    }
+    return out;
+}
+
+function setOverride(reactionIndex, name, rawValue) {
+    const clean = FIELDS[name].sanitize(rawValue);
+    const local = overrides.get(reactionIndex) || {};
+
+    // Typing the default back in is the same as never having overridden it,
+    // so the block stops flagging the field and follows the settings again.
+    if (clean === FIELDS[name].defaultOf(getHplcSettings())) delete local[name];
+    else local[name] = clean;
+
+    if (Object.keys(local).length) overrides.set(reactionIndex, local);
+    else overrides.delete(reactionIndex);
 }
 
 function attachSettingsListener() {
@@ -63,13 +115,14 @@ function unit(text) {
     return span;
 }
 
-function numberInput(value, step, onCommit) {
+function numberInput(step, onCommit) {
     const input = document.createElement("input");
     input.type = "number";
     input.className = "cdd-hplc-input";
     input.min = "0";
     input.step = step;
-    input.value = String(value);
+    // `change` fires on blur/Enter, never mid-typing — a half-typed "1."
+    // must not be sanitised and put back under the caret.
     input.addEventListener("change", () => onCommit(input.value));
     return input;
 }
@@ -91,21 +144,22 @@ function describeSolvents(solvents) {
 // when the reaction has no solvent molarity — there is nothing to compute
 // from, and an empty block reads as a bug rather than as an absence.
 //
-// `color` is the reaction group's own colour (getReactionColor), so the
-// block sits in the same palette as the cards below it instead of claiming
-// one hardcoded blue across every reaction.
+// `color` is the reaction group's own colour (getReactionColor), worn the
+// way the cards wear it — on the thick left edge — so the block reads as
+// part of its group rather than as a panel of its own.
 export function createHplcInjectionBlock(reaction, color) {
     if (!isHplcBlockEnabled()) return null;
 
     const molarity = effectiveMolarity(reaction?.solvents);
     if (molarity == null) return null;
 
+    const reactionIndex = reaction.index;
     attachSettingsListener();
 
     const block = document.createElement("div");
     block.className = "cdd-hplc-block";
-    if (color?.border) block.style.borderColor = color.border;
-    if (color?.glow) block.style.background = color.glow;
+    if (color?.border) block.style.borderLeftColor = color.border;
+    if (color?.glow) block.style.boxShadow = `0 0 0 1px ${color.glow} inset`;
 
     const top = document.createElement("div");
     top.className = "cdd-hplc-top";
@@ -113,7 +167,17 @@ export function createHplcInjectionBlock(reaction, color) {
     const title = document.createElement("span");
     title.className = "cdd-hplc-title";
     title.textContent = "HPLC injection";
-    if (color?.border) title.style.color = color.border;
+
+    const reset = document.createElement("button");
+    reset.type = "button";
+    reset.className = "cdd-hplc-reset";
+    reset.textContent = "reset";
+    reset.title = "Back to the defaults from the options page";
+    reset.hidden = true;
+    reset.addEventListener("click", () => {
+        overrides.delete(reactionIndex);
+        repaint();
+    });
 
     const result = document.createElement("span");
     result.className = "cdd-hplc-result";
@@ -121,21 +185,27 @@ export function createHplcInjectionBlock(reaction, color) {
     const exact = document.createElement("div");
     exact.className = "cdd-hplc-exact";
 
-    top.append(title, result);
+    top.append(title, reset, result);
 
     const molarityEl = document.createElement("span");
     molarityEl.className = "cdd-hplc-molarity";
     molarityEl.textContent = `${formatMolarity(molarity)} M`;
     molarityEl.title = describeSolvents(reaction.solvents);
 
-    const settings = getHplcSettings();
-    const aliquotInput = numberInput(settings.aliquotUl, "1", saveHplcAliquotVolumeUl);
-    const vialInput = numberInput(settings.vialMl, "0.1", saveHplcVialVolumeMl);
-    const targetInput = numberInput(settings.targetNmol, "0.1", saveHplcTargetAmountNmol);
+    function commit(name) {
+        return (rawValue) => {
+            setOverride(reactionIndex, name, rawValue);
+            repaint();
+        };
+    }
 
-    aliquotInput.title = "Aliquot drawn from the reaction mixture";
-    vialInput.title = "Final volume of the diluted sample";
-    targetInput.title = "Amount that should reach the column";
+    const aliquotInput = numberInput("1", commit("aliquotUl"));
+    const vialInput = numberInput("0.1", commit("vialMl"));
+    const targetInput = numberInput("0.1", commit("targetNmol"));
+
+    aliquotInput.title = "Aliquot drawn from the reaction mixture — this reaction only";
+    vialInput.title = "Final volume of the diluted sample — this reaction only";
+    targetInput.title = "Amount that should reach the column — this reaction only";
 
     const inputs = document.createElement("div");
     inputs.className = "cdd-hplc-inputs";
@@ -163,16 +233,22 @@ export function createHplcInjectionBlock(reaction, color) {
     });
 
     function repaint() {
-        const current = getHplcSettings();
+        const current = effectiveParams(reactionIndex);
+        const local = overrides.get(reactionIndex) || {};
 
-        // Never write over the box the user is standing in — the commit that
-        // triggered this repaint came from it.
-        for (const [input, value] of [
-            [aliquotInput, current.aliquotUl],
-            [vialInput, current.vialMl],
-            [targetInput, current.targetNmol],
+        reset.hidden = !Object.keys(local).length;
+
+        for (const [input, name] of [
+            [aliquotInput, "aliquotUl"],
+            [vialInput, "vialMl"],
+            [targetInput, "targetNmol"],
         ]) {
-            if (input !== document.activeElement) input.value = String(value);
+            // Never write over the box the user is standing in — the commit
+            // that triggered this repaint came from it.
+            if (input !== document.activeElement) input.value = String(current[name]);
+            // A field carrying an override is marked, so "why does this
+            // reaction say something different?" has a visible answer.
+            input.classList.toggle("cdd-hplc-input-local", local[name] != null);
         }
 
         const computed = computeInjectionVolume({
@@ -233,11 +309,14 @@ export function createHplcInjectionBlock(reaction, color) {
 // Spliced into the panel's own <style> so the block inherits the panel-id
 // scoping the rest of the rules use.
 export const HPLC_BLOCK_STYLES = `
+  /* Same shell as .cdd-stoich-card, on purpose: the block belongs to the
+     reaction group, it is not a panel of its own. */
   .cdd-hplc-block {
-    border: 1px solid rgba(56, 189, 248, 0.35);
+    border: 1px solid #374151;
+    border-left-width: 4px;
     border-radius: 10px;
-    padding: 8px 10px;
-    background: rgba(56, 189, 248, 0.07);
+    padding: 10px;
+    background: #0f172a;
   }
 
   .cdd-hplc-exact {
@@ -245,6 +324,25 @@ export const HPLC_BLOCK_STYLES = `
     font-size: 10px;
     line-height: 1.3;
     color: #94a3b8;
+  }
+
+  .cdd-hplc-reset {
+    margin-left: 6px;
+    padding: 0 5px;
+    font-size: 9px;
+    font-family: inherit;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    border-radius: 999px;
+    cursor: pointer;
+  }
+
+  .cdd-hplc-reset:hover {
+    background: rgba(245, 158, 11, 0.25);
   }
 
   .cdd-hplc-top {
@@ -311,6 +409,12 @@ export const HPLC_BLOCK_STYLES = `
   .cdd-hplc-input:focus {
     outline: none;
     border-color: rgba(56, 189, 248, 0.7);
+  }
+
+  /* Overridden for this reaction only — not what the options page says. */
+  .cdd-hplc-input-local {
+    border-color: rgba(245, 158, 11, 0.65);
+    color: #fbbf24;
   }
 
   .cdd-hplc-note {

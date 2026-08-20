@@ -72,14 +72,18 @@ defaults, sanitizers, async load/save, a sync cache refreshed through
 | `cddHplcVialVolumeMl` | 1.5 | finite, > 0, else default |
 | `cddHplcTargetAmountNmol` | 0.2 | finite, > 0, else default |
 
-The same file carries the pure maths, so the calculation has exactly one
-home and no DOM dependency:
+The maths lives next door in **`src/shared/hplc-injection-math.js`**, split
+out because the inject bundle runs in page context — it needs
+`collectReactionSolvents` and must not pull in `chrome.storage` code it can
+never call:
 
+- `collectReactionSolvents(rows)` → `[{ name, molarity }]`
 - `effectiveMolarity(solvents)` → number | null
 - `computeInjectionVolume({ molarity, aliquotUl, vialMl, targetNmol })`
-  → `{ volumeUl, warning }`, or `null` when `molarity` is null or not
-  positive. `warning` is `null`, `"exceeds-vial"` or `"below-minimum"`.
-- `formatInjectionVolume(volumeUl)` → string
+  → `{ volumeUl, warning }`, or `null` when any argument is not a finite
+  positive number. `warning` is `null`, `"exceeds-vial"` or `"below-minimum"`.
+- `formatInjectionVolume(volumeUl)` → string | null
+- `formatMolarity(molarity)` → string | null
 
 ### `src/inject/parsers/sample-data.js`
 

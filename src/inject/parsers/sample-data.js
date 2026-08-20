@@ -12,6 +12,10 @@ import {
     getBatchFields,
     getSampleFields
 } from "./field-resolvers.js";
+import {
+    collectReactionSolvents,
+    effectiveMolarity,
+} from "../../shared/hplc-injection-math.js";
 
 // The 1-based number the table PRINTS in each row's first cell. The table
 // does not render rows in payload order — it groups them by role:
@@ -59,6 +63,21 @@ function resolveTablePurity(row) {
 function resolveTableSolvent(row) {
     const name = row?.solvent?.name;
     return typeof name === "string" && name.trim() ? name.trim() : null;
+}
+
+// The reaction molarity, per reaction — a second, UNFILTERED pass over the
+// same rows.
+//
+// It cannot come out of extractRowsFromReactionFeature below: that loop
+// drops any row with neither a sample nor a registered batch, which is what
+// a solvent row normally is. The hexane row of entry 2504170 is exactly
+// that shape, and it is the row that carries `molarity`.
+function extractReactionSolvents(feature) {
+    const stoichTable = feature?.data?.stoichiometryTable;
+    const rows = Array.isArray(stoichTable?.rows) ? stoichTable.rows : [];
+    const solvents = collectReactionSolvents(rows);
+
+    return { solvents, effectiveMolarity: effectiveMolarity(solvents) };
 }
 
 export function extractRowsFromReactionFeature(feature, reactionIndex) {
@@ -190,14 +209,21 @@ export function extractRowsFromReactionFeature(feature, reactionIndex) {
 export function extractAllReactionRows(payload) {
     const reactionFeatures = getReactionFeatures(payload);
     const allRows = [];
+    const reactions = [];
 
     reactionFeatures.forEach((feature, index) => {
         const rows = extractRowsFromReactionFeature(feature, index);
         allRows.push(...rows);
+
+        const { solvents, effectiveMolarity: molarity } = extractReactionSolvents(feature);
+        reactions.push({ index, solvents, effectiveMolarity: molarity });
     });
 
     return {
         reactionCount: reactionFeatures.length,
         samples: allRows,
+        // Per-reaction data that is NOT per-sample: the HPLC injection block
+        // reads its molarity from here, since no card carries one.
+        reactions,
     };
 }

@@ -38,6 +38,12 @@ import {
     savePurityWarnThreshold,
 } from "../shared/purity-threshold.js";
 import {
+    loadHplcSettings,
+    saveHplcAliquotVolumeUl,
+    saveHplcVialVolumeMl,
+    saveHplcTargetAmountNmol,
+} from "../shared/hplc-injection.js";
+import {
     getShowProducts,
     saveShowProducts,
 } from "../shared/show-products-flag.js";
@@ -661,6 +667,27 @@ async function initPurityThresholdUI() {
     purityWarnInput.value = thresholds.warn;
 }
 
+const hplcAliquotInput = document.getElementById("hplcAliquotVolume");
+const hplcVialInput = document.getElementById("hplcVialVolume");
+const hplcTargetInput = document.getElementById("hplcTargetAmount");
+
+hplcAliquotInput.addEventListener("change", () => {
+    saveHplcAliquotVolumeUl(hplcAliquotInput.value);
+});
+hplcVialInput.addEventListener("change", () => {
+    saveHplcVialVolumeMl(hplcVialInput.value);
+});
+hplcTargetInput.addEventListener("change", () => {
+    saveHplcTargetAmountNmol(hplcTargetInput.value);
+});
+
+async function initHplcInjectionUI() {
+    const settings = await loadHplcSettings();
+    hplcAliquotInput.value = settings.aliquotUl;
+    hplcVialInput.value = settings.vialMl;
+    hplcTargetInput.value = settings.targetNmol;
+}
+
 const showProductsCheckbox = document.getElementById("showProducts");
 
 showProductsCheckbox.addEventListener("change", () => {
@@ -884,3 +911,4 @@ initPurityThresholdUI();
 initShowProductsUI();
 initPanelSourcesUI();
 initHeatMapFieldsUI();
+initHplcInjectionUI();

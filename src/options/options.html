@@ -359,6 +359,58 @@
         </div>
     </section>
 
+    <section class="card" aria-labelledby="col-hplc-heading">
+        <header class="card__head">
+            <span class="tile" aria-hidden="true">
+                <span class="tile__no">7</span>
+                <span class="tile__sym">Ij</span>
+            </span>
+            <div class="card__titles">
+                <h2 class="card__name" id="col-hplc-heading">HPLC injection</h2>
+                <p class="card__desc">
+                    The panel works out the injection volume for each reaction
+                    from the reaction molarity CDD prints on the solvent row:
+                    an aliquot of the mixture is diluted to the vial volume,
+                    and the injection is however much of that carries the
+                    target amount. These three values are also editable
+                    directly in the panel block.
+                </p>
+            </div>
+        </header>
+
+        <div class="card__body">
+            <label class="field-item purity-threshold-row">
+                <span>
+                    <strong>Aliquot volume (µL)</strong> — how much is drawn
+                    out of the reaction mixture.
+                </span>
+                <input type="number" id="hplcAliquotVolume"
+                       min="0" step="1"
+                       class="purity-threshold-input" />
+            </label>
+
+            <label class="field-item purity-threshold-row">
+                <span>
+                    <strong>HPLC vial volume (mL)</strong> — the final volume
+                    of the diluted sample, aliquot included.
+                </span>
+                <input type="number" id="hplcVialVolume"
+                       min="0" step="0.1"
+                       class="purity-threshold-input" />
+            </label>
+
+            <label class="field-item purity-threshold-row">
+                <span>
+                    <strong>Target injected amount (nmol)</strong> — how much
+                    should reach the column.
+                </span>
+                <input type="number" id="hplcTargetAmount"
+                       min="0" step="0.1"
+                       class="purity-threshold-input" />
+            </label>
+        </div>
+    </section>
+
 </main>
 
 <script type="module" src="./options.js"></script>

@@ -488,7 +488,7 @@ ${HPLC_BLOCK_STYLES.replace(/^ {2}\./gm, `  #${PANEL_ID} .`)}
     line-height: 1;
     letter-spacing: -0.03em;
     color: var(--cdd-reaction-color, #64748b);
-    opacity: var(--cdd-reaction-watermark, 0.25);
+    opacity: var(--cdd-reaction-watermark, 0.15);
     pointer-events: none;
     user-select: none;
   }

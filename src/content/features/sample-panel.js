@@ -13,6 +13,14 @@ import {
 } from "../../shared/density-memory.js";
 import { getPurityWarnThreshold } from "../../shared/purity-threshold.js";
 import { isShowProductsEnabled } from "../../shared/show-products-flag.js";
+import {
+    isElnIdToBatchEnabled,
+    getCarrySettings,
+    composeBatchElnId,
+} from "../../shared/eln-id-to-batch.js";
+import { readFieldByLabel } from "../api/batch-registration-props.js";
+import { writeElnIdToBatch } from "./eln-id-to-batch-write.js";
+import { readElnEntryId } from "../utils/eln-entry-id.js";
 import { isElnEntryPage } from "../../shared/page-detection.js";
 import { isTableRowsEnabled } from "../../shared/panel-sources-flag.js";
 import { PANEL_ID, REACTION_COLORS } from "../../shared/plugin-constants.js";
@@ -584,6 +592,18 @@ ${HPLC_BLOCK_STYLES.replace(/^ {2}\./gm, `  #${PANEL_ID} .`)}
     opacity: 0.95;
   }
 
+  /* A NEUTRAL note. The amber quote above is a warning, and "Internal ID is
+     already set" is a perfectly normal state — dressed in amber it would read
+     as a problem. Same muted grey as .cdd-stoich-status, at the 11px of the
+     card rows rather than the quote's 12px. */
+  #${PANEL_ID} .cdd-batch-field-note {
+    margin-top: 4px;
+    font-size: 11px;
+    line-height: 1.35;
+    color: #cbd5e1;
+    opacity: 0.85;
+  }
+
   #${PANEL_ID} .cdd-density-fill-btn {
     margin-top: 6px;
     width: 100%;
@@ -1109,6 +1129,86 @@ async function runAllOffers(btn) {
 // Keep the "Fill all (N)" label in sync with what the cards offer; hidden
 // when there is nothing to fill. No-ops mid-run so progress text survives
 // re-renders.
+/* ------------------------------------------------------------------ *
+ * Writing this entry's ID onto a product's existing batch
+ * ------------------------------------------------------------------ */
+
+// What, if anything, a product card should say about its batch's ELN ID
+// field. Returns one of:
+//   { kind: "offer", … }  -> the button
+//   { kind: "set", … }    -> "already set to X", no button
+//   null                  -> say nothing at all
+//
+// "set" is a state rather than an early return on purpose: a card that simply
+// lacks the button, with no reason given, reads as a bug.
+function elnIdToBatchState(sample) {
+    if (!isElnIdToBatchEnabled()) return null;
+    if (!sample?.isProduct) return null;
+    if (!sample.batchId || !sample.moleculeId) return null;
+
+    // Enrichment has not answered yet. Saying nothing beats offering a button
+    // whose only guard has not run.
+    if (!sample.batchFieldsEnriched) return null;
+
+    const { enabled, fieldLabel, format } = getCarrySettings();
+    if (!enabled || !fieldLabel) return null;
+
+    const existing = readFieldByLabel(sample.batchFieldMap, fieldLabel);
+    if (existing) return { kind: "set", fieldLabel, value: existing };
+
+    const entryId = readElnEntryId();
+    if (!entryId) return null;
+
+    const value = composeBatchElnId(entryId, format, sample.reactionIndex);
+    if (!value) return null;
+
+    return {
+        kind: "offer",
+        value,
+        fieldLabel,
+        vaultId: sample.batchVaultId,
+        moleculeId: sample.moleculeId,
+        batchId: sample.batchId,
+    };
+}
+
+function buildElnIdToBatchButton(state) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "cdd-density-fill-btn";
+    btn.textContent = `⤴ Write ${state.value} into ${state.fieldLabel} on this batch`;
+    btn.title =
+        `Saves ${state.value} to the batch record — not to the table. It runs ` +
+        `only while ${state.fieldLabel} is empty, and closing the tab does not ` +
+        `undo it.`;
+
+    btn.addEventListener("click", async (event) => {
+        // The table enters edit mode on a row click and leaves it on any click
+        // outside — and this button IS outside the table.
+        event.stopPropagation();
+
+        btn.disabled = true;
+        btn.textContent = "Writing…";
+
+        const result = await writeElnIdToBatch({
+            vaultId: state.vaultId,
+            moleculeId: state.moleculeId,
+            batchId: state.batchId,
+            fieldLabel: state.fieldLabel,
+            value: state.value,
+        });
+
+        if (result.ok) {
+            btn.textContent = `✓ ${state.fieldLabel} set to ${state.value}`;
+        } else {
+            btn.textContent = `✗ ${result.reason || "could not write it"}`;
+            btn.disabled = false;
+        }
+    });
+
+    return btn;
+}
+
 function updateFillAllButton() {
     const btn = document.getElementById(`${PANEL_ID}-fill-all`);
     if (!btn || btn.dataset.running === "1") return;
@@ -1407,6 +1507,18 @@ export function renderSamples(payload) {
 
                 for (const rowEl of renderConfiguredFields(sample)) {
                     card.appendChild(rowEl);
+                }
+
+                const idState = elnIdToBatchState(sample);
+
+                if (idState?.kind === "offer") {
+                    card.appendChild(buildElnIdToBatchButton(idState));
+                } else if (idState?.kind === "set") {
+                    const note = document.createElement("div");
+                    note.className = "cdd-batch-field-note";
+                    note.textContent =
+                        `${idState.fieldLabel} on this batch: ${idState.value}`;
+                    card.appendChild(note);
                 }
 
                 groupBody.appendChild(card);

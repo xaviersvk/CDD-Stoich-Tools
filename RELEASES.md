@@ -13,7 +13,32 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
-# What's new in 14.9.0
+# What's new in 14.10.0
+
+---
+
+## 14.10.0 — 2026-08-21
+
+**Registering a compound from an ELN entry now fills itself in, and the HPLC
+block tells you what to change.**
+
+- **Origin, and anything else you always type.** Set it once in
+  *Settings → Registration defaults*, per vault. Filled only when you register
+  from an ELN entry.
+- **Initial amount and units** come from the stoichiometry row as soon as you
+  tick *Create a New Sample*.
+- **The injection block tells you the fix** when the volume is outside your
+  comfortable range: more drops, a different vessel, or dilute the aliquot.
+  Click the sentence to apply it to that reaction only.
+- **Injection volumes round to 0.1 µL**, matching the printed UPLC guide.
+- **Your injector range and comfortable range are settings.** The ceiling is
+  your sample loop's, so change it when the loop changes.
+- **Entry ID only** as a tab title — *Settings → ELN Tab title*.
+- **Settings is now a list and one pane** instead of eight cards at once.
+
+Fixes: the sample amount never filled at all; the injection block showed an
+empty amber strip; dark mode had a light border on the vault boxes; scrolling
+the page could silently rewrite a number you had clicked.
 
 ---
 

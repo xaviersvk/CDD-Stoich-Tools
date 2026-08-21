@@ -20,6 +20,69 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [14.10.0] — 2026-08-21
+
+### Added
+- **Registration defaults, per vault.** Registering a compound from an ELN entry
+  fills in the constants you always type — `Origin` is `Synthesized` for
+  anything that came out of a reaction. Kept per vault, because vault 8158 has
+  an Origin field and the next one may not. Filled only when the registration
+  was opened from an ELN entry; a form opened by hand from Explore Data is left
+  alone.
+- **Initial amount and units from the stoichiometry row.** Tick *Create a New
+  Sample* and both fill from the row the Register link sat in.
+- **The HPLC block says what to change.** When the injection lands outside the
+  comfortable range, one sentence gives the cheapest fix — more drops, a
+  different vessel, or diluting the aliquot — and clicking it applies that to
+  the reaction. The order of those levers depends on which way the injection is
+  wrong: more drops when the mixture is too dilute, the pour-out dilution when
+  it is too concentrated.
+- **Two ranges are now settings.** The injector range (the ceiling belongs to
+  the sample loop) and the comfortable range inside it. They are stored
+  independently and the optimiser searches their overlap.
+- **A fourth ELN tab title mode**, `Entry ID only` — `I34E-KRAP-0123`.
+
+### Changed
+- **Injection volumes round to 0.1 µL**, not 0.5. The bench works from a printed
+  UPLC-MS guide given to one decimal, and every cell of it is this plugin's own
+  formula; half-microlitre steps disagreed with it and were coarse enough to
+  matter. The exact figure now appears only when rounding actually moved the
+  amount.
+- **Optimiser parameters replaced with measured ones.** Three drops rather than
+  five, dilutions of 2× and 5× only, a comfortable range starting at 0.3 µL, and
+  two vessels — a 0.25 mL insert and a vial filled to 1.5 mL. The previous
+  defaults offered a 0.1 mL insert that does not exist.
+- **The settings page is a rail and one pane.** Eight cards on one page read as a
+  wall however they were arranged. Rail items carry a count, so a prefix or
+  custom field the plugin discovered while you worked is still visible with the
+  card shut.
+- **`From the ELN` moved from Registration form into Registration defaults.** One
+  card is about which form opens, the other about what gets filled in; the entry
+  ID is a value being filled in.
+- **Release headings carry a date**, not a month. All 51 sections took theirs
+  from `CHANGELOG.md`, which had them all along.
+
+### Fixed
+- The sample-amount fill did nothing, for three independent reasons — the row
+  selector matched the row's first cell rather than the row, the checkbox
+  selector matched Rails' hidden partner field whose `checked` is always false,
+  and the amount input was found by a name that seven controls share.
+- The HPLC advice bar rendered as an empty amber strip when there was no advice:
+  its `display: block` beat the `[hidden]` attribute.
+- Vault boxes in Registration defaults kept a light border in dark mode —
+  `var(--line, …)` where `--line` was never declared.
+- A focused number input no longer steps on the mouse wheel. With no Save button,
+  scrolling the page past a threshold you had clicked rewrote it silently.
+- *Remembered batch values* renders up to a hundred rows and was the one card
+  with no height cap.
+
+### Internal
+- The package is declared ESM, so checks import straight from `src/` instead of
+  copying modules into a scratchpad first — every test had been running against
+  a copy. Fixing the build warning that prompted it exposed a second one it had
+  been masking: `__dirname` does not exist in ESM and only worked because Vite
+  bundles the config.
+
 ## [14.9.0] — 2026-08-20
 
 ### Added

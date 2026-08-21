@@ -187,6 +187,21 @@ export async function saveHplcComfortBand(rawMin, rawMax) {
     }
 }
 
+// The band is the one HPLC setting whose default has moved after release, so
+// it is the one that needs a way back. Removing the keys rather than writing
+// the current defaults into them means a future default change reaches
+// anyone who has pressed this, instead of freezing them at today's numbers.
+export async function resetHplcComfortBand() {
+    try {
+        await chrome.storage.local.remove([
+            HPLC_COMFORT_MIN_KEY,
+            HPLC_COMFORT_MAX_KEY,
+        ]);
+    } catch {
+        // Orphaned content script — nothing useful to do.
+    }
+}
+
 export async function saveHplcInjectionRange(rawMin, rawMax) {
     const range = sanitizeInjectionRange(rawMin, rawMax);
     try {

@@ -27,16 +27,21 @@ import { computeInjectionVolume } from "./hplc-injection-math.js";
 export const DEFAULT_INJECTION_MIN_UL = 0.1;
 export const DEFAULT_INJECTION_MAX_UL = 10;
 
-// Where the injection is pleasant to work with. 0.3, not 0.5, is the bottom:
-// "nejlepsi je davat zhruba mezi 0.3 a 2 uL at je prostor doladit
-// koncentraci". Below 2 µL there is still room to tune the concentration
-// without leaving the range.
+// Where the injection is pleasant to work with — and deliberately wide.
+//
+// It started at 0.3–2 µL, which is where the method is happiest ("nejlepsi je
+// davat zhruba mezi 0.3 a 2 uL at je prostor doladit koncentraci"), and that
+// turned out to be the wrong thing for a DEFAULT to say: 0.2 µL is an
+// injection the loop delivers without complaint, and the block was telling
+// the chemist to go and re-dilute for it. A default band should mark where a
+// different dilution is genuinely worth the bench time, not where the method
+// is at its best.
 //
 // Unlike the injector's own 0.1–10 limits, this pair is a PREFERENCE — it
 // depends on the method and on who is running it — so these are only the
 // defaults; the band arrives as an argument. See shared/hplc-injection.js.
-export const DEFAULT_COMFORT_MIN_UL = 0.3;
-export const DEFAULT_COMFORT_MAX_UL = 2;
+export const DEFAULT_COMFORT_MIN_UL = 0.1;
+export const DEFAULT_COMFORT_MAX_UL = 5;
 
 // The centre of the band, multiplicatively. An injection volume is a ratio,
 // so the ends are equally far from it — which is how the band reads to a

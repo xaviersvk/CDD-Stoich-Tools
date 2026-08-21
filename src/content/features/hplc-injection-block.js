@@ -23,10 +23,7 @@ import { copyTextWithFeedback } from "../utils/clipboard.js";
 import {
     effectiveMolarity,
     computeInjectionVolume,
-    formatInjectionVolume,
     formatMolarity,
-    formatNmol,
-    HPLC_INJECTION_STEP_UL,
 } from "../../shared/hplc-injection-math.js";
 import { optimizeInjection } from "../../shared/hplc-optimizer.js";
 import {
@@ -183,9 +180,6 @@ export function createHplcInjectionBlock(reaction, color) {
     const result = document.createElement("span");
     result.className = "cdd-hplc-result";
 
-    const exact = document.createElement("div");
-    exact.className = "cdd-hplc-exact";
-
     top.append(title, reset, result);
 
     const molarityEl = document.createElement("span");
@@ -221,19 +215,17 @@ export function createHplcInjectionBlock(reaction, color) {
         unit(" nmol"),
     );
 
-    const note = document.createElement("div");
-    note.className = "cdd-hplc-note";
-    note.hidden = true;
+    // One line, one action. It says what is wrong and — when there is one —
+    // what to do about it; clicking applies that as this reaction's own
+    // override, so nothing global moves. Never more than a line: the bench
+    // reads this at a glance, and a paragraph here is a paragraph nobody
+    // reads.
+    const warn = document.createElement("button");
+    warn.type = "button";
+    warn.className = "cdd-hplc-warn";
+    warn.hidden = true;
 
-    // What to do when the computed injection is not one the instrument can
-    // comfortably deliver. Clicking it applies the suggestion as this
-    // reaction's own override — nothing global moves.
-    const advice = document.createElement("button");
-    advice.type = "button";
-    advice.className = "cdd-hplc-advice";
-    advice.hidden = true;
-
-    block.append(top, exact, inputs, note, advice);
+    block.append(top, inputs, warn);
 
     let copyValue = "";
     result.addEventListener("click", async () => {
@@ -271,10 +263,7 @@ export function createHplcInjectionBlock(reaction, color) {
             result.textContent = "—";
             result.classList.remove("cdd-hplc-result-warn");
             copyValue = "";
-            exact.textContent = "";
-            exact.hidden = true;
-            note.hidden = true;
-            advice.hidden = true;
+            hideWarning();
             return;
         }
 
@@ -285,47 +274,42 @@ export function createHplcInjectionBlock(reaction, color) {
         result.textContent = `${rounded} µL`;
         copyValue = rounded;
 
-        // The exact figure appears ONLY when rounding actually moved the
-        // volume, because that is exactly when the column stops getting the
-        // amount that was asked for. At tenth-µL steps it usually moves
-        // nothing, and a line saying so would be noise.
-        const roundingMoved =
-            Math.abs(computed.roundedUl - computed.volumeUl) > 1e-9;
-
-        exact.hidden = !roundingMoved;
-        exact.textContent = roundingMoved
-            ? `exact ${formatInjectionVolume(computed.volumeUl)} µL · ` +
-              `${formatNmol(computed.deliveredNmol)} nmol on column`
-            : "";
-
         result.classList.toggle(
             "cdd-hplc-result-warn",
             computed.warning === "exceeds-vial"
         );
 
-        if (computed.warning === "exceeds-vial") {
-            note.textContent =
-                "Exceeds the vial volume — the dilution is too weak for this target.";
-            note.className = "cdd-hplc-note cdd-hplc-note-error";
-            note.hidden = false;
-        } else if (computed.warning === "floored") {
-            note.textContent =
-                `Rounded up to the ${HPLC_INJECTION_STEP_UL} µL minimum — the vial is ` +
-                "too concentrated, so this injection overshoots the target.";
-            note.className = "cdd-hplc-note cdd-hplc-note-warn";
-            note.hidden = false;
-        } else {
-            note.hidden = true;
-        }
-
-        paintAdvice(current);
+        paintWarning(current, computed);
     }
 
-    // One sentence, one action — see the optimiser for how the suggestion is
-    // chosen. Silence when the current preparation is already comfortable.
-    function paintAdvice(current) {
+    function hideWarning() {
+        warn.hidden = true;
+        warn.onclick = null;
+    }
+
+    function showWarning(text, { error = false, onclick = null } = {}) {
+        warn.hidden = false;
+        warn.disabled = !onclick;
+        warn.textContent = text;
+        warn.className = error ? "cdd-hplc-warn cdd-hplc-warn-error" : "cdd-hplc-warn";
+        warn.title = onclick ? "Apply to this reaction only" : "";
+        warn.onclick = onclick;
+    }
+
+    // What to say when the injection is not one the bench wants to make.
+    //
+    // One line, because it is read at a glance and it has to stay readable
+    // while the calculator below is shut. An injection larger than the whole
+    // sample takes that line whatever the optimiser thinks: that is a
+    // mistake, not a preference, and it is the only red one here.
+    function paintWarning(current, computed) {
+        if (computed.warning === "exceeds-vial") {
+            showWarning("⚠ More than the whole vial", { error: true });
+            return;
+        }
+
         const settings = getHplcSettings();
-        const result = optimizeInjection({
+        const outcome = optimizeInjection({
             molarity,
             targetNmol: current.targetNmol,
             dropUl: settings.aliquotUl,
@@ -338,55 +322,47 @@ export function createHplcInjectionBlock(reaction, color) {
             injectionMaxUl: settings.injectionMaxUl,
         });
 
-        if (result.ok) {
-            advice.hidden = true;
-            advice.onclick = null;
+        if (outcome.ok) {
+            hideWarning();
             return;
         }
 
-        if (result.reason === "impossible" || !result.suggestion) {
-            advice.hidden = false;
-            advice.disabled = true;
-            advice.textContent =
-                result.reason === "impossible"
-                    ? "⚠ No dilution on the ladder brings this into the injector's range."
-                    : "⚠ Outside the comfortable range, and nothing on the ladder does better.";
-            advice.onclick = null;
+        // "impossible" and "nothing on the ladder does better" are the same
+        // sentence to the person holding the vial: there is no move to make.
+        if (!outcome.suggestion) {
+            showWarning("⚠ Nothing on the ladder brings this in range");
             return;
         }
 
-        const s = result.suggestion;
+        const s = outcome.suggestion;
         const lead =
-            result.reason === "too-dilute" ? "Too dilute" : "Too concentrated";
+            outcome.reason === "too-dilute" ? "Too dilute" : "Too concentrated";
 
         const steps = [];
-        if (Math.abs(s.vialMl - current.vialMl) > 1e-9) {
-            steps.push(`dilute into ${s.vialMl} mL`);
-        }
+        if (Math.abs(s.vialMl - current.vialMl) > 1e-9) steps.push(`${s.vialMl} mL`);
+
         const currentDrops = Math.max(1, Math.round(current.aliquotUl / settings.aliquotUl));
         if (s.drops !== currentDrops) {
-            steps.push(`take ${s.drops} drop${s.drops === 1 ? "" : "s"}`);
+            steps.push(`${s.drops} drop${s.drops === 1 ? "" : "s"}`);
         }
-        if (s.dilution !== 1) {
-            steps.push(`dilute the aliquot ${s.dilution}×`);
-        }
+        if (s.dilution !== 1) steps.push(`${s.dilution}× dilution`);
 
-        advice.hidden = false;
-        advice.disabled = false;
-        advice.textContent =
-            `⚠ ${lead} — ${steps.join(", ")} → ${s.volumeUl.toFixed(1)} µL injection`;
-        advice.title = "Apply to this reaction only";
-
-        advice.onclick = () => {
-            setOverride(reactionIndex, "vialMl", s.vialMl);
-            // The EFFECTIVE aliquot, dilution folded in — a 20×-diluted drop
-            // puts the same material in the vial as 0.5 µL would, which is
-            // exactly how the bench's own grid labels that row. Without this
-            // the click would apply a suggestion whose dilution has nowhere
-            // to live, and the number would not move.
-            setOverride(reactionIndex, "aliquotUl", s.aliquotUl);
-            repaint();
-        };
+        showWarning(
+            `⚠ ${lead} → ${steps.join(", ")} = ${s.volumeUl.toFixed(1)} µL`,
+            {
+                onclick: () => {
+                    setOverride(reactionIndex, "vialMl", s.vialMl);
+                    // The EFFECTIVE aliquot, dilution folded in — a 5×-diluted
+                    // drop puts the same material in the vial as 2 µL would,
+                    // which is exactly how the bench's own grid labels that
+                    // row. Without this the click would apply a suggestion
+                    // whose dilution has nowhere to live, and the number would
+                    // not move.
+                    setOverride(reactionIndex, "aliquotUl", s.aliquotUl);
+                    repaint();
+                },
+            }
+        );
     }
 
     repaint();
@@ -406,13 +382,6 @@ export const HPLC_BLOCK_STYLES = `
     border-radius: 10px;
     padding: 10px;
     background: #0f172a;
-  }
-
-  .cdd-hplc-exact {
-    margin-top: 2px;
-    font-size: 10px;
-    line-height: 1.3;
-    color: #94a3b8;
   }
 
   .cdd-hplc-reset {
@@ -506,24 +475,14 @@ export const HPLC_BLOCK_STYLES = `
     color: #fbbf24;
   }
 
-  .cdd-hplc-note {
-    margin-top: 5px;
-    font-size: 10px;
-    line-height: 1.35;
-  }
-
-  .cdd-hplc-note-warn {
-    color: #f59e0b;
-  }
-
   /* An author display rule beats the UA stylesheet's [hidden] rule, so without
-     this the element stays on screen when advice.hidden = true -- an empty
+     this the element stays on screen when warn.hidden = true -- an empty
      amber bar on every reaction that needs no advice. */
-  .cdd-hplc-advice[hidden] {
+  .cdd-hplc-warn[hidden] {
     display: none;
   }
 
-  .cdd-hplc-advice {
+  .cdd-hplc-warn {
     display: block;
     width: 100%;
     margin-top: 6px;
@@ -539,16 +498,20 @@ export const HPLC_BLOCK_STYLES = `
     cursor: pointer;
   }
 
-  .cdd-hplc-advice:hover:not(:disabled) {
+  .cdd-hplc-warn:hover:not(:disabled) {
     background: rgba(245, 158, 11, 0.22);
   }
 
-  .cdd-hplc-advice:disabled {
+  .cdd-hplc-warn:disabled {
     cursor: default;
     opacity: 0.85;
   }
 
-  .cdd-hplc-note-error {
-    color: #ef4444;
+  /* An injection larger than the whole sample is a mistake, not a preference
+     -- the only red one here. */
+  .cdd-hplc-warn-error {
+    color: #fca5a5;
+    background: rgba(239, 68, 68, 0.12);
+    border-color: rgba(239, 68, 68, 0.45);
   }
 `;

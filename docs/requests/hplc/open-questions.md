@@ -1,90 +1,78 @@
-# HPLC injection — what is assumed, and what is still open
+# HPLC injection — the parameters, and where they came from
 
-Status: **waiting on Pavel Kraina.** No date. Everything below is shipped and
-working; the open items are parameter values, not design.
+Status: **answered.** Pavel Kraina replied on 2026-08-21; his answers are in
+the chat log of that day. Everything below is now in code.
 
-The questionnaire sent to Pavel is in the chat log of 2026-08-21. This file is
-so the work can be picked up cold.
+## The parameters
 
-## Where the numbers live
-
-| assumption | value | where in code | how confident |
+| parameter | value | where | source |
 |---|---|---|---|
-| one drop | 10 µL | `DEFAULT_HPLC_ALIQUOT_VOLUME_UL`, `shared/hplc-injection.js` | from the printed guide's footer |
-| drop ceiling | 5 drops | `MAX_DROPS`, `shared/hplc-optimizer.js` | from the guide's rows |
-| dilution factors | 2, 5, 10, 20 | `DILUTION_FACTORS`, same file | from the guide's rows |
-| injector range | 0.1–10 µL | `INJECTION_MIN_UL` / `INJECTION_MAX_UL` | Matúš, not confirmed against the instrument |
-| comfortable band | 0.5–2 µL | `COMFORT_MIN_UL` / `COMFORT_MAX_UL` | Matúš |
-| injection step | 0.1 µL | `HPLC_INJECTION_STEP_UL`, `shared/hplc-injection-math.js` | matches the guide, which prints one decimal |
-| target amount | 0.2 nmol | `DEFAULT_HPLC_TARGET_AMOUNT_NMOL` | Matúš, corrected from 2 back to 0.2 |
-| vial ladder | 0.1, 0.25, 0.5, 1, 1.5, 2 mL | `DEFAULT_VIAL_LADDER_ML`, `shared/hplc-optimizer.js` | **known partly wrong — see below** |
-| lever priority | vial → drops → dilute aliquot | layer order in `layers()` | Matúš; Pavel not yet asked |
+| one drop | 10 µL | `DEFAULT_HPLC_ALIQUOT_VOLUME_UL` | ~±5 µL across solvents and technique |
+| drop ceiling | **3** | `MAX_DROPS` | "nejvice bezne je jedna kapka, ale dve az tri nejsou problem" |
+| dilution factors | **2, 5** | `DILUTION_FACTORS` | "realne se pouziva asi jen 2x a 5x" |
+| injector range | 0.1–10 µL | `INJECTION_MIN_UL` / `_MAX_UL` | Waters Acquity H-Class, 0.1 µL steps |
+| comfortable band | **0.3–2 µL** | `COMFORT_MIN_UL` / `_MAX_UL` | "nejlepsi je davat zhruba mezi 0.3 a 2 uL" |
+| injection step | 0.1 µL | `HPLC_INJECTION_STEP_UL` | finer is possible, "ale to nikdo delat nebude" |
+| target amount | 0.2 nmol | `DEFAULT_HPLC_TARGET_AMOUNT_NMOL` | measured default, real range 0.1–0.3 |
+| vial ladder | **0.25, 1.5 mL** | `DEFAULT_VIAL_LADDER_ML` | insert + standard vial; nothing between |
 
-Everything except the ladder and the aliquot/vial/target defaults is a
-**constant**, on the grounds that it describes the instrument rather than a
-preference. Each is one line to change.
+Four were wrong before he answered — the drop ceiling, the dilution factors,
+the band's lower edge, and the whole ladder.
 
-## The known-wrong default
+## What changed, and why it mattered
 
-Matúš asked Pavel about vials on 2026-08-21 and got:
+**The band starts at 0.3, not 0.5.** This alone silences the block on the
+reference entry: 0.1 M with one drop into 1.5 mL computes exactly 0.30 µL,
+and the tool had been calling that too concentrated and offering to fix it.
+The reason for 0.3 is not precision but headroom — "at je prostor doladit
+koncentraci".
 
-> Ředíme to do 1.5 mL, ta vialka má 2 mL celkem ale to je fakt úplně na hranu
-> a insert má 250 µL.
+**The insert is 250 µL, not 100.** The old default ladder offered 0.1 mL,
+a vessel the lab does not own, along with 0.5, 1 and 2 mL, which it also
+does not use. 2 mL exists but is "skoro nepouzitelne".
 
-So the shipped default ladder is wrong in two ways:
+**Lever order depends on direction.** The original search always tried the
+vessel first. Pavel's answer to E1 splits it:
 
-- **0.1 mL does not exist.** The insert is **0.25 mL**. The optimiser can
-  currently suggest a vessel the lab does not own.
-- **2 mL is "on the edge"** and probably should not be offered at all.
-- 0.5 and 1 mL are **unknown** — question D1 asks whether anything sits
-  between the insert and 1.5 mL.
+- **too dilute** → more drops first, the insert only if drops run out
+- **too concentrated** → the pour-out dilution (a drop into 1.5–2 mL, half
+  tipped out, topped up again — that is one 2×)
 
-Deliberately **not** changed yet: dropping to `0.25, 1.5` now and changing it
-again when D1 comes back would move the default twice, and a default that
-moves under users who have not touched the setting is worse than one that is
-briefly too generous. The ladder is editable in the options page meanwhile.
+Levers that push the wrong way are now excluded from the search rather than
+ranked last: more drops can only make a concentrated sample worse, and
+diluting can only make a dilute one worse.
 
-**Decision to make when Pavel answers:** set `DEFAULT_VIAL_LADDER_ML` once,
-from D1 + D2.
+**Diluting is expensive, and that is a workflow fact, not a chemistry one.**
+"Nechci resit 5 minut redeni vzorku, kdyz se denne meri stovky vzorku." It
+stays the last resort even where it is the only lever that works. This is
+separate from accuracy — see `hplc-work-is-qualitative`, this is still not
+quantitation.
 
-## What the narrow ladder implies
+**10 µL is a real ceiling.** "Nastrik 10 uL neni vubec problem, je to krajni
+hodnota ale pouziva se." So the fallback to the instrument range when the
+comfortable band is unreachable is right, not a compromise.
 
-Worth knowing before reading Pavel's answers, because it shapes what the
-optimiser can do at all.
+## Consequences worth knowing
 
-With only 0.25 and 1.5 mL, the vial lever spans **6×**. That is enough for
-dilute reactions and useless for concentrated ones:
+With only two vessels the vial lever spans 6×, and it is useless in one
+direction: a smaller vessel makes a concentrated sample worse. At or above
+about 0.1 M, diluting the aliquot is the only lever there is — which is
+exactly what Pavel confirmed in B4.
 
-| M | 1 drop into 1.5 mL | 1 drop into 0.25 mL | what actually helps |
-|---|---|---|---|
-| 0.01 | 3.0 µL (too big) | **0.5 µL** ✓ | the insert |
-| 0.1 | 0.3 µL (too small) | 0.05 µL (worse) | dilution only |
-| 0.5 | 0.06 µL | 0.01 µL | dilution only |
+And with dilutions capped at 5×, the concentrated end runs out sooner than
+the old 20× grid suggested. Around 0.5 M the best available lands on 0.30 µL,
+right at the bottom of the band; past roughly 1 M the block falls back to
+"injectable but not comfortable", and past about 2 M it says so plainly
+rather than inventing a number.
 
-A smaller vial makes a concentrated sample **worse**, so for anything at or
-above ~0.1 M the only lever is diluting the aliquot. That is why questions B4
-and B5 exist: if Pavel does something else in that situation, the advice text
-is wrong even though the arithmetic is right.
+## Still open
 
-## Verified against the bench's own grid
+Nothing on parameters. Two things not asked because they are ours, not his:
 
-`docs/requests/hplc/db455d19-9b02-4108-8ad0-a54e4e7edf0f.jpg` is Pavel's
-printed *UPLC-MS Injection Volume Guide*, and every cell of it is this
-plugin's formula. Thirteen cells are pinned as fixtures in the throwaway node
-checks, including:
-
-- 1 drop, 0.01 M → 3.0
-- 1 drop, 0.04 M → 0.8 (proves the 0.1 µL rounding)
-- 20× dilution, 0.06 M → 10.0
-- 20× dilution, 0.5 M → 1.2 — which the optimiser reaches independently
-
-The grid's footer fixes the other inputs: 0.2 nmol, 1.5 mL vial, 10 µL drop.
-
-## Two things Pavel might overturn
-
-- **Lever priority (section E).** The only assumption taken from Matúš rather
-  than from the grid, and the one that decides which sentence the block
-  shows. A different order is a one-line change to `layers()`.
-- **Serial dilution being free (section B6).** The current design never warns
-  about it, because this is reaction monitoring rather than quantitation. If
-  Pavel disagrees the whole ranking changes, not just the copy.
+- The target amount is a single global default. Pavel says the real range is
+  0.1–0.3 nmol depending on how well the compound ionises, extrapolated from
+  caffeine. Per-compound targets are not modelled and nobody has asked for
+  them.
+- The optimiser suggests one thing. If the top suggestion turns out to be
+  the wrong one in practice, that is the moment to reconsider showing
+  alternatives.

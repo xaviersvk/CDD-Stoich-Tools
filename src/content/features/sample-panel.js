@@ -319,11 +319,14 @@ export function ensurePanel() {
     white-space: nowrap;
   }
 
-  /* Under 300px the title is the first thing to go: it is the only part of
-     the header that is decoration rather than a control. Dropping it buys
-     roughly 90px, which is the difference between the buttons sitting on one
-     row and wrapping onto three. */
-  @container (max-width: 300px) {
+  /* The title is the first thing to go: it is the only part of the header
+     that is decoration rather than a control.
+     330, not 300. Measured in the browser: with the title shown the header
+     still fits on one row at 340px and wraps at 320. A threshold of 300 left
+     a band where a 320px panel had a 66px header while a 300px one had 44 —
+     a wider panel with a taller header, which is silly, and 300 is the
+     default width so everyone would have sat on that edge. */
+  @container (max-width: 330px) {
     #${PANEL_ID} .cdd-stoich-title {
       display: none;
     }

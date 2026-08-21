@@ -49,14 +49,22 @@ let listenerAttached = false;
 // Survives a re-render, cleared when the entry changes.
 const overrides = new Map();
 
+// reactionIndex of every block whose calculator is open.
+//
+// Same home as `overrides`, for the same reason: a flag kept on the DOM node
+// would be thrown away by the next renderSamples, which rebuilds every block
+// from scratch. Not persisted either — this is a glance, not a preference.
+const expanded = new Set();
+
 export function resetHplcInjectionBlocks() {
     liveBlocks = [];
 }
 
 // Called when the ELN entry changes — see the url-watcher callback in
 // content/main.js, next to resetState().
-export function clearHplcInjectionOverrides() {
+export function clearHplcInjectionState() {
     overrides.clear();
+    expanded.clear();
 }
 
 const FIELDS = {
@@ -159,12 +167,30 @@ export function createHplcInjectionBlock(reaction, color) {
     if (color?.border) block.style.borderLeftColor = color.border;
     if (color?.glow) block.style.boxShadow = `0 0 0 1px ${color.glow} inset`;
 
-    const top = document.createElement("div");
-    top.className = "cdd-hplc-top";
+    const header = document.createElement("div");
+    header.className = "cdd-hplc-header";
+    header.setAttribute("role", "button");
+    header.tabIndex = 0;
 
     const title = document.createElement("span");
     title.className = "cdd-hplc-title";
     title.textContent = "HPLC injection";
+
+    // The inputs are behind a collapse now, and so is the `reset` pill that
+    // used to say "this reaction is not on the settings' numbers". Without
+    // this dot that fact would be invisible at rest.
+    const dot = document.createElement("span");
+    dot.className = "cdd-hplc-dot";
+    dot.textContent = "•";
+    dot.title = "This reaction uses its own numbers";
+    dot.hidden = true;
+
+    const chevron = document.createElement("span");
+    chevron.className = "cdd-hplc-chevron";
+
+    const headLeft = document.createElement("span");
+    headLeft.className = "cdd-hplc-head-left";
+    headLeft.append(title, dot, chevron);
 
     const reset = document.createElement("button");
     reset.type = "button";
@@ -180,7 +206,7 @@ export function createHplcInjectionBlock(reaction, color) {
     const result = document.createElement("span");
     result.className = "cdd-hplc-result";
 
-    top.append(title, reset, result);
+    header.append(headLeft, result);
 
     const molarityEl = document.createElement("span");
     molarityEl.className = "cdd-hplc-molarity";
@@ -213,6 +239,7 @@ export function createHplcInjectionBlock(reaction, color) {
         unit(" mL · "),
         targetInput,
         unit(" nmol"),
+        reset,
     );
 
     // One line, one action. It says what is wrong and — when there is one —
@@ -225,19 +252,57 @@ export function createHplcInjectionBlock(reaction, color) {
     warn.className = "cdd-hplc-warn";
     warn.hidden = true;
 
-    block.append(top, inputs, warn);
+    const body = document.createElement("div");
+    body.className = "cdd-hplc-body";
+    body.append(inputs);
+
+    // The warning sits OUTSIDE the body on purpose: a warning that hides when
+    // the block is shut is not a warning.
+    block.append(header, warn, body);
 
     let copyValue = "";
-    result.addEventListener("click", async () => {
+
+    // The header toggles; the number copies. Nested interactive elements are
+    // not valid markup, so the result stops its own click from reaching the
+    // header rather than being a button inside one.
+    result.addEventListener("click", async (event) => {
+        event.stopPropagation();
         if (!copyValue) return;
         await copyTextWithFeedback(result, copyValue);
     });
+
+    header.addEventListener("click", toggle);
+    header.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        // Space scrolls the panel otherwise.
+        event.preventDefault();
+        toggle();
+    });
+
+    function toggle() {
+        if (expanded.has(reactionIndex)) expanded.delete(reactionIndex);
+        else expanded.add(reactionIndex);
+        paintCollapse();
+    }
+
+    function paintCollapse() {
+        const open = expanded.has(reactionIndex);
+        body.hidden = !open;
+        chevron.textContent = open ? "⌃" : "⌄";
+        header.setAttribute("aria-expanded", String(open));
+    }
 
     function repaint() {
         const current = effectiveParams(reactionIndex);
         const local = overrides.get(reactionIndex) || {};
 
-        reset.hidden = !Object.keys(local).length;
+        const overridden = Object.keys(local).length > 0;
+        reset.hidden = !overridden;
+        dot.hidden = !overridden;
+
+        // Reading the map here — rather than starting shut — is what makes an
+        // open block survive renderSamples rebuilding it.
+        paintCollapse();
 
         for (const [input, name] of [
             [aliquotInput, "aliquotUl"],
@@ -403,11 +468,48 @@ export const HPLC_BLOCK_STYLES = `
     background: rgba(245, 158, 11, 0.25);
   }
 
-  .cdd-hplc-top {
+  .cdd-hplc-header {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
     gap: 8px;
+    cursor: pointer;
+  }
+
+  .cdd-hplc-header:focus-visible {
+    outline: 1px solid rgba(56, 189, 248, 0.7);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  .cdd-hplc-head-left {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+    min-width: 0;
+  }
+
+  .cdd-hplc-chevron {
+    font-size: 9px;
+    line-height: 1;
+    color: #64748b;
+  }
+
+  /* This reaction is not on the settings' numbers. */
+  .cdd-hplc-dot {
+    font-size: 14px;
+    line-height: 1;
+    color: #f59e0b;
+  }
+
+  .cdd-hplc-dot[hidden] {
+    display: none;
+  }
+
+  /* .cdd-hplc-inputs sets display:flex, which would beat the UA stylesheet's
+     [hidden] rule if the body were still display:block. */
+  .cdd-hplc-body[hidden] {
+    display: none;
   }
 
   .cdd-hplc-title {

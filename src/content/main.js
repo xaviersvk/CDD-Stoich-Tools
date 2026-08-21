@@ -55,7 +55,7 @@ import {initDensityMemory, onDensityMemoryChanged} from "../shared/density-memor
 import {initAutoFill} from "./features/auto-fill.js";
 import {initPurityThresholds, onPurityThresholdChanged} from "../shared/purity-threshold.js";
 import {initHplcSettings, onHplcBlockEnabledChanged} from "../shared/hplc-injection.js";
-import {clearHplcInjectionOverrides} from "./features/hplc-injection-block.js";
+import {clearHplcInjectionState} from "./features/hplc-injection-block.js";
 import {initShowProducts, onShowProductsChanged} from "../shared/show-products-flag.js";
 import {initElnIdToBatch, onElnIdToBatchChanged} from "../shared/eln-id-to-batch.js";
 import {initHeatMapFieldsConfig} from "../shared/heat-map-fields.js";
@@ -109,7 +109,7 @@ function init() {
     resetState();
     // Per-reaction HPLC overrides describe the entry being left, not the one
     // being opened — "reaction 1 took two drops" does not carry over.
-    clearHplcInjectionOverrides();
+    clearHplcInjectionState();
 
     // Same reasoning: a "✓ Internal ID set to MDX-0095" belongs to the entry
     // it was clicked in.

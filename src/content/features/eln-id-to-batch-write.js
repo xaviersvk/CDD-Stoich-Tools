@@ -57,7 +57,7 @@ function waitFor(check, timeoutMs) {
         const started = Date.now();
 
         const tick = () => {
-            let value = null;
+            let value;
             try {
                 value = check();
             } catch {

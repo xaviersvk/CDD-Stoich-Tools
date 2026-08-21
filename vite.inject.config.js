@@ -8,7 +8,7 @@ export default defineConfig({
         target: "es2020",
         minify: false,
         rollupOptions: {
-            input: resolve(__dirname, "src/inject/main.js"),
+            input: resolve(import.meta.dirname, "src/inject/main.js"),
             output: {
                 entryFileNames: "assets/inject.js",
                 // One file, no chunks: see vite.content.config.js.

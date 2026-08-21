@@ -20,7 +20,13 @@ import { loadPanelState, savePanelState } from "./panel-state.js";
 const WIDTH_VAR = "--cdd-panel-width";
 const HEIGHT_VAR = "--cdd-panel-height";
 
-const MIN_WIDTH = 240;
+// The header holds six controls — refresh, print, CSV, its caret, and the
+// collapse toggle — and the panel is `overflow: hidden`. At the old 240 the
+// toggle's right edge landed at 276px, i.e. entirely outside the panel and
+// unclickable: the resizer allowed a state you could not collapse your way
+// out of. 278 is the first width at which nothing is clipped; 280 is that
+// with a little air.
+const MIN_WIDTH = 280;
 const MIN_HEIGHT = 160;
 
 // Room left around the panel so a resize can never park an edge exactly on the
@@ -133,8 +139,58 @@ function toPositiveNumber(value) {
     return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
+// How much of the panel has to stay on screen for it to be draggable again.
+// The header is the drag handle, so keeping that much visible is the
+// difference between "awkwardly placed" and "gone, clear localStorage".
+const HEADER_KEEP_PX = 44;
+
+// Pull a panel back into the window it is actually in.
+//
+// The size was always clamped on restore; the POSITION was not, and there was
+// no resize listener either — so a panel left near the right edge of a wide
+// monitor reopened at the same absolute x on a laptop, entirely off-screen,
+// with no way back. The same happens when a window is merely made smaller.
+//
+// A panel still in its default corner has `left: auto` and cannot drift, so
+// it is left alone.
+export function clampPanelIntoView(panel) {
+    if (!panel) return;
+
+    const left = parseFloat(panel.style.left);
+    const top = parseFloat(panel.style.top);
+    if (!Number.isFinite(left) || !Number.isFinite(top)) return;
+
+    const rect = panel.getBoundingClientRect();
+
+    // Math.max guards the case where the panel is wider or taller than the
+    // window: the upper bound would otherwise fall below the lower one.
+    const maxLeft = Math.max(
+        VIEWPORT_MARGIN,
+        window.innerWidth - rect.width - VIEWPORT_MARGIN
+    );
+    const maxTop = Math.max(VIEWPORT_MARGIN, window.innerHeight - HEADER_KEEP_PX);
+
+    panel.style.left = `${clamp(left, VIEWPORT_MARGIN, maxLeft)}px`;
+    panel.style.top = `${clamp(top, VIEWPORT_MARGIN, maxTop)}px`;
+}
+
+let viewportWatcherAttached = false;
+
+// One listener for the life of the page. It looks the panel up by id rather
+// than closing over it, so a panel torn down and rebuilt does not leave a
+// listener holding a detached node.
+function watchViewportResize() {
+    if (viewportWatcherAttached) return;
+    viewportWatcherAttached = true;
+
+    window.addEventListener("resize", () => {
+        clampPanelIntoView(document.getElementById(PANEL_ID));
+    });
+}
+
 // Re-apply a remembered size, capped to the window the panel is opening in —
-// a size saved on a wide monitor must not hand a laptop an off-screen panel.
+// a size saved on a wide monitor must not hand a laptop a panel wider than
+// its screen. Position is clamped separately, by clampPanelIntoView.
 export function applySavedPanelSize(panel) {
     const state = loadPanelState();
 
@@ -152,6 +208,8 @@ export function applySavedPanelSize(panel) {
 }
 
 export function makePanelResizable(panel) {
+    watchViewportResize();
+
     if (!panel) return;
 
     ensureStyles();

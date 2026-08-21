@@ -73,6 +73,19 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   `var(--line, …)` where `--line` was never declared.
 - A focused number input no longer steps on the mouse wheel. With no Save button,
   scrolling the page past a threshold you had clicked rewrote it silently.
+- The panel could restore off-screen. Its size was clamped to the window on
+  restore but its POSITION never was, and nothing re-clamped on resize — so a
+  panel left near the right edge of a wide monitor reopened at the same
+  absolute x on a laptop, with no way back but clearing storage.
+- The panel could be resized to a width at which it could not be collapsed.
+  The minimum was 240px against a header needing 275, and the panel is
+  `overflow: hidden`, so the collapse toggle sat entirely outside it.
+  Minimum is now 280.
+- `⚠ LOW PURITY` was the least legible text in the panel at 4.12:1 on 10px
+  bold — red on a red tint, below the 4.5 WCAG AA wants — on the one badge
+  that must never be missed. The glyphs move to #f87171 (5.62:1); the badge
+  still reads red. The same red elsewhere measures 4.57–4.74 and passes, so
+  nothing else changed.
 - *Remembered batch values* renders up to a hundred rows and was the one card
   with no height cap.
 

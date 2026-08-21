@@ -37,8 +37,10 @@ block tells you what to change.**
 - **Settings is now a list and one pane** instead of eight cards at once.
 
 Fixes: the sample amount never filled at all; the injection block showed an
-empty amber strip; dark mode had a light border on the vault boxes; scrolling
-the page could silently rewrite a number you had clicked.
+empty amber strip; the panel could reopen off-screen after you moved it on a
+bigger monitor, or be made too narrow to collapse; the low-purity badge was the
+hardest text in the panel to read; scrolling the page could silently rewrite a
+number you had clicked.
 
 ---
 

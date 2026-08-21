@@ -37,7 +37,7 @@ import {
 } from "../../shared/sample-panel-fields.js";
 import { recordSampleIdPrefix } from "../../shared/prefix-colors.js";
 import { loadPanelState, savePanelState } from "./panel-state.js";
-import { makePanelResizable, applySavedPanelSize } from "./panel-resize.js";
+import { makePanelResizable, applySavedPanelSize, clampPanelIntoView } from "./panel-resize.js";
 import {
     createHplcInjectionBlock,
     resetHplcInjectionBlocks,
@@ -497,9 +497,14 @@ ${HPLC_BLOCK_STYLES.replace(/^ {2}\./gm, `  #${PANEL_ID} .`)}
     height: auto;
   }
 
+  /* #ef4444 on this tint measured 4.12:1 — the LEAST legible text in the
+     panel, on the one badge that must never be missed, and below the 4.5
+     WCAG AA needs for 10px bold. #f87171 on the same tint is 5.62:1. The
+     border and background keep the old red so the badge still reads as red
+     at a glance; only the glyphs move. */
   #${PANEL_ID} .cdd-low-purity-badge {
     background: rgba(239, 68, 68, 0.15);
-    color: #ef4444;
+    color: #f87171;
     font-weight: 700;
     font-size: 10px;
     padding: 2px 6px;
@@ -604,6 +609,12 @@ ${HPLC_BLOCK_STYLES.replace(/^ {2}\./gm, `  #${PANEL_ID} .`)}
 
     makePanelDraggable(panel);
     makePanelResizable(panel);
+
+    // AFTER the panel is in the document: this measures the panel to decide
+    // how far right it may sit, and a detached node measures as zero. Pulls a
+    // remembered position back into the window, which is what stopped a panel
+    // placed on a wide monitor from reopening off-screen on a laptop.
+    clampPanelIntoView(panel);
 
     refreshBtn.addEventListener("click", () => {
         renderFromState();

@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "checkJs": false,
+    "types": ["chrome"]
+  },
+  "include": ["src/**/*.js", "scripts/**/*.mjs", "vite.*.config.js"],
+  "exclude": ["node_modules", "dist", "dist-firefox", "site"]
+}

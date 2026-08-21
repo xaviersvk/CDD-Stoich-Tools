@@ -1,7 +1,8 @@
 # Carry the ELN ID onto a product's existing batch — design
 
 Date: 2026-08-21
-Status: approved by user (conversation)
+Status: approved by user (conversation). Revised the same day: the write is
+direct, from the ELN page, with no tab and no human Save.
 
 ## Problem
 
@@ -19,59 +20,107 @@ batch, click Edit, and type the entry ID by hand.
 ## What was verified live
 
 On production entry `2504170` (vault 6884, `PHA-MDX-0095`), product
-`PHA-0334592-001`. Read-only; nothing was saved.
+`PHA-0334592-001`, molecule `165290233`, batch `192201177`. Read-only —
+nothing was saved.
 
-- **The payload carries the identifiers.** The product row has
-  `batchId: 192201177`, `moleculeId: 165290233`, `hasSample: false`,
-  `role: "product"`. This is the fact the whole feature rests on.
-- **The DOM does not.** In the rendered entry, `PHA-0334592-001` is plain
-  text inside a `<span>` — no molecule link, no batch link, nothing to
-  follow. A DOM-driven version of this feature is not possible; it has to
-  come from the intercepted payload.
-- **The batch has an edit page**: `/vaults/6884/specified_batches/192201177/edit`,
-  reachable as an ordinary `<a href>` from the molecule page.
-- ***Internal ID* is empty, and emptier than expected.** Its data row reads
-  `{ text_value: null, id: null }` — the value row does not exist yet.
-- **The field definition is per vault.** *Internal ID* is `id 150242` in
-  vault 6884 and `id 152401` in vault 7965. Matching must be by NAME, which
-  is what `eln-id-carry` already does.
-- **`unique_value: true`, `overwritable: false`** on that definition. The
-  vault enforces that no two batches share an *Internal ID*.
-- **The batch's vault is not always the ELN's vault.** A reagent in the same
-  entry (protein `PRO-0000017`) lives in vault 7965 while the entry is in
-  6884. It happens to match for this product; the design must not assume it.
+**The identifiers are in the payload.**
+The product row carries `batchId: 192201177`, `moleculeId: 165290233`,
+`hasSample: false`, `role: "product"`. In the rendered entry the same thing
+is plain text in a `<span>` with no link at all, so a DOM-driven version of
+this feature could not exist. It has to come from the intercepted payload.
+
+**The molecule is the case, exactly.**
+Its tabs read *Batches 1, Samples 0*; the batch has
+`Chem Purpose: Virtual Compound`, `Batch Status: For Synthesis`, and an
+empty *Internal ID* whose data row does not exist yet
+(`{ text_value: null, id: null }`).
+
+**The field definition is per vault.**
+*Internal ID* is `id 150242` in vault 6884 and `id 152401` in vault 7965, so
+matching must be by NAME — which `eln-id-carry` already does. It is
+`unique_value: true, overwritable: false`.
+
+**The batch's vault is not always the ELN's vault.**
+A reagent in the same entry (protein `PRO-0000017`) lives in vault 7965
+while the entry is in 6884. Same host, different vault.
+
+**There is no server-rendered edit form.**
+`GET /vaults/6884/specified_batches/192201177/edit` **redirects** to the
+molecule page, and the returned HTML contains no control whose id starts
+`specified_batch_192201177_field_`. The edit form is built by React, in the
+browser, on the `#molecule-batches` tab.
+
+**But the rendered form is an ordinary Rails form.** Once React has it:
+
+```
+form.edit_specified_batch
+  action  /vaults/<vault>/specified_batches/<batchId>
+  method  post   +   hidden _method=put
+  104 named controls, including authenticity_token
+
+  specified_batch[salt_ratio]
+  specified_batch[salt_name]
+  specified_batch[solvent_of_crystallization_ratio]
+  specified_batch[solvent_of_crystallization_id]
+  specified_batch[eln_attached_structure_id]
+  specified_batch[editable_fields_including_blanks_attributes][i][value]
+  specified_batch[editable_fields_including_blanks_attributes][i][batch_field_definition_id]
+  specified_batch[editable_fields_including_blanks_attributes][i][id]
+```
+
+*Internal ID* is index `8`, control id
+`specified_batch_192201177_field_150242`.
+
+**Framing is allowed.** The molecule page answers
+`X-Frame-Options: SAMEORIGIN` and
+`Content-Security-Policy: frame-ancestors app.collaborativedrug.com`. The
+ELN page is on that host, so it may frame the molecule page and script it.
 
 ## Decisions
 
 | Question | Decision |
 | --- | --- |
 | What value | The ELN entry ID — the same one `eln-id-carry` carries on registration |
-| Existing value | **Never overwrite.** No button when the field is non-empty |
+| Existing value | **Never overwrite.** No button, and no request, when the field is non-empty |
 | Which rows | **Products only.** The ID means "this batch was made here"; a reactant was consumed here, not made |
-| How it writes | **The plugin fills, the user saves.** No headless write |
-| Two products, one ID | Not handled. Both get a button; CDD refuses the second Save in its own words |
+| How it writes | **Directly from the ELN**, by submitting CDD's own edit form. No tab, no Save |
+| Two products, one ID | Not handled. CDD refuses the second write and the card shows what it said |
 | Product enrichment | Products join the enrichment pass fully — their cards gain the real batch fields |
 | Bulk mode | Not now |
 
-**Why not a headless PUT.** A silent `PUT` is what "one click" literally
-asks for, and it was rejected on purpose: it means guessing an endpoint and
-a payload shape against a production batch, where a wrong payload can
-disturb fields nobody touched. The cost of the chosen route is one keypress
-per compound. If this ever runs over dozens of compounds, submitting CDD's
-own edit form (so the payload is CDD's, not ours) is the next step — but
-that is a different feature from the one specified here.
+### Why an iframe rather than a hand-built request
+
+A direct write means a `PUT` to
+`/vaults/<vault>/specified_batches/<batchId>`. The danger is not the verb —
+it is the **body**: that endpoint takes the batch's *whole* field set, so a
+body assembled by us decides the fate of all thirty fields, not just the one
+we care about. Get a pick-list, a date, or a file field wrong and the write
+quietly damages a batch nobody asked us to touch.
+
+The `react_props` on the molecule page do carry every current value, so a
+body *could* be reconstructed from them. It would still be our body, and its
+edge cases (pick lists, dates, batch links, uploads) are exactly where a
+reconstruction goes wrong. **`field_name_prefix` in those props even says
+`molecule[batch][…]`, which is the *Add a batch* form's prefix, not the edit
+form's `specified_batch[…]`.** Anyone building the body from the props would
+build the wrong one.
+
+So the body is never built. A hidden same-origin iframe loads the page, lets
+CDD render its own form with its own values and its own CSRF token, one
+input is changed, and `new FormData(form)` is posted to the form's own
+action. Every byte except the ELN ID is CDD's.
 
 ## Design
 
 ### 1 · Where the button lives
 
 On the product card in the samples panel, styled like the existing fill
-buttons (`buildFillButton`), one row, no new visual language.
+buttons (`buildFillButton`).
 
 This is the first action ever offered on a product card. The products spec
 of 2026-08-07 says *"Products are display-only in v1: no fill buttons, no
-density-memory"* — that was a scoping choice for v1, and it is deliberately
-reversed here rather than worked around.
+density-memory"* — a v1 scoping choice, deliberately reversed here rather
+than worked around. The options-page copy that repeats it must change too.
 
 ### 2 · When it is offered
 
@@ -83,9 +132,13 @@ All of these must hold:
 - the batch's *Internal ID* — under the label configured in `eln-id-carry`,
   not a hardcoded string — is **empty**
 
-When the field is already filled, the card shows the value it found and
-offers no button. That is the "never overwrite" decision made visible rather
-than silent: a missing button with no explanation reads as a bug.
+When it is already filled, the card shows the value that is there and offers
+no button. A missing button with no explanation reads as a bug.
+
+The value written is `applyIdentifierFormat(entryId, format)` plus
+`tableSuffix(sample.reactionIndex)` — the same composition the Register link
+already stamps, so a batch filled this way and one registered from the entry
+carry the identical string.
 
 ### 3 · Knowing whether it is empty
 
@@ -95,110 +148,119 @@ than silent: a missing button with no explanation reads as a bug.
 if (sample.isProduct) continue;   // no metafield fetches for products
 ```
 
-That line goes. Products join the same pass: it already fetches the molecule
-page once per molecule, caches the promise, and joins
-`batch_field_definitions` against the lot's data values. A product costs one
-GET per molecule not already fetched.
+That line goes. Products join the same pass, which already fetches the
+molecule page once per molecule, caches the promise, and joins
+`batch_field_definitions` against the lot's values. A product costs one GET
+per molecule not already fetched.
 
-Consequence, accepted deliberately: product cards start showing the batch
-fields they never showed — Purity, Density, Vendor ID, and whatever else the
-vault defines. Anyone with products switched on will see their panel change.
+Two additions to what enrichment records:
+
+- `sample.batchFieldMap` — the raw `{name: value}` map, so the button can
+  look up **the configured label** rather than the hardcoded names
+  `resolveBatchFields` knows.
+- `sample.batchVaultId` — parsed from the fetched response's final URL,
+  because the redirect may have landed in another vault.
+
+Consequence, accepted deliberately: product cards start showing batch fields
+they never showed — Purity, Density, Vendor ID, whatever the vault defines.
 
 ### 4 · What the click does
 
-Opens `/vaults/<batchVault>/specified_batches/<batchId>/edit` in a new tab,
-with the ELN ID in the query string under the existing `ELN_ID_PARAM`
-(`cdd_eln_id`). The content script on the landing page finds the *Internal
-ID* control for **that batch**, fills it, and stops. The user reads it and
-presses Save.
+1. Re-read the batch's current *Internal ID* from a fresh fetch of the
+   molecule page. The enrichment value may be minutes old, and this is the
+   last moment before a write.
+2. If it is no longer empty, stop and say so on the card. No request.
+3. Create a hidden iframe (`position: fixed; width: 0; height: 0;
+   border: 0`) at
+   `/vaults/<batchVaultId>/molecules/<moleculeId>#molecule-batches`.
+4. Wait for `form.edit_specified_batch` containing
+   `#specified_batch_<batchId>_field_<defId>` to appear. If the tab renders
+   read-only, click that batch's `a[href$="/specified_batches/<id>/edit"]`
+   inside the iframe first and keep waiting.
+5. Check the input is still empty. Set its value; dispatch `input` and
+   `change` so React's state follows.
+6. `POST` `new FormData(form)` to the form's own `action`, with
+   `credentials: "include"`. `_method=put` and `authenticity_token` ride
+   along because they are the form's own fields.
+7. Remove the iframe. Report on the button: `✓ Internal ID set to X`, or the
+   failure in CDD's own words.
 
-The URL is the wire for the same reason it already is on the registration
-path: the link opens a new tab, the two pages never share a JavaScript
-world, and storage would be a race against the new tab's load.
+Time-box every wait (10 s) and remove the iframe in a `finally`. An iframe
+left behind is a second CDD session running in the page.
 
-`<batchVault>` comes from the molecule page URL resolved during enrichment,
-not from `location.pathname`. The reagent example above is the reason.
+### 5 · The trap that costs an afternoon
 
-Reused as-is: `applyIdentifierFormat` (so the vault's ID format is honoured),
-`normalizeFieldLabel` (so `*Internal ID` and `Internal ID` are one label),
-and the guards from `registration-fill.js` — never overwrite a non-empty
-field, never touch a focused one, fill once.
+On the read-only molecule page the **only** control matching *Internal ID*
+by label belongs to the **"Add a batch"** form (`new_specified_batch[…]`).
+Filling that one and submitting would create a batch instead of editing one.
 
-### 5 · The two traps on the edit page
-
-**Cold navigation lands read-only.** Fetching
-`/vaults/7965/specified_batches/190898728/edit` directly ended at
-`…/molecules/164033132#molecule-batches/190898728` with the batch rendered
-read-only, `editable: false`. The batch's **Edit** control is a plain
-`<a href>` on that page, so the filler can click it — but whether a cold load
-needs that click, or whether in-app navigation opens edit mode by itself, is
-**not yet established**. It changes one step of the filler, not the design.
-
-**The wrong input is right there.** On that page the only control matching
-*Internal ID* by label belonged to the **"Add a batch"** form
-(`new_specified_batch[…]`), not to the batch being edited. The batch's own
-controls carry the id prefix `specified_batch_<batchId>_field_<defId>`. The
-fill must be anchored to that prefix, never to a label match alone.
-
-This is the same class of mistake as the Rails hidden input that shadowed the
-*Create a New Sample* checkbox: on a Rails page, a matching name or label is
-not proof of the right control.
+The target must be found by the id `specified_batch_<batchId>_field_<defId>`
+and by nothing else — not by label, not by name. This is the same class of
+mistake as the Rails hidden input that shadowed the *Create a New Sample*
+checkbox.
 
 ### 6 · Uniqueness
 
-Nothing special. Every eligible product gets a button. If the entry has two
-products and both are pushed, CDD refuses the second Save because
-*Internal ID* is `unique_value: true`, and it says so in its own words on its
-own page. The plugin neither predicts the refusal nor invents a suffix to
-dodge it.
+Every eligible product gets a button. If two products in one entry are both
+pushed, CDD refuses the second because *Internal ID* is `unique_value: true`.
+The card shows the refusal; the plugin neither predicts it nor invents a
+suffix to dodge it.
 
 ### 7 · Off by default
 
-A checkbox in the options page, off on install, per the standing rule that
-nobody's panel sprouts a new control because they updated.
+A checkbox in the options page, off on install. This one writes to a record
+without asking again, which is precisely the kind of thing that must not
+appear in anyone's panel because they updated.
 
 ## Files
 
+- `src/shared/eln-id-to-batch.js` (new) — the enabled flag with the usual
+  sync cache, plus a cache of `eln-id-carry`'s `{fieldLabel, format}` so the
+  synchronous panel render can read them. DOM-free.
+- `src/content/api/batch-registration-props.js` (new) — `readBatchProps(doc,
+  batchId)` returning `{ fieldMap, definitions, vaultId }` from a molecule
+  document. Used by the enrichment pass and by the pre-write re-check, so
+  the two cannot disagree about what "empty" means.
 - `src/content/features/batch-field-enrichment.js` — drop the `isProduct`
-  skip; carry the resolved molecule-page vault so callers can build batch
-  URLs.
-- `src/shared/eln-id-to-batch.js` (new) — the enabled flag, and the pure
-  helper that builds the edit URL with `cdd_eln_id` from
-  `{ vaultId, batchId, elnId }`. DOM-free, so the options page can import it.
-- `src/content/features/sample-panel.js` — the button on the product card,
-  and the "already set to X" line when it is not offered.
-- `src/content/features/ui-fixes/batch-internal-id-fill.js` (new) — the
-  landing-page filler: read `cdd_eln_id`, find the control under
-  `specified_batch_<batchId>_field_<defId>`, fill, stop.
-- `src/options/` — the checkbox.
+  skip; record `batchFieldMap` and `batchVaultId`.
+- `src/content/features/eln-id-to-batch-write.js` (new) — the iframe write.
+  One job, isolated, easy to delete if it ever has to go.
+- `src/content/features/sample-panel.js` — the button and the "already set"
+  line on product cards.
+- `src/content/main.js` — init the flag cache.
+- `src/options/options.html`, `src/options/options.js` — the checkbox, and
+  the corrected products copy.
 
 ## Not in scope
 
-- Any write the plugin performs itself. Save stays a human keypress.
 - Reactants, and any field other than the one `eln-id-carry` is configured
   for.
 - A bulk "fill all products" action.
 - `eln-id-carry` stores its field label **globally** while its own comment
-  says the label is per-vault configuration. Already recorded as debt in the
+  says the label is per-vault configuration. Recorded as debt in the
   registration-defaults spec; still not this spec's job.
 
 ## Verification
 
-No test runner. The pure parts — the URL builder, the label match, the
-"is it empty" predicate — get the usual throwaway `node` script.
+No test runner. The pure parts — the label match, the "is it empty"
+predicate, the composed value, the target's control id — get the usual
+throwaway `node` script.
 
-The rest is live, on entry `2504170` and product `PHA-0334592-001`, whose
-*Internal ID* is empty today:
+The rest is live. **The first live write must be to a batch chosen for the
+purpose**, not to whichever product happens to be at hand, because unlike
+every other feature in this plugin it cannot be undone by closing a tab.
 
 1. Switch the feature on in the options page.
-2. Open the entry. The product card offers the button.
-3. Click it. The batch edit page opens with *Internal ID* showing
-   `PHA-MDX-0095` and nothing else changed.
-4. **Stop there and read the form** before deciding whether to save. Every
-   step up to this point is reversible by closing the tab.
-5. On a product whose *Internal ID* is already set, the card shows the value
-   and offers no button.
-6. On a reactant, nothing appears at all.
-
-The vault is production. The verification ends at "the field shows the right
-value"; whether to press Save is the user's call, per compound.
+2. Open entry `2504170`. The product card for `PHA-0334592-001` offers the
+   button; reactant cards do not.
+3. Before clicking: open the batch in another tab and confirm *Internal ID*
+   is empty.
+4. Click. The button reports `✓ Internal ID set to PHA-MDX-0095`.
+5. Reload the batch. *Internal ID* holds that value **and every other field
+   is unchanged** — Chem Purpose, Batch Status, Synth. Assigned To,
+   Priority, Date, and the salt/solvent ratios. This is the check the whole
+   design exists for; do it field by field the first time.
+6. Click again on the same card. It refuses without a request, because the
+   field is no longer empty.
+7. On a second product in the same entry, the write is refused by CDD and
+   the card shows what CDD said.

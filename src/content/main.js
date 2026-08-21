@@ -57,6 +57,7 @@ import {initPurityThresholds, onPurityThresholdChanged} from "../shared/purity-t
 import {initHplcSettings, onHplcBlockEnabledChanged} from "../shared/hplc-injection.js";
 import {clearHplcInjectionOverrides} from "./features/hplc-injection-block.js";
 import {initShowProducts, onShowProductsChanged} from "../shared/show-products-flag.js";
+import {initElnIdToBatch, onElnIdToBatchChanged} from "../shared/eln-id-to-batch.js";
 import {initHeatMapFieldsConfig} from "../shared/heat-map-fields.js";
 import {initPanelSources, onPanelSourcesChanged} from "../shared/panel-sources-flag.js";
 import {initElnMentions} from "./features/mentions/init.js";
@@ -221,6 +222,13 @@ function init() {
   // Optional products section (panel + print).
   initShowProducts().then(() => {
     onShowProductsChanged(() => renderFromState());
+  });
+
+  // Writing this entry's ID onto a product's existing batch. Off by default:
+  // it is the only thing in the panel that saves to a record rather than to
+  // the stoichiometry table.
+  initElnIdToBatch().then(() => {
+    onElnIdToBatchChanged(() => renderFromState());
   });
 
   // Which sources the panel draws from (stoichiometry tables / entity links

@@ -265,68 +265,10 @@
 
             <div class="card__body card__body--scroll">
                 <p class="note">
-                    Which form the Create Entity page opens on, in what order the list reads, and what it already knows.
+                    Which form the Create Entity page opens on, and in what order the picklist reads.
                 </p>
 
-                <div class="eln-id-carry">
-                    <p class="eyebrow">From the ELN</p>
 
-                    <label class="field-item eln-id-carry__toggle">
-                        <input type="checkbox" id="elnIdCarryEnabled" />
-                        <span>Registering from a stoichiometry row fills the
-                        entry's <strong>ID</strong> into the new entity
-                        — <code>IDEMO-MDX-0014</code>. The entry's second
-                        stoichiometry table adds a <code>B</code>, the third a
-                        <code>C</code>. Only an empty field is filled.</span>
-                    </label>
-
-                    <div class="eln-id-carry__field">
-                        <label for="elnIdCarryFieldLabel">Field it goes into</label>
-                        <input type="text" id="elnIdCarryFieldLabel"
-                               class="text-input" spellcheck="false"
-                               placeholder="Internal ID" />
-                    </div>
-
-                    <p class="note">
-                        The field's name on the Create Entity page. CDD's required
-                        marker doesn't count — <code>Internal ID</code> matches
-                        <code>*Internal ID</code>.
-                    </p>
-
-                    <fieldset class="choices eln-id-carry__format">
-                        <legend class="eyebrow">ELN identifier format</legend>
-
-                        <p class="note eln-id-carry__format-note">
-                            The same three CDD offers under ELN settings. Only an
-                            admin can see which one this vault is on, so pick the
-                            one it uses.
-                        </p>
-
-                        <label class="choice">
-                            <input type="radio" name="elnIdFormat" value="vault-user" />
-                            <span class="choice__text">
-                                <span class="choice__label">Vault-User Identifier</span>
-                                <span class="choice__sample">PHA-MDX-0095 registers as MDX-0095</span>
-                            </span>
-                        </label>
-
-                        <label class="choice">
-                            <input type="radio" name="elnIdFormat" value="vault" />
-                            <span class="choice__text">
-                                <span class="choice__label">Vault Identifier</span>
-                                <span class="choice__sample">Carried whole</span>
-                            </span>
-                        </label>
-
-                        <label class="choice">
-                            <input type="radio" name="elnIdFormat" value="global" />
-                            <span class="choice__text">
-                                <span class="choice__label">Global Identifier</span>
-                                <span class="choice__sample">Carried whole</span>
-                            </span>
-                        </label>
-                    </fieldset>
-                </div>
 
                 <fieldset class="choices">
                     <legend class="eyebrow">Preselect</legend>
@@ -393,7 +335,7 @@
 
             <div class="card__body card__body--scroll">
                 <p class="note">
-                    Values filled in for you when you register a compound
+                    Everything filled in for you when you register a compound
                     <strong>from an ELN entry</strong> — <code>Origin</code> is
                     <code>Synthesized</code> for anything that came out of a
                     reaction. Kept per vault, because a field that exists in one
@@ -409,6 +351,67 @@
                     spelled exactly, otherwise the field is left alone.
                 </p>
 
+                <div class="eln-id-carry">
+                    <p class="eyebrow">From the ELN</p>
+
+                    <label class="field-item eln-id-carry__toggle">
+                        <input type="checkbox" id="elnIdCarryEnabled" />
+                        <span>Registering from a stoichiometry row fills the
+                        entry's <strong>ID</strong> into the new entity
+                        — <code>IDEMO-MDX-0014</code>. The entry's second
+                        stoichiometry table adds a <code>B</code>, the third a
+                        <code>C</code>. Only an empty field is filled.</span>
+                    </label>
+
+                    <div class="eln-id-carry__field">
+                        <label for="elnIdCarryFieldLabel">Field it goes into</label>
+                        <input type="text" id="elnIdCarryFieldLabel"
+                               class="text-input" spellcheck="false"
+                               placeholder="Internal ID" />
+                    </div>
+
+                    <p class="note">
+                        The field's name on the Create Entity page. CDD's required
+                        marker doesn't count — <code>Internal ID</code> matches
+                        <code>*Internal ID</code>.
+                    </p>
+
+                    <fieldset class="choices eln-id-carry__format">
+                        <legend class="eyebrow">ELN identifier format</legend>
+
+                        <p class="note eln-id-carry__format-note">
+                            The same three CDD offers under ELN settings. Only an
+                            admin can see which one this vault is on, so pick the
+                            one it uses.
+                        </p>
+
+                        <label class="choice">
+                            <input type="radio" name="elnIdFormat" value="vault-user" />
+                            <span class="choice__text">
+                                <span class="choice__label">Vault-User Identifier</span>
+                                <span class="choice__sample">PHA-MDX-0095 registers as MDX-0095</span>
+                            </span>
+                        </label>
+
+                        <label class="choice">
+                            <input type="radio" name="elnIdFormat" value="vault" />
+                            <span class="choice__text">
+                                <span class="choice__label">Vault Identifier</span>
+                                <span class="choice__sample">Carried whole</span>
+                            </span>
+                        </label>
+
+                        <label class="choice">
+                            <input type="radio" name="elnIdFormat" value="global" />
+                            <span class="choice__text">
+                                <span class="choice__label">Global Identifier</span>
+                                <span class="choice__sample">Carried whole</span>
+                            </span>
+                        </label>
+                    </fieldset>
+                </div>
+
+                <p class="eyebrow">Field defaults, per vault</p>
                 <div id="registrationDefaultsList" class="stack"></div>
 
                 <button id="registrationDefaultsAddVault" type="button" class="btn">Add a vault</button>

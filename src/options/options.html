@@ -472,6 +472,15 @@
                     card buttons or the panel's <em>Fill all</em> button for those.
                     Every write goes through CDD's own editor and autosave.</span>
                 </label>
+
+                <label class="field-item auto-fill-toggle">
+                    <input type="checkbox" id="fillRowName" />
+                    <span><strong>Fill row name from synonym</strong> — offer the
+                    molecule's shortest synonym for a stoichiometry row whose
+                    <em>Name</em> is still empty, and remember any name you type
+                    there yourself. Off by default: each new molecule costs one
+                    request for its page.</span>
+                </label>
             </div>
 
             <div class="card__body card__body--scroll">
@@ -566,29 +575,29 @@
                     </span>
                 </label>
 
-                <label class="field-item purity-threshold-row">
-                    <span>
-                        <strong>Comfortable injection range (µL)</strong> — outside
-                        the block offers you a different dilution. This sits inside the injector range above.
-                    </span>
-                    <span class="range-pair">
-                        <input type="number" id="hplcComfortMin" min="0" step="0.1"
-                               class="purity-threshold-input"
-                               aria-label="Comfortable injection range, from" />
-                        <span class="range-pair__to">to</span>
-                        <input type="number" id="hplcComfortMax" min="0" step="0.1"
-                               class="purity-threshold-input"
-                               aria-label="Comfortable injection range, to" />
-                        <button type="button" id="hplcComfortReset"
-                                class="range-reset"
-                                title="Back to the shipped default, 0.1 to 5 µL">
-                            reset
-                        </button>
-                    </span>
-                </label>
-
-                <label class="field-item purity-threshold-row">
-                    <span>
+                <label class="field-item purity-threshold-row">
+                    <span>
+                        <strong>Comfortable injection range (µL)</strong> — outside
+                        the block offers you a different dilution. This sits inside the injector range above.
+                    </span>
+                    <span class="range-pair">
+                        <input type="number" id="hplcComfortMin" min="0" step="0.1"
+                               class="purity-threshold-input"
+                               aria-label="Comfortable injection range, from" />
+                        <span class="range-pair__to">to</span>
+                        <input type="number" id="hplcComfortMax" min="0" step="0.1"
+                               class="purity-threshold-input"
+                               aria-label="Comfortable injection range, to" />
+                        <button type="button" id="hplcComfortReset"
+                                class="range-reset"
+                                title="Back to the shipped default, 0.1 to 5 µL">
+                            reset
+                        </button>
+                    </span>
+                </label>
+
+                <label class="field-item purity-threshold-row">
+                    <span>
                         <strong>Vial volumes you stock (mL)</strong> — when the
                         injection lands outside <span id="hplcComfortEcho">the
                         comfortable range</span>, the block suggests a different

@@ -57,6 +57,7 @@ import {initPurityThresholds, onPurityThresholdChanged} from "../shared/purity-t
 import {initHplcSettings, onHplcBlockEnabledChanged} from "../shared/hplc-injection.js";
 import {clearHplcInjectionState} from "./features/hplc-injection-block.js";
 import {initShowProducts, onShowProductsChanged} from "../shared/show-products-flag.js";
+import {initFillRowName} from "../shared/row-name-flag.js";
 import {initElnIdToBatch, onElnIdToBatchChanged} from "../shared/eln-id-to-batch.js";
 import {initHeatMapFieldsConfig} from "../shared/heat-map-fields.js";
 import {initPanelSources, onPanelSourcesChanged} from "../shared/panel-sources-flag.js";
@@ -227,6 +228,10 @@ function init() {
   initShowProducts().then(() => {
     onShowProductsChanged(() => renderFromState());
   });
+
+  // Row name from synonym. Off by default; nothing that depends on it runs
+  // until the flag is on.
+  initFillRowName();
 
   // Writing this entry's ID onto a product's existing batch. Off by default:
   // it is the only thing in the panel that saves to a record rather than to

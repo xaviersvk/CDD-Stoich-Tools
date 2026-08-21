@@ -33,6 +33,10 @@ import {
     saveAutoFillEnabled,
 } from "../shared/auto-fill-flag.js";
 import {
+    getFillRowName,
+    saveFillRowName,
+} from "../shared/row-name-flag.js";
+import {
     loadPurityThresholds,
     savePurityFillThreshold,
     savePurityWarnThreshold,
@@ -829,6 +833,16 @@ async function initAutoFillUI() {
     autoFillCheckbox.checked = await getAutoFillEnabled();
 }
 
+const fillRowNameCheckbox = document.getElementById("fillRowName");
+
+fillRowNameCheckbox.addEventListener("change", () => {
+    saveFillRowName(fillRowNameCheckbox.checked);
+});
+
+async function initFillRowNameUI() {
+    fillRowNameCheckbox.checked = await getFillRowName();
+}
+
 const purityFillInput = document.getElementById("purityFillThreshold");
 const purityWarnInput = document.getElementById("purityWarnThreshold");
 
@@ -1292,6 +1306,7 @@ initRegistrationFormUI();
 initElnIdCarryUI();
 initDensityMemoryUI();
 initAutoFillUI();
+initFillRowNameUI();
 initPurityThresholdUI();
 initShowProductsUI();
 initElnIdToBatchUI();

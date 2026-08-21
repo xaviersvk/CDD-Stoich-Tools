@@ -1093,6 +1093,127 @@ for (const input of document.querySelectorAll('input[type="number"]')) {
     );
 }
 
+/* ================================================================ rail */
+
+// One card at a time, chosen from the rail on the left.
+//
+// The card sections are all in the DOM; only one is not `hidden`. That keeps
+// every existing getElementById working — options.js reaches into cards that
+// are not on screen all the time, and a rail that destroyed the others would
+// have meant rewriting all eight sections.
+
+const RAIL_LAST_PANE_KEY = "cddOptionsLastPane";
+
+const railEl = document.getElementById("settingsRail");
+const panesEl = document.getElementById("settingsPanes");
+
+function showPane(paneId, { remember = true } = {}) {
+    const items = [...railEl.querySelectorAll(".rail__item")];
+    const target = items.find((i) => i.dataset.pane === paneId) || items[0];
+    if (!target) return;
+
+    for (const item of items) {
+        item.setAttribute("aria-current", String(item === target));
+    }
+    for (const card of panesEl.querySelectorAll(".card")) {
+        card.hidden = card.getAttribute("aria-labelledby") !== target.dataset.pane;
+    }
+
+    if (remember) {
+        // Fire and forget: which pane you were last on is a convenience, and
+        // losing it is not worth an await on every click.
+        try {
+            chrome.storage.local.set({ [RAIL_LAST_PANE_KEY]: target.dataset.pane });
+        } catch {
+            /* orphaned page — nothing to do */
+        }
+    }
+}
+
+railEl.addEventListener("click", (event) => {
+    const item = event.target.closest(".rail__item");
+    if (item) showPane(item.dataset.pane);
+});
+
+// Left/right (or up/down) walk the rail, the way a settings sidebar is
+// expected to. Home and End jump to the ends.
+railEl.addEventListener("keydown", (event) => {
+    const items = [...railEl.querySelectorAll(".rail__item")];
+    const here = items.indexOf(document.activeElement);
+    if (here < 0) return;
+
+    const step = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 }[event.key];
+    let next = null;
+    if (step) next = items[(here + step + items.length) % items.length];
+    else if (event.key === "Home") next = items[0];
+    else if (event.key === "End") next = items[items.length - 1];
+    if (!next) return;
+
+    event.preventDefault();
+    next.focus();
+    showPane(next.dataset.pane);
+});
+
+// A rail hides what a card contains, so anything the plugin DISCOVERED while
+// you were working — a new prefix, a custom field, another vault — would be
+// invisible until you happened to open that card. These counts are the whole
+// mitigation, which is why they are wired to the same state the cards render
+// from rather than being decorative.
+function setChip(key, text) {
+    const chip = railEl.querySelector(`.rail__chip[data-chip="${key}"]`);
+    if (!chip) return;
+    const value = text == null ? "" : String(text);
+    chip.textContent = value;
+    chip.hidden = !value;
+}
+
+function refreshRailChips() {
+    const enabled = (nodes) => [...nodes].filter((i) => i.checked).length;
+
+    const fieldBoxes = document.querySelectorAll(
+        "#samplePanelFields input[type=checkbox], #samplePanelCustomFields input[type=checkbox]"
+    );
+    if (fieldBoxes.length) setChip("fields", `${enabled(fieldBoxes)}/${fieldBoxes.length}`);
+
+    setChip("prefixes", prefixRows.length || null);
+    setChip("regdefaults", regDefaultVaults.length || null);
+
+    const remembered = document.getElementById("densityMemoryCount");
+    setChip("densities", remembered ? remembered.textContent.trim() : null);
+
+    // Heat map keeps its chosen rows as an ORDERED list, not checkboxes, so
+    // the count comes from the same array the card renders from.
+    setChip("heatmap", heatMapSelection.length || null);
+
+    const hplcOn = document.getElementById("hplcBlockEnabled");
+    if (hplcOn) setChip("hplc", hplcOn.checked ? "on" : "off");
+
+    const mode = titleRadios.find((r) => r.checked);
+    setChip("title", mode ? { "id-title": "ID + title", "id-only": "ID", "title-only": "title", original: "CDD" }[mode.value] : null);
+}
+
+// The cards rewrite themselves constantly — discovery, storage changes, the
+// user clicking. Rather than hooking each of those, watch the panes.
+new MutationObserver(refreshRailChips).observe(panesEl, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ["checked", "value"],
+});
+panesEl.addEventListener("change", refreshRailChips);
+
+async function initRailUI() {
+    let last = null;
+    try {
+        const stored = await chrome.storage.local.get(RAIL_LAST_PANE_KEY);
+        last = stored?.[RAIL_LAST_PANE_KEY] || null;
+    } catch {
+        /* fall through to the first pane */
+    }
+    showPane(last, { remember: false });
+    refreshRailChips();
+}
+
 showVersion();
 initElnTitleUI();
 initSamplePanelFieldsUI();
@@ -1107,3 +1228,4 @@ initPanelSourcesUI();
 initHeatMapFieldsUI();
 initHplcInjectionUI();
 initRegistrationDefaultsUI();
+initRailUI();

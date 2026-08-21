@@ -30,9 +30,76 @@
 
 <main class="bench">
 
-    <section class="group" aria-labelledby="grp-page">
-        <h2 class="group__name" id="grp-page">On the page</h2>
-        <div class="group__grid">
+    <nav class="rail" id="settingsRail" aria-label="Settings sections">
+            <p class="rail__group">On the page</p>
+            <button type="button" class="rail__item" data-pane="col-title-heading">
+                <span class="tile" aria-hidden="true">
+                    <span class="tile__no"></span>
+                    <span class="tile__sym">Tt</span>
+                </span>
+                <span class="rail__label">ELN Tab title</span>
+                <span class="rail__chip" data-chip="title" hidden></span>
+            </button>
+            <button type="button" class="rail__item" data-pane="col-fields-heading">
+                <span class="tile" aria-hidden="true">
+                    <span class="tile__no"></span>
+                    <span class="tile__sym">Fp</span>
+                </span>
+                <span class="rail__label">Panel fields</span>
+                <span class="rail__chip" data-chip="fields" hidden></span>
+            </button>
+            <button type="button" class="rail__item" data-pane="col-colours-heading">
+                <span class="tile" aria-hidden="true">
+                    <span class="tile__no"></span>
+                    <span class="tile__sym">Px</span>
+                </span>
+                <span class="rail__label">Prefix colours</span>
+                <span class="rail__chip" data-chip="prefixes" hidden></span>
+            </button>
+            <button type="button" class="rail__item" data-pane="col-heatmap-heading">
+                <span class="tile" aria-hidden="true">
+                    <span class="tile__no"></span>
+                    <span class="tile__sym">Hm</span>
+                </span>
+                <span class="rail__label">Heat map tooltip</span>
+                <span class="rail__chip" data-chip="heatmap" hidden></span>
+            </button>
+            <p class="rail__group">Registering a compound</p>
+            <button type="button" class="rail__item" data-pane="col-regform-heading">
+                <span class="tile" aria-hidden="true">
+                    <span class="tile__no"></span>
+                    <span class="tile__sym">Rf</span>
+                </span>
+                <span class="rail__label">Registration form</span>
+            </button>
+            <button type="button" class="rail__item" data-pane="col-regdefaults-heading">
+                <span class="tile" aria-hidden="true">
+                    <span class="tile__no"></span>
+                    <span class="tile__sym">Rd</span>
+                </span>
+                <span class="rail__label">Registration defaults</span>
+                <span class="rail__chip" data-chip="regdefaults" hidden></span>
+            </button>
+            <p class="rail__group">Values and calculations</p>
+            <button type="button" class="rail__item" data-pane="col-densities-heading">
+                <span class="tile" aria-hidden="true">
+                    <span class="tile__no"></span>
+                    <span class="tile__sym">ρ</span>
+                </span>
+                <span class="rail__label">Remembered batch values</span>
+                <span class="rail__chip" data-chip="densities" hidden></span>
+            </button>
+            <button type="button" class="rail__item" data-pane="col-hplc-heading">
+                <span class="tile" aria-hidden="true">
+                    <span class="tile__no"></span>
+                    <span class="tile__sym">Ij</span>
+                </span>
+                <span class="rail__label">HPLC injection</span>
+                <span class="rail__chip" data-chip="hplc" hidden></span>
+            </button>
+    </nav>
+
+    <div class="panes" id="settingsPanes">
         <section class="card" aria-labelledby="col-title-heading">
             <header class="card__head">
                 <span class="tile" aria-hidden="true">
@@ -185,13 +252,7 @@
                 </p>
             </div>
         </section>
-        </div>
-    </section>
-
-    <section class="group" aria-labelledby="grp-register">
-        <h2 class="group__name" id="grp-register">Registering a compound</h2>
-        <div class="group__grid">
-        <section class="card card--wide" aria-labelledby="col-regform-heading">
+        <section class="card" aria-labelledby="col-regform-heading">
             <header class="card__head">
                 <span class="tile" aria-hidden="true">
                     <span class="tile__no"></span>
@@ -319,7 +380,7 @@
                 </div>
             </div>
         </section>
-        <section class="card card--wide" aria-labelledby="col-regdefaults-heading">
+        <section class="card" aria-labelledby="col-regdefaults-heading">
             <header class="card__head">
                 <span class="tile" aria-hidden="true">
                     <span class="tile__no"></span>
@@ -353,13 +414,7 @@
                 <button id="registrationDefaultsAddVault" type="button" class="btn">Add a vault</button>
             </div>
         </section>
-        </div>
-    </section>
-
-    <section class="group" aria-labelledby="grp-values">
-        <h2 class="group__name" id="grp-values">Values and calculations</h2>
-        <div class="group__grid">
-        <section class="card card--wide" aria-labelledby="col-densities-heading">
+        <section class="card" aria-labelledby="col-densities-heading">
             <header class="card__head">
                 <span class="tile" aria-hidden="true">
                     <span class="tile__no"></span>
@@ -423,7 +478,7 @@
                 </button>
             </div>
         </section>
-        <section class="card card--wide" aria-labelledby="col-hplc-heading">
+        <section class="card" aria-labelledby="col-hplc-heading">
             <header class="card__head">
                 <span class="tile" aria-hidden="true">
                     <span class="tile__no"></span>
@@ -496,8 +551,7 @@
                 </label>
             </div>
         </section>
-        </div>
-    </section>
+    </div>
 
 </main>
 

@@ -13,7 +13,7 @@
 // are evicted from the cache so a later payload can retry; a molecule page
 // that simply has no synonym is an ordinary empty result, not a failure.
 
-import { extractSynonym } from "./molecule-image.js";
+import { extractSynonym, extractSynonymsText } from "./molecule-image.js";
 
 const LOG_PREFIX = "[CDD stoich plugin]";
 
@@ -119,4 +119,12 @@ export function forgetMoleculePage(moleculeId) {
 // keeps names like "N,N-diethylhydroxylamine" intact); this is only the fetch.
 export async function getMoleculeSynonym(vaultId, moleculeId) {
     return extractSynonym(await getMoleculePage(vaultId, moleculeId));
+}
+
+// ALL of the molecule's synonyms, exactly as CDD joined them. Same contract as
+// getMoleculeSynonym: resolves null when the molecule has none, REJECTS when
+// the page could not be loaded — a caller that remembers what it looked up
+// needs to tell "no synonyms" (final) from "no answer" (worth retrying).
+export async function getMoleculeSynonymsText(vaultId, moleculeId) {
+    return extractSynonymsText(await getMoleculePage(vaultId, moleculeId));
 }

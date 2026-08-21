@@ -115,9 +115,10 @@ function extractSmiles(doc) {
     return null;
 }
 
-// The molecule definition list carries a "Synonyms" row; read its value.
-// Also used by batch-fields.js, which parses the same molecule page HTML.
-export function extractSynonym(doc) {
+// The molecule definition list carries a "Synonyms" row; read its raw value,
+// every synonym still joined the way CDD joined them. Also used by
+// molecule-page.js and by batch-fields.js, which parse the same page HTML.
+export function extractSynonymsText(doc) {
     const fields = doc.querySelectorAll(".molecule_field");
     for (const field of fields) {
         const label = field.querySelector("dt")?.textContent?.trim().toLowerCase();
@@ -127,15 +128,19 @@ export function extractSynonym(doc) {
             // <br>-separated synonyms would silently concatenate through
             // textContent; turn the breaks into real separators first.
             for (const br of dd.querySelectorAll("br")) br.replaceWith(", ");
-            const value = dd.textContent?.trim();
-            // Only the first synonym. CDD joins multiple synonyms with ", " /
-            // "; ", so split on a separator (comma/semicolon followed by
-            // whitespace) -- NOT a bare comma, which would mangle names that
-            // contain one, e.g. "N,N-diethylhydroxylamine".
-            if (value) return value.split(/\s*[,;]\s+/)[0].trim();
+            return dd.textContent?.trim() || null;
         }
     }
     return null;
+}
+
+// Only the first synonym — what the panel's Synonym field has always shown.
+// CDD joins multiple synonyms with ", " / "; ", so split on a separator
+// (comma/semicolon followed by whitespace) -- NOT a bare comma, which would
+// mangle names that contain one, e.g. "N,N-diethylhydroxylamine".
+export function extractSynonym(doc) {
+    const value = extractSynonymsText(doc);
+    return value ? value.split(/\s*[,;]\s+/)[0].trim() : null;
 }
 
 async function fetchMoleculeData(vaultId, moleculeId) {

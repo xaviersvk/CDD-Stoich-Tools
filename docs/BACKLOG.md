@@ -11,12 +11,60 @@ would be.
 
 ## Next up
 
+### Two things 14.11.0 shipped without proving
+
+The ELN-id-to-batch write went out on 2026-08-21. Both claims below are
+written as *unverified* in `CHANGELOG.md` rather than assumed; neither is a
+known bug, and neither could be tested on the entry we had.
+
+**1. The uniqueness collision.** *Internal ID* is `unique_value: true` in vault
+6884, so an entry with two products pushed to the same ELN ID should have its
+second write refused by CDD — the design deliberately does not predict the
+refusal or invent a suffix to dodge it, it just shows what CDD said. Test entry
+`2504170` turned out to hold exactly **one** product with an empty *Internal
+ID*, so the second write never happened.
+
+*To test:* an entry with two or more products whose batches both have an empty
+*Internal ID*. Push both. Expect the second card to report CDD's own refusal
+text, and expect the batch to be untouched.
+
+**2. Enrichment of products that HAVE a sample.** The pass originally gated on
+`hasSample === false`; the last commit of the release widened it so products
+join whether or not they have a sample, because a sampled product can have an
+empty *Internal ID* just as easily. All seven sampled products in `2504170`
+already had one, so the widened path was never seen to do anything.
+
+*To test:* a product with an inventory sample whose batch has an empty
+*Internal ID*. Expect the button to appear on it.
+
+### Mentions: say which row a deduped mention matched
+
+Agreed in outline on 2026-08-21 and never started. The panel currently collapses
+mentions that already appear in the stoichiometry table into a bare count — "21
+mention(s) already in the table" — which tells you the number and nothing you
+can act on.
+
+Three pieces, in order:
+
+1. `splitMentionsAlreadyShown` keeps a `Set`; make it a `Map` so it remembers
+   **which table row** each deduped mention matched.
+2. A `¶` chip on the table card, marking rows that are also mentioned in the
+   entry text.
+3. The count becomes an expandable list whose entries scroll to the matching
+   card in the panel.
+
+**Open question, asked and never answered:** should that list default to
+collapsed? The count is currently one line; an always-open list of 21 entries
+is not.
+
 ### Qodana findings — triaged 2026-08-19, items 1–4 done and measured 2026-08-21
 
 **Where it stands.** `main` reports **94** (63 ignored promises, 24 deprecated,
 7 clones) against a ratchet of 80, so the check has been **red**. Branch
-`qodana-chrome-types` measures **74** in CI — 68 promises, 4 clones, 2
-deprecated — and the ratchet now sits at **75**. Still far from the agreed
+`qodana-chrome-types` brought it to **74** in CI, and 14.11.0 took it to
+**76** — 70 promises, 4 clones, 2 deprecated. The ratchet sits at **76**.
+The +2 are two more of the options page’s independent `init*UI()` calls, the
+same deliberate shape as the eleven beside them. Still far from the agreed
 ceiling of 20; see "What is left" below for the only honest ways there.
 
 **A fifth change was needed, and it was a CI defect.** The first run of the

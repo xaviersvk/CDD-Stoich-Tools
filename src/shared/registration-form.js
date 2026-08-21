@@ -177,21 +177,37 @@ export async function getRegistrationFormSettings() {
 }
 
 export async function saveRegistrationFormNames(names) {
-    await chrome.storage.local.set({ [REG_FORM_NAMES_KEY]: sanitizeNames(names) });
+    try {
+        await chrome.storage.local.set({ [REG_FORM_NAMES_KEY]: sanitizeNames(names) });
+    } catch {
+        // Orphaned content script — nothing useful to do.
+    }
 }
 
 export async function saveRegistrationFormOrder(order) {
-    await chrome.storage.local.set({ [REG_FORM_ORDER_KEY]: sanitizeNames(order) });
+    try {
+        await chrome.storage.local.set({ [REG_FORM_ORDER_KEY]: sanitizeNames(order) });
+    } catch {
+        // Orphaned content script — nothing useful to do.
+    }
 }
 
 export async function saveRegistrationFormMode(mode) {
-    await chrome.storage.local.set({ [REG_FORM_MODE_KEY]: sanitizeMode(mode) });
+    try {
+        await chrome.storage.local.set({ [REG_FORM_MODE_KEY]: sanitizeMode(mode) });
+    } catch {
+        // Orphaned content script — nothing useful to do.
+    }
 }
 
 export async function saveRegistrationFormFixedName(name) {
-    await chrome.storage.local.set({
-        [REG_FORM_FIXED_KEY]: typeof name === "string" ? name.trim() : "",
-    });
+    try {
+        await chrome.storage.local.set({
+            [REG_FORM_FIXED_KEY]: typeof name === "string" ? name.trim() : "",
+        });
+    } catch {
+        // Orphaned content script — nothing useful to do.
+    }
 }
 
 // Record `name` as the last form used in `vaultId`, leaving every other vault's
@@ -199,19 +215,27 @@ export async function saveRegistrationFormFixedName(name) {
 export async function saveRegistrationFormLastUsed(vaultId, name) {
     if (!vaultId || typeof name !== "string" || !name.trim()) return;
 
-    const { lastUsed } = await getRegistrationFormSettings();
+    try {
+        const { lastUsed } = await getRegistrationFormSettings();
 
-    await chrome.storage.local.set({
-        [REG_FORM_LAST_USED_KEY]: { ...lastUsed, [vaultId]: name.trim() },
-    });
+        await chrome.storage.local.set({
+            [REG_FORM_LAST_USED_KEY]: { ...lastUsed, [vaultId]: name.trim() },
+        });
+    } catch {
+        // Orphaned content script — nothing useful to do.
+    }
 }
 
 export async function clearRegistrationFormLastUsed(vaultId) {
-    const { lastUsed } = await getRegistrationFormSettings();
+    try {
+        const { lastUsed } = await getRegistrationFormSettings();
 
-    if (vaultId) delete lastUsed[vaultId];
+        if (vaultId) delete lastUsed[vaultId];
 
-    await chrome.storage.local.set({
-        [REG_FORM_LAST_USED_KEY]: vaultId ? lastUsed : {},
-    });
+        await chrome.storage.local.set({
+            [REG_FORM_LAST_USED_KEY]: vaultId ? lastUsed : {},
+        });
+    } catch {
+        // Orphaned content script — nothing useful to do.
+    }
 }

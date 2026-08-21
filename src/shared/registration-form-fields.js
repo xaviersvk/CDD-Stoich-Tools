@@ -183,10 +183,16 @@ export async function getFieldMap(vaultId) {
 
 export async function saveFieldMap(vaultId, vaultMap) {
     if (!vaultId || !isUsable(vaultMap)) return;
-    const maps = await getFieldMaps();
-    await chrome.storage.local.set({
-        [REG_FORM_FIELD_MAP_KEY]: { ...maps, [vaultId]: vaultMap },
-    });
+
+    try {
+        const maps = await getFieldMaps();
+        await chrome.storage.local.set({
+            [REG_FORM_FIELD_MAP_KEY]: { ...maps, [vaultId]: vaultMap },
+        });
+    } catch {
+        // Orphaned content script — nothing useful to do. Its sibling
+        // saveFilterChoice below has always guarded; this one had not.
+    }
 }
 
 export async function getFilterChoice(vaultId) {

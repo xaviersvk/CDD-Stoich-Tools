@@ -159,9 +159,13 @@ export async function getPrefixColorMap() {
  * Called by: the popup whenever the user adds/edits/deletes a prefix.
  */
 export async function savePrefixColorMap(map) {
-    await chrome.storage.local.set({
-        [PREFIX_COLORS_STORAGE_KEY]: sanitizePrefixColorMap(map),
-    });
+    try {
+        await chrome.storage.local.set({
+            [PREFIX_COLORS_STORAGE_KEY]: sanitizePrefixColorMap(map),
+        });
+    } catch {
+        // Orphaned content script — nothing useful to do.
+    }
 }
 
 /* ------------------------------------------------------------------ *

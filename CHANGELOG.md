@@ -77,6 +77,10 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   restore but its POSITION never was, and nothing re-clamped on resize — so a
   panel left near the right edge of a wide monitor reopened at the same
   absolute x on a laptop, with no way back but clearing storage.
+- The panel narrows to 100px with the mouse, for shoving it aside without
+  collapsing it. That is only safe because the header now wraps instead of
+  clipping and drops its title below 300px, so every control stays reachable
+  however narrow it gets.
 - The panel could be resized to a width at which it could not be collapsed.
   The minimum was 240px against a header needing 275, and the panel is
   `overflow: hidden`, so the collapse toggle sat entirely outside it.

@@ -20,13 +20,17 @@ import { loadPanelState, savePanelState } from "./panel-state.js";
 const WIDTH_VAR = "--cdd-panel-width";
 const HEIGHT_VAR = "--cdd-panel-height";
 
-// The header holds six controls — refresh, print, CSV, its caret, and the
-// collapse toggle — and the panel is `overflow: hidden`. At the old 240 the
-// toggle's right edge landed at 276px, i.e. entirely outside the panel and
-// unclickable: the resizer allowed a state you could not collapse your way
-// out of. 278 is the first width at which nothing is clipped; 280 is that
-// with a little air.
-const MIN_WIDTH = 280;
+// 100px is a sliver — deliberately, so the panel can be shoved aside without
+// being collapsed outright.
+//
+// It used to be 240, which was worse than it sounds: the header needs 275 for
+// its six controls and the panel is `overflow: hidden`, so at 240 the collapse
+// toggle sat entirely outside the panel, unclickable, and there was no way
+// back. Going NARROWER than that is only safe because the header now wraps
+// instead of clipping and drops its title under 300px — see the @container
+// rule in sample-panel.js. Every control stays reachable at 100px; the header
+// simply grows taller.
+const MIN_WIDTH = 100;
 const MIN_HEIGHT = 160;
 
 // Room left around the panel so a resize can never park an edge exactly on the

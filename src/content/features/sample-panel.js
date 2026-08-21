@@ -283,6 +283,10 @@ export function ensurePanel() {
     z-index: 2147483647;
     font-family: Arial, sans-serif;
     overflow: hidden;
+    /* Lets the header react to the PANEL's width rather than the window's,
+       which is the only width that matters here — see the @container rule
+       below. */
+    container-type: inline-size;
   }
 
   #${PANEL_ID} .cdd-stoich-header {
@@ -296,16 +300,41 @@ export function ensurePanel() {
     border-bottom: 1px solid #374151;
     cursor: move;
     user-select: none;
+    /* WRAPS rather than clips. The panel is overflow:hidden, so anything the
+       header cannot fit is not merely cramped, it is gone — which is how a
+       narrow panel used to end up with its collapse toggle outside itself and
+       no way back. Wrapping makes every control reachable at any width. */
+    flex-wrap: wrap;
+    row-gap: 6px;
   }
 
   #${PANEL_ID} .cdd-stoich-title {
     font-size: 14px;
     font-weight: 700;
+    /* Shrinks before the buttons do, and truncates rather than pushing them
+       onto another line. */
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Under 300px the title is the first thing to go: it is the only part of
+     the header that is decoration rather than a control. Dropping it buys
+     roughly 90px, which is the difference between the buttons sitting on one
+     row and wrapping onto three. */
+  @container (max-width: 300px) {
+    #${PANEL_ID} .cdd-stoich-title {
+      display: none;
+    }
   }
 
   #${PANEL_ID} .cdd-stoich-actions {
     display: flex;
     gap: 6px;
+    flex-wrap: wrap;
+    /* Keeps the actions against the right edge once the title is gone. */
+    margin-left: auto;
   }
 
   #${PANEL_ID} button {

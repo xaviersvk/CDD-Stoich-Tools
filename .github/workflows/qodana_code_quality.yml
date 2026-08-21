@@ -19,6 +19,21 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}  # to check out the actual pull request commit, not the merge commit
           fetch-depth: 0  # a full history is required for pull request analysis
+
+      # Without this the analyser has no node_modules, so jsconfig.json's
+      # `types: ["chrome"]` finds nothing, `chrome` stays an unresolved global,
+      # and every `chrome.*.addListener` gets resolved against the DOM instead --
+      # landing on the deprecated MediaQueryList.addListener. That was 20 false
+      # "Deprecated symbol used" findings, and it is why a local run (which has
+      # node_modules) and CI disagreed by more than the clone check alone.
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
       - name: 'Qodana Scan'
         uses: JetBrains/qodana-action@v2026.1
         with:

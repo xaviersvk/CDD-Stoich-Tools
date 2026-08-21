@@ -288,7 +288,7 @@ export function createHplcInjectionBlock(reaction, color) {
     function paintCollapse() {
         const open = expanded.has(reactionIndex);
         body.hidden = !open;
-        chevron.textContent = open ? "⌃" : "⌄";
+        chevron.textContent = open ? "▴" : "▾";
         header.setAttribute("aria-expanded", String(open));
     }
 
@@ -468,18 +468,29 @@ export const HPLC_BLOCK_STYLES = `
     background: rgba(245, 158, 11, 0.25);
   }
 
+  /* The WHOLE row is the toggle, not the chevron -- the chevron is only the
+     sign that says so. The negative margin lets the hover tint reach the
+     block's own padding, so what lights up is the width the click already
+     had; without it the row looks smaller than it is and people aim at the
+     arrow. */
   .cdd-hplc-header {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
     gap: 8px;
+    margin: -4px -6px;
+    padding: 4px 6px;
+    border-radius: 7px;
     cursor: pointer;
+  }
+
+  .cdd-hplc-header:hover {
+    background: rgba(255, 255, 255, 0.05);
   }
 
   .cdd-hplc-header:focus-visible {
     outline: 1px solid rgba(56, 189, 248, 0.7);
-    outline-offset: 2px;
-    border-radius: 4px;
+    outline-offset: -1px;
   }
 
   .cdd-hplc-head-left {
@@ -489,10 +500,16 @@ export const HPLC_BLOCK_STYLES = `
     min-width: 0;
   }
 
+  /* A filled triangle, not U+2304 -- that arrowhead renders as a hairline in
+     the system stacks and read as something too small to hit. */
   .cdd-hplc-chevron {
-    font-size: 9px;
+    font-size: 11px;
     line-height: 1;
-    color: #64748b;
+    color: #94a3b8;
+  }
+
+  .cdd-hplc-header:hover .cdd-hplc-chevron {
+    color: #e2e8f0;
   }
 
   /* This reaction is not on the settings' numbers. */

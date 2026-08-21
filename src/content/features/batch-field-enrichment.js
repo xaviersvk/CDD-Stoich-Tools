@@ -25,49 +25,11 @@ import {
     getFieldValueCaseInsensitive,
     collectCustomFields,
 } from "../../inject/parsers/field-resolvers.js";
-import { readBatchProps, vaultIdFromUrl } from "../api/batch-registration-props.js";
-
-// moleculeId → Promise<{ doc, vaultId }>. Promise-cached so concurrent
-// payloads for the same molecule share one request; failures are evicted so
-// a later payload can retry.
-const moleculePageCache = new Map();
+import { readBatchProps } from "../api/batch-registration-props.js";
+import { getMoleculePageInfo } from "../api/molecule-page.js";
 
 function getVaultId() {
     return location.pathname.match(/\/vaults\/(\d+)/)?.[1] || null;
-}
-
-function fetchMoleculePage(vaultId, moleculeId) {
-    const cached = moleculePageCache.get(moleculeId);
-    if (cached) return cached;
-
-    const promise = (async () => {
-        const response = await fetch(`/vaults/${vaultId}/molecules/${moleculeId}`, {
-            credentials: "include",
-            headers: { Accept: "text/html" },
-        });
-
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-        const html = await response.text();
-
-        return {
-            doc: new DOMParser().parseFromString(html, "text/html"),
-            // The molecule's HOME vault, which is not always the one we asked
-            // in: the server redirects (ELN vault 6884 -> registration vault
-            // 6885) and fetch follows it. Anything that later builds a URL for
-            // this batch must use this, not location.pathname.
-            vaultId: vaultIdFromUrl(response.url) || vaultId,
-        };
-    })();
-
-    promise.catch(() => {
-        if (moleculePageCache.get(moleculeId) === promise) {
-            moleculePageCache.delete(moleculeId);
-        }
-    });
-
-    moleculePageCache.set(moleculeId, promise);
-    return promise;
 }
 
 function applyBatchFields(sample, fieldMap, vaultId) {
@@ -129,7 +91,7 @@ export function enrichBatchOnlySamples() {
         Array.from(targetsByMolecule, async ([moleculeId, targets]) => {
             let page;
             try {
-                page = await fetchMoleculePage(vaultId, moleculeId);
+                page = await getMoleculePageInfo(vaultId, moleculeId);
             } catch {
                 return false;
             }

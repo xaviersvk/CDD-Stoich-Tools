@@ -82,12 +82,17 @@ function nudgeIntoEditMode(doc, batchId) {
     if (link) link.click();
 }
 
+// `onStage` exists because this takes six to eight seconds on a real batch —
+// the page has to load, React has to build the form, and the form has to be
+// nudged out of read-only. A single frozen "Writing…" for that long reads as
+// a hang, which is exactly how the first live run was reported.
 export async function writeElnIdToBatch({
     vaultId,
     moleculeId,
     batchId,
     fieldLabel,
     value,
+    onStage = () => {},
 }) {
     if (!vaultId || !moleculeId || !batchId) {
         return { ok: false, reason: "missing batch identifiers" };
@@ -99,6 +104,7 @@ export async function writeElnIdToBatch({
     const frame = makeFrame(moleculeBatchesUrl(vaultId, moleculeId));
 
     try {
+        onStage("Opening the batch…");
         // Wait for the PROPS, not for readyState.
         //
         // A fresh iframe starts on about:blank, and about:blank's readyState
@@ -121,6 +127,8 @@ export async function writeElnIdToBatch({
 
         if (!props) return { ok: false, reason: "the batch page did not load" };
 
+        onStage("Reading the batch…");
+
         const doc = frame.contentDocument;
         if (!doc) return { ok: false, reason: "the batch page went away" };
 
@@ -135,6 +143,8 @@ export async function writeElnIdToBatch({
         }
 
         const controlId = batchFieldControlId(batchId, defId);
+
+        onStage("Opening the form…");
 
         let input = await waitFor(() => doc.getElementById(controlId), 2000);
         if (!input) {
@@ -154,6 +164,8 @@ export async function writeElnIdToBatch({
         if (String(input.value ?? "").trim()) {
             return { ok: false, reason: `${fieldLabel} is already set` };
         }
+
+        onStage("Saving…");
 
         input.value = wanted;
         input.dispatchEvent(new Event("input", { bubbles: true }));

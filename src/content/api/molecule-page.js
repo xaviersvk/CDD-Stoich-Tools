@@ -38,7 +38,15 @@ async function requestMoleculePage(vaultId, moleculeId) {
         throw new Error(`HTTP ${res.status}`);
     }
 
-    return new DOMParser().parseFromString(await res.text(), "text/html");
+    return {
+        doc: new DOMParser().parseFromString(await res.text(), "text/html"),
+        // The vault the request actually LANDED in. A molecule can live in a
+        // different vault than the entry that mentions it (ELN vault 6884 ->
+        // registration vault 6885); the server redirects and fetch follows it
+        // transparently. Anything that later builds a URL for one of this
+        // molecule's batches must use this, never location.pathname.
+        vaultId: String(res.url || "").match(/\/vaults\/(\d+)\//)?.[1] || vaultId,
+    };
 }
 
 async function fetchMoleculePage(vaultId, moleculeId) {
@@ -54,9 +62,11 @@ async function fetchMoleculePage(vaultId, moleculeId) {
     }
 }
 
-// Cached Promise<Document>. Rejects on a failed fetch — callers that only want
-// a value should use the resolvers below rather than handling this themselves.
-export function getMoleculePage(vaultId, moleculeId) {
+// Cached Promise<{ doc, vaultId }>. Rejects on a failed fetch — callers that
+// only want a value should use the resolvers below rather than handling this
+// themselves. `vaultId` is the vault the page CAME FROM, which is not always
+// the one asked for.
+export function getMoleculePageInfo(vaultId, moleculeId) {
     if (!vaultId || moleculeId == null || moleculeId === "") {
         return Promise.reject(new Error("missing vault or molecule id"));
     }
@@ -74,6 +84,30 @@ export function getMoleculePage(vaultId, moleculeId) {
 
     pageCache.set(cacheKey, promise);
     return promise;
+}
+
+// Cached Promise<Document>, for the callers that only ever wanted the page.
+export async function getMoleculePage(vaultId, moleculeId) {
+    return (await getMoleculePageInfo(vaultId, moleculeId)).doc;
+}
+
+/**
+ * forgetMoleculePage(moleculeId) — call after WRITING to one of this
+ * molecule's batches.
+ *
+ * The cache lives for the page session, so without this the panel keeps
+ * reporting the pre-write state until a reload — and keeps offering a button
+ * whose work is already done, whose second click then dies on "already set".
+ *
+ * Every vault the molecule was reached through is dropped, not just one: the
+ * key carries the vault we ASKED in, and a writer only knows the vault the
+ * page came BACK from.
+ */
+export function forgetMoleculePage(moleculeId) {
+    const suffix = `:${moleculeId}`;
+    for (const key of [...pageCache.keys()]) {
+        if (key.endsWith(suffix)) pageCache.delete(key);
+    }
 }
 
 // The molecule's FIRST synonym. Resolves to null when the molecule simply has

@@ -20,6 +20,7 @@ import {
 } from "../../shared/eln-id-to-batch.js";
 import { readFieldByLabel } from "../api/batch-registration-props.js";
 import { writeElnIdToBatch } from "./eln-id-to-batch-write.js";
+import { forgetMoleculePage } from "../api/molecule-page.js";
 import { readElnEntryId } from "../utils/eln-entry-id.js";
 import { isElnEntryPage } from "../../shared/page-detection.js";
 import { isTableRowsEnabled } from "../../shared/panel-sources-flag.js";
@@ -1172,7 +1173,7 @@ function elnIdToBatchState(sample) {
     };
 }
 
-function buildElnIdToBatchButton(state) {
+function buildElnIdToBatchButton(sample, state) {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "cdd-density-fill-btn";
@@ -1196,10 +1197,21 @@ function buildElnIdToBatchButton(state) {
             batchId: state.batchId,
             fieldLabel: state.fieldLabel,
             value: state.value,
+            onStage: (text) => { btn.textContent = text; },
         });
 
         if (result.ok) {
             btn.textContent = `✓ ${state.fieldLabel} set to ${state.value}`;
+
+            // The panel's copy of this batch is now a lie, and so is the
+            // cached molecule page behind it. Without both of these the card
+            // keeps offering a button whose work is done, and a second click
+            // dies on "already set" — which reads as the failure it is not.
+            sample.batchFieldMap = {
+                ...(sample.batchFieldMap || {}),
+                [state.fieldLabel]: state.value,
+            };
+            forgetMoleculePage(sample.moleculeId);
         } else {
             btn.textContent = `✗ ${result.reason || "could not write it"}`;
             btn.disabled = false;
@@ -1512,7 +1524,7 @@ export function renderSamples(payload) {
                 const idState = elnIdToBatchState(sample);
 
                 if (idState?.kind === "offer") {
-                    card.appendChild(buildElnIdToBatchButton(idState));
+                    card.appendChild(buildElnIdToBatchButton(sample, idState));
                 } else if (idState?.kind === "set") {
                     const note = document.createElement("div");
                     note.className = "cdd-batch-field-note";

@@ -18,9 +18,9 @@ import {
     computeFillOffers,
     runFillOffer,
     markOfferFilled,
-    offerUsesMemory,
+    touchOfferMemory,
 } from "./fill-offers.js";
-import { touchValueUsed } from "../../shared/density-memory.js";
+
 import { AUTO_FILL_STORAGE_KEY, getAutoFillEnabled } from "../../shared/auto-fill-flag.js";
 
 let enabled = false;
@@ -103,7 +103,7 @@ async function runQueue() {
                 if (result.ok) {
                     filled += 1;
                     markOfferFilled(sample, offer, result);
-                    if (offerUsesMemory(offer)) touchValueUsed(sample.batchId);
+                    touchOfferMemory(sample, offer);
                     if (result.note) {
                         setStatus(`Auto-fill for ${sample.name} — solvent: ${result.note}`);
                     }

@@ -5,12 +5,9 @@ import {
     computeFillOffers,
     runFillOffer,
     markOfferFilled,
-    offerUsesMemory,
+    touchOfferMemory,
 } from "./fill-offers.js";
-import {
-    captureValuesFromSamples,
-    touchValueUsed,
-} from "../../shared/density-memory.js";
+import { captureValuesFromSamples } from "../../shared/density-memory.js";
 import { getPurityWarnThreshold } from "../../shared/purity-threshold.js";
 import { isShowProductsEnabled } from "../../shared/show-products-flag.js";
 import {
@@ -1018,7 +1015,9 @@ function buildFillButton(sample, offer) {
             : `⤵ Fill ${offer.field} (${shown}) into table`;
     btn.title =
         offer.source === "memory"
-            ? `Writes the ${offer.field} you previously typed for this batch into the row, exactly as if you typed it.`
+            ? offer.field === "name"
+                ? "Writes the name you previously typed for this molecule into the row, exactly as if you typed it."
+                : `Writes the ${offer.field} you previously typed for this batch into the row, exactly as if you typed it.`
             : `Writes this ${offer.field} into the row, exactly as if you typed it.`;
 
     // "Some of these values aren't saved on the batch/sample record" used to
@@ -1031,9 +1030,12 @@ function buildFillButton(sample, offer) {
         mark.className = "cdd-fill-memory-mark";
         mark.textContent = "ⓘ";
         mark.title =
-            `This ${offer.field} is remembered from what you typed before — it is not ` +
-            `saved on the batch or sample record. Add it there and it will fill in ` +
-            `automatically from then on.`;
+            offer.field === "name"
+                ? "This name is remembered from what you typed before — CDD has no " +
+                  "field to save a row name in, so the extension keeps it."
+                : `This ${offer.field} is remembered from what you typed before — it is not ` +
+                  `saved on the batch or sample record. Add it there and it will fill in ` +
+                  `automatically from then on.`;
         btn.appendChild(mark);
     }
 
@@ -1054,7 +1056,7 @@ function buildFillButton(sample, offer) {
 
         if (result.ok) {
             markOfferFilled(sample, offer, result);
-            if (offerUsesMemory(offer)) touchValueUsed(sample.batchId);
+            touchOfferMemory(sample, offer);
             // A concentration fill reports a solvent it could not pick
             // rather than failing over it — say so instead of a bare ✓.
             btn.textContent = result.note
@@ -1095,7 +1097,7 @@ async function runAllOffers(btn) {
             if (result.ok) {
                 filled += 1;
                 markOfferFilled(sample, offer, result);
-                if (offerUsesMemory(offer)) touchValueUsed(sample.batchId);
+                touchOfferMemory(sample, offer);
                 if (result.note) {
                     setStatus(`Fill all: ${sample.name} — solvent: ${result.note}`);
                 }

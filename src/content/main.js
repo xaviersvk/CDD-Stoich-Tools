@@ -6,6 +6,7 @@ import { watchKetcherDialog } from "./overlay-watcher.js";
 import { ensurePanel, renderFromState, initSamplePanelFields, clearElnIdToBatchWrites } from "./features/sample-panel.js";
 import { ensurePrintButtons } from "./features/print-buttons.js";
 import { initSynonymEnrichment } from "./features/synonym-enrichment.js";
+import { initRowNameEnrichment } from "./features/name-enrichment.js";
 import {
   ensureDepletedStyle,
   markDepletedSamplesInSelector,
@@ -93,6 +94,7 @@ function init() {
   initDoseResponseOverride();
   initSamplePanelFields();
   initSynonymEnrichment();
+  initRowNameEnrichment();
 
   window.addEventListener("message", handleMessage);
 

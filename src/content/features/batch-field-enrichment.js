@@ -74,7 +74,11 @@ export function enrichBatchOnlySamples() {
     const targetsByMolecule = new Map();
 
     for (const sample of samples) {
-        if (sample?.hasSample !== false) continue;
+        // Batch-only rows are the original case. PRODUCTS join whether or
+        // not they have a sample: the ELN-id-to-batch button has to know
+        // whether Internal ID is already set, and a product with an inventory
+        // sample can have it empty just as easily as one without.
+        if (sample?.hasSample !== false && !sample?.isProduct) continue;
         if (sample.batchFieldsEnriched) continue;
         if (!sample.batchId || !sample.moleculeId) continue;
 

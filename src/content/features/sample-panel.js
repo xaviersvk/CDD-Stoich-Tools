@@ -593,17 +593,6 @@ ${HPLC_BLOCK_STYLES.replace(/^ {2}\./gm, `  #${PANEL_ID} .`)}
     opacity: 0.95;
   }
 
-  /* A NEUTRAL note. The amber quote above is a warning, and "Internal ID is
-     already set" is a perfectly normal state — dressed in amber it would read
-     as a problem. Same muted grey as .cdd-stoich-status, at the 11px of the
-     card rows rather than the quote's 12px. */
-  #${PANEL_ID} .cdd-batch-field-note {
-    margin-top: 4px;
-    font-size: 11px;
-    line-height: 1.35;
-    color: #cbd5e1;
-    opacity: 0.85;
-  }
 
   #${PANEL_ID} .cdd-density-fill-btn {
     margin-top: 6px;
@@ -1176,8 +1165,10 @@ function elnIdToBatchState(sample) {
     const { enabled, fieldLabel, format } = getCarrySettings();
     if (!enabled || !fieldLabel) return null;
 
-    const existing = readFieldByLabel(sample.batchFieldMap, fieldLabel);
-    if (existing) return { kind: "set", fieldLabel, value: existing };
+    // Nothing to offer, and nothing to say either. The card already prints
+    // the value as an ordinary field row — a note under it repeated the same
+    // string verbatim, one line lower.
+    if (readFieldByLabel(sample.batchFieldMap, fieldLabel)) return null;
 
     const entryId = readElnEntryId();
     if (!entryId) return null;
@@ -1570,12 +1561,6 @@ export function renderSamples(payload) {
                     idState?.kind === "error"
                 ) {
                     card.appendChild(buildElnIdWriteStatusButton(idState));
-                } else if (idState?.kind === "set") {
-                    const note = document.createElement("div");
-                    note.className = "cdd-batch-field-note";
-                    note.textContent =
-                        `${idState.fieldLabel} on this batch: ${idState.value}`;
-                    card.appendChild(note);
                 }
 
                 groupBody.appendChild(card);

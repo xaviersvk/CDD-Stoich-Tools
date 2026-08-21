@@ -462,6 +462,35 @@ ${HPLC_BLOCK_STYLES.replace(/^ {2}\./gm, `  #${PANEL_ID} .`)}
     border-radius: 10px;
     padding: 10px;
     background: #0f172a;
+    /* isolate, not just relative: the watermark below sits at z-index -1 so
+       it paints UNDER the card's text, and without a stacking context here
+       it would slide under the card's own background and vanish. */
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+  }
+
+  /* The reaction, as a watermark instead of a badge. It says the same thing
+     the old "Reaction 1" pill did and costs no height, because it is not in
+     the layout at all.
+     --cdd-reaction-watermark is the knob: raise it to make the letters more
+     present, lower it if a long value wrapping across the card becomes hard
+     to read over them. Long values DO reach this far, so this is a real
+     trade and not only a matter of taste. */
+  #${PANEL_ID} .cdd-stoich-card[data-cdd-reaction]::after {
+    content: attr(data-cdd-reaction);
+    position: absolute;
+    right: 6px;
+    bottom: 2px;
+    z-index: -1;
+    font-size: 34px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    color: var(--cdd-reaction-color, #64748b);
+    opacity: var(--cdd-reaction-watermark, 0.25);
+    pointer-events: none;
+    user-select: none;
   }
 
   #${PANEL_ID} .cdd-stoich-card-top {
@@ -956,6 +985,14 @@ function isSampleDepleted(sample) {
 // authoritative record (batch/sample) or from density-memory (a value the
 // user typed for this batch before). One click, one write, visible
 // outcome; the DOM automation lives in row-fill.js.
+// "R1" for Reaction 1, set as a card attribute so CSS can draw it as a
+// watermark. The mentions group is not a reaction and gets nothing.
+function reactionMark(group) {
+    if (!group || group.reactionLabel == null) return null;
+    const number = /\d+/.exec(group.reactionLabel);
+    return number ? `R${number[0]}` : null;
+}
+
 function buildFillButton(sample, offer) {
     const withUnits = offer.units ? `${offer.value} ${offer.units}` : offer.value;
     // A concentration fill makes the solution and picks its solvent in one
@@ -1263,6 +1300,12 @@ export function renderSamples(payload) {
             card.style.borderLeftColor = color.border;
             card.style.boxShadow = `0 0 0 1px ${color.glow} inset`;
 
+            const mark = reactionMark(group);
+            if (mark) {
+                card.dataset.cddReaction = mark;
+                card.style.setProperty("--cdd-reaction-color", color.border);
+            }
+
             const purityValue = parsePurity(sample.purity);
             const lowPurity = !isNaN(purityValue) && purityValue <= getPurityWarnThreshold();
             const depletedSample = isSampleDepleted(sample);
@@ -1341,6 +1384,12 @@ export function renderSamples(payload) {
                 card.className = "cdd-stoich-card";
                 card.style.borderLeftColor = color.border;
                 card.style.boxShadow = `0 0 0 1px ${color.glow} inset`;
+
+                const mark = reactionMark(group);
+                if (mark) {
+                    card.dataset.cddReaction = mark;
+                    card.style.setProperty("--cdd-reaction-color", color.border);
+                }
 
                 const cardTop = document.createElement("div");
                 cardTop.className = "cdd-stoich-card-top";

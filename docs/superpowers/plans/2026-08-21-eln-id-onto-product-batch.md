@@ -1113,7 +1113,27 @@ function buildElnIdToBatchButton(state) {
 }
 ```
 
-- [ ] **Step 3: Render it on the product card**
+- [ ] **Step 3: Add a neutral note style**
+
+The panel has exactly one note class today, `.cdd-no-sample-quote`, and it is
+amber and italic — a warning. "Internal ID is already set" is not a warning,
+and borrowing that style would make a normal state look like a problem. Add a
+quiet one beside it, in the same stylesheet block:
+
+```css
+  #${PANEL_ID} .cdd-batch-field-note {
+    margin-top: 4px;
+    font-size: 11px;
+    line-height: 1.35;
+    color: #cbd5e1;
+    opacity: 0.85;
+  }
+```
+
+`#cbd5e1` is the muted grey `.cdd-stoich-status` already uses; 11px matches the
+card rows rather than the 12px of the amber quote.
+
+- [ ] **Step 4: Render it on the product card**
 
 In the products loop, after `renderConfiguredFields(sample)` and before
 `groupBody.appendChild(card)`:
@@ -1125,18 +1145,14 @@ In the products loop, after `renderConfiguredFields(sample)` and before
                     card.appendChild(buildElnIdToBatchButton(idState));
                 } else if (idState?.kind === "set") {
                     const note = document.createElement("div");
-                    note.className = "cdd-stoich-note";
+                    note.className = "cdd-batch-field-note";
                     note.textContent =
                         `${idState.fieldLabel} on this batch: ${idState.value}`;
                     card.appendChild(note);
                 }
 ```
 
-If `.cdd-stoich-note` does not exist in the panel stylesheet, use the class
-the panel already uses for a quiet one-line note on a card and keep it
-consistent — do not invent a new visual weight for this.
-
-- [ ] **Step 4: Check and build**
+- [ ] **Step 5: Check and build**
 
 ```bash
 node --check src/content/features/sample-panel.js
@@ -1145,7 +1161,7 @@ npm run build
 
 Expected: parses, two `✓ built in …` lines.
 
-- [ ] **Step 5: Verify — read-only half first**
+- [ ] **Step 6: Verify — read-only half first**
 
 Reload the extension, refresh entry `2504170`, options: *Show products* on,
 the new checkbox **off**.
@@ -1156,7 +1172,7 @@ Expected: the product card for `PHA-0334592-001` gains the button; reactant
 cards do not; a product whose *Internal ID* is already set shows the note
 instead.
 
-- [ ] **Step 6: Verify — the write, once, deliberately**
+- [ ] **Step 7: Verify — the write, once, deliberately**
 
 **Pick the batch on purpose.** `PHA-0334592-001` (molecule `165290233`,
 batch `192201177`, vault 6884) was confirmed to have an empty *Internal ID*.
@@ -1175,7 +1191,7 @@ batch `192201177`, vault 6884) was confirmed to have an empty *Internal ID*.
 If step 3 shows any other field changed, **stop**. The design has failed at
 its one promise, and the fix is not a patch to the button.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
 git add src/content/features/sample-panel.js
@@ -1246,7 +1262,7 @@ Task 6 offer logic, Task 5 re-check before the write), products only (Task 6),
 direct write (Task 5), uniqueness left to CDD (Task 6 step 6.5), product
 enrichment (Task 3), no bulk mode (absent by construction). Design §1 → Task 6;
 §2 → Task 6; §3 → Task 3; §4 → Task 5; §5 → Tasks 1 and 5; §6 → Task 6; §7 →
-Task 4. Files list → Tasks 1–6. Verification → Task 6 steps 5–6.
+Task 4. Files list → Tasks 1–6. Verification → Task 6 steps 6–7.
 
 **Guard depth.** "Never overwrite" is checked three times: when the button is
 offered (panel cache), against a freshly-read page inside the iframe, and

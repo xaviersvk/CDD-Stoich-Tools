@@ -13,7 +13,25 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
-# What's new in 14.10.1
+# What's new in 14.11.0
+
+---
+
+## 14.11.0 — 2026-08-21
+
+**A compound that was registered before it was made can now be pointed back at
+the entry it came from.** On a product card, **Write … into Internal ID** saves
+this entry's ID onto that batch.
+
+- It shows only while the batch's Internal ID is empty, and never on a
+  reactant. If the field already has a value, the card shows that value
+  instead.
+- This one saves to the **batch record**, not to the stoichiometry table —
+  closing the tab does not undo it. It takes a few seconds and names each step
+  as it goes.
+- Switch it on in *Settings → Sample panel*.
+- Product cards now also show the batch's own fields, the same ones reactant
+  cards show.
 
 ---
 

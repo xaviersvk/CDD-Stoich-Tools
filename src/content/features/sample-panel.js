@@ -472,14 +472,6 @@ ${HPLC_BLOCK_STYLES.replace(/^ {2}\./gm, `  #${PANEL_ID} .`)}
     margin-bottom: 6px;
   }
 
-  #${PANEL_ID} .cdd-stoich-reaction-badge {
-    display: inline-block;
-    font-size: 10px;
-    font-weight: 700;
-    padding: 2px 6px;
-    border-radius: 999px;
-  }
-
   #${PANEL_ID} .cdd-stoich-row {
     margin-bottom: 4px;
     font-size: 12px;
@@ -606,12 +598,13 @@ ${HPLC_BLOCK_STYLES.replace(/^ {2}\./gm, `  #${PANEL_ID} .`)}
     opacity: 0.9;
   }
 
-  #${PANEL_ID} .cdd-density-memory-note {
-    margin-top: 4px;
-    font-size: 10px;
-    line-height: 1.35;
-    color: #f59e0b;
-    opacity: 0.95;
+  /* The footnote about a remembered value, as a mark on the offer it is
+     about rather than a sentence under the card. Costs no height at all. */
+  #${PANEL_ID} .cdd-fill-memory-mark {
+    margin-left: 6px;
+    font-size: 12px;
+    opacity: 0.75;
+    cursor: help;
   }
 
   #${PANEL_ID} .cdd-fill-all-btn {
@@ -981,6 +974,22 @@ function buildFillButton(sample, offer) {
             ? `Writes the ${offer.field} you previously typed for this batch into the row, exactly as if you typed it.`
             : `Writes this ${offer.field} into the row, exactly as if you typed it.`;
 
+    // "Some of these values aren't saved on the batch/sample record" used to
+    // be a two-line sentence under the card, on every card that had a
+    // remembered offer. It is a footnote about THIS offer, so it becomes a
+    // mark on this offer: the sentence moves into the tooltip and the note
+    // stops costing two lines of a panel that already scrolls a long way.
+    if (offer.source === "memory") {
+        const mark = document.createElement("span");
+        mark.className = "cdd-fill-memory-mark";
+        mark.textContent = "ⓘ";
+        mark.title =
+            `This ${offer.field} is remembered from what you typed before — it is not ` +
+            `saved on the batch or sample record. Add it there and it will fill in ` +
+            `automatically from then on.`;
+        btn.appendChild(mark);
+    }
+
     btn.addEventListener("click", async (event) => {
         // The table enters edit mode on a row click and leaves it on any
         // click outside — and this very button IS outside the table. Stop
@@ -1076,13 +1085,6 @@ function updateFillAllButton() {
 // Amber nudge under memory-sourced fill buttons: the right long-term home
 // for these values is the batch/sample record, not this extension's
 // storage.
-function buildDensityMemoryNote() {
-    const note = document.createElement("div");
-    note.className = "cdd-density-memory-note";
-    note.textContent =
-        "Some of these values aren't saved on the batch/sample record — add them there so they fill automatically.";
-    return note;
-}
 
 // A batch-only card gets a random bit of inventory education. The pool mixes
 // factual reminders with gentle mockery on purpose — the point is that the
@@ -1270,16 +1272,12 @@ export function renderSamples(payload) {
                 card.style.background = "rgba(239,68,68,0.05)";
             }
 
+            // No "Reaction 1" badge. The group is already headed with the
+            // reaction's name and every card in it carries that reaction's
+            // colour on its edge, so the badge was a third statement of the
+            // same fact on every card in the panel.
             const cardTop = document.createElement("div");
             cardTop.className = "cdd-stoich-card-top";
-
-            const badge = document.createElement("div");
-            badge.className = "cdd-stoich-reaction-badge";
-            badge.style.background = color.badgeBg;
-            badge.style.color = color.badgeText;
-            badge.textContent = group.reactionLabel;
-
-            cardTop.appendChild(badge);
 
             if (lowPurity) {
                 const purityBadge = document.createElement("div");
@@ -1305,7 +1303,10 @@ export function renderSamples(payload) {
                 cardTop.appendChild(batchBadge);
             }
 
-            card.appendChild(cardTop);
+            // Without the reaction badge the card top holds only warnings, so
+            // most cards have none — an empty one would still cost its bottom
+            // margin on every card in the panel.
+            if (cardTop.childElementCount) card.appendChild(cardTop);
 
             for (const rowEl of renderConfiguredFields(sample)) {
                 card.appendChild(rowEl);
@@ -1325,9 +1326,6 @@ export function renderSamples(payload) {
             for (const offer of offers) {
                 card.appendChild(buildFillButton(sample, offer));
             }
-            if (offers.some(offerUsesMemory)) {
-                card.appendChild(buildDensityMemoryNote());
-            }
 
             groupBody.appendChild(card);
         }
@@ -1346,13 +1344,6 @@ export function renderSamples(payload) {
 
                 const cardTop = document.createElement("div");
                 cardTop.className = "cdd-stoich-card-top";
-
-                const badge = document.createElement("div");
-                badge.className = "cdd-stoich-reaction-badge";
-                badge.style.background = color.badgeBg;
-                badge.style.color = color.badgeText;
-                badge.textContent = group.reactionLabel;
-                cardTop.appendChild(badge);
 
                 const productBadge = document.createElement("div");
                 productBadge.className = "cdd-product-badge";

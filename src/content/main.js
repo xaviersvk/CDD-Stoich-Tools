@@ -40,6 +40,7 @@ import {initRunFormTemplates} from "./features/run-form-templates/init";
 import {initRegistrationProjectMirror} from "./features/ui-fixes/registration-project-mirror";
 import {initRegistrationFormDefault} from "./features/ui-fixes/registration-form-default";
 import {initElnIdToRegistration} from "./features/ui-fixes/eln-id-to-registration";
+import {initRegistrationDefaults} from "./features/ui-fixes/registration-defaults";
 import {initStoichAmountEditing} from "./features/ui-fixes/stoich-amount-editing";
 import {initStoichTableCopy} from "./features/ui-fixes/stoich-table-copy";
 import {initSlurpTypeDefault} from "./features/ui-fixes/slurp-type-default";
@@ -152,6 +153,10 @@ function init() {
   // stoichiometry row carries the entry's own ID (IDEMO-MDX-0014) across in its
   // URL, and the Create a New Entity page writes it into Internal ID.
   initElnIdToRegistration();
+
+  // Per-vault constants (Origin -> Synthesized) plus the amount out of the
+  // stoichiometry row, both only on a registration opened FROM an ELN entry.
+  initRegistrationDefaults();
 
   initStoichAmountEditing();
 

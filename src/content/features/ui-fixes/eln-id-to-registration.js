@@ -82,14 +82,10 @@ const REGISTER_LINK_SELECTOR = 'a[href*="/molecules/new"]';
 // emotion class hash next to it — that changes on every deploy.
 const TABLE_SELECTOR = '[data-autotest-id="stoichiometry"]';
 
-// CDD renders two `form#new_molecule` copies -- the live one and a hidden
-// template for the other registration types -- so every lookup is scoped to the
-// displayed one (same selector as registration-project-mirror.js).
-const FORM_SELECTOR = ".displayed_form_content form.new_molecule";
-
-// Each editable cell of the registration form announces its own label:
-//   <td data-editable-cell-label="*Internal ID" data-field-id="1000001975">
-const CELL_SELECTOR = "[data-editable-cell-label]";
+// Both selectors, and the guards that go with them, are shared with
+// registration-defaults.js — see registration-fill.js. Two features writing
+// into the same form must not disagree about which form that is.
+import { FORM_SELECTOR, CELL_SELECTOR } from "./registration-fill.js";
 
 let started = false;
 

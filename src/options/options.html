@@ -367,6 +367,40 @@
         </div>
     </section>
 
+    <section class="card card--wide" aria-labelledby="col-regdefaults-heading">
+        <header class="card__head">
+            <span class="tile" aria-hidden="true">
+                <span class="tile__no">8</span>
+                <span class="tile__sym">Rd</span>
+            </span>
+            <div class="card__titles">
+                <h2 class="card__name" id="col-regdefaults-heading">Registration defaults</h2>
+                <p class="card__desc">
+                    Values filled in for you when you register a compound
+                    <strong>from an ELN entry</strong> — <code>Origin</code> is
+                    <code>Synthesized</code> for anything that came out of a
+                    reaction. Kept per vault, because a field that exists in one
+                    vault may not exist in the next. A form you open by hand from
+                    Explore Data is never touched, and a field that already has a
+                    value is never overwritten.
+                </p>
+            </div>
+        </header>
+
+        <div class="card__body card__body--scroll">
+            <p class="note">
+                Vaults appear here as you add them. The vault number is in the
+                CDD address bar — <code>/vaults/<strong>8158</strong>/</code>.
+                For a dropdown field the value must be one of its options
+                spelled exactly, otherwise the field is left alone.
+            </p>
+
+            <div id="registrationDefaultsList" class="stack"></div>
+
+            <button id="registrationDefaultsAddVault" type="button" class="btn">Add a vault</button>
+        </div>
+    </section>
+
     <section class="card" aria-labelledby="col-hplc-heading">
         <header class="card__head">
             <span class="tile" aria-hidden="true">

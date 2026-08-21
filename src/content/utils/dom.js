@@ -31,3 +31,29 @@ export function mouseClick(element) {
     element.dispatchEvent(new MouseEvent("mouseup", options));
     element.dispatchEvent(new MouseEvent("click", options));
 }
+
+// Park a floating bubble next to the cursor: below-right by default, flipped or
+// pulled back to the viewport edge when it would otherwise overflow. Both plate
+// tooltips grew their own copy of this; they are now the same one.
+//
+// Read the element's rect BEFORE calling, i.e. with the bubble already filled
+// and visible — an empty bubble measures 0×0 and every clamp below no-ops.
+export function positionAtCursor(el, event) {
+    const pad = 12;
+    const rect = el.getBoundingClientRect();
+
+    let left = event.clientX + 14;
+    let top = event.clientY + 16;
+
+    if (left + rect.width + pad > window.innerWidth) {
+        left = Math.max(pad, window.innerWidth - rect.width - pad);
+    }
+    if (top + rect.height + pad > window.innerHeight) {
+        // Flip above the cursor, but never off the top of the screen — a tall
+        // bubble near the bottom of a long plate map used to do exactly that.
+        top = Math.max(pad, event.clientY - rect.height - 12);
+    }
+
+    el.style.left = `${left}px`;
+    el.style.top = `${top}px`;
+}

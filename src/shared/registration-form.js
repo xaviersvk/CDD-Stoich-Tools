@@ -177,21 +177,37 @@ export async function getRegistrationFormSettings() {
 }
 
 export async function saveRegistrationFormNames(names) {
-    await chrome.storage.local.set({ [REG_FORM_NAMES_KEY]: sanitizeNames(names) });
+    try {
+        await chrome.storage.local.set({ [REG_FORM_NAMES_KEY]: sanitizeNames(names) });
+    } catch {
+        // Orphaned content script — nothing useful to do.
+    }
 }
 
 export async function saveRegistrationFormOrder(order) {
-    await chrome.storage.local.set({ [REG_FORM_ORDER_KEY]: sanitizeNames(order) });
+    try {
+        await chrome.storage.local.set({ [REG_FORM_ORDER_KEY]: sanitizeNames(order) });
+    } catch {
+        // Orphaned content script — nothing useful to do.
+    }
 }
 
 export async function saveRegistrationFormMode(mode) {
-    await chrome.storage.local.set({ [REG_FORM_MODE_KEY]: sanitizeMode(mode) });
+    try {
+        await chrome.storage.local.set({ [REG_FORM_MODE_KEY]: sanitizeMode(mode) });
+    } catch {
+        // Orphaned content script — nothing useful to do.
+    }
 }
 
 export async function saveRegistrationFormFixedName(name) {
-    await chrome.storage.local.set({
-        [REG_FORM_FIXED_KEY]: typeof name === "string" ? name.trim() : "",
-    });
+    try {
+        await chrome.storage.local.set({
+            [REG_FORM_FIXED_KEY]: typeof name === "string" ? name.trim() : "",
+        });
+    } catch {
+        // Orphaned content script — nothing useful to do.
+    }
 }
 
 // Record `name` as the last form used in `vaultId`, leaving every other vault's
@@ -199,19 +215,54 @@ export async function saveRegistrationFormFixedName(name) {
 export async function saveRegistrationFormLastUsed(vaultId, name) {
     if (!vaultId || typeof name !== "string" || !name.trim()) return;
 
-    const { lastUsed } = await getRegistrationFormSettings();
+    try {
+        const { lastUsed } = await getRegistrationFormSettings();
 
-    await chrome.storage.local.set({
-        [REG_FORM_LAST_USED_KEY]: { ...lastUsed, [vaultId]: name.trim() },
-    });
+        await chrome.storage.local.set({
+            [REG_FORM_LAST_USED_KEY]: { ...lastUsed, [vaultId]: name.trim() },
+        });
+    } catch {
+        // Orphaned content script — nothing useful to do.
+    }
 }
 
 export async function clearRegistrationFormLastUsed(vaultId) {
-    const { lastUsed } = await getRegistrationFormSettings();
+    try {
+        const { lastUsed } = await getRegistrationFormSettings();
 
-    if (vaultId) delete lastUsed[vaultId];
+        if (vaultId) delete lastUsed[vaultId];
 
-    await chrome.storage.local.set({
-        [REG_FORM_LAST_USED_KEY]: vaultId ? lastUsed : {},
+        await chrome.storage.local.set({
+            [REG_FORM_LAST_USED_KEY]: vaultId ? lastUsed : {},
+        });
+    } catch {
+        // Orphaned content script — nothing useful to do.
+    }
+}
+
+/**
+ * onRegistrationFormSettingsChanged(cb) — call `cb(freshSettings)` whenever an
+ * options-page edit changes the ORDER, the MODE or the PINNED name, so a
+ * picklist already on screen re-sorts itself instead of waiting for a reload.
+ *
+ * Deliberately NOT watching REG_FORM_NAMES_KEY or REG_FORM_LAST_USED_KEY: both
+ * are written by the very pages that listen here, every time the user picks a
+ * form, and re-running the sync pass on our own write is a feedback loop.
+ *
+ * Both entity-type picklists (registration-form-default, slurp-type-default)
+ * had grown their own identical copy of this listener.
+ */
+export function onRegistrationFormSettingsChanged(cb) {
+    chrome.storage.onChanged.addListener((changes, areaName) => {
+        if (areaName !== "local") return;
+        if (
+            !changes[REG_FORM_ORDER_KEY] &&
+            !changes[REG_FORM_MODE_KEY] &&
+            !changes[REG_FORM_FIXED_KEY]
+        ) {
+            return;
+        }
+
+        getRegistrationFormSettings().then(cb);
     });
 }

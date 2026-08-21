@@ -12,5 +12,9 @@ export async function getAutoFillEnabled() {
 }
 
 export async function saveAutoFillEnabled(value) {
-    await chrome.storage.local.set({ [AUTO_FILL_STORAGE_KEY]: value === true });
+    try {
+        await chrome.storage.local.set({ [AUTO_FILL_STORAGE_KEY]: value === true });
+    } catch {
+        // Orphaned content script — nothing useful to do.
+    }
 }

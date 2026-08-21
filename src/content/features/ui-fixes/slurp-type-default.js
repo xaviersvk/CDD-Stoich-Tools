@@ -30,14 +30,12 @@ import {
     extractVaultId,
     getRegistrationFormSettings,
     mergeNames,
-    orderNames,
+    onRegistrationFormSettingsChanged,
     resolveDefaultName,
     saveRegistrationFormLastUsed,
     saveRegistrationFormNames,
-    REG_FORM_ORDER_KEY,
-    REG_FORM_MODE_KEY,
-    REG_FORM_FIXED_KEY,
 } from "../../../shared/registration-form.js";
+import { applyOptionOrder, optionNames } from "./entity-type-select.js";
 
 // The bracketed name is stable; the Stimulus target name would do too.
 const SELECT_SELECTOR = 'select[name="slurp[registration_form_definition_id]"]';
@@ -62,41 +60,8 @@ function getSelect() {
     return document.querySelector(SELECT_SELECTOR);
 }
 
-function optionNames(select) {
-    return Array.from(select.options).map((option) => option.text.trim());
-}
-
 function currentVaultId() {
     return extractVaultId(location.pathname);
-}
-
-/* ------------------------------------------------------------------ *
- * Order
- * ------------------------------------------------------------------ */
-
-// Reorder the option nodes in place. No-op (no DOM writes, so no observer
-// feedback loop) when they already sit in the wanted order.
-function applyOrder(select) {
-    if (!settings?.order?.length) return;
-
-    const options = Array.from(select.options);
-    const byName = new Map();
-    for (const option of options) {
-        const name = option.text.trim();
-        if (!byName.has(name)) byName.set(name, []);
-        byName.get(name).push(option);
-    }
-
-    const wanted = orderNames(optionNames(select), settings.order)
-        .map((name) => byName.get(name)?.shift())
-        .filter(Boolean);
-
-    if (wanted.length !== options.length) return; // duplicate/odd names: leave alone
-    if (wanted.every((option, i) => option === options[i])) return; // already sorted
-
-    // Appending an existing child moves it; the selected option stays selected,
-    // and each option's nested <template> moves with it.
-    for (const option of wanted) select.appendChild(option);
 }
 
 /* ------------------------------------------------------------------ *
@@ -164,7 +129,7 @@ function sync() {
     if (!select || !settings) return;
 
     discoverNames(select);
-    applyOrder(select);
+    applyOptionOrder(select, settings.order);
     applyDefault(select);
 }
 
@@ -175,16 +140,9 @@ export async function initSlurpTypeDefault() {
     settings = await getRegistrationFormSettings();
 
     // An options-page edit should re-sort a picklist already on screen.
-    chrome.storage.onChanged.addListener((changes, areaName) => {
-        if (areaName !== "local") return;
-        if (!changes[REG_FORM_ORDER_KEY] && !changes[REG_FORM_MODE_KEY] && !changes[REG_FORM_FIXED_KEY]) {
-            return;
-        }
-
-        getRegistrationFormSettings().then((fresh) => {
-            settings = fresh;
-            sync();
-        });
+    onRegistrationFormSettingsChanged((fresh) => {
+        settings = fresh;
+        sync();
     });
 
     document.addEventListener("change", (event) => {

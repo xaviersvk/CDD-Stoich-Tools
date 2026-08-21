@@ -1126,6 +1126,18 @@ function updateFillAllButton() {
 // A batch-only card gets a random bit of inventory education. The pool mixes
 // factual reminders with gentle mockery on purpose — the point is that the
 // message stays fresh enough to be read, not muted as wallpaper.
+// Every badge in a card's top strip is the same three lines of DOM. Four of
+// them lived here spelled out, which is what the clone check was pointing at
+// once the reaction badge — the part the two card builders used to share —
+// was removed.
+function cardTopBadge(className, text, title) {
+    const badge = document.createElement("div");
+    badge.className = className;
+    badge.textContent = text;
+    if (title) badge.title = title;
+    return badge;
+}
+
 function pickNoSampleQuote(sample) {
     const purity = sample?.purity != null && sample.purity !== ""
         ? String(sample.purity)
@@ -1323,27 +1335,22 @@ export function renderSamples(payload) {
             cardTop.className = "cdd-stoich-card-top";
 
             if (lowPurity) {
-                const purityBadge = document.createElement("div");
-                purityBadge.className = "cdd-low-purity-badge";
-                purityBadge.textContent = "⚠ LOW PURITY";
-                cardTop.appendChild(purityBadge);
+                cardTop.appendChild(cardTopBadge("cdd-low-purity-badge", "⚠ LOW PURITY"));
             }
 
             if (depletedSample) {
-                const depletedBadge = document.createElement("div");
-                depletedBadge.className = "cdd-low-purity-badge";
-                depletedBadge.textContent = "⚠ DEPLETED SAMPLE USED";
-                cardTop.appendChild(depletedBadge);
+                cardTop.appendChild(
+                    cardTopBadge("cdd-low-purity-badge", "⚠ DEPLETED SAMPLE USED")
+                );
             }
 
             if (sample.hasSample === false) {
-                const batchBadge = document.createElement("div");
-                batchBadge.className = "cdd-no-sample-badge";
-                batchBadge.textContent = "⚠ NO SAMPLE";
-                batchBadge.title =
+                cardTop.appendChild(cardTopBadge(
+                    "cdd-no-sample-badge",
+                    "⚠ NO SAMPLE",
                     "This row uses a registered batch without an inventory sample. " +
-                    "Creating a sample is the right way — it tracks location, amount and depletion.";
-                cardTop.appendChild(batchBadge);
+                    "Creating a sample is the right way — it tracks location, amount and depletion."
+                ));
             }
 
             // Without the reaction badge the card top holds only warnings, so
@@ -1394,10 +1401,7 @@ export function renderSamples(payload) {
                 const cardTop = document.createElement("div");
                 cardTop.className = "cdd-stoich-card-top";
 
-                const productBadge = document.createElement("div");
-                productBadge.className = "cdd-product-badge";
-                productBadge.textContent = "PRODUCT";
-                cardTop.appendChild(productBadge);
+                cardTop.appendChild(cardTopBadge("cdd-product-badge", "PRODUCT"));
 
                 card.appendChild(cardTop);
 

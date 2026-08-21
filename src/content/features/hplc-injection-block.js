@@ -334,6 +334,8 @@ export function createHplcInjectionBlock(reaction, color) {
             vialLadderMl: settings.vialLadderMl,
             comfortMinUl: settings.comfortMinUl,
             comfortMaxUl: settings.comfortMaxUl,
+            injectionMinUl: settings.injectionMinUl,
+            injectionMaxUl: settings.injectionMaxUl,
         });
 
         if (result.ok) {

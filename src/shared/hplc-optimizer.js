@@ -18,13 +18,14 @@
 
 import { computeInjectionVolume } from "./hplc-injection-math.js";
 
-// What the injector can physically do, and where it is happy. Instrument
-// facts, not preferences, which is why they are constants and not settings.
-// Waters Acquity H-Class: 0.1 to 10 µL, in 0.1 µL steps. 10 µL is the far
-// edge but it does get used, so it is a real ceiling rather than a nominal
-// one. Confirmed by Pavel Kraina, 2026-08-21.
-export const INJECTION_MIN_UL = 0.1;
-export const INJECTION_MAX_UL = 10;
+// What the injector can physically do. On a Waters Acquity H-Class with the
+// loop this lab runs, 0.1 to 10 µL in 0.1 µL steps — 10 µL is the far edge
+// but it does get used, so it is a real ceiling rather than a nominal one.
+//
+// The ceiling belongs to the SAMPLE LOOP, not to the instrument, so swapping
+// the loop moves it. Defaults only; the range arrives as an argument.
+export const DEFAULT_INJECTION_MIN_UL = 0.1;
+export const DEFAULT_INJECTION_MAX_UL = 10;
 
 // Where the injection is pleasant to work with. 0.3, not 0.5, is the bottom:
 // "nejlepsi je davat zhruba mezi 0.3 a 2 uL at je prostor doladit
@@ -226,9 +227,22 @@ export function optimizeInjection({
     vialLadderMl,
     comfortMinUl = DEFAULT_COMFORT_MIN_UL,
     comfortMaxUl = DEFAULT_COMFORT_MAX_UL,
+    injectionMinUl = DEFAULT_INJECTION_MIN_UL,
+    injectionMaxUl = DEFAULT_INJECTION_MAX_UL,
 }) {
     const ladder = normalizeLadder(vialLadderMl || DEFAULT_VIAL_LADDER_ML);
-    const centre = comfortCentre(comfortMinUl, comfortMaxUl);
+
+    // Both ranges are settings now, so they can disagree — a comfortable band
+    // that reaches past what the loop can inject asks for volumes that do not
+    // exist. Neither stored value is touched; the search just happens in the
+    // overlap. If they do not overlap at all, the loop wins, because a volume
+    // the injector cannot deliver is not a preference, it is a mistake.
+    const lo = Math.max(comfortMinUl, injectionMinUl);
+    const hi = Math.min(comfortMaxUl, injectionMaxUl);
+    const comfortLo = lo < hi ? lo : injectionMinUl;
+    const comfortHi = lo < hi ? hi : injectionMaxUl;
+
+    const centre = comfortCentre(comfortLo, comfortHi);
 
     const now = computeInjectionVolume({
         molarity,
@@ -238,13 +252,13 @@ export function optimizeInjection({
     });
     if (!now) return { ok: true, reason: null, suggestion: null };
 
-    if (now.volumeUl >= comfortMinUl && now.volumeUl <= comfortMaxUl) {
+    if (now.volumeUl >= comfortLo && now.volumeUl <= comfortHi) {
         return { ok: true, reason: null, suggestion: null };
     }
 
     // Which way is it wrong? Too big an injection means the vial is too weak
     // — a dilute reaction. Too small means too strong.
-    const reason = now.volumeUl > comfortMaxUl ? "too-dilute" : "too-concentrated";
+    const reason = now.volumeUl > comfortHi ? "too-dilute" : "too-concentrated";
 
     const current = { currentAliquotUl, currentVialMl, dropUl };
     const allLayers = layers({ molarity, targetNmol, dropUl, vialLadderMl: ladder }, reason);
@@ -252,8 +266,8 @@ export function optimizeInjection({
     // Comfortable first; failing that, anything the injector can actually
     // deliver — an awkward injection beats an impossible one.
     const suggestion =
-        searchWithin(allLayers, comfortMinUl, comfortMaxUl, current, centre) ||
-        searchWithin(allLayers, INJECTION_MIN_UL, INJECTION_MAX_UL, current, centre);
+        searchWithin(allLayers, comfortLo, comfortHi, current, centre) ||
+        searchWithin(allLayers, injectionMinUl, injectionMaxUl, current, centre);
 
     if (!suggestion) return { ok: false, reason: "impossible", suggestion: null };
 

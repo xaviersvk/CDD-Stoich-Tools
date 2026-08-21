@@ -541,12 +541,27 @@
                            class="purity-threshold-input" />
                 </label>
 
+                <label class="field-item purity-threshold-row">
+                    <span>
+                        <strong>Injector range (&micro;L)</strong> &mdash; everything the
+                        injector can deliver. The ceiling is your sample loop's, so
+                        change it when the loop changes.
+                    </span>
+                    <span class="range-pair">
+                        <input type="number" id="hplcInjectionMin" min="0" step="0.1"
+                               class="purity-threshold-input"
+                               aria-label="Injector range, from" />
+                        <span class="range-pair__to">to</span>
+                        <input type="number" id="hplcInjectionMax" min="0" step="0.1"
+                               class="purity-threshold-input"
+                               aria-label="Injector range, to" />
+                    </span>
+                </label>
+
                 <label class="field-item purity-threshold-row">
                     <span>
                         <strong>Comfortable injection range (µL)</strong> — outside
-                        this, the block offers you a different dilution. The
-                        injector's own 0.1–10 µL limits are fixed; this is where
-                        you like to work inside them.
+                        the block offers you a different dilution. This sits inside the injector range above.
                     </span>
                     <span class="range-pair">
                         <input type="number" id="hplcComfortMin" min="0" step="0.1"

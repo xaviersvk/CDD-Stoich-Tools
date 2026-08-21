@@ -45,6 +45,7 @@ import {
     saveHplcBlockEnabled,
     saveHplcVialLadder,
     saveHplcComfortBand,
+    saveHplcInjectionRange,
 } from "../shared/hplc-injection.js";
 import { formatVialLadder } from "../shared/hplc-optimizer.js";
 import {
@@ -840,6 +841,8 @@ const hplcAliquotInput = document.getElementById("hplcAliquotVolume");
 const hplcVialInput = document.getElementById("hplcVialVolume");
 const hplcTargetInput = document.getElementById("hplcTargetAmount");
 const hplcLadderInput = document.getElementById("hplcVialLadder");
+const hplcInjectionMinInput = document.getElementById("hplcInjectionMin");
+const hplcInjectionMaxInput = document.getElementById("hplcInjectionMax");
 const hplcComfortMinInput = document.getElementById("hplcComfortMin");
 const hplcComfortMaxInput = document.getElementById("hplcComfortMax");
 const hplcComfortEcho = document.getElementById("hplcComfortEcho");
@@ -864,6 +867,13 @@ function commitComfortBand() {
     saveHplcComfortBand(hplcComfortMinInput.value, hplcComfortMaxInput.value);
 }
 
+function commitInjectionRange() {
+    saveHplcInjectionRange(hplcInjectionMinInput.value, hplcInjectionMaxInput.value);
+}
+
+hplcInjectionMinInput.addEventListener("change", commitInjectionRange);
+hplcInjectionMaxInput.addEventListener("change", commitInjectionRange);
+
 hplcComfortMinInput.addEventListener("change", commitComfortBand);
 hplcComfortMaxInput.addEventListener("change", commitComfortBand);
 
@@ -885,6 +895,8 @@ async function initHplcInjectionUI() {
     hplcVialInput.value = settings.vialMl;
     hplcTargetInput.value = settings.targetNmol;
     hplcLadderInput.value = formatVialLadder(settings.vialLadderMl);
+    hplcInjectionMinInput.value = settings.injectionMinUl;
+    hplcInjectionMaxInput.value = settings.injectionMaxUl;
     hplcComfortMinInput.value = settings.comfortMinUl;
     hplcComfortMaxInput.value = settings.comfortMaxUl;
     paintComfortEcho(settings.comfortMinUl, settings.comfortMaxUl);

@@ -33,6 +33,7 @@ import {
     parseRowAmount,
 } from "../../../shared/registration-defaults.js";
 import {
+    FORM_SELECTOR,
     findLabelledControl,
     isFillable,
     isRegistrationPage,
@@ -41,20 +42,51 @@ import {
 
 const REGISTER_LINK_SELECTOR = 'a[href*="/molecules/new"]';
 
-// The row CDD prints one reagent on. Its Amounts cell reads "Mass: 6.38 g".
-const ROW_SELECTOR = '[data-autotest-id="stoichiometry-row"]';
+// The row CDD prints one reagent on — a real `<tr>`, whose Amounts cell reads
+// "Mass: 2 mg".
+//
+// NOT `[data-autotest-id="stoichiometry-row"]`, which is tempting and wrong:
+// that attribute sits on the row's FIRST CELL, the one carrying just the row
+// number. Its textContent is "3". Asking a Register link for that ancestor
+// returns null — the link is in a different cell — so nothing was ever
+// stamped. That is how this shipped broken.
+//
+// stoich-table-copy.js uses the same attribute safely because it only ever
+// asks for the row's nearest TABLE, which is the same either way.
+function findStoichRow(link) {
+    return link.closest("tr");
+}
 
 // The gate. Until this is ticked, the sample fields below it are inert and a
 // save creates no sample record — so nothing is filled either. Ticking it is
 // the user's decision, not the plugin's.
-const CREATE_SAMPLE_SELECTOR = 'input[name="molecule[batch][create_new_sample]"]';
+//
+// `[type="checkbox"]` is load-bearing. Rails emits the classic pair for every
+// checkbox — a hidden input carrying "0" with the SAME name, then the real
+// box — so matching on the name alone returns the hidden one, whose `checked`
+// is false forever. That is exactly how this feature shipped broken.
+const CREATE_SAMPLE_SELECTOR =
+    'input[type="checkbox"][name="molecule[batch][create_new_sample]"]';
 
-// Located by `name`, never by `id`: the amount input's id in vault 8158 is
-// `inventory_event_field_159500`, and that number is a per-vault field
-// definition id. Hardcoding it would make this quietly do nothing everywhere
-// else.
-const AMOUNT_SELECTOR = '[name*="inventory_events_attributes"][name$="[value]"]';
 const UNITS_SELECTOR = '[name$="[inventory_samples_attributes][0][units]"]';
+
+// Initial Amount is found THROUGH the units select, as the number input in
+// the same table row.
+//
+// It has no label of its own and no stable name: its own name is
+// `…[inventory_events_attributes][0][fields_attributes][0][value]`, which
+// says "the event's first field", not "the amount" — seven controls on this
+// form match that shape, and which one is index 0 depends on the order the
+// vault happens to define its event fields in. Its id, `inventory_event_
+// field_159500`, is a per-vault field definition id.
+//
+// The row is the one thing that means what it says: CDD lays the header out
+// as "Initial Amount * | Units *", so the number sitting beside these units
+// IS the amount they belong to.
+function findSampleAmountInput(root) {
+    const units = root.querySelector(UNITS_SELECTOR);
+    return units?.closest("tr")?.querySelector('input[type="number"]') || null;
+}
 
 let started = false;
 let vaultDefaults = { label: "", fields: [] };
@@ -79,7 +111,7 @@ function stampAmount(target) {
     // The row the link is IN, not a row matched back from the parsed payload.
     // The payload's order is not the table's display order, so matching would
     // be inventing a chance to register the wrong row's mass.
-    const row = link.closest(ROW_SELECTOR);
+    const row = findStoichRow(link);
     if (!row) return;
 
     const amount = parseRowAmount(row.textContent);
@@ -147,12 +179,16 @@ function fillSampleAmount() {
     const amount = carriedAmount();
     if (!amount) return;
 
-    const gate = document.querySelector(CREATE_SAMPLE_SELECTOR);
+    // Scoped to the DISPLAYED form: CDD renders a second, hidden copy as a
+    // template for the other registration types, and a value written into
+    // that one goes nowhere.
+    const form = document.querySelector(FORM_SELECTOR);
+    if (!form) return;
+
+    const gate = form.querySelector(CREATE_SAMPLE_SELECTOR);
     if (!gate?.checked) return;
 
-    const form = document.querySelector("form.new_molecule") || document;
-
-    const amountInput = form.querySelector(AMOUNT_SELECTOR);
+    const amountInput = findSampleAmountInput(form);
     if (amountInput && !filled.has(amountInput)) {
         filled.add(amountInput);
         if (isFillable(amountInput)) {

@@ -26,17 +26,23 @@ import { computeInjectionVolume } from "./hplc-injection-math.js";
 export const INJECTION_MIN_UL = 0.1;
 export const INJECTION_MAX_UL = 10;
 
-// Where the injection is pleasant to work with — and 0.3, not 0.5, is the
-// bottom: "nejlepsi je davat zhruba mezi 0.3 a 2 uL at je prostor doladit
+// Where the injection is pleasant to work with. 0.3, not 0.5, is the bottom:
+// "nejlepsi je davat zhruba mezi 0.3 a 2 uL at je prostor doladit
 // koncentraci". Below 2 µL there is still room to tune the concentration
 // without leaving the range.
-export const COMFORT_MIN_UL = 0.3;
-export const COMFORT_MAX_UL = 2;
+//
+// Unlike the injector's own 0.1–10 limits, this pair is a PREFERENCE — it
+// depends on the method and on who is running it — so these are only the
+// defaults; the band arrives as an argument. See shared/hplc-injection.js.
+export const DEFAULT_COMFORT_MIN_UL = 0.3;
+export const DEFAULT_COMFORT_MAX_UL = 2;
 
-// The centre of the comfortable band, multiplicatively. An injection volume
-// is a ratio, so the ends are equally far from it — which is how the band
-// reads to a chemist.
-const COMFORT_CENTRE_UL = Math.sqrt(COMFORT_MIN_UL * COMFORT_MAX_UL);
+// The centre of the band, multiplicatively. An injection volume is a ratio,
+// so the ends are equally far from it — which is how the band reads to a
+// chemist.
+function comfortCentre(min, max) {
+    return Math.sqrt(min * max);
+}
 
 // You can add drops. You cannot take half a one — a sub-drop aliquot is not
 // pipetted, it is a drop that has been diluted, which is the third lever.
@@ -172,16 +178,16 @@ function changeCount(cand, { currentAliquotUl, currentVialMl }) {
     return changes;
 }
 
-function distanceFromCentre(cand) {
-    return Math.abs(Math.log(cand.volumeUl / COMFORT_CENTRE_UL));
+function distanceFromCentre(cand, centre) {
+    return Math.abs(Math.log(cand.volumeUl / centre));
 }
 
-function pickBest(candidates, current) {
+function pickBest(candidates, current, centre) {
     let best = null;
     let bestKey = null;
 
     for (const cand of candidates) {
-        const key = [changeCount(cand, current), distanceFromCentre(cand)];
+        const key = [changeCount(cand, current), distanceFromCentre(cand, centre)];
         if (
             !best ||
             key[0] < bestKey[0] ||
@@ -195,10 +201,10 @@ function pickBest(candidates, current) {
     return best;
 }
 
-function searchWithin(allLayers, min, max, current) {
+function searchWithin(allLayers, min, max, current, centre) {
     for (const layer of allLayers) {
         const usable = layer.filter((c) => c.volumeUl >= min && c.volumeUl <= max);
-        if (usable.length) return pickBest(usable, current);
+        if (usable.length) return pickBest(usable, current, centre);
     }
     return null;
 }
@@ -218,8 +224,11 @@ export function optimizeInjection({
     currentAliquotUl,
     currentVialMl,
     vialLadderMl,
+    comfortMinUl = DEFAULT_COMFORT_MIN_UL,
+    comfortMaxUl = DEFAULT_COMFORT_MAX_UL,
 }) {
     const ladder = normalizeLadder(vialLadderMl || DEFAULT_VIAL_LADDER_ML);
+    const centre = comfortCentre(comfortMinUl, comfortMaxUl);
 
     const now = computeInjectionVolume({
         molarity,
@@ -229,13 +238,13 @@ export function optimizeInjection({
     });
     if (!now) return { ok: true, reason: null, suggestion: null };
 
-    if (now.volumeUl >= COMFORT_MIN_UL && now.volumeUl <= COMFORT_MAX_UL) {
+    if (now.volumeUl >= comfortMinUl && now.volumeUl <= comfortMaxUl) {
         return { ok: true, reason: null, suggestion: null };
     }
 
     // Which way is it wrong? Too big an injection means the vial is too weak
     // — a dilute reaction. Too small means too strong.
-    const reason = now.volumeUl > COMFORT_MAX_UL ? "too-dilute" : "too-concentrated";
+    const reason = now.volumeUl > comfortMaxUl ? "too-dilute" : "too-concentrated";
 
     const current = { currentAliquotUl, currentVialMl, dropUl };
     const allLayers = layers({ molarity, targetNmol, dropUl, vialLadderMl: ladder }, reason);
@@ -243,8 +252,8 @@ export function optimizeInjection({
     // Comfortable first; failing that, anything the injector can actually
     // deliver — an awkward injection beats an impossible one.
     const suggestion =
-        searchWithin(allLayers, COMFORT_MIN_UL, COMFORT_MAX_UL, current) ||
-        searchWithin(allLayers, INJECTION_MIN_UL, INJECTION_MAX_UL, current);
+        searchWithin(allLayers, comfortMinUl, comfortMaxUl, current, centre) ||
+        searchWithin(allLayers, INJECTION_MIN_UL, INJECTION_MAX_UL, current, centre);
 
     if (!suggestion) return { ok: false, reason: "impossible", suggestion: null };
 

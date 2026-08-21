@@ -541,11 +541,30 @@
                            class="purity-threshold-input" />
                 </label>
 
-                <label class="field-item purity-threshold-row">
-                    <span>
+                <label class="field-item purity-threshold-row">
+                    <span>
+                        <strong>Comfortable injection range (µL)</strong> — outside
+                        this, the block offers you a different dilution. The
+                        injector's own 0.1–10 µL limits are fixed; this is where
+                        you like to work inside them.
+                    </span>
+                    <span class="range-pair">
+                        <input type="number" id="hplcComfortMin" min="0" step="0.1"
+                               class="purity-threshold-input"
+                               aria-label="Comfortable injection range, from" />
+                        <span class="range-pair__to">to</span>
+                        <input type="number" id="hplcComfortMax" min="0" step="0.1"
+                               class="purity-threshold-input"
+                               aria-label="Comfortable injection range, to" />
+                    </span>
+                </label>
+
+                <label class="field-item purity-threshold-row">
+                    <span>
                         <strong>Vial volumes you stock (mL)</strong> — when the
-                        injection lands outside 0.5–2 µL, the block suggests a
-                        different dilution, and it picks from this list. Default is the
+                        injection lands outside <span id="hplcComfortEcho">the
+                        comfortable range</span>, the block suggests a different
+                        dilution, and it picks from this list. Default is the
                         0.25 mL insert and a vial filled to 1.5 mL.
                     </span>
                     <input type="text" id="hplcVialLadder"

@@ -44,6 +44,7 @@ import {
     saveHplcTargetAmountNmol,
     saveHplcBlockEnabled,
     saveHplcVialLadder,
+    saveHplcComfortBand,
 } from "../shared/hplc-injection.js";
 import { formatVialLadder } from "../shared/hplc-optimizer.js";
 import {
@@ -839,6 +840,9 @@ const hplcAliquotInput = document.getElementById("hplcAliquotVolume");
 const hplcVialInput = document.getElementById("hplcVialVolume");
 const hplcTargetInput = document.getElementById("hplcTargetAmount");
 const hplcLadderInput = document.getElementById("hplcVialLadder");
+const hplcComfortMinInput = document.getElementById("hplcComfortMin");
+const hplcComfortMaxInput = document.getElementById("hplcComfortMax");
+const hplcComfortEcho = document.getElementById("hplcComfortEcho");
 
 hplcAliquotInput.addEventListener("change", () => {
     saveHplcAliquotVolumeUl(hplcAliquotInput.value);
@@ -854,6 +858,22 @@ hplcEnabledCheckbox.addEventListener("change", () => {
     saveHplcBlockEnabled(hplcEnabledCheckbox.checked);
 });
 
+// The ends are saved together: a band whose bottom is above its top is not
+// a band, and sanitizeComfortBand can only see that when it has both.
+function commitComfortBand() {
+    saveHplcComfortBand(hplcComfortMinInput.value, hplcComfortMaxInput.value);
+}
+
+hplcComfortMinInput.addEventListener("change", commitComfortBand);
+hplcComfortMaxInput.addEventListener("change", commitComfortBand);
+
+// The ladder description quotes the band, so it has to be written rather
+// than typed into the markup -- that is exactly how it came to say 0.5 long
+// after the band had moved to 0.3.
+function paintComfortEcho(min, max) {
+    if (hplcComfortEcho) hplcComfortEcho.textContent = `${min}–${max} µL`;
+}
+
 hplcLadderInput.addEventListener("input", () => {
     saveHplcVialLadder(hplcLadderInput.value);
 });
@@ -865,6 +885,9 @@ async function initHplcInjectionUI() {
     hplcVialInput.value = settings.vialMl;
     hplcTargetInput.value = settings.targetNmol;
     hplcLadderInput.value = formatVialLadder(settings.vialLadderMl);
+    hplcComfortMinInput.value = settings.comfortMinUl;
+    hplcComfortMaxInput.value = settings.comfortMaxUl;
+    paintComfortEcho(settings.comfortMinUl, settings.comfortMaxUl);
 }
 
 const showProductsCheckbox = document.getElementById("showProducts");

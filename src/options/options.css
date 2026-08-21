@@ -883,3 +883,35 @@ body {
 .reg-defaults-vault > .prefix-color-item > .text-input:first-child {
     flex: 0 1 96px;
 }
+
+/* A range is one setting with two ends, so it stays one row. */
+.range-pair {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.range-pair .purity-threshold-input {
+    width: 68px;
+}
+
+.range-pair__to {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+/* A range is one setting with two ends, so it stays one row. */
+.range-pair {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.range-pair .purity-threshold-input {
+    width: 64px;
+}
+
+.range-pair__to {
+    font-size: 12px;
+    color: var(--muted);
+}

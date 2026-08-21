@@ -99,20 +99,30 @@ export async function writeElnIdToBatch({
     const frame = makeFrame(moleculeBatchesUrl(vaultId, moleculeId));
 
     try {
-        const doc = await waitFor(
-            () =>
-                frame.contentDocument?.readyState === "complete"
-                    ? frame.contentDocument
-                    : null,
-            RENDER_TIMEOUT_MS
-        );
-        if (!doc) return { ok: false, reason: "the batch page did not load" };
-
+        // Wait for the PROPS, not for readyState.
+        //
+        // A fresh iframe starts on about:blank, and about:blank's readyState
+        // is ALREADY "complete" — polling it hands you the blank document
+        // about 5ms in, long before the molecule page arrives, and every read
+        // after that comes back empty. That was the first version of this
+        // function and it failed exactly that way.
+        //
+        // The renderers are in the server HTML, so "can I read this batch's
+        // props" is a direct test of "the page I asked for is here" — and it
+        // is the thing we need next anyway.
+        //
         // The definition id comes from the page we are about to write to, not
         // from the panel's cache: the label is per-vault configuration and the
         // id behind it differs between vaults.
-        const props = readBatchProps(doc, batchId);
-        if (!props) return { ok: false, reason: "no batch record on that page" };
+        const props = await waitFor(() => {
+            const d = frame.contentDocument;
+            return d ? readBatchProps(d, batchId) : null;
+        }, RENDER_TIMEOUT_MS);
+
+        if (!props) return { ok: false, reason: "the batch page did not load" };
+
+        const doc = frame.contentDocument;
+        if (!doc) return { ok: false, reason: "the batch page went away" };
 
         const defId = findDefId(props.defs, fieldLabel);
         if (!defId) {

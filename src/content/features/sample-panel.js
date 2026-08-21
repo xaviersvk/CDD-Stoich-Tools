@@ -1142,10 +1142,32 @@ async function runAllOffers(btn) {
 //
 // "set" is a state rather than an early return on purpose: a card that simply
 // lacks the button, with no reason given, reads as a bug.
+// batchId -> { kind: "busy" | "done" | "error", text }
+//
+// This lives in MODULE state, not on the button, because the panel rebuilds
+// every card on every render — measured at 56 rebuilds in 10 seconds on a
+// live entry, while a single write takes six to eight. A button updated in
+// place is detached a fraction of a second later and its text is never seen;
+// that is why the first working write looked like it had done nothing.
+//
+// Same rule as the HPLC block's per-reaction overrides, and the same reason.
+// Cleared on navigation by clearElnIdToBatchWrites().
+const elnIdWriteStates = new Map();
+
+export function clearElnIdToBatchWrites() {
+    elnIdWriteStates.clear();
+}
+
 function elnIdToBatchState(sample) {
     if (!isElnIdToBatchEnabled()) return null;
     if (!sample?.isProduct) return null;
     if (!sample.batchId || !sample.moleculeId) return null;
+
+    // A write in flight, or one that has finished, outranks everything below:
+    // it is the freshest thing known about this batch, and it has to survive
+    // the next rebuild.
+    const live = elnIdWriteStates.get(sample.batchId);
+    if (live) return { kind: live.kind, text: live.text };
 
     // Enrichment has not answered yet. Saying nothing beats offering a button
     // whose only guard has not run.
@@ -1188,8 +1210,14 @@ function buildElnIdToBatchButton(sample, state) {
         // outside — and this button IS outside the table.
         event.stopPropagation();
 
-        btn.disabled = true;
-        btn.textContent = "Writing…";
+        // Into the map, then repaint. Writing straight to `btn` would be
+        // invisible: this element is replaced within a fraction of a second.
+        const setStage = (kind, text) => {
+            elnIdWriteStates.set(state.batchId, { kind, text });
+            renderFromState();
+        };
+
+        setStage("busy", "Writing…");
 
         const result = await writeElnIdToBatch({
             vaultId: state.vaultId,
@@ -1197,27 +1225,38 @@ function buildElnIdToBatchButton(sample, state) {
             batchId: state.batchId,
             fieldLabel: state.fieldLabel,
             value: state.value,
-            onStage: (text) => { btn.textContent = text; },
+            onStage: (text) => setStage("busy", text),
         });
 
         if (result.ok) {
-            btn.textContent = `✓ ${state.fieldLabel} set to ${state.value}`;
-
             // The panel's copy of this batch is now a lie, and so is the
             // cached molecule page behind it. Without both of these the card
-            // keeps offering a button whose work is done, and a second click
-            // dies on "already set" — which reads as the failure it is not.
+            // would go back to offering a button whose work is done, and a
+            // second click would die on "already set" — which reads as the
+            // failure it is not.
             sample.batchFieldMap = {
                 ...(sample.batchFieldMap || {}),
                 [state.fieldLabel]: state.value,
             };
             forgetMoleculePage(sample.moleculeId);
+
+            setStage("done", `✓ ${state.fieldLabel} set to ${state.value}`);
         } else {
-            btn.textContent = `✗ ${result.reason || "could not write it"}`;
-            btn.disabled = false;
+            setStage("error", `✗ ${result.reason || "could not write it"}`);
         }
     });
 
+    return btn;
+}
+
+// A card whose batch has a write in flight, or a finished one. Busy and done
+// are not clickable; an error is, so a retry costs one click.
+function buildElnIdWriteStatusButton(live) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "cdd-density-fill-btn";
+    btn.textContent = live.text;
+    btn.disabled = live.kind !== "error";
     return btn;
 }
 
@@ -1525,6 +1564,12 @@ export function renderSamples(payload) {
 
                 if (idState?.kind === "offer") {
                     card.appendChild(buildElnIdToBatchButton(sample, idState));
+                } else if (
+                    idState?.kind === "busy" ||
+                    idState?.kind === "done" ||
+                    idState?.kind === "error"
+                ) {
+                    card.appendChild(buildElnIdWriteStatusButton(idState));
                 } else if (idState?.kind === "set") {
                     const note = document.createElement("div");
                     note.className = "cdd-batch-field-note";

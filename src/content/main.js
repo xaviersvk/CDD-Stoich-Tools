@@ -3,7 +3,7 @@ import { injectPageScript } from "./inject-loader.js";
 import { handleMessage } from "./message-router.js";
 import { watchUrlChanges } from "./url-watcher.js";
 import { watchKetcherDialog } from "./overlay-watcher.js";
-import { ensurePanel, renderFromState, initSamplePanelFields } from "./features/sample-panel.js";
+import { ensurePanel, renderFromState, initSamplePanelFields, clearElnIdToBatchWrites } from "./features/sample-panel.js";
 import { ensurePrintButtons } from "./features/print-buttons.js";
 import { initSynonymEnrichment } from "./features/synonym-enrichment.js";
 import {
@@ -110,6 +110,10 @@ function init() {
     // Per-reaction HPLC overrides describe the entry being left, not the one
     // being opened — "reaction 1 took two drops" does not carry over.
     clearHplcInjectionOverrides();
+
+    // Same reasoning: a "✓ Internal ID set to MDX-0095" belongs to the entry
+    // it was clicked in.
+    clearElnIdToBatchWrites();
 
     ensurePanel();
     renderFromState();

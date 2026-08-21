@@ -45,9 +45,14 @@ import {
     saveHplcBlockEnabled,
     saveHplcVialLadder,
     saveHplcComfortBand,
+    resetHplcComfortBand,
     saveHplcInjectionRange,
 } from "../shared/hplc-injection.js";
-import { formatVialLadder } from "../shared/hplc-optimizer.js";
+import {
+    DEFAULT_COMFORT_MAX_UL,
+    DEFAULT_COMFORT_MIN_UL,
+    formatVialLadder,
+} from "../shared/hplc-optimizer.js";
 import {
     getShowProducts,
     saveShowProducts,
@@ -850,6 +855,7 @@ const hplcInjectionMaxInput = document.getElementById("hplcInjectionMax");
 const hplcComfortMinInput = document.getElementById("hplcComfortMin");
 const hplcComfortMaxInput = document.getElementById("hplcComfortMax");
 const hplcComfortEcho = document.getElementById("hplcComfortEcho");
+const hplcComfortResetButton = document.getElementById("hplcComfortReset");
 
 hplcAliquotInput.addEventListener("change", () => {
     saveHplcAliquotVolumeUl(hplcAliquotInput.value);
@@ -869,6 +875,10 @@ hplcEnabledCheckbox.addEventListener("change", () => {
 // a band, and sanitizeComfortBand can only see that when it has both.
 function commitComfortBand() {
     saveHplcComfortBand(hplcComfortMinInput.value, hplcComfortMaxInput.value);
+    // The echo quotes the band, so it has to be rewritten here too -- painting
+    // it only at init is how it came to sit there quoting a band the user had
+    // already changed, until the page was reloaded.
+    paintComfortEcho(hplcComfortMinInput.value, hplcComfortMaxInput.value);
 }
 
 function commitInjectionRange() {
@@ -880,6 +890,17 @@ hplcInjectionMaxInput.addEventListener("change", commitInjectionRange);
 
 hplcComfortMinInput.addEventListener("change", commitComfortBand);
 hplcComfortMaxInput.addEventListener("change", commitComfortBand);
+
+// This band's default moved in 14.12.0, from 0.3-2 to 0.1-5 uL. A stored value
+// wins over a default, so anyone who has ever touched these two boxes would
+// never see the new one -- and overwriting a preference on upgrade would be
+// worse than the problem. Hence a way back that the user chooses to take.
+hplcComfortResetButton?.addEventListener("click", async () => {
+    await resetHplcComfortBand();
+    hplcComfortMinInput.value = DEFAULT_COMFORT_MIN_UL;
+    hplcComfortMaxInput.value = DEFAULT_COMFORT_MAX_UL;
+    paintComfortEcho(DEFAULT_COMFORT_MIN_UL, DEFAULT_COMFORT_MAX_UL);
+});
 
 // The ladder description quotes the band, so it has to be written rather
 // than typed into the markup -- that is exactly how it came to say 0.5 long

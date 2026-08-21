@@ -18,18 +18,13 @@
 // progress, and let the user cancel (AbortController).
 
 import { collectAllPlates, readResultTotal } from "../../api/search-plates.js";
-import { getPlateInfo } from "../../api/plate-info.js";
-import { mapLimit } from "../../utils/concurrency.js";
-import { buildCsv, downloadCsv } from "../../utils/csv.js";
+import { resolveAndDownloadPlateLocations } from "./plate-location-csv.js";
 
 const LOG_PREFIX = "[CDD plate plugin]";
 
 const STYLE_ID = "cdd-plate-export-style";
 const BLOCK_ID = "cdd-plate-export-block";
 const DIALOG_BODY_SELECTOR = "#exportOptions-light-box .subcontainer";
-
-// Concurrent plate-page fetches: enough to be quick, polite to CDD.
-const CONCURRENCY = 4;
 
 // Above this many results we ask the user to confirm before paging everything.
 const WARN_THRESHOLD = 1000;
@@ -160,35 +155,7 @@ async function runExport({ button, status, cancel }) {
             return;
         }
 
-        let done = 0;
-        const rows = await mapLimit(
-            plates,
-            CONCURRENCY,
-            async (plate) => {
-                const { inventoryLocation } = await getPlateInfo(plate.href);
-                done += 1;
-                status.textContent = `Resolving locations… ${done}/${plates.length}`;
-                return [plate.name, inventoryLocation || ""];
-            },
-            stop
-        );
-
-        if (stop()) {
-            status.textContent = "Cancelled";
-            return;
-        }
-
-        // One row per unique plate, sorted by name for an easy walk of the lab.
-        const resolved = rows.filter(Boolean);
-        resolved.sort((a, b) =>
-            a[0].localeCompare(b[0], undefined, { numeric: true, sensitivity: "base" })
-        );
-
-        downloadCsv(
-            "cdd-plate-locations.csv",
-            buildCsv(["Plate Name", "Inventory Location"], resolved)
-        );
-        status.textContent = `Exported ${resolved.length} plate(s)`;
+        await resolveAndDownloadPlateLocations({ plates, status, stop });
     } catch (err) {
         console.warn(`${LOG_PREFIX} plate export failed`, err);
         status.textContent = `Failed: ${err?.message || err}`;

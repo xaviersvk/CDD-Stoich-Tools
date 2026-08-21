@@ -15,6 +15,7 @@
 // was requested for.
 
 import { getMoleculeData, prefetchMolecules } from "../../api/molecule-image.js";
+import { positionAtCursor } from "../../utils/dom.js";
 
 const LOG_PREFIX = "[CDD plate plugin]";
 
@@ -96,22 +97,7 @@ function ensureBubble() {
 // it would overflow the viewport edge. Same approach as plate-location-tooltip,
 // just with a taller bubble (the structure image) flipping above the cursor.
 function positionBubble(event) {
-    const el = ensureBubble();
-    const pad = 12;
-    const rect = el.getBoundingClientRect();
-
-    let left = event.clientX + 14;
-    let top = event.clientY + 16;
-
-    if (left + rect.width + pad > window.innerWidth) {
-        left = Math.max(pad, window.innerWidth - rect.width - pad);
-    }
-    if (top + rect.height + pad > window.innerHeight) {
-        top = Math.max(pad, event.clientY - rect.height - 12);
-    }
-
-    el.style.left = `${left}px`;
-    el.style.top = `${top}px`;
+    positionAtCursor(ensureBubble(), event);
 }
 
 function showState(text) {

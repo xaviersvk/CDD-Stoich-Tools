@@ -29,7 +29,7 @@ this entry's ID onto that batch.
 - This one saves to the **batch record**, not to the stoichiometry table —
   closing the tab does not undo it. It takes a few seconds and names each step
   as it goes.
-- Switch it on in *Settings → Sample panel*.
+- Switch it on in *Settings → Panel fields*.
 - Product cards now also show the batch's own fields, the same ones reactant
   cards show.
 

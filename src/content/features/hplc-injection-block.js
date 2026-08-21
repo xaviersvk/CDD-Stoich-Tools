@@ -206,7 +206,19 @@ export function createHplcInjectionBlock(reaction, color) {
     const result = document.createElement("span");
     result.className = "cdd-hplc-result";
 
-    header.append(headLeft, result);
+    // Where the suggestion would land. It sits beside the current volume,
+    // which is struck through while it stands, because that pair says "too
+    // big" and "how much too big" in one glance — which is what a sentence
+    // naming the fault was doing in words.
+    const suggested = document.createElement("span");
+    suggested.className = "cdd-hplc-suggested";
+    suggested.hidden = true;
+
+    const volumes = document.createElement("span");
+    volumes.className = "cdd-hplc-volumes";
+    volumes.append(result, suggested);
+
+    header.append(headLeft, volumes);
 
     const molarityEl = document.createElement("span");
     molarityEl.className = "cdd-hplc-molarity";
@@ -261,14 +273,21 @@ export function createHplcInjectionBlock(reaction, color) {
     block.append(header, warn, body);
 
     let copyValue = "";
+    let suggestedCopyValue = "";
 
-    // The header toggles; the number copies. Nested interactive elements are
-    // not valid markup, so the result stops its own click from reaching the
+    // The header toggles; a number copies. Nested interactive elements are
+    // not valid markup, so each number stops its own click from reaching the
     // header rather than being a button inside one.
     result.addEventListener("click", async (event) => {
         event.stopPropagation();
         if (!copyValue) return;
         await copyTextWithFeedback(result, copyValue);
+    });
+
+    suggested.addEventListener("click", async (event) => {
+        event.stopPropagation();
+        if (!suggestedCopyValue) return;
+        await copyTextWithFeedback(suggested, suggestedCopyValue);
     });
 
     header.addEventListener("click", toggle);
@@ -347,28 +366,96 @@ export function createHplcInjectionBlock(reaction, color) {
         paintWarning(current, computed);
     }
 
+    function clearSuggestedVolume() {
+        suggested.hidden = true;
+        suggested.textContent = "";
+        suggestedCopyValue = "";
+        result.classList.remove("cdd-hplc-result-stale");
+    }
+
+    function showSuggestedVolume(volumeUl) {
+        const text = volumeUl.toFixed(1);
+        suggested.hidden = false;
+        suggested.textContent = `${text} µL`;
+        suggested.title = "Where the fix below lands — click to copy";
+        suggestedCopyValue = text;
+        result.classList.add("cdd-hplc-result-stale");
+    }
+
     function hideWarning() {
         warn.hidden = true;
         warn.onclick = null;
+        clearSuggestedVolume();
     }
 
     function showWarning(text, { error = false, onclick = null } = {}) {
         warn.hidden = false;
         warn.disabled = !onclick;
-        warn.textContent = text;
         warn.className = error ? "cdd-hplc-warn cdd-hplc-warn-error" : "cdd-hplc-warn";
         warn.title = onclick ? "Apply to this reaction only" : "";
         warn.onclick = onclick;
+
+        const label = document.createElement("span");
+        label.textContent = text;
+
+        // A bar that silently rewrites the reaction when clicked has to say so
+        // somewhere you can see. The tooltip that used to carry it is not a
+        // place anyone looks.
+        if (!onclick) {
+            warn.replaceChildren(label);
+            return;
+        }
+        const apply = document.createElement("span");
+        apply.className = "cdd-hplc-apply";
+        apply.textContent = "apply";
+        warn.replaceChildren(label, apply);
+    }
+
+    // The vessel, named the way the bench names it. Below a millilitre nothing
+    // is a vial — a vial does not go that small, so it is an insert, and the
+    // insert is sold and spoken of in microlitres.
+    function vesselName(vialMl) {
+        return vialMl < 1
+            ? `${Math.round(vialMl * 1000)} µL insert`
+            : `${vialMl} mL vial`;
+    }
+
+    // What to DO, in the imperative, in the order it happens at the bench.
+    //
+    // This used to be a list of bare numbers -- "0.25 mL, 2 drops" -- which is
+    // a shopping list, not an instruction: it never said whether the drops
+    // were to be taken, added or removed. The verbs are the part that answers
+    // the question, so they stay even though they cost a few characters.
+    function describeFix(s, current, settings) {
+        const steps = [];
+
+        if (Math.abs(s.vialMl - current.vialMl) > 1e-9) {
+            steps.push(`use a ${vesselName(s.vialMl)}`);
+        }
+
+        const currentDrops = Math.max(1, Math.round(current.aliquotUl / settings.aliquotUl));
+        if (s.drops !== currentDrops) {
+            steps.push(`take ${s.drops} drop${s.drops === 1 ? "" : "s"}`);
+        }
+
+        if (s.dilution !== 1) steps.push(`dilute ${s.dilution}×`);
+
+        const sentence = steps.join(", ");
+        return sentence.charAt(0).toUpperCase() + sentence.slice(1);
     }
 
     // What to say when the injection is not one the bench wants to make.
     //
-    // One line, because it is read at a glance and it has to stay readable
-    // while the calculator below is shut. An injection larger than the whole
-    // sample takes that line whatever the optimiser thinks: that is a
-    // mistake, not a preference, and it is the only red one here.
+    // The fault itself is not written out: the struck-through volume beside
+    // the suggested one shows both that it is wrong and which way. This line
+    // carries only the fix.
+    //
+    // An injection larger than the whole sample takes the line whatever the
+    // optimiser thinks: that is a mistake, not a preference, and it is the
+    // only red one here.
     function paintWarning(current, computed) {
         if (computed.warning === "exceeds-vial") {
+            clearSuggestedVolume();
             showWarning("⚠ More than the whole vial", { error: true });
             return;
         }
@@ -393,41 +480,29 @@ export function createHplcInjectionBlock(reaction, color) {
         }
 
         // "impossible" and "nothing on the ladder does better" are the same
-        // sentence to the person holding the vial: there is no move to make.
+        // sentence to the person holding the vial: there is no move to make,
+        // and so no second number to show.
         if (!outcome.suggestion) {
+            clearSuggestedVolume();
             showWarning("⚠ Nothing on the ladder brings this in range");
             return;
         }
 
         const s = outcome.suggestion;
-        const lead =
-            outcome.reason === "too-dilute" ? "Too dilute" : "Too concentrated";
+        showSuggestedVolume(s.volumeUl);
 
-        const steps = [];
-        if (Math.abs(s.vialMl - current.vialMl) > 1e-9) steps.push(`${s.vialMl} mL`);
-
-        const currentDrops = Math.max(1, Math.round(current.aliquotUl / settings.aliquotUl));
-        if (s.drops !== currentDrops) {
-            steps.push(`${s.drops} drop${s.drops === 1 ? "" : "s"}`);
-        }
-        if (s.dilution !== 1) steps.push(`${s.dilution}× dilution`);
-
-        showWarning(
-            `⚠ ${lead} → ${steps.join(", ")} = ${s.volumeUl.toFixed(1)} µL`,
-            {
-                onclick: () => {
-                    setOverride(reactionIndex, "vialMl", s.vialMl);
-                    // The EFFECTIVE aliquot, dilution folded in — a 5×-diluted
-                    // drop puts the same material in the vial as 2 µL would,
-                    // which is exactly how the bench's own grid labels that
-                    // row. Without this the click would apply a suggestion
-                    // whose dilution has nowhere to live, and the number would
-                    // not move.
-                    setOverride(reactionIndex, "aliquotUl", s.aliquotUl);
-                    repaint();
-                },
-            }
-        );
+        showWarning(`⚠ ${describeFix(s, current, settings)}`, {
+            onclick: () => {
+                setOverride(reactionIndex, "vialMl", s.vialMl);
+                // The EFFECTIVE aliquot, dilution folded in — a 5×-diluted
+                // drop puts the same material in the vial as 2 µL would, which
+                // is exactly how the bench's own grid labels that row. Without
+                // this the click would apply a suggestion whose dilution has
+                // nowhere to live, and the number would not move.
+                setOverride(reactionIndex, "aliquotUl", s.aliquotUl);
+                repaint();
+            },
+        });
     }
 
     repaint();
@@ -554,6 +629,40 @@ export const HPLC_BLOCK_STYLES = `
     color: #ef4444;
   }
 
+  .cdd-hplc-volumes {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    white-space: nowrap;
+  }
+
+  /* Superseded by the suggestion beside it. Struck and shrunk rather than
+     removed, because "7.2, no, 1.2" says which way it was wrong and by how
+     much -- which is the sentence naming the fault, without the sentence. */
+  .cdd-hplc-result-stale {
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748b;
+    text-decoration: line-through;
+  }
+
+  .cdd-hplc-suggested {
+    font-size: 15px;
+    font-weight: 700;
+    color: #fbbf24;
+    cursor: pointer;
+    padding: 1px 4px;
+    border-radius: 4px;
+  }
+
+  .cdd-hplc-suggested:hover {
+    background: rgba(245, 158, 11, 0.18);
+  }
+
+  .cdd-hplc-suggested[hidden] {
+    display: none;
+  }
+
   .cdd-hplc-inputs {
     display: flex;
     flex-wrap: wrap;
@@ -602,11 +711,14 @@ export const HPLC_BLOCK_STYLES = `
   }
 
   .cdd-hplc-warn {
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
     width: 100%;
     margin-top: 6px;
     padding: 5px 7px;
-    font-size: 10px;
+    font-size: 11px;
     font-family: inherit;
     line-height: 1.35;
     text-align: left;
@@ -615,6 +727,23 @@ export const HPLC_BLOCK_STYLES = `
     border: 1px solid rgba(245, 158, 11, 0.4);
     border-radius: 6px;
     cursor: pointer;
+  }
+
+  /* Says out loud that the bar does something. The tooltip that used to carry
+     this is not a place anyone looks. */
+  .cdd-hplc-apply {
+    flex: 0 0 auto;
+    padding: 1px 6px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    border: 1px solid rgba(245, 158, 11, 0.55);
+    border-radius: 999px;
+  }
+
+  .cdd-hplc-warn:hover:not(:disabled) .cdd-hplc-apply {
+    background: rgba(245, 158, 11, 0.3);
   }
 
   .cdd-hplc-warn:hover:not(:disabled) {

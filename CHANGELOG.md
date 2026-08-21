@@ -30,8 +30,15 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 - **One warning line instead of two.** The note and the advice bar could print
   at once, one restating what the other had already said with a fix attached.
   They are one element now, outside the collapse so it stays readable when the
-  calculator is shut, still clickable, and shorter:
-  `⚠ Too dilute → 0.25 mL, 2 drops = 1.2 µL`.
+  calculator is shut.
+- **The fault is shown, the fix is written.** While a suggestion stands, the
+  header strikes the current volume through and prints the suggested one beside
+  it — `7̶.̶2̶ ̶µ̶L̶  1.2 µL` — which says both that the injection is wrong and which
+  way, without a sentence saying so. The line below carries only what to do, in
+  the imperative and in bench order: `⚠ Use a 250 µL insert, take 3 drops`. It
+  names the vessel the way the bench names it; below a millilitre nothing is a
+  vial, it is an insert. An `apply` chip on the line says out loud that
+  clicking it rewrites the reaction — that used to live in a tooltip.
 - **The default comfortable injection range widened from 0.3–2 µL to
   0.1–5 µL.** 0.3–2 is where the method is happiest, which is not the same
   question as where a re-dilution is worth the bench time: at 0.3 the block was

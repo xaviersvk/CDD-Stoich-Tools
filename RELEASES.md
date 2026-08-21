@@ -23,8 +23,10 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 open the calculator when you need to change the aliquot, the vial or the
 target.
 
-- It warns only when the injection is genuinely too big or too small, on one
-  line that says what to change. Click that line to apply it.
+- It speaks up only when the injection is genuinely too big or too small. When
+  it does, the volume is struck through and the one you should be aiming for
+  appears next to it, with a line underneath saying what to do —
+  *Use a 250 µL insert, take 3 drops*. Click that line to set it.
 - The comfortable range now starts at 0.1 µL and runs to 5, so an ordinary
   small injection no longer asks you to re-dilute. If you set your own range it
   is kept — *Settings → HPLC injection → Comfortable injection range* has a

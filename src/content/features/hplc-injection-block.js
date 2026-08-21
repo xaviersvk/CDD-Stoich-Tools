@@ -28,6 +28,7 @@ import {
     formatNmol,
     HPLC_INJECTION_STEP_UL,
 } from "../../shared/hplc-injection-math.js";
+import { optimizeInjection } from "../../shared/hplc-optimizer.js";
 import {
     getHplcSettings,
     isHplcBlockEnabled,
@@ -224,7 +225,15 @@ export function createHplcInjectionBlock(reaction, color) {
     note.className = "cdd-hplc-note";
     note.hidden = true;
 
-    block.append(top, exact, inputs, note);
+    // What to do when the computed injection is not one the instrument can
+    // comfortably deliver. Clicking it applies the suggestion as this
+    // reaction's own override — nothing global moves.
+    const advice = document.createElement("button");
+    advice.type = "button";
+    advice.className = "cdd-hplc-advice";
+    advice.hidden = true;
+
+    block.append(top, exact, inputs, note, advice);
 
     let copyValue = "";
     result.addEventListener("click", async () => {
@@ -265,6 +274,7 @@ export function createHplcInjectionBlock(reaction, color) {
             exact.textContent = "";
             exact.hidden = true;
             note.hidden = true;
+            advice.hidden = true;
             return;
         }
 
@@ -307,6 +317,72 @@ export function createHplcInjectionBlock(reaction, color) {
         } else {
             note.hidden = true;
         }
+
+        paintAdvice(current);
+    }
+
+    // One sentence, one action — see the optimiser for how the suggestion is
+    // chosen. Silence when the current preparation is already comfortable.
+    function paintAdvice(current) {
+        const settings = getHplcSettings();
+        const result = optimizeInjection({
+            molarity,
+            targetNmol: current.targetNmol,
+            dropUl: settings.aliquotUl,
+            currentAliquotUl: current.aliquotUl,
+            currentVialMl: current.vialMl,
+            vialLadderMl: settings.vialLadderMl,
+        });
+
+        if (result.ok) {
+            advice.hidden = true;
+            advice.onclick = null;
+            return;
+        }
+
+        if (result.reason === "impossible" || !result.suggestion) {
+            advice.hidden = false;
+            advice.disabled = true;
+            advice.textContent =
+                result.reason === "impossible"
+                    ? "⚠ No dilution on the ladder brings this into the injector's range."
+                    : "⚠ Outside the comfortable range, and nothing on the ladder does better.";
+            advice.onclick = null;
+            return;
+        }
+
+        const s = result.suggestion;
+        const lead =
+            result.reason === "too-dilute" ? "Too dilute" : "Too concentrated";
+
+        const steps = [];
+        if (Math.abs(s.vialMl - current.vialMl) > 1e-9) {
+            steps.push(`dilute into ${s.vialMl} mL`);
+        }
+        const currentDrops = Math.max(1, Math.round(current.aliquotUl / settings.aliquotUl));
+        if (s.drops !== currentDrops) {
+            steps.push(`take ${s.drops} drop${s.drops === 1 ? "" : "s"}`);
+        }
+        if (s.dilution !== 1) {
+            steps.push(`dilute the aliquot ${s.dilution}×`);
+        }
+
+        advice.hidden = false;
+        advice.disabled = false;
+        advice.textContent =
+            `⚠ ${lead} — ${steps.join(", ")} → ${s.volumeUl.toFixed(1)} µL injection`;
+        advice.title = "Apply to this reaction only";
+
+        advice.onclick = () => {
+            setOverride(reactionIndex, "vialMl", s.vialMl);
+            // The EFFECTIVE aliquot, dilution folded in — a 20×-diluted drop
+            // puts the same material in the vial as 0.5 µL would, which is
+            // exactly how the bench's own grid labels that row. Without this
+            // the click would apply a suggestion whose dilution has nowhere
+            // to live, and the number would not move.
+            setOverride(reactionIndex, "aliquotUl", s.aliquotUl);
+            repaint();
+        };
     }
 
     repaint();
@@ -434,6 +510,31 @@ export const HPLC_BLOCK_STYLES = `
 
   .cdd-hplc-note-warn {
     color: #f59e0b;
+  }
+
+  .cdd-hplc-advice {
+    display: block;
+    width: 100%;
+    margin-top: 6px;
+    padding: 5px 7px;
+    font-size: 10px;
+    font-family: inherit;
+    line-height: 1.35;
+    text-align: left;
+    color: #fbbf24;
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  .cdd-hplc-advice:hover:not(:disabled) {
+    background: rgba(245, 158, 11, 0.22);
+  }
+
+  .cdd-hplc-advice:disabled {
+    cursor: default;
+    opacity: 0.85;
   }
 
   .cdd-hplc-note-error {

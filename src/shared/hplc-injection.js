@@ -15,10 +15,17 @@
 // (async load/save). The arithmetic these feed lives in
 // hplc-injection-math.js, which the page-context inject bundle also uses.
 
+import { DEFAULT_VIAL_LADDER_ML, parseVialLadder } from "./hplc-optimizer.js";
+
 export const HPLC_ALIQUOT_VOLUME_UL_KEY = "cddHplcAliquotVolumeUl";
 export const HPLC_VIAL_VOLUME_ML_KEY = "cddHplcVialVolumeMl";
 export const HPLC_TARGET_AMOUNT_NMOL_KEY = "cddHplcTargetAmountNmol";
 export const HPLC_BLOCK_ENABLED_KEY = "cddHplcBlockEnabled";
+
+// The vessel sizes this bench actually stocks. Stored as the user typed
+// it, parsed on the way out — a half-edited list must never reach the
+// optimiser as an empty ladder with nothing to choose from.
+export const HPLC_VIAL_LADDER_KEY = "cddHplcVialLadder";
 
 export const DEFAULT_HPLC_ALIQUOT_VOLUME_UL = 10;
 export const DEFAULT_HPLC_VIAL_VOLUME_ML = 1.5;
@@ -60,6 +67,7 @@ const DEFAULTS = {
     vialMl: DEFAULT_HPLC_VIAL_VOLUME_ML,
     targetNmol: DEFAULT_HPLC_TARGET_AMOUNT_NMOL,
     enabled: DEFAULT_HPLC_BLOCK_ENABLED,
+    vialLadderMl: [...DEFAULT_VIAL_LADDER_ML],
 };
 
 export async function loadHplcSettings() {
@@ -69,12 +77,14 @@ export async function loadHplcSettings() {
             HPLC_VIAL_VOLUME_ML_KEY,
             HPLC_TARGET_AMOUNT_NMOL_KEY,
             HPLC_BLOCK_ENABLED_KEY,
+            HPLC_VIAL_LADDER_KEY,
         ]);
         return {
             aliquotUl: sanitizeAliquotVolumeUl(result?.[HPLC_ALIQUOT_VOLUME_UL_KEY]),
             vialMl: sanitizeVialVolumeMl(result?.[HPLC_VIAL_VOLUME_ML_KEY]),
             targetNmol: sanitizeTargetAmountNmol(result?.[HPLC_TARGET_AMOUNT_NMOL_KEY]),
             enabled: sanitizeBlockEnabled(result?.[HPLC_BLOCK_ENABLED_KEY]),
+            vialLadderMl: parseVialLadder(result?.[HPLC_VIAL_LADDER_KEY]),
         };
     } catch {
         return { ...DEFAULTS };
@@ -99,6 +109,10 @@ export function saveHplcVialVolumeMl(value) {
 
 export function saveHplcTargetAmountNmol(value) {
     return saveKey(HPLC_TARGET_AMOUNT_NMOL_KEY, value, sanitizeTargetAmountNmol);
+}
+
+export function saveHplcVialLadder(value) {
+    return saveKey(HPLC_VIAL_LADDER_KEY, value, (raw) => String(raw ?? ""));
 }
 
 export function saveHplcBlockEnabled(value) {
@@ -164,6 +178,13 @@ export async function initHplcSettings() {
                     enabled: sanitizeBlockEnabled(changes[HPLC_BLOCK_ENABLED_KEY].newValue),
                 };
                 enabledTouched = true;
+            }
+            if (changes[HPLC_VIAL_LADDER_KEY]) {
+                cached = {
+                    ...cached,
+                    vialLadderMl: parseVialLadder(changes[HPLC_VIAL_LADDER_KEY].newValue),
+                };
+                touched = true;
             }
             if (changes[HPLC_ALIQUOT_VOLUME_UL_KEY]) {
                 cached = {

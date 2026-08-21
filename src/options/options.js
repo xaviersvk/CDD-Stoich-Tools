@@ -43,7 +43,9 @@ import {
     saveHplcVialVolumeMl,
     saveHplcTargetAmountNmol,
     saveHplcBlockEnabled,
+    saveHplcVialLadder,
 } from "../shared/hplc-injection.js";
+import { formatVialLadder } from "../shared/hplc-optimizer.js";
 import {
     getShowProducts,
     saveShowProducts,
@@ -836,6 +838,7 @@ const hplcEnabledCheckbox = document.getElementById("hplcBlockEnabled");
 const hplcAliquotInput = document.getElementById("hplcAliquotVolume");
 const hplcVialInput = document.getElementById("hplcVialVolume");
 const hplcTargetInput = document.getElementById("hplcTargetAmount");
+const hplcLadderInput = document.getElementById("hplcVialLadder");
 
 hplcAliquotInput.addEventListener("change", () => {
     saveHplcAliquotVolumeUl(hplcAliquotInput.value);
@@ -851,12 +854,17 @@ hplcEnabledCheckbox.addEventListener("change", () => {
     saveHplcBlockEnabled(hplcEnabledCheckbox.checked);
 });
 
+hplcLadderInput.addEventListener("input", () => {
+    saveHplcVialLadder(hplcLadderInput.value);
+});
+
 async function initHplcInjectionUI() {
     const settings = await loadHplcSettings();
     hplcEnabledCheckbox.checked = settings.enabled;
     hplcAliquotInput.value = settings.aliquotUl;
     hplcVialInput.value = settings.vialMl;
     hplcTargetInput.value = settings.targetNmol;
+    hplcLadderInput.value = formatVialLadder(settings.vialLadderMl);
 }
 
 const showProductsCheckbox = document.getElementById("showProducts");

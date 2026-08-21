@@ -84,9 +84,20 @@ function findRowsByName(container, name) {
 // live): when a table enters edit mode, EVERY row of that table renders
 // the edit labels — this marker identifies edit-mode TABLES, not the one
 // clicked row, so field searches additionally need the row number.
+//
+// Several markers, not just "Name:", because a row whose Name is already SET
+// renders the bare value with no label at all (verified on entry 2504170:
+// `<span data-autotest-id="field-name">DIPEA</span>`) — and fillNameIntoTable
+// below creates exactly that state. These five labels are the ones measured
+// to be absent from view mode; the two ratios cover a row whose Name is set
+// and which has no IUPAC name either.
+const EDIT_MODE_LABELS = new Set([
+    "Name:", "IUPAC:", "%w/w ratio:", "%v/v ratio:", "CAS-RN:",
+]);
+
 function isEditModeRow(tr) {
     for (const b of tr.querySelectorAll("b")) {
-        if ((b.textContent || "").trim() === "Name:") return true;
+        if (EDIT_MODE_LABELS.has((b.textContent || "").trim())) return true;
     }
     return false;
 }
@@ -544,6 +555,77 @@ export async function fillDensityIntoTable(sample, value) {
     }
 
     clickOutside(ctx.container);
+    return { ok: true };
+}
+
+// The row's CURRENT name, or null when it has none.
+//
+// NOT readFieldText(tr, "Name:"): the label only exists while the field is
+// EMPTY. Once a name is set, CDD renders the bare value —
+// `<span data-autotest-id="field-name">DIPEA</span>` with no <b> — so the
+// label the fill just clicked is gone by the time the write is confirmed.
+// The same autotest id is used by the Solvent field, which DOES carry a <b>;
+// that is what tells the two apart.
+function readRowName(tr) {
+    for (const span of tr.querySelectorAll('[data-autotest-id="field-name"]')) {
+        if (span.querySelector(":scope > b")) continue;   // "Name: Optional" / "Solvent: …"
+        const text = (span.textContent || "").trim();
+        if (text) return text;
+    }
+    return null;
+}
+
+// Fill `value` into the row's Name field — the free-text label CDD prints
+// above the molecule-batch id. EMPTY fields only: the link search is
+// placeholderOnly, so a name that is already there is never overwritten.
+//
+// Not routed through writeFieldViaPopup because that helper confirms the
+// write by re-reading "<b>Name:</b> value", which this field stops rendering
+// the moment it has a value (see readRowName).
+export async function fillNameIntoTable(sample, value) {
+    value = value != null ? String(value).trim() : "";
+    if (!value) return { ok: false, reason: "no name value on this card" };
+
+    const ctx = await openRow(sample);
+    if (!ctx) return { ok: false, reason: "table row not found" };
+
+    const { container, name, rowNumber } = ctx;
+
+    const link = await waitFor(() => {
+        const tr = findTargetRow(container, name, rowNumber);
+        return tr ? findFieldValueLink(tr, "Name:", true) : null;
+    });
+    if (!link) {
+        pressEscape();
+        return { ok: false, reason: "row has no empty Name field" };
+    }
+
+    mouseClick(link);
+
+    // The popup is a MuiPaper whose whole text is the bare word "Name"
+    // (verified live) — anchored, so a "Name" appearing inside another
+    // popup's label could never match it.
+    const input = await waitFor(() => findEditorInput(/^\s*Name\s*$/i));
+    if (!input) {
+        pressEscape();
+        return { ok: false, reason: "Name editor did not open" };
+    }
+
+    setNativeInputValue(input, value);
+    pressEnter(input);
+
+    const confirmed = await waitFor(() => {
+        const tr = findTargetRow(container, name, rowNumber);
+        if (!tr) return null;
+        return valuesMatch(readRowName(tr), value) ? tr : null;
+    });
+
+    if (!confirmed) {
+        pressEscape();
+        return { ok: false, reason: "value did not stick" };
+    }
+
+    clickOutside(container);
     return { ok: true };
 }
 

@@ -3,6 +3,7 @@ import { STATE } from "./state.js";
 import { renderFromState } from "./features/sample-panel.js";
 import { enrichBatchOnlySamples } from "./features/batch-field-enrichment.js";
 import { enrichSampleSynonyms } from "./features/synonym-enrichment.js";
+import { captureRowNames } from "./features/name-capture.js";
 import { onSamplePayload } from "./features/auto-fill.js";
 import { ensurePrintButtons } from "./features/print-buttons.js";
 import { markDepletedSamplesInSelector } from "./features/depleted-marker.js";
@@ -35,6 +36,7 @@ export function handleMessage(event) {
         case EVENTS.SAMPLE_DATA: {
             STATE.lastPayload = data.payload || null;
             renderFromState();
+            captureRowNames(STATE.lastPayload?.samples);
             enrichBatchOnlySamples();
             enrichSampleSynonyms();
             onSamplePayload();

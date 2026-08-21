@@ -188,6 +188,13 @@ export function extractRowsFromReactionFeature(feature, reactionIndex) {
                     ? "mol/L"
                     : null,
             tableSolvent: resolveTableSolvent(row),
+            // The row's free-text Name — the label CDD prints above the
+            // molecule-batch id. A row-level string, NOT under userInput
+            // (verified on the live eln/v2 payload: `name: "DIPEA"`), absent
+            // when the field is empty. Called tableName because `name` below
+            // is already the composed sample/batch identifier the DOM search
+            // keys on.
+            tableName: row?.name != null && row.name !== "" ? String(row.name) : null,
             name: resolveRowName(row),
             location: resolveRowLocation(row),
             ...batchFields,      // purity, density, internalID

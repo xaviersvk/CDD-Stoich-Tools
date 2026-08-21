@@ -13,6 +13,15 @@ import {
 } from "../../shared/density-memory.js";
 import { getPurityWarnThreshold } from "../../shared/purity-threshold.js";
 import { isShowProductsEnabled } from "../../shared/show-products-flag.js";
+import {
+    isElnIdToBatchEnabled,
+    getCarrySettings,
+    composeBatchElnId,
+} from "../../shared/eln-id-to-batch.js";
+import { readFieldByLabel } from "../api/batch-registration-props.js";
+import { writeElnIdToBatch } from "./eln-id-to-batch-write.js";
+import { forgetMoleculePage } from "../api/molecule-page.js";
+import { readElnEntryId } from "../utils/eln-entry-id.js";
 import { isElnEntryPage } from "../../shared/page-detection.js";
 import { isTableRowsEnabled } from "../../shared/panel-sources-flag.js";
 import { PANEL_ID, REACTION_COLORS } from "../../shared/plugin-constants.js";
@@ -584,6 +593,7 @@ ${HPLC_BLOCK_STYLES.replace(/^ {2}\./gm, `  #${PANEL_ID} .`)}
     opacity: 0.95;
   }
 
+
   #${PANEL_ID} .cdd-density-fill-btn {
     margin-top: 6px;
     width: 100%;
@@ -1109,6 +1119,138 @@ async function runAllOffers(btn) {
 // Keep the "Fill all (N)" label in sync with what the cards offer; hidden
 // when there is nothing to fill. No-ops mid-run so progress text survives
 // re-renders.
+/* ------------------------------------------------------------------ *
+ * Writing this entry's ID onto a product's existing batch
+ * ------------------------------------------------------------------ */
+
+// What, if anything, a product card should say about its batch's ELN ID
+// field. Returns one of:
+//   { kind: "offer", … }  -> the button
+//   { kind: "set", … }    -> "already set to X", no button
+//   null                  -> say nothing at all
+//
+// "set" is a state rather than an early return on purpose: a card that simply
+// lacks the button, with no reason given, reads as a bug.
+// batchId -> { kind: "busy" | "done" | "error", text }
+//
+// This lives in MODULE state, not on the button, because the panel rebuilds
+// every card on every render — measured at 56 rebuilds in 10 seconds on a
+// live entry, while a single write takes six to eight. A button updated in
+// place is detached a fraction of a second later and its text is never seen;
+// that is why the first working write looked like it had done nothing.
+//
+// Same rule as the HPLC block's per-reaction overrides, and the same reason.
+// Cleared on navigation by clearElnIdToBatchWrites().
+const elnIdWriteStates = new Map();
+
+export function clearElnIdToBatchWrites() {
+    elnIdWriteStates.clear();
+}
+
+function elnIdToBatchState(sample) {
+    if (!isElnIdToBatchEnabled()) return null;
+    if (!sample?.isProduct) return null;
+    if (!sample.batchId || !sample.moleculeId) return null;
+
+    // A write in flight, or one that has finished, outranks everything below:
+    // it is the freshest thing known about this batch, and it has to survive
+    // the next rebuild.
+    const live = elnIdWriteStates.get(sample.batchId);
+    if (live) return { kind: live.kind, text: live.text };
+
+    // Enrichment has not answered yet. Saying nothing beats offering a button
+    // whose only guard has not run.
+    if (!sample.batchFieldsEnriched) return null;
+
+    const { enabled, fieldLabel, format } = getCarrySettings();
+    if (!enabled || !fieldLabel) return null;
+
+    // Nothing to offer, and nothing to say either. The card already prints
+    // the value as an ordinary field row — a note under it repeated the same
+    // string verbatim, one line lower.
+    if (readFieldByLabel(sample.batchFieldMap, fieldLabel)) return null;
+
+    const entryId = readElnEntryId();
+    if (!entryId) return null;
+
+    const value = composeBatchElnId(entryId, format, sample.reactionIndex);
+    if (!value) return null;
+
+    return {
+        kind: "offer",
+        value,
+        fieldLabel,
+        vaultId: sample.batchVaultId,
+        moleculeId: sample.moleculeId,
+        batchId: sample.batchId,
+    };
+}
+
+function buildElnIdToBatchButton(sample, state) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "cdd-density-fill-btn";
+    btn.textContent = `⤴ Write ${state.value} into ${state.fieldLabel} on this batch`;
+    btn.title =
+        `Saves ${state.value} to the batch record — not to the table. It runs ` +
+        `only while ${state.fieldLabel} is empty, and closing the tab does not ` +
+        `undo it.`;
+
+    btn.addEventListener("click", async (event) => {
+        // The table enters edit mode on a row click and leaves it on any click
+        // outside — and this button IS outside the table.
+        event.stopPropagation();
+
+        // Into the map, then repaint. Writing straight to `btn` would be
+        // invisible: this element is replaced within a fraction of a second.
+        const setStage = (kind, text) => {
+            elnIdWriteStates.set(state.batchId, { kind, text });
+            renderFromState();
+        };
+
+        setStage("busy", "Writing…");
+
+        const result = await writeElnIdToBatch({
+            vaultId: state.vaultId,
+            moleculeId: state.moleculeId,
+            batchId: state.batchId,
+            fieldLabel: state.fieldLabel,
+            value: state.value,
+            onStage: (text) => setStage("busy", text),
+        });
+
+        if (result.ok) {
+            // The panel's copy of this batch is now a lie, and so is the
+            // cached molecule page behind it. Without both of these the card
+            // would go back to offering a button whose work is done, and a
+            // second click would die on "already set" — which reads as the
+            // failure it is not.
+            sample.batchFieldMap = {
+                ...(sample.batchFieldMap || {}),
+                [state.fieldLabel]: state.value,
+            };
+            forgetMoleculePage(sample.moleculeId);
+
+            setStage("done", `✓ ${state.fieldLabel} set to ${state.value}`);
+        } else {
+            setStage("error", `✗ ${result.reason || "could not write it"}`);
+        }
+    });
+
+    return btn;
+}
+
+// A card whose batch has a write in flight, or a finished one. Busy and done
+// are not clickable; an error is, so a retry costs one click.
+function buildElnIdWriteStatusButton(live) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "cdd-density-fill-btn";
+    btn.textContent = live.text;
+    btn.disabled = live.kind !== "error";
+    return btn;
+}
+
 function updateFillAllButton() {
     const btn = document.getElementById(`${PANEL_ID}-fill-all`);
     if (!btn || btn.dataset.running === "1") return;
@@ -1407,6 +1549,18 @@ export function renderSamples(payload) {
 
                 for (const rowEl of renderConfiguredFields(sample)) {
                     card.appendChild(rowEl);
+                }
+
+                const idState = elnIdToBatchState(sample);
+
+                if (idState?.kind === "offer") {
+                    card.appendChild(buildElnIdToBatchButton(sample, idState));
+                } else if (
+                    idState?.kind === "busy" ||
+                    idState?.kind === "done" ||
+                    idState?.kind === "error"
+                ) {
+                    card.appendChild(buildElnIdWriteStatusButton(idState));
                 }
 
                 groupBody.appendChild(card);

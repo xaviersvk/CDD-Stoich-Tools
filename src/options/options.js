@@ -53,6 +53,10 @@ import {
     saveShowProducts,
 } from "../shared/show-products-flag.js";
 import {
+    getElnIdToBatchEnabled,
+    saveElnIdToBatchEnabled,
+} from "../shared/eln-id-to-batch.js";
+import {
     getPanelSources,
     savePanelSources,
 } from "../shared/panel-sources-flag.js";
@@ -912,6 +916,16 @@ async function initShowProductsUI() {
     showProductsCheckbox.checked = await getShowProducts();
 }
 
+const elnIdToBatchCheckbox = document.getElementById("elnIdToBatch");
+
+elnIdToBatchCheckbox.addEventListener("change", () => {
+    saveElnIdToBatchEnabled(elnIdToBatchCheckbox.checked);
+});
+
+async function initElnIdToBatchUI() {
+    elnIdToBatchCheckbox.checked = await getElnIdToBatchEnabled();
+}
+
 const tableRowsCheckbox = document.getElementById("panelSourceTableRows");
 const mentionsCheckbox = document.getElementById("panelSourceMentions");
 
@@ -1259,6 +1273,7 @@ initDensityMemoryUI();
 initAutoFillUI();
 initPurityThresholdUI();
 initShowProductsUI();
+initElnIdToBatchUI();
 initPanelSourcesUI();
 initHeatMapFieldsUI();
 initHplcInjectionUI();

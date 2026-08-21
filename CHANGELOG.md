@@ -20,6 +20,68 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [14.11.0] — 2026-08-21
+
+### Added
+- **Write this entry's ID onto a product's existing batch.** `eln-id-carry`
+  already put the ELN ID into *Internal ID* on the way into a registration
+  form, which covers the compound you register FROM an entry. It did not cover
+  the one registered first — a target with a molecule, a batch, no inventory
+  sample and an empty *Internal ID*, which only becomes the product of an entry
+  once someone actually makes it. A button on the product card now writes it,
+  directly, with no tab and no Save. Off by default.
+- **The write submits CDD's own edit form rather than a body of ours.** The
+  endpoint (`PUT /vaults/<v>/specified_batches/<b>`) takes the batch's *whole*
+  field set, so an assembled body decides the fate of all thirty fields, not
+  just the one we want — and pick lists, dates, batch links and uploads are
+  where such a reconstruction goes wrong, silently, in a record. Instead a
+  hidden same-origin iframe (`X-Frame-Options: SAMEORIGIN`,
+  `frame-ancestors` on CDD's own host) lets CDD render its form with its own
+  values and CSRF token; one input changes and that form's `FormData` goes to
+  its own action.
+- `content/api/batch-registration-props.js` — one reader for a molecule page's
+  `RegistrationFormRenderer` props. The enrichment pass and the check guarding
+  the write have to agree byte for byte on what "*Internal ID* is empty" means;
+  two copies would drift, and the drifted one would be the guard.
+
+### Changed
+- **Product batches are enriched too.** They were skipped as "display-only in
+  v1"; the button has to know whether *Internal ID* is already set. Product
+  cards consequently gain the batch fields they never showed. Density memory is
+  unaffected — it carries its own `isProduct` guard.
+- `content/api/molecule-page.js` gains `getMoleculePageInfo` (the page plus the
+  vault it actually came FROM, which a batch URL needs and `location.pathname`
+  cannot tell you) and `forgetMoleculePage`. The widened enrichment pass had
+  grown a second cache of the same pages, so every molecule was being fetched
+  twice; it now uses this one.
+- The products checkbox no longer claims "display only — no fill buttons". Half
+  of that stopped being true.
+
+### Fixed
+- Three defects found in live testing, all in the same lesson. **A fresh iframe
+  starts on `about:blank`, whose `readyState` is already `"complete"`** — the
+  first version polled it and got the blank document 5 ms in, so every read
+  came back empty and a working write reported failure. The gate is now "are
+  this batch's props readable from the frame". **The batches tab lands
+  read-only inside an iframe**, measured at twelve seconds with no input; its
+  Edit anchor opens it in 766 ms, so the nudge is the normal path rather than a
+  fallback. And **the panel rebuilds every card about 56 times in 10 seconds**,
+  while a write takes six to eight — so a button updated in place is detached
+  almost immediately and neither the progress nor the final tick was ever
+  visible. Write state now lives in module scope keyed by `batchId`, the same
+  rule the HPLC block already follows, and is cleared on navigation.
+
+### Verified
+- On production batch `192201177`: *Internal ID* became `MDX-0095` on a value
+  row that did not exist before (`id: null` → `id: 792165193`), and Chem
+  Purpose, Batch Status, Synth. Assigned To, Priority, Batch Name and Date are
+  all exactly as they were. That single check is what the whole design exists
+  for.
+- **Not** verified: the claim that CDD refuses a second product given the same
+  ID because *Internal ID* is `unique_value: true`. The test entry turned out
+  to hold only one product with an empty field, so the collision was never
+  exercised.
+
 ## [14.10.1] — 2026-08-21
 
 ### Changed

@@ -9,6 +9,11 @@
 // and merges the named field map (Purity [%], Density [g/mL], Vendor ID…)
 // into the matching panel samples before re-rendering.
 //
+// PRODUCTS are covered too, and used not to be ("display-only in v1"). The
+// ELN-id-to-batch button on a product card has to know whether that batch's
+// Internal ID is already set, and this pass is what knows. The visible side
+// effect is that product cards now show the batch fields they never showed.
+//
 // The molecule page is fetched through the current vault's URL; the server
 // redirects to the molecule's home vault (e.g. ELN vault 6884 → registration
 // vault 6885) and fetch() follows it transparently.
@@ -20,86 +25,14 @@ import {
     getFieldValueCaseInsensitive,
     collectCustomFields,
 } from "../../inject/parsers/field-resolvers.js";
-
-// moleculeId → Promise<Map<batchId, {fieldName: value}>>. Promise-cached so
-// concurrent payloads for the same molecule share one request; failures are
-// evicted so a later payload can retry.
-const moleculeBatchFieldsCache = new Map();
+import { readBatchProps } from "../api/batch-registration-props.js";
+import { getMoleculePageInfo } from "../api/molecule-page.js";
 
 function getVaultId() {
     return location.pathname.match(/\/vaults\/(\d+)/)?.[1] || null;
 }
 
-function parseMoleculeBatchFields(html) {
-    const doc = new DOMParser().parseFromString(html, "text/html");
-    const out = new Map();
-
-    for (const el of doc.querySelectorAll('[component_class="RegistrationFormRenderer"]')) {
-        let props;
-        try {
-            props = JSON.parse(el.getAttribute("react_props") || "");
-        } catch {
-            continue;
-        }
-
-        const batchId = Number(props?.object_id);
-        const defs = Array.isArray(props?.batch_field_definitions)
-            ? props.batch_field_definitions
-            : [];
-        const values = props?.data && typeof props.data === "object"
-            ? Object.values(props.data)
-            : [];
-
-        if (!batchId || !defs.length || !values.length) continue;
-
-        const nameById = new Map(defs.map((d) => [d?.id, d?.name]));
-        const fieldMap = {};
-
-        for (const entry of values) {
-            const name = nameById.get(entry?.batch_field_definition_id);
-            if (!name) continue;
-
-            // Pick-list ids and file uploads have no readable value here.
-            const value = entry?.text_value ?? entry?.float_value ?? entry?.date_value ?? null;
-            if (value == null || value === "") continue;
-
-            fieldMap[name] = value;
-        }
-
-        // The molecule-level renderer joins nothing (its data rows have no
-        // batch_field_definition_id), so only real lots end up in the map.
-        if (Object.keys(fieldMap).length) out.set(batchId, fieldMap);
-    }
-
-    return out;
-}
-
-function fetchMoleculeBatchFields(vaultId, moleculeId) {
-    const cached = moleculeBatchFieldsCache.get(moleculeId);
-    if (cached) return cached;
-
-    const promise = (async () => {
-        const response = await fetch(`/vaults/${vaultId}/molecules/${moleculeId}`, {
-            credentials: "include",
-            headers: { Accept: "text/html" },
-        });
-
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-        return parseMoleculeBatchFields(await response.text());
-    })();
-
-    promise.catch(() => {
-        if (moleculeBatchFieldsCache.get(moleculeId) === promise) {
-            moleculeBatchFieldsCache.delete(moleculeId);
-        }
-    });
-
-    moleculeBatchFieldsCache.set(moleculeId, promise);
-    return promise;
-}
-
-function applyBatchFields(sample, fieldMap) {
+function applyBatchFields(sample, fieldMap, vaultId) {
     const resolved = resolveBatchFields({ batch_fields: fieldMap });
 
     if (sample.purity == null) sample.purity = resolved.purity;
@@ -120,6 +53,12 @@ function applyBatchFields(sample, fieldMap) {
         ...(sample.customBatchFields || {}),
     };
 
+    // The RAW map, kept beside the resolved fields. resolveBatchFields knows a
+    // fixed set of names; the ELN-id-to-batch button has to look up a label the
+    // USER configured, which may be none of them.
+    sample.batchFieldMap = { ...fieldMap };
+    sample.batchVaultId = vaultId;
+
     sample.batchFieldsEnriched = true;
 }
 
@@ -135,8 +74,11 @@ export function enrichBatchOnlySamples() {
     const targetsByMolecule = new Map();
 
     for (const sample of samples) {
-        if (sample?.hasSample !== false) continue;
-        if (sample.isProduct) continue;   // no metafield fetches for products
+        // Batch-only rows are the original case. PRODUCTS join whether or
+        // not they have a sample: the ELN-id-to-batch button has to know
+        // whether Internal ID is already set, and a product with an inventory
+        // sample can have it empty just as easily as one without.
+        if (sample?.hasSample !== false && !sample?.isProduct) continue;
         if (sample.batchFieldsEnriched) continue;
         if (!sample.batchId || !sample.moleculeId) continue;
 
@@ -151,23 +93,26 @@ export function enrichBatchOnlySamples() {
 
     Promise.all(
         Array.from(targetsByMolecule, async ([moleculeId, targets]) => {
-            let fieldsByBatch;
+            let page;
             try {
-                fieldsByBatch = await fetchMoleculeBatchFields(vaultId, moleculeId);
+                page = await getMoleculePageInfo(vaultId, moleculeId);
             } catch {
                 return false;
             }
 
             let changed = false;
             for (const sample of targets) {
-                const fieldMap = fieldsByBatch.get(Number(sample.batchId));
-                if (fieldMap) {
-                    applyBatchFields(sample, fieldMap);
+                const props = readBatchProps(page.doc, sample.batchId);
+
+                if (props) {
+                    applyBatchFields(sample, props.fieldMap, page.vaultId);
                 } else {
-                    // The molecule page loaded but carries no field values
-                    // for this batch — enrichment is still COMPLETE: we now
-                    // know the batch has no density, which density-memory's
-                    // capture gate needs to trust user-typed values.
+                    // The molecule page loaded but carries no renderer for
+                    // this batch — enrichment is still COMPLETE: we now know
+                    // the batch has no density, which density-memory's capture
+                    // gate needs to trust user-typed values.
+                    sample.batchFieldMap = {};
+                    sample.batchVaultId = page.vaultId;
                     sample.batchFieldsEnriched = true;
                 }
                 changed = true;

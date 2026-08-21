@@ -3,7 +3,7 @@ import { injectPageScript } from "./inject-loader.js";
 import { handleMessage } from "./message-router.js";
 import { watchUrlChanges } from "./url-watcher.js";
 import { watchKetcherDialog } from "./overlay-watcher.js";
-import { ensurePanel, renderFromState, initSamplePanelFields } from "./features/sample-panel.js";
+import { ensurePanel, renderFromState, initSamplePanelFields, clearElnIdToBatchWrites } from "./features/sample-panel.js";
 import { ensurePrintButtons } from "./features/print-buttons.js";
 import { initSynonymEnrichment } from "./features/synonym-enrichment.js";
 import {
@@ -57,6 +57,7 @@ import {initPurityThresholds, onPurityThresholdChanged} from "../shared/purity-t
 import {initHplcSettings, onHplcBlockEnabledChanged} from "../shared/hplc-injection.js";
 import {clearHplcInjectionOverrides} from "./features/hplc-injection-block.js";
 import {initShowProducts, onShowProductsChanged} from "../shared/show-products-flag.js";
+import {initElnIdToBatch, onElnIdToBatchChanged} from "../shared/eln-id-to-batch.js";
 import {initHeatMapFieldsConfig} from "../shared/heat-map-fields.js";
 import {initPanelSources, onPanelSourcesChanged} from "../shared/panel-sources-flag.js";
 import {initElnMentions} from "./features/mentions/init.js";
@@ -109,6 +110,10 @@ function init() {
     // Per-reaction HPLC overrides describe the entry being left, not the one
     // being opened — "reaction 1 took two drops" does not carry over.
     clearHplcInjectionOverrides();
+
+    // Same reasoning: a "✓ Internal ID set to MDX-0095" belongs to the entry
+    // it was clicked in.
+    clearElnIdToBatchWrites();
 
     ensurePanel();
     renderFromState();
@@ -221,6 +226,13 @@ function init() {
   // Optional products section (panel + print).
   initShowProducts().then(() => {
     onShowProductsChanged(() => renderFromState());
+  });
+
+  // Writing this entry's ID onto a product's existing batch. Off by default:
+  // it is the only thing in the panel that saves to a record rather than to
+  // the stoichiometry table.
+  initElnIdToBatch().then(() => {
+    onElnIdToBatchChanged(() => renderFromState());
   });
 
   // Which sources the panel draws from (stoichiometry tables / entity links

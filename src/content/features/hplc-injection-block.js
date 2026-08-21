@@ -512,6 +512,13 @@ export const HPLC_BLOCK_STYLES = `
     color: #f59e0b;
   }
 
+  /* An author display rule beats the UA stylesheet's [hidden] rule, so without
+     this the element stays on screen when advice.hidden = true -- an empty
+     amber bar on every reaction that needs no advice. */
+  .cdd-hplc-advice[hidden] {
+    display: none;
+  }
+
   .cdd-hplc-advice {
     display: block;
     width: 100%;

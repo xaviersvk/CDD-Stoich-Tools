@@ -20,24 +20,48 @@ import { computeInjectionVolume } from "./hplc-injection-math.js";
 
 // What the injector can physically do, and where it is happy. Instrument
 // facts, not preferences, which is why they are constants and not settings.
+// Waters Acquity H-Class: 0.1 to 10 µL, in 0.1 µL steps. 10 µL is the far
+// edge but it does get used, so it is a real ceiling rather than a nominal
+// one. Confirmed by Pavel Kraina, 2026-08-21.
 export const INJECTION_MIN_UL = 0.1;
 export const INJECTION_MAX_UL = 10;
-export const COMFORT_MIN_UL = 0.5;
+
+// Where the injection is pleasant to work with — and 0.3, not 0.5, is the
+// bottom: "nejlepsi je davat zhruba mezi 0.3 a 2 uL at je prostor doladit
+// koncentraci". Below 2 µL there is still room to tune the concentration
+// without leaving the range.
+export const COMFORT_MIN_UL = 0.3;
 export const COMFORT_MAX_UL = 2;
 
-// The centre of the comfortable band, multiplicatively: sqrt(0.5 * 2) = 1.
-// An injection volume is a ratio, so 0.5 and 2 are equally far from it —
-// which is how the band reads to a chemist.
+// The centre of the comfortable band, multiplicatively. An injection volume
+// is a ratio, so the ends are equally far from it — which is how the band
+// reads to a chemist.
 const COMFORT_CENTRE_UL = Math.sqrt(COMFORT_MIN_UL * COMFORT_MAX_UL);
 
 // You can add drops. You cannot take half a one — a sub-drop aliquot is not
 // pipetted, it is a drop that has been diluted, which is the third lever.
-export const MAX_DROPS = 5;
+//
+// One drop is the normal case and three is the practical ceiling: "nejvice
+// bezne je jedna kapka, ale dve az tri nejsou problem". A drop is ~10 µL to
+// within about ±5 µL, averaged over solvents and over how it was taken
+// (Pasteur pipette, capillary, syringe) — which is another reason not to
+// lean on this lever.
+export const MAX_DROPS = 3;
 
-// The steps the bench's own printed grid uses.
-export const DILUTION_FACTORS = [2, 5, 10, 20];
+// Only 2× and 5× are really done. The printed grid also has 10× and 20×
+// rows, but those are what the grid can express, not what the bench does:
+// "realne se pouziva asi jen 2x a 5x".
+//
+// The step itself is the pour-out trick — a drop into 1.5–2 mL, half tipped
+// out, topped back up. That is one 2×.
+export const DILUTION_FACTORS = [2, 5];
 
-export const DEFAULT_VIAL_LADDER_ML = [0.1, 0.25, 0.5, 1, 1.5, 2];
+// Two vessels, and only two: the insert at 0.25 mL and the standard vial
+// filled to 1.5 mL. The vial holds 2 mL but that is "skoro nepouzitelne",
+// so it is not offered. Nothing exists in between, and the dilution is done
+// by eye with a syringe straight into the vial, so intermediate volumes
+// would be invented precision.
+export const DEFAULT_VIAL_LADDER_ML = [0.25, 1.5];
 
 // "0.1, 0.25, 0.5, 1, 1.5, 2" -> [0.1, 0.25, 0.5, 1, 1.5, 2]
 // Anything unparseable falls back to the default rather than leaving the
@@ -84,9 +108,24 @@ function candidate({ molarity, targetNmol, dropUl, drops, vialMl, dilution }) {
     return { drops, vialMl, dilution, aliquotUl, volumeUl: computed.volumeUl };
 }
 
-// Cheapest first. Each layer is a complete set of candidates; the caller
-// takes the first layer that contains anything acceptable.
-function layers({ molarity, targetNmol, dropUl, vialLadderMl }) {
+// Cheapest first — and which lever is cheapest DEPENDS ON WHICH WAY the
+// injection is wrong. Pavel Kraina, asked directly:
+//
+//   too dilute      "pridal bych vice kapek a az potom, kdyz by to jinak
+//                    neslo, menil objem vialky na insert"
+//   too concentrated "nejjednodussi je dat kapku, doplnit do 1.5-2 mL,
+//                    vylit a doplnit znovu"
+//
+// So drops come before the vessel when the sample is too weak, and the
+// dilution trick is the first thing reached for when it is too strong. The
+// levers that push the wrong way are left out entirely rather than ranked
+// last: more drops can only make a concentrated sample worse, and diluting
+// can only make a dilute one worse.
+//
+// Diluting is also not free in the way a second drop is — "nechci resit
+// 5 minut redeni vzorku, kdyz se denne meri stovky vzorku" — which is why
+// it stays last even where it is the only lever that works.
+function layers({ molarity, targetNmol, dropUl, vialLadderMl }, reason) {
     const make = (drops, dilution) =>
         vialLadderMl
             .map((vialMl) =>
@@ -94,22 +133,27 @@ function layers({ molarity, targetNmol, dropUl, vialLadderMl }) {
             )
             .filter(Boolean);
 
-    const out = [];
+    const oneDropAnyVessel = () => make(1, 1);
 
-    // 1 — one drop, just a different vessel.
-    out.push(make(1, 1));
+    const moreDrops = () => {
+        const out = [];
+        for (let drops = 2; drops <= MAX_DROPS; drops += 1) out.push(...make(drops, 1));
+        return out;
+    };
 
-    // 2 — more drops. Only ever more; below one drop is not a thing.
-    const moreDrops = [];
-    for (let drops = 2; drops <= MAX_DROPS; drops += 1) moreDrops.push(...make(drops, 1));
-    out.push(moreDrops);
+    const diluted = () => {
+        const out = [];
+        for (const dilution of DILUTION_FACTORS) out.push(...make(1, dilution));
+        return out;
+    };
 
-    // 3 — dilute the aliquot. The extra bench step, so it goes last.
-    const diluted = [];
-    for (const dilution of DILUTION_FACTORS) diluted.push(...make(1, dilution));
-    out.push(diluted);
+    // Too dilute means the injection comes out too BIG: fewer µL are wanted,
+    // which means more material per vial (more drops) or less vial.
+    if (reason === "too-dilute") return [moreDrops(), oneDropAnyVessel()];
 
-    return out;
+    // Too concentrated: a bigger vessel first — free, if you are on the
+    // insert — then the pour-out dilution.
+    return [oneDropAnyVessel(), diluted()];
 }
 
 // How many levers this candidate moves away from what is set now. Ranking on
@@ -194,7 +238,7 @@ export function optimizeInjection({
     const reason = now.volumeUl > COMFORT_MAX_UL ? "too-dilute" : "too-concentrated";
 
     const current = { currentAliquotUl, currentVialMl, dropUl };
-    const allLayers = layers({ molarity, targetNmol, dropUl, vialLadderMl: ladder });
+    const allLayers = layers({ molarity, targetNmol, dropUl, vialLadderMl: ladder }, reason);
 
     // Comfortable first; failing that, anything the injector can actually
     // deliver — an awkward injection beats an impossible one.

@@ -1,8 +1,9 @@
 # Carry the ELN ID onto a product's existing batch — design
 
 Date: 2026-08-21
-Status: approved by user (conversation). Revised the same day: the write is
-direct, from the ELN page, with no tab and no human Save.
+Status: implemented and verified live on 2026-08-21. Revised once before
+implementation: the write is direct, from the ELN page, with no tab and no
+human Save.
 
 ## Problem
 
@@ -75,6 +76,11 @@ form.edit_specified_batch
 `X-Frame-Options: SAMEORIGIN` and
 `Content-Security-Policy: frame-ancestors app.collaborativedrug.com`. The
 ELN page is on that host, so it may frame the molecule page and script it.
+
+**The write does what it promises.** Verified on batch `192201177` after the
+first real click: *Internal ID* became `MDX-0095` on a value row that did not
+exist before (`id: null` → `id: 792165193`), and Chem Purpose, Batch Status,
+Synth. Assigned To, Priority, Batch Name and Date are all exactly as they were.
 
 ## Decisions
 
@@ -166,27 +172,43 @@ they never showed — Purity, Density, Vendor ID, whatever the vault defines.
 
 ### 4 · What the click does
 
-1. Re-read the batch's current *Internal ID* from a fresh fetch of the
-   molecule page. The enrichment value may be minutes old, and this is the
-   last moment before a write.
-2. If it is no longer empty, stop and say so on the card. No request.
-3. Create a hidden iframe (`position: fixed; width: 0; height: 0;
-   border: 0`) at
+1. Create a hidden iframe at
    `/vaults/<batchVaultId>/molecules/<moleculeId>#molecule-batches`.
-4. Wait for `form.edit_specified_batch` containing
-   `#specified_batch_<batchId>_field_<defId>` to appear. If the tab renders
-   read-only, click that batch's `a[href$="/specified_batches/<id>/edit"]`
-   inside the iframe first and keep waiting.
-5. Check the input is still empty. Set its value; dispatch `input` and
-   `change` so React's state follows.
+2. Wait until **this batch's props are readable from the frame**. Do NOT wait
+   on `readyState`: a fresh iframe starts on `about:blank`, whose
+   `readyState` is already `"complete"`, so a readyState poll returns the
+   blank document about 5 ms in and every read after it comes back empty.
+   That was the first implementation and it failed exactly that way.
+   *Measured: props readable after 2.3 s.*
+3. Re-read *Internal ID* from those props. This is the last moment before a
+   write, and the panel's copy may be minutes old. If it is no longer empty,
+   stop. No request.
+4. Wait for `#specified_batch_<batchId>_field_<defId>`. It will not come:
+   **the batches tab lands read-only inside an iframe** — measured at twelve
+   seconds with no input. Click that batch's
+   `a[href$="/specified_batches/<id>/edit"]` inside the frame and wait again.
+   *Measured: input present 766 ms after the click.* The nudge is the normal
+   path, not a fallback.
+5. Check the input is still empty — a third look at the same question, this
+   time at the live control. Set its value; dispatch `input` and `change` so
+   React's state follows.
 6. `POST` `new FormData(form)` to the form's own `action`, with
    `credentials: "include"`. `_method=put` and `authenticity_token` ride
    along because they are the form's own fields.
-7. Remove the iframe. Report on the button: `✓ Internal ID set to X`, or the
-   failure in CDD's own words.
+7. Remove the iframe. Update the sample's `batchFieldMap` and drop the cached
+   molecule page, or the card goes on offering a button whose work is done and
+   the next click dies on "already set".
 
 Time-box every wait (10 s) and remove the iframe in a `finally`. An iframe
 left behind is a second CDD session running in the page.
+
+**Report each stage.** The whole sequence takes six to eight seconds on a real
+batch. A single unchanging "Writing…" for that long reads as a hang, and on
+the first live run it was reported as one — the write had in fact succeeded.
+
+**Use the existing page cache.** `content/api/molecule-page.js` has fetched and
+parsed molecule pages since the synonym work. Anything here that wants one goes
+through it; a second cache means every molecule is fetched twice.
 
 ### 5 · The trap that costs an afternoon
 

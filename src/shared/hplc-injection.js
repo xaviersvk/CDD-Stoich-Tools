@@ -15,10 +15,35 @@
 // (async load/save). The arithmetic these feed lives in
 // hplc-injection-math.js, which the page-context inject bundle also uses.
 
+import {
+    DEFAULT_COMFORT_MAX_UL,
+    DEFAULT_COMFORT_MIN_UL,
+    DEFAULT_INJECTION_MAX_UL,
+    DEFAULT_INJECTION_MIN_UL,
+    DEFAULT_VIAL_LADDER_ML,
+    parseVialLadder,
+} from "./hplc-optimizer.js";
+
 export const HPLC_ALIQUOT_VOLUME_UL_KEY = "cddHplcAliquotVolumeUl";
 export const HPLC_VIAL_VOLUME_ML_KEY = "cddHplcVialVolumeMl";
 export const HPLC_TARGET_AMOUNT_NMOL_KEY = "cddHplcTargetAmountNmol";
 export const HPLC_BLOCK_ENABLED_KEY = "cddHplcBlockEnabled";
+
+// The vessel sizes this bench actually stocks. Stored as the user typed
+// it, parsed on the way out — a half-edited list must never reach the
+// optimiser as an empty ladder with nothing to choose from.
+export const HPLC_VIAL_LADDER_KEY = "cddHplcVialLadder";
+
+// The injection range that is comfortable to work in. The injector's own
+// 0.1–10 µL limits are facts and stay constants; this pair is a preference
+// that depends on the method, so it is a setting.
+export const HPLC_COMFORT_MIN_KEY = "cddHplcComfortMinUl";
+export const HPLC_COMFORT_MAX_KEY = "cddHplcComfortMaxUl";
+
+// What the injector can deliver at all. The ceiling is the sample loop's, so
+// it moves when the loop is swapped.
+export const HPLC_INJECTION_MIN_KEY = "cddHplcInjectionMinUl";
+export const HPLC_INJECTION_MAX_KEY = "cddHplcInjectionMaxUl";
 
 export const DEFAULT_HPLC_ALIQUOT_VOLUME_UL = 10;
 export const DEFAULT_HPLC_VIAL_VOLUME_ML = 1.5;
@@ -55,11 +80,44 @@ export function sanitizeBlockEnabled(raw) {
     return typeof raw === "boolean" ? raw : DEFAULT_HPLC_BLOCK_ENABLED;
 }
 
+// A range is only a range if the bottom is below the top. Either value on its
+// own sanitises fine in isolation; the PAIR cannot, so a crossed-over range
+// falls back to both defaults rather than to a silently reordered one — that
+// would be a different setting from the one that was typed.
+function sanitizeRange(rawMin, rawMax, defMin, defMax) {
+    const min = Number(rawMin);
+    const max = Number(rawMax);
+
+    const usable =
+        Number.isFinite(min) && Number.isFinite(max) && min > 0 && max > min;
+
+    return usable ? [min, max] : [defMin, defMax];
+}
+
+export function sanitizeComfortBand(rawMin, rawMax) {
+    const [comfortMinUl, comfortMaxUl] = sanitizeRange(
+        rawMin, rawMax, DEFAULT_COMFORT_MIN_UL, DEFAULT_COMFORT_MAX_UL
+    );
+    return { comfortMinUl, comfortMaxUl };
+}
+
+export function sanitizeInjectionRange(rawMin, rawMax) {
+    const [injectionMinUl, injectionMaxUl] = sanitizeRange(
+        rawMin, rawMax, DEFAULT_INJECTION_MIN_UL, DEFAULT_INJECTION_MAX_UL
+    );
+    return { injectionMinUl, injectionMaxUl };
+}
+
 const DEFAULTS = {
     aliquotUl: DEFAULT_HPLC_ALIQUOT_VOLUME_UL,
     vialMl: DEFAULT_HPLC_VIAL_VOLUME_ML,
     targetNmol: DEFAULT_HPLC_TARGET_AMOUNT_NMOL,
     enabled: DEFAULT_HPLC_BLOCK_ENABLED,
+    vialLadderMl: [...DEFAULT_VIAL_LADDER_ML],
+    comfortMinUl: DEFAULT_COMFORT_MIN_UL,
+    comfortMaxUl: DEFAULT_COMFORT_MAX_UL,
+    injectionMinUl: DEFAULT_INJECTION_MIN_UL,
+    injectionMaxUl: DEFAULT_INJECTION_MAX_UL,
 };
 
 export async function loadHplcSettings() {
@@ -69,12 +127,26 @@ export async function loadHplcSettings() {
             HPLC_VIAL_VOLUME_ML_KEY,
             HPLC_TARGET_AMOUNT_NMOL_KEY,
             HPLC_BLOCK_ENABLED_KEY,
+            HPLC_VIAL_LADDER_KEY,
+            HPLC_COMFORT_MIN_KEY,
+            HPLC_COMFORT_MAX_KEY,
+            HPLC_INJECTION_MIN_KEY,
+            HPLC_INJECTION_MAX_KEY,
         ]);
         return {
             aliquotUl: sanitizeAliquotVolumeUl(result?.[HPLC_ALIQUOT_VOLUME_UL_KEY]),
             vialMl: sanitizeVialVolumeMl(result?.[HPLC_VIAL_VOLUME_ML_KEY]),
             targetNmol: sanitizeTargetAmountNmol(result?.[HPLC_TARGET_AMOUNT_NMOL_KEY]),
             enabled: sanitizeBlockEnabled(result?.[HPLC_BLOCK_ENABLED_KEY]),
+            vialLadderMl: parseVialLadder(result?.[HPLC_VIAL_LADDER_KEY]),
+            ...sanitizeComfortBand(
+                result?.[HPLC_COMFORT_MIN_KEY],
+                result?.[HPLC_COMFORT_MAX_KEY]
+            ),
+            ...sanitizeInjectionRange(
+                result?.[HPLC_INJECTION_MIN_KEY],
+                result?.[HPLC_INJECTION_MAX_KEY]
+            ),
         };
     } catch {
         return { ...DEFAULTS };
@@ -99,6 +171,36 @@ export function saveHplcVialVolumeMl(value) {
 
 export function saveHplcTargetAmountNmol(value) {
     return saveKey(HPLC_TARGET_AMOUNT_NMOL_KEY, value, sanitizeTargetAmountNmol);
+}
+
+// Written as a pair, because that is the only level at which they make
+// sense — see sanitizeComfortBand.
+export async function saveHplcComfortBand(rawMin, rawMax) {
+    const band = sanitizeComfortBand(rawMin, rawMax);
+    try {
+        await chrome.storage.local.set({
+            [HPLC_COMFORT_MIN_KEY]: band.comfortMinUl,
+            [HPLC_COMFORT_MAX_KEY]: band.comfortMaxUl,
+        });
+    } catch {
+        // Orphaned content script — nothing useful to do.
+    }
+}
+
+export async function saveHplcInjectionRange(rawMin, rawMax) {
+    const range = sanitizeInjectionRange(rawMin, rawMax);
+    try {
+        await chrome.storage.local.set({
+            [HPLC_INJECTION_MIN_KEY]: range.injectionMinUl,
+            [HPLC_INJECTION_MAX_KEY]: range.injectionMaxUl,
+        });
+    } catch {
+        // Orphaned content script — nothing useful to do.
+    }
+}
+
+export function saveHplcVialLadder(value) {
+    return saveKey(HPLC_VIAL_LADDER_KEY, value, (raw) => String(raw ?? ""));
 }
 
 export function saveHplcBlockEnabled(value) {
@@ -164,6 +266,33 @@ export async function initHplcSettings() {
                     enabled: sanitizeBlockEnabled(changes[HPLC_BLOCK_ENABLED_KEY].newValue),
                 };
                 enabledTouched = true;
+            }
+            if (changes[HPLC_COMFORT_MIN_KEY] || changes[HPLC_COMFORT_MAX_KEY]) {
+                const min = changes[HPLC_COMFORT_MIN_KEY]
+                    ? changes[HPLC_COMFORT_MIN_KEY].newValue
+                    : cached.comfortMinUl;
+                const max = changes[HPLC_COMFORT_MAX_KEY]
+                    ? changes[HPLC_COMFORT_MAX_KEY].newValue
+                    : cached.comfortMaxUl;
+                cached = { ...cached, ...sanitizeComfortBand(min, max) };
+                touched = true;
+            }
+            if (changes[HPLC_INJECTION_MIN_KEY] || changes[HPLC_INJECTION_MAX_KEY]) {
+                const min = changes[HPLC_INJECTION_MIN_KEY]
+                    ? changes[HPLC_INJECTION_MIN_KEY].newValue
+                    : cached.injectionMinUl;
+                const max = changes[HPLC_INJECTION_MAX_KEY]
+                    ? changes[HPLC_INJECTION_MAX_KEY].newValue
+                    : cached.injectionMaxUl;
+                cached = { ...cached, ...sanitizeInjectionRange(min, max) };
+                touched = true;
+            }
+            if (changes[HPLC_VIAL_LADDER_KEY]) {
+                cached = {
+                    ...cached,
+                    vialLadderMl: parseVialLadder(changes[HPLC_VIAL_LADDER_KEY].newValue),
+                };
+                touched = true;
             }
             if (changes[HPLC_ALIQUOT_VOLUME_UL_KEY]) {
                 cached = {

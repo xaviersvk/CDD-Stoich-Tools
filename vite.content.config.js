@@ -30,7 +30,7 @@ function copyExtensionAssets() {
     return {
         name: "copy-extension-assets",
         closeBundle() {
-            const distDir = resolve(__dirname, "dist");
+            const distDir = resolve(import.meta.dirname, "dist");
 
             mkdirSync(distDir, { recursive: true });
 
@@ -50,7 +50,7 @@ function copyExtensionAssets() {
             // version (publish.yml checks it against the git tag) and every key
             // both browsers accept.
             const manifest = JSON.parse(
-                readFileSync(resolve(__dirname, "manifest.json"), "utf8")
+                readFileSync(resolve(import.meta.dirname, "manifest.json"), "utf8")
             );
 
             const { browser_specific_settings, ...chromeManifest } = manifest;
@@ -71,13 +71,13 @@ function copyExtensionAssets() {
                 JSON.stringify(firefoxManifest, null, 2) + "\n"
             );
 
-            if (existsSync(resolve(__dirname, "icons"))) {
-                cpSync(resolve(__dirname, "icons"), resolve(distDir, "icons"), {
+            if (existsSync(resolve(import.meta.dirname, "icons"))) {
+                cpSync(resolve(import.meta.dirname, "icons"), resolve(distDir, "icons"), {
                     recursive: true
                 });
             }
 
-            const optionsSrc = resolve(__dirname, "src/options");
+            const optionsSrc = resolve(import.meta.dirname, "src/options");
             const optionsDist = resolve(distDir, "options");
 
             if (existsSync(optionsSrc)) {
@@ -90,14 +90,14 @@ function copyExtensionAssets() {
             // Turns a click on the toolbar icon into the options page. Not
             // bundled: it is two lines and has no imports.
             copyFileSync(
-                resolve(__dirname, "src/background.js"),
+                resolve(import.meta.dirname, "src/background.js"),
                 resolve(distDir, "background.js")
             );
 
             // The options page loads as an ES module and imports the shared
             // field registry at runtime, so the shared sources must ship in
             // dist too.
-            const sharedSrc = resolve(__dirname, "src/shared");
+            const sharedSrc = resolve(import.meta.dirname, "src/shared");
             const sharedDist = resolve(distDir, "shared");
 
             if (existsSync(sharedSrc)) {
@@ -107,9 +107,9 @@ function copyExtensionAssets() {
                 });
             }
 
-            if (existsSync(resolve(__dirname, "README.txt"))) {
+            if (existsSync(resolve(import.meta.dirname, "README.txt"))) {
                 copyFileSync(
-                    resolve(__dirname, "README.txt"),
+                    resolve(import.meta.dirname, "README.txt"),
                     resolve(distDir, "README.txt")
                 );
             }
@@ -124,7 +124,7 @@ export default defineConfig({
         target: "es2020",
         minify: false,
         rollupOptions: {
-            input: resolve(__dirname, "src/content/main.js"),
+            input: resolve(import.meta.dirname, "src/content/main.js"),
             output: {
                 entryFileNames: "assets/content.js",
                 // One file, no chunks: a content script is injected as a plain

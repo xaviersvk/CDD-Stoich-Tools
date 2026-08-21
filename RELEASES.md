@@ -17,7 +17,7 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
-## 14.9.0 — August 2026
+## 14.9.0 — 2026-08-20
 
 **The panel can work out your HPLC injection volume.**
 
@@ -56,7 +56,7 @@ block begins from: aliquot 10 µL, vial 1.5 mL, target 0.2 nmol.
 
 ---
 
-## 14.8.0 — August 2026
+## 14.8.0 — 2026-08-19
 
 *Everything since 14.5.0, the last version that reached the stores. The 14.6.0
 and 14.7.0 numbers were used while this work was being written and tested, and
@@ -128,7 +128,7 @@ the build's own toolchain updated away from three published vulnerabilities.
 
 ---
 
-## 14.5.0 — August 2026
+## 14.5.0 — 2026-08-18
 
 *Everything since 14.1.0, the last version that reached the stores. The 14.2.0,
 14.3.0 and 14.4.0 numbers were used while this work was being written and never
@@ -205,7 +205,7 @@ published on their own — what they added is here.*
 
 ---
 
-## 14.1.0 — August 2026
+## 14.1.0 — 2026-08-18
 
 **Editing a number in a stoichiometry table stops fighting you.**
 
@@ -244,7 +244,7 @@ published on their own — what they added is here.*
 
 ---
 
-## 14.0.0 — August 2026
+## 14.0.0 — 2026-08-18
 
 *Everything since 13.1.1, the last version that reached the stores. The 13.2.0,
 13.3.0 and 13.4.0 numbers were used while this work was being written and never
@@ -315,7 +315,7 @@ published on their own — what they added is here.*
 
 ---
 
-## 13.1.1 — August 2026
+## 13.1.1 — 2026-08-12
 
 **Ctrl+click a section heading to copy the whole block of columns.**
 
@@ -332,7 +332,7 @@ published on their own — what they added is here.*
 
 ---
 
-## 13.1.0 — August 2026
+## 13.1.0 — 2026-08-12
 
 **Copy a whole column from search results with one click.**
 
@@ -350,7 +350,7 @@ published on their own — what they added is here.*
 
 ---
 
-## 13.0.1 — August 2026
+## 13.0.1 — 2026-08-12
 
 **The heat map well popup got wider.**
 
@@ -364,7 +364,7 @@ published on their own — what they added is here.*
 
 ---
 
-## 13.0.0 — August 2026
+## 13.0.0 — 2026-08-12
 
 **Mark control layouts by dragging a rectangle — and save them for reuse.**
 
@@ -388,7 +388,7 @@ published on their own — what they added is here.*
 
 ---
 
-## 12.8.8 — August 2026
+## 12.8.8 — 2026-08-12
 
 **The samples panel stays where you put it.**
 
@@ -405,7 +405,7 @@ published on their own — what they added is here.*
 
 ---
 
-## 12.8.7 — August 2026
+## 12.8.7 — 2026-08-12
 
 **The CDD Samples panel can no longer hide outside the window.**
 
@@ -420,7 +420,7 @@ published on their own — what they added is here.*
 
 ---
 
-## 12.8.6 — August 2026
+## 12.8.6 — 2026-08-12
 
 **Printed sheets no longer hide the solvent a reagent is dissolved in.**
 
@@ -437,7 +437,7 @@ published on their own — what they added is here.*
 
 ---
 
-## 12.8.5 — August 2026
+## 12.8.5 — 2026-08-09
 
 **Plate map export splits every sample code, not just some.**
 
@@ -449,7 +449,7 @@ published on their own — what they added is here.*
 
 ---
 
-## 12.8.4 — August 2026
+## 12.8.4 — 2026-08-07
 
 **Heat map tooltip starts blank — you choose.**
 
@@ -460,7 +460,7 @@ published on their own — what they added is here.*
 
 ---
 
-## 12.8.3 — August 2026
+## 12.8.3 — 2026-08-07
 
 **The tooltip defaults are back.**
 
@@ -471,7 +471,7 @@ published on their own — what they added is here.*
 
 ---
 
-## 12.8.2 — August 2026
+## 12.8.2 — 2026-08-07
 
 **You decide the tooltip order.**
 
@@ -483,7 +483,7 @@ published on their own — what they added is here.*
 
 ---
 
-## 12.8.1 — August 2026
+## 12.8.1 — 2026-08-07
 
 **Heat map tooltip: tick, don't type.**
 
@@ -498,7 +498,7 @@ published on their own — what they added is here.*
 
 ---
 
-## 12.8.0 — August 2026
+## 12.8.0 — 2026-08-07
 
 **Heat map tooltips that tell you what's in the well.**
 
@@ -513,7 +513,7 @@ published on their own — what they added is here.*
 
 ---
 
-## 12.7.0 — August 2026
+## 12.7.0 — 2026-08-07
 
 **Export a plate map to CSV.**
 
@@ -526,7 +526,7 @@ published on their own — what they added is here.*
 
 ---
 
-## 12.6.2 — August 2026
+## 12.6.2 — 2026-08-07
 
 **Even more no-sample quotes.**
 
@@ -536,7 +536,7 @@ published on their own — what they added is here.*
 
 ---
 
-## 12.6.1 — August 2026
+## 12.6.1 — 2026-08-07
 
 **More no-sample quotes.**
 
@@ -546,7 +546,7 @@ published on their own — what they added is here.*
 
 ---
 
-## 12.6.0 — August 2026
+## 12.6.0 — 2026-08-07
 
 **Products, thresholds you control, and a CSV button.**
 
@@ -567,7 +567,7 @@ published on their own — what they added is here.*
 
 ---
 
-## 12.5.0 — August 2026
+## 12.5.0 — 2026-08-07
 
 **Purity and concentration join the remembered values — and can fill themselves.**
 
@@ -592,7 +592,7 @@ published on their own — what they added is here.*
 
 ---
 
-## 12.4.0 — August 2026
+## 12.4.0 — 2026-08-07
 
 **The extension now remembers densities you type — per batch, everywhere.**
 
@@ -609,7 +609,7 @@ published on their own — what they added is here.*
 
 ---
 
-## 12.3.0 — August 2026
+## 12.3.0 — 2026-08-06
 
 **One click puts the batch's density into the stoichiometry table.**
 
@@ -623,7 +623,7 @@ published on their own — what they added is here.*
 
 ---
 
-## 12.2.3 — August 2026
+## 12.2.3 — 2026-08-06
 
 **Batch-only cards get a sense of humour (and a mission).**
 
@@ -637,7 +637,7 @@ published on their own — what they added is here.*
 
 ---
 
-## 12.2.2 — August 2026
+## 12.2.2 — 2026-08-06
 
 **Reordered reactions no longer print with the wrong table.**
 
@@ -652,7 +652,7 @@ published on their own — what they added is here.*
 
 ---
 
-## 12.2.1 — August 2026
+## 12.2.1 — 2026-08-06
 
 **Purity and density without a sample — batch-only rows join the panel.**
 
@@ -669,7 +669,7 @@ published on their own — what they added is here.*
 
 ---
 
-## 12.2.0 — August 2026
+## 12.2.0 — 2026-08-06
 
 **Bulk-reaction print sheets now use letters, matching CDD.**
 
@@ -685,7 +685,7 @@ published on their own — what they added is here.*
 
 ---
 
-## 12.1.4 — August 2026
+## 12.1.4 — 2026-08-06
 
 **Goodbye, filter auto-switcher — CDD does it natively now.**
 
@@ -696,7 +696,7 @@ published on their own — what they added is here.*
 
 ---
 
-## 12.1.3 — July 2026
+## 12.1.3 — 2026-07-15
 
 **Bug fix: the Keywords picker on the Search page scrolls smoothly to the end
 in Firefox.**
@@ -712,7 +712,7 @@ in Firefox.**
 
 ---
 
-## 12.1.2 — July 2026
+## 12.1.2 — 2026-07-14
 
 **Bug fix: in Firefox, the field picker's columns can now scroll all the way
 down.**
@@ -726,7 +726,7 @@ down.**
 
 ---
 
-## 12.1.1 — July 2026
+## 12.1.1 — 2026-07-14
 
 **Bug fix: the plugin's tweaks now survive navigating within CDD.**
 
@@ -741,7 +741,7 @@ down.**
 
 ---
 
-## 12.1.0 — July 2026
+## 12.1.0 — 2026-07-14
 
 **The Search page's "Keywords" field picker gets the same treatment as the
 Inventory filter.**
@@ -767,7 +767,7 @@ Inventory filter.**
 
 ---
 
-## 12.0.0 — July 2026
+## 12.0.0 — 2026-07-12
 
 **Finding and choosing attributes stops being a scroll-fest.**
 
@@ -797,7 +797,7 @@ Inventory filter.**
 
 ---
 
-## 11.1.0 — July 2026
+## 11.1.0 — 2026-07-10
 
 **Find out what changed, without leaving the extension.**
 
@@ -814,7 +814,7 @@ Inventory filter.**
 
 ---
 
-## 11.0.0 — July 2026
+## 11.0.0 — 2026-07-10
 
 **A real settings page, and a Create Entity page that remembers how you work.**
 
@@ -836,7 +836,7 @@ Inventory filter.**
 
 ---
 
-## 10.1.0 — July 2026
+## 10.1.0 — 2026-07-10
 
 **No more bouncing off "you forgot the project" at the bottom of the form.**
 
@@ -852,7 +852,7 @@ Inventory filter.**
 
 ---
 
-## 10.0.0 — July 2026
+## 10.0.0 — 2026-07-08
 
 **Plates get the full treatment: locations at a glance, one-click export, and
 structure previews on the Plate Map.**
@@ -879,7 +879,7 @@ structure previews on the Plate Map.**
 
 ---
 
-## 9.3.0 — July 2026
+## 9.3.0 — 2026-07-07
 
 **The sample title is now click-to-copy too.**
 
@@ -891,7 +891,7 @@ structure previews on the Plate Map.**
 
 ---
 
-## 9.2.0 — July 2026
+## 9.2.0 — 2026-07-07
 
 **Click-to-copy now works on samples too.**
 
@@ -904,7 +904,7 @@ structure previews on the Plate Map.**
 
 ---
 
-## 9.1.1 — July 2026
+## 9.1.1 — 2026-07-07
 
 **Fix: the child-sample batch bar now actually shows up.**
 
@@ -914,7 +914,7 @@ structure previews on the Plate Map.**
 
 ---
 
-## 9.1.0 — July 2026
+## 9.1.0 — 2026-07-07
 
 **Batch creation now works for child samples too.**
 
@@ -931,7 +931,7 @@ structure previews on the Plate Map.**
 
 ---
 
-## 9.0.2 — July 2026
+## 9.0.2 — 2026-07-06
 
 **Fix: page no longer freezes in "Pick Location" boxes containing very large molecules.**
 
@@ -943,7 +943,7 @@ structure previews on the Plate Map.**
 
 ---
 
-## 9.0.1 — June 2026
+## 9.0.1 — 2026-06-30
 
 **Firefox fix: batch sample creation now works.**
 
@@ -951,7 +951,7 @@ structure previews on the Plate Map.**
 
 ---
 
-## 9.0.0 — June 2026
+## 9.0.0 — 2026-06-29
 
 **Create many samples at once, and colour-code your inventory.**
 
@@ -976,7 +976,7 @@ structure previews on the Plate Map.**
 
 ---
 
-## 8.5.0 — June 2026
+## 8.5.0 — 2026-06-28
 
 **Colour-code your inventory by sample prefix.**
 
@@ -990,7 +990,7 @@ structure previews on the Plate Map.**
 
 ---
 
-## 8.4.0 — June 2026
+## 8.4.0 — 2026-06-27
 
 **Export every plate's location to a spreadsheet.**
 
@@ -1002,7 +1002,7 @@ structure previews on the Plate Map.**
 
 ---
 
-## 8.3.0 — June 2026
+## 8.3.0 — 2026-06-27
 
 **See where a plate lives, just by hovering.**
 
@@ -1024,7 +1024,7 @@ structure previews on the Plate Map.**
 
 ---
 
-## 8.1.0 — June 2026
+## 8.1.0 — 2026-06-26
 
 **Less clutter.** CDD now hides depleted samples on its own, so the extension's
 duplicate grouping was removed. The depleted-sample strike-through and the
@@ -1032,7 +1032,7 @@ consumed-batches collapse still work as before.
 
 ---
 
-## 8.0.0 — June 2026
+## 8.0.0 — 2026-06-16
 
 **The Sample Panel grows up.**
 

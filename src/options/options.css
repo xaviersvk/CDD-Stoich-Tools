@@ -147,31 +147,163 @@ body {
 /* ------------------------------------------------------------------ bench */
 
 .bench {
-    max-width: 1240px;
+    max-width: 1180px;
     margin: 0 auto;
     padding: 24px;
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 20px;
+    grid-template-columns: 232px minmax(0, 1fr);
+    gap: 24px;
     align-items: start;
+    counter-reset: card;
+}
+
+/* ------------------------------------------------------------------ rail */
+
+.rail {
+    position: sticky;
+    top: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.rail__group {
+    margin: 0;
+    padding: 14px 10px 6px;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.rail__group:first-child {
+    padding-top: 2px;
+}
+
+.rail__item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 7px 10px;
+    border: 1px solid transparent;
+    border-radius: var(--radius);
+    background: none;
+    color: var(--ink);
+    font: inherit;
+    font-size: 13.5px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.rail__item:hover {
+    background: var(--card);
+}
+
+.rail__item:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+}
+
+.rail__item[aria-current="true"] {
+    background: var(--card);
+    border-color: var(--rule);
+    font-weight: 600;
+}
+
+/* The rail's tile is a marker, not the card's own 44px badge. */
+.rail__item .tile {
+    width: 26px;
+    height: 26px;
+    padding: 1px 2px 0;
+    grid-template-rows: 1fr;
+}
+
+.rail__item .tile__no {
+    display: none;
+}
+
+.rail__item .tile__sym {
+    font-size: 12px;
+}
+
+.rail__label {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+/* The one thing a rail costs: a card's contents are out of sight, so what the
+   plugin discovered while you worked has to show up as a number here. */
+.rail__chip {
+    flex: 0 0 auto;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    padding: 1px 7px;
+}
+
+/* ----------------------------------------------------------------- panes */
+
+.panes {
+    min-width: 0;
+}
+
+/* .card sets display:flex, which beats the UA stylesheet's [hidden] rule --
+   without this every pane renders at once and the page is the old wall. */
+.card[hidden] {
+    display: none;
 }
 
 @media (max-width: 1080px) {
     .bench {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: 200px minmax(0, 1fr);
     }
 }
 
 @media (max-width: 640px) {
+    /* No room for a rail beside the pane: it becomes a strip above it. */
     .bench {
         grid-template-columns: minmax(0, 1fr);
         padding: 16px;
+        gap: 16px;
+    }
+
+    .rail {
+        position: static;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        gap: 6px;
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        padding-bottom: 4px;
+    }
+
+    .rail__group {
+        display: none;
+    }
+
+    .rail__item {
+        width: auto;
+        flex: 0 0 auto;
+        border-color: var(--rule);
+        background: var(--card);
+    }
+
+    .rail__label {
+        white-space: nowrap;
     }
 }
 
 /* ------------------------------------------------------------------- card */
 
 .card {
+    counter-increment: card;
     background: var(--card);
     border: 1px solid var(--rule);
     border-radius: var(--radius);
@@ -182,8 +314,9 @@ body {
 
 .card__head {
     display: flex;
+    align-items: center;
     gap: 12px;
-    padding: 16px;
+    padding: 14px 16px;
     border-bottom: 1px solid var(--rule);
 }
 
@@ -214,9 +347,18 @@ body {
 
 /* A long list of fields or prefixes scrolls inside its own card, so the four
    columns keep their shoulders level. */
+.card__body + .card__body {
+    border-top: 1px solid var(--rule);
+}
+
+/* A long list scrolls inside its own card so the row keeps level shoulders.
+   overscroll-behavior stops the page from taking over once the list bottoms
+   out, which today makes the prefix list feel like it swallowed the scroll. */
 .card__body--scroll {
     max-height: 560px;
     overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
 }
 
 /* --------------------------------------------------- the signature: tiles */
@@ -225,13 +367,17 @@ body {
     flex: 0 0 auto;
     width: 44px;
     height: 44px;
-    border: 1px solid var(--ink);
+    border: 1px solid var(--rule);
     border-radius: 3px;
     display: grid;
     grid-template-rows: auto 1fr;
     padding: 3px 4px 2px;
     font-family: var(--mono);
     background: var(--accent-wash);
+}
+
+.tile__no::before {
+    content: counter(card);
 }
 
 .tile__no {
@@ -619,8 +765,6 @@ body {
 .show-products-toggle {
     align-items: flex-start;
     gap: 8px;
-    padding-bottom: 4px;
-    border-bottom: 1px solid var(--rule);
 }
 
 /* "From the ELN" sits above the preselect choices, with a rule under it so the
@@ -677,8 +821,9 @@ body {
 }
 
 /* The remembered-values list has six columns — give the card room. */
+/* Kept as a no-op: every pane is full width now. */
 .card--wide {
-    grid-column: span 2;
+    grid-column: auto;
 }
 
 @media (max-width: 640px) {
@@ -719,7 +864,7 @@ body {
 
 /* Registration defaults — one box per vault, rows of field -> value inside. */
 .reg-defaults-vault {
-    border: 1px solid var(--line, #d5dae2);
+    border: 1px solid var(--rule);
     border-radius: 10px;
     padding: 10px;
     margin-bottom: 10px;
@@ -727,4 +872,46 @@ body {
 
 .reg-defaults-vault > .stack {
     margin: 8px 0;
+}
+
+.prefix-color-item > .text-input {
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+/* Direct child = the vault head row only. A vault number is four digits. */
+.reg-defaults-vault > .prefix-color-item > .text-input:first-child {
+    flex: 0 1 96px;
+}
+
+/* A range is one setting with two ends, so it stays one row. */
+.range-pair {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.range-pair .purity-threshold-input {
+    width: 68px;
+}
+
+.range-pair__to {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+/* A range is one setting with two ends, so it stays one row. */
+.range-pair {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.range-pair .purity-threshold-input {
+    width: 64px;
+}
+
+.range-pair__to {
+    font-size: 12px;
+    color: var(--muted);
 }

@@ -127,6 +127,9 @@ export function refreshToolbarState(root) {
     // outside the editor and is the one panel that still means something.
     const panel = root.querySelector(`.${PANEL_CLASS}`);
     if (!editing && panel && (panel.dataset.mode === "fill" || panel.dataset.mode === "paste")) {
+        // Claim it too: a paste still running must not draw its report into a
+        // panel that has just been emptied because the form left edit mode.
+        claimPanel(panel);
         panel.replaceChildren();
         panel.hidden = true;
         delete panel.dataset.mode;
@@ -192,6 +195,9 @@ function buildToolbar(root, annotator) {
     };
 
     const closePanel = () => {
+        // Closing is a write too: a paste still walking its plan must not
+        // draw its report into a panel the user has just closed.
+        claimPanel(panel);
         panel.replaceChildren();
         panel.hidden = true;
     };
@@ -264,6 +270,7 @@ function buildToolbar(root, annotator) {
  * ------------------------------------------------------------------ */
 
 function renderSavePanel(panel, annotator, setStatus, closePanel) {
+    claimPanel(panel);
     panel.dataset.mode = "save";
     panel.replaceChildren();
     panel.hidden = false;
@@ -380,26 +387,38 @@ function renderSavePanel(panel, annotator, setStatus, closePanel) {
  * of the way behind a link until someone wants it.
  * ------------------------------------------------------------------ */
 
-async function pasteLines(text, panel, annotator, setStatus) {
+// Returns false when something else took the panel over while this was
+// writing, so the caller knows not to append its Close bar to a panel it no
+// longer owns.
+async function pasteLines(text, panel, annotator, setStatus, token) {
     const { pairs, unparsed } = parseFields(text);
     if (!pairs.length) {
         setStatus("Nothing to paste — expected lines of “name<TAB>value”.", true);
-        return;
+        return false;
     }
 
     panel.replaceChildren(el("div", NOTE_CLASS, "Writing…"));
     panel.hidden = false;
 
     const plan = planPaste(readProps(annotator), pairs, readEditControls(annotator));
+
+    // The long one: a field at a time, each polling for the control to
+    // settle. Seconds on a definition with picker or BatchLink fields, and
+    // the whole window in which the user can press Fill.
     const { changed, unchanged, failed } = await applyPaste(plan);
+    if (!stillOwnsPanel(panel, token)) return false;
 
     renderPasteOutcome(panel, plan, { changed, unchanged, failed, unparsed }, setStatus);
+    return true;
 }
 
 async function runPaste(panel, annotator, setStatus, closePanel) {
+    const token = claimPanel(panel);
     panel.dataset.mode = "paste";
 
     const stash = await getRunFormStash();
+    if (!stillOwnsPanel(panel, token)) return;
+
     if (!stash) {
         panel.replaceChildren();
         panel.hidden = false;
@@ -409,13 +428,14 @@ async function runPaste(panel, annotator, setStatus, closePanel) {
         return;
     }
 
-    await pasteLines(stash.text, panel, annotator, setStatus);
-    appendClose(panel, closePanel);
+    const finished = await pasteLines(stash.text, panel, annotator, setStatus, token);
+    if (finished) appendClose(panel, closePanel);
 }
 
 // The spreadsheet round-trip: values that left as a Copy, were edited
 // somewhere else, and are coming back.
 function renderEditedLinesPanel(panel, annotator, setStatus, closePanel) {
+    claimPanel(panel);
     panel.dataset.mode = "paste";
     panel.replaceChildren();
     panel.hidden = false;
@@ -518,18 +538,41 @@ function renderPasteOutcome(results, plan, { changed, unchanged, failed, unparse
 // own copy of whatever came back — the "No templates saved yet" note twice
 // after forgetting the last one. The later render wins; the earlier one stops
 // at its await.
-const fillRenderTokens = new WeakMap(); // panel -> latest render token
+// ONE token per panel, consulted by EVERY writer of it.
+//
+// It used to be one token consulted only by renderFillPanel, which guarded
+// that function against other calls to itself and against nothing else. But
+// Paste writes into the same element and takes seconds — applyPaste walks the
+// plan a field at a time, each polling — and neither button disables the
+// other. So: start a paste, click Fill while it runs, and when the paste
+// finally resolves it calls replaceChildren() over the dropdown you are
+// looking at, appends a second Close bar, and leaves dataset.mode as "fill"
+// so the storage listener later redraws the fill panel over the paste report.
+//
+// Every writer now claims the panel before its first replaceChildren() and
+// checks after every await that it is still the latest. The last writer to
+// start is the one that gets to finish.
+const panelRenderTokens = new WeakMap(); // panel -> latest writer's token
+
+function claimPanel(panel) {
+    const token = (panelRenderTokens.get(panel) || 0) + 1;
+    panelRenderTokens.set(panel, token);
+    return token;
+}
+
+function stillOwnsPanel(panel, token) {
+    return panelRenderTokens.get(panel) === token;
+}
 
 async function renderFillPanel(panel, annotator, setStatus, closePanel) {
-    const token = (fillRenderTokens.get(panel) || 0) + 1;
-    fillRenderTokens.set(panel, token);
+    const token = claimPanel(panel);
 
     panel.dataset.mode = "fill";
     panel.replaceChildren();
     panel.hidden = false;
 
     const templates = await getRunFormTemplates();
-    if (fillRenderTokens.get(panel) !== token) return;
+    if (!stillOwnsPanel(panel, token)) return;
 
     if (!templates.length) {
         panel.append(el("div", NOTE_CLASS,

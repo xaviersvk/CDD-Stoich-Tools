@@ -263,21 +263,30 @@ export function createHplcInjectionBlock(reaction, color) {
             result.classList.remove("cdd-hplc-result-warn");
             copyValue = "";
             exact.textContent = "";
+            exact.hidden = true;
             note.hidden = true;
             return;
         }
 
-        // The big number is what gets dialled into the sequence: half-µL
-        // steps. The exact figure stays underneath, next to what that
-        // rounded injection really puts on the column — rounding 0.3 up to
-        // 0.5 is a third more compound, and that should not be invisible.
-        const rounded = computed.roundedUl.toFixed(2);
+        // The big number is what gets dialled into the sequence: tenths of a
+        // microlitre, one decimal, the way the bench's printed guide prints
+        // it.
+        const rounded = computed.roundedUl.toFixed(1);
         result.textContent = `${rounded} µL`;
         copyValue = rounded;
 
-        exact.textContent =
-            `exact ${formatInjectionVolume(computed.volumeUl)} µL · ` +
-            `${formatNmol(computed.deliveredNmol)} nmol on column`;
+        // The exact figure appears ONLY when rounding actually moved the
+        // volume, because that is exactly when the column stops getting the
+        // amount that was asked for. At tenth-µL steps it usually moves
+        // nothing, and a line saying so would be noise.
+        const roundingMoved =
+            Math.abs(computed.roundedUl - computed.volumeUl) > 1e-9;
+
+        exact.hidden = !roundingMoved;
+        exact.textContent = roundingMoved
+            ? `exact ${formatInjectionVolume(computed.volumeUl)} µL · ` +
+              `${formatNmol(computed.deliveredNmol)} nmol on column`
+            : "";
 
         result.classList.toggle(
             "cdd-hplc-result-warn",

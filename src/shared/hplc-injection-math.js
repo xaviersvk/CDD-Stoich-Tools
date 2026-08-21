@@ -13,11 +13,14 @@
 // hplc-injection.js, which only the content script and the options page
 // import.
 
-// Injections are dialled in half-microlitre steps, so the exact number off
-// the sum is not the number anyone types into the sequence. It is also the
-// FLOOR: rounding 0.08 µL to the nearest 0.5 would give zero, which is not
-// an injection.
-export const HPLC_INJECTION_STEP_UL = 0.5;
+// Injections are dialled in tenth-microlitre steps, so the exact number off
+// the sum is not quite the number anyone types into the sequence. It is also
+// the FLOOR: 0.1 µL is the low end of the injector, and rounding 0.04 µL to
+// the nearest tenth would give zero, which is not an injection.
+//
+// The bench's own printed UPLC-MS Injection Volume Guide is given to one
+// decimal and turns red below this value, so the two now agree.
+export const HPLC_INJECTION_STEP_UL = 0.1;
 
 // Every solvent row's reaction molarity, straight off the payload rows.
 //
@@ -99,10 +102,18 @@ export function computeInjectionVolume({ molarity, aliquotUl, vialMl, targetNmol
     return { volumeUl, roundedUl, deliveredNmol, warning };
 }
 
-// The nearest half microlitre, never below one — see HPLC_INJECTION_STEP_UL.
+// The nearest step, never below one — see HPLC_INJECTION_STEP_UL.
+//
+// The toFixed is not cosmetic: Math.round(0.3 / 0.1) * 0.1 is
+// 0.30000000000000004, which would print with a tail and, worse, compare
+// unequal to the exact volume it came from — putting the "rounding moved
+// it" line on screen for a rounding that moved nothing.
 export function roundToInjectionStep(volumeUl) {
     if (!Number.isFinite(volumeUl) || volumeUl <= 0) return null;
-    const stepped = Math.round(volumeUl / HPLC_INJECTION_STEP_UL) * HPLC_INJECTION_STEP_UL;
+
+    const steps = Math.round(volumeUl / HPLC_INJECTION_STEP_UL);
+    const stepped = Number((steps * HPLC_INJECTION_STEP_UL).toFixed(4));
+
     return Math.max(HPLC_INJECTION_STEP_UL, stepped);
 }
 

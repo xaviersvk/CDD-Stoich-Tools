@@ -1070,6 +1070,21 @@ chrome.storage.onChanged.addListener(async (changes, areaName) => {
     }
 });
 
+// A number input that has focus steps on the wheel, and every setting here
+// saves the moment it changes — so scrolling the page past a threshold you
+// clicked a moment ago silently rewrites it, with no Save button and no undo.
+// The rows are click-to-focus and live inside scroll containers, which makes
+// it easy to do by accident. Scrolling still works; only the stepping stops.
+for (const input of document.querySelectorAll('input[type="number"]')) {
+    input.addEventListener(
+        "wheel",
+        (event) => {
+            if (document.activeElement === input) event.preventDefault();
+        },
+        { passive: false }
+    );
+}
+
 showVersion();
 initElnTitleUI();
 initSamplePanelFieldsUI();

@@ -719,7 +719,7 @@ body {
 
 /* Registration defaults — one box per vault, rows of field -> value inside. */
 .reg-defaults-vault {
-    border: 1px solid var(--line, #d5dae2);
+    border: 1px solid var(--rule);
     border-radius: 10px;
     padding: 10px;
     margin-bottom: 10px;

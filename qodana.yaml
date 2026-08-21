@@ -15,17 +15,29 @@ include:
 #
 # critical/high: none, ever.
 #
-# moderate: a RATCHET, not a target. The agreed ceiling is 20; the count today
-# is 79, so the number here is 80 — one above the current state. That keeps the
-# check green while still failing the moment a change ADDS a moderate finding,
-# which is the property worth having. Lower it as findings are cleared; the plan
-# and the verified triage behind it are in docs/BACKLOG.md ("Qodana findings").
-# Next rungs: 45 once the four items there are done, then 20.
+# moderate: a RATCHET, not a target. The agreed ceiling is 20.
+#
+# History: `main` peaked at 94 — 63 ignored promises, 24 deprecated, 7 clones —
+# i.e. ABOVE this 80, so the check has been red. Three changes bring it down:
+# `@types/chrome` + jsconfig.json, so the analyser stops resolving
+# `chrome.*.addListener` against the deprecated `MediaQueryList.addListener`
+# (24 → 2); the Paste/Fill race fix; and the five clone merges (7 → 2).
+# Correct typings also reveal five MORE ignored promises, because
+# `chrome.storage.local.set` is finally known to return one (63 → 68).
+#
+# Expected on the next CI run: 68 + 2 + 2 ≈ 72. Read the REAL number off that
+# run before lowering this line. A local run cannot tell you — it reports 70,
+# missing the clone check entirely and already resolving `chrome` from an
+# untracked .idea/workspace.xml.
+#
+# The remaining ~68 are almost all deliberate fire-and-forget calls. The
+# per-call verdicts, and why `execCommand` and `doc.write` stay, are in
+# docs/BACKLOG.md ("Qodana findings").
 #
 # NOTE: these count EVERY result, because no baseline is configured yet. Taking
 # a baseline (`--baseline qodana.sarif.json`) would make them count only what a
-# change adds, at the price of freezing today's 79 out of sight. The ratchet
-# gives the same protection while keeping the debt visible.
+# change adds, at the price of freezing the current debt out of sight. The
+# ratchet gives the same protection while keeping it visible.
 failureConditions:
   severityThresholds:
     critical: 0

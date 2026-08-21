@@ -20,6 +20,26 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [14.10.1] — 2026-08-21
+
+### Changed
+- **The per-card "Reaction 1" badge is gone.** The group is already headed with
+  the reaction's name and every card in it carries that reaction's colour on
+  its edge, so the badge was a third statement of one fact on every card in the
+  panel. The card top is now only appended when it holds a warning, since most
+  cards hold none and an empty one still cost its bottom margin.
+- **The reaction is drawn as a watermark instead** — `R1`, `R2`, in that
+  reaction's own colour, bottom-right, behind the text. It costs no height
+  because it is not in the layout. `isolation: isolate` on the card is
+  load-bearing here: the mark sits at `z-index: -1` so text paints over it, and
+  without a stacking context that would put it behind the card's own background
+  instead of in front of it. Opacity is `--cdd-reaction-watermark`, at 0.13.
+- **"Some of these values aren't saved on the batch/sample record" is now a
+  mark, not a sentence.** It was two lines under every card that had a
+  remembered fill offer. It is a footnote about that offer, so it became an
+  information glyph inside the offer's own button with the sentence in its
+  tooltip.
+
 ## [14.10.0] — 2026-08-21
 
 ### Added

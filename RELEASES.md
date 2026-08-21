@@ -13,7 +13,21 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
-# What's new in 14.10.0
+# What's new in 14.10.1
+
+---
+
+## 14.10.1 — 2026-08-21
+
+**The sample cards say the same things in less space.**
+
+- **No more "Reaction 1" on every card.** The group heading and the card's
+  coloured edge already told you. The reaction is now a large, faint `R1` in
+  the bottom-right corner of the card, in that reaction's colour — it takes no
+  room at all.
+- **The note about remembered values is an ⓘ** on the fill button it belongs
+  to. Hover it for the full sentence; it used to take two lines on every card
+  that had one.
 
 ---
 

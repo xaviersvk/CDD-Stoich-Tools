@@ -29,6 +29,10 @@ import {
     saveDensityMemory,
 } from "../shared/density-memory.js";
 import {
+    loadNameMemory,
+    saveNameMemory,
+} from "../shared/name-memory.js";
+import {
     getAutoFillEnabled,
     saveAutoFillEnabled,
 } from "../shared/auto-fill-flag.js";
@@ -823,6 +827,76 @@ async function initDensityMemoryUI() {
     renderDensityMemory(await loadDensityMemory());
 }
 
+/* ==================================================== 5b · Remembered names */
+
+const nameListEl = document.getElementById("nameMemoryList");
+const nameCountEl = document.getElementById("nameMemoryCount");
+const nameEmptyEl = document.getElementById("nameMemoryEmpty");
+const nameClearBtn = document.getElementById("nameMemoryClear");
+
+function createNameRow(moleculeId, entry) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "name-memory-item";
+
+    const molecule = document.createElement("span");
+    molecule.className = "density-memory-name";
+    molecule.textContent = entry.moleculeName || `molecule #${moleculeId}`;
+    molecule.title = `Molecule id ${moleculeId}`;
+
+    const value = document.createElement("span");
+    value.className = "density-memory-value";
+    value.textContent = entry.name;
+    value.title = "Row name";
+
+    const saved = document.createElement("span");
+    saved.className = "density-memory-date";
+    saved.textContent = entry.savedAt
+        ? new Date(entry.savedAt).toLocaleDateString()
+        : "";
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.type = "button";
+    deleteBtn.className = "density-memory-delete";
+    deleteBtn.setAttribute("aria-label", `Forget the name for ${molecule.textContent}`);
+    deleteBtn.textContent = "✕";
+    deleteBtn.addEventListener("click", async () => {
+        const map = await loadNameMemory();
+        delete map[moleculeId];
+        await saveNameMemory(map);
+        renderNameMemory(map);
+    });
+
+    wrapper.append(molecule, value, saved, deleteBtn);
+    return wrapper;
+}
+
+function renderNameMemory(map) {
+    // Newest first — the list is a working set, not an archive.
+    const entries = Object.entries(map).sort(
+        (a, b) => (b[1].savedAt || 0) - (a[1].savedAt || 0)
+    );
+
+    nameListEl.replaceChildren();
+    for (const [moleculeId, entry] of entries) {
+        nameListEl.appendChild(createNameRow(moleculeId, entry));
+    }
+
+    nameCountEl.textContent = String(entries.length);
+    nameEmptyEl.hidden = entries.length > 0;
+    nameClearBtn.hidden = entries.length === 0;
+}
+
+nameClearBtn.addEventListener("click", async () => {
+    const count = nameListEl.children.length;
+    if (!confirm(`Forget all ${count} remembered names?`)) return;
+    await saveNameMemory({});
+    renderNameMemory({});
+});
+
+async function initNameMemoryUI() {
+    renderNameMemory(await loadNameMemory());
+}
+
 const autoFillCheckbox = document.getElementById("autoFillEnabled");
 
 autoFillCheckbox.addEventListener("change", () => {
@@ -1305,6 +1379,7 @@ initPrefixColorsUI();
 initRegistrationFormUI();
 initElnIdCarryUI();
 initDensityMemoryUI();
+initNameMemoryUI();
 initAutoFillUI();
 initFillRowNameUI();
 initPurityThresholdUI();

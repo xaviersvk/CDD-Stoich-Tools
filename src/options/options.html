@@ -498,6 +498,40 @@
                 </button>
             </div>
         </section>
+        <section class="card" aria-labelledby="col-names-heading">
+            <header class="card__head">
+                <span class="tile" aria-hidden="true">
+                    <span class="tile__no"></span>
+                    <span class="tile__sym">Nm</span>
+                </span>
+                <div class="card__titles">
+                    <h3 class="card__name" id="col-names-heading">Remembered names</h3>
+                </div>
+            </header>
+
+            <div class="card__body">
+                <p class="note">
+                    Names you typed into a stoichiometry row's <em>Name</em> field,
+                    remembered per molecule. They are offered ahead of the
+                    molecule's shortest synonym, on every row that molecule
+                    appears in.
+                </p>
+            </div>
+
+            <div class="card__body card__body--scroll">
+                <p class="density-memory-count">
+                    <span id="nameMemoryCount">0</span> / 300 remembered
+                </p>
+                <div id="nameMemoryList" class="stack"></div>
+                <p id="nameMemoryEmpty" class="empty" hidden>
+                    Nothing remembered yet. Switch on <em>Fill row name from
+                    synonym</em> and type a name into a stoichiometry row.
+                </p>
+                <button id="nameMemoryClear" type="button" class="btn btn--quiet" hidden>
+                    Clear all
+                </button>
+            </div>
+        </section>
         <section class="card" aria-labelledby="col-hplc-heading">
             <header class="card__head">
                 <span class="tile" aria-hidden="true">

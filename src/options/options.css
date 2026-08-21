@@ -918,3 +918,15 @@ body {
     color: var(--ink);
     border-color: var(--ink);
 }
+
+/* Same row furniture as a remembered density, one value column instead of
+   four. */
+.name-memory-item {
+    display: grid;
+    grid-template-columns: 1fr auto auto auto;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 8px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+}

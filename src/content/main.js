@@ -58,6 +58,7 @@ import {initHplcSettings, onHplcBlockEnabledChanged} from "../shared/hplc-inject
 import {clearHplcInjectionState} from "./features/hplc-injection-block.js";
 import {initShowProducts, onShowProductsChanged} from "../shared/show-products-flag.js";
 import {initFillRowName} from "../shared/row-name-flag.js";
+import {initNameMemory, onNameMemoryChanged} from "../shared/name-memory.js";
 import {initElnIdToBatch, onElnIdToBatchChanged} from "../shared/eln-id-to-batch.js";
 import {initHeatMapFieldsConfig} from "../shared/heat-map-fields.js";
 import {initPanelSources, onPanelSourcesChanged} from "../shared/panel-sources-flag.js";
@@ -232,6 +233,13 @@ function init() {
   // Row name from synonym. Off by default; nothing that depends on it runs
   // until the flag is on.
   initFillRowName();
+
+  // Remembered row names: load the molecule->name map, then re-render the
+  // panel whenever it changes in any context (typing on another tab, deleting
+  // from the options page) so fill offers appear/disappear live.
+  initNameMemory().then(() => {
+    onNameMemoryChanged(() => renderFromState());
+  });
 
   // Writing this entry's ID onto a product's existing batch. Off by default:
   // it is the only thing in the panel that saves to a record rather than to

@@ -30,355 +30,308 @@
 
 <main class="bench">
 
-    <!-- 1 · ELN tab title -->
-    <section class="card" aria-labelledby="col-title-heading">
-        <header class="card__head">
-            <span class="tile" aria-hidden="true">
-                <span class="tile__no">1</span>
-                <span class="tile__sym">Tt</span>
-            </span>
-            <div class="card__titles">
-                <h2 class="card__name" id="col-title-heading">ELN Tab title</h2>
-                <p class="card__desc">What the browser tab reads on an ELN entry.</p>
-            </div>
-        </header>
-
-        <div class="card__body">
-            <fieldset class="choices">
-                <legend class="sr-only">ELN tab title format</legend>
-
-                <label class="choice">
-                    <input type="radio" name="elnTitleMode" value="id-title" />
-                    <span class="choice__text">
-                        <span class="choice__label">Entry ID and title</span>
-                        <span class="choice__sample">4821 — Suzuki coupling</span>
-                    </span>
-                </label>
-
-                <label class="choice">
-                    <input type="radio" name="elnTitleMode" value="id-only" />
-                    <span class="choice__text">
-                        <span class="choice__label">Entry ID only</span>
-                        <span class="choice__sample">I34E-KRAP-0123</span>
-                    </span>
-                </label>
-
-                <label class="choice">
-                    <input type="radio" name="elnTitleMode" value="title-only" />
-                    <span class="choice__text">
-                        <span class="choice__label">Title only</span>
-                        <span class="choice__sample">Suzuki coupling</span>
-                    </span>
-                </label>
-
-                <label class="choice">
-                    <input type="radio" name="elnTitleMode" value="original" />
-                    <span class="choice__text">
-                        <span class="choice__label">Leave CDD's title</span>
-                        <span class="choice__sample">ELN: Vault 109</span>
-                    </span>
-                </label>
-            </fieldset>
-        </div>
-    </section>
-
-    <!-- 2 · Sample panel fields -->
-    <section class="card" aria-labelledby="col-fields-heading">
-        <header class="card__head">
-            <span class="tile" aria-hidden="true">
-                <span class="tile__no">2</span>
-                <span class="tile__sym">Fp</span>
-            </span>
-            <div class="card__titles">
-                <h2 class="card__name" id="col-fields-heading">Panel fields</h2>
-                <p class="card__desc">Attributes shown in the floating ELN sample panel.</p>
-            </div>
-        </header>
-
-        <!-- Outside the scrolling field list on purpose: a setting buried
-             under 20 field checkboxes is a setting nobody finds. -->
-        <div class="card__body">
-            <label class="field-item show-products-toggle">
-                <input type="checkbox" id="panelSourceTableRows" />
-                <span>Show rows from the <strong>stoichiometry tables</strong>
-                — the reaction cards, with their fill buttons</span>
-            </label>
-            <label class="field-item show-products-toggle">
-                <input type="checkbox" id="panelSourceMentions" />
-                <span>Show <strong>batches and samples linked in the entry
-                text</strong>, in their own <em>Mentioned in text</em> group
-                (display only — a mention has no table row to fill)</span>
-            </label>
-            <label class="field-item show-products-toggle">
-                <input type="checkbox" id="showProducts" />
-                <span>Show <strong>products</strong> of each reaction in the
-                panel and in the print sheets (display only — no fill
-                buttons, no remembered values)</span>
-            </label>
-        </div>
-
-        <div class="card__body card__body--scroll">
-            <div id="samplePanelFields" class="stack"></div>
-            <div id="samplePanelCustomFields" class="stack"></div>
-        </div>
-    </section>
-
-    <!-- 3 · Prefix colours -->
-    <section class="card" aria-labelledby="col-colours-heading">
-        <header class="card__head">
-            <span class="tile" aria-hidden="true">
-                <span class="tile__no">3</span>
-                <span class="tile__sym">Px</span>
-            </span>
-            <div class="card__titles">
-                <h2 class="card__name" id="col-colours-heading">Prefix colours</h2>
-                <p class="card__desc">Tint samples by the prefix of their Sample ID.</p>
-            </div>
-        </header>
-
-        <div class="card__body card__body--scroll">
-            <p class="note">
-                A prefix is everything before the second dash —
-                <code>IXX-DEMO</code> in <code>IXX-DEMO-0000048-001-SM000025</code>.
-                Prefixes appear here on their own as you browse CDD.
-            </p>
-
-            <div id="prefixColorList" class="stack"></div>
-
-            <button id="prefixColorAdd" type="button" class="btn">Add a prefix</button>
-        </div>
-    </section>
-
-    <!-- 4 · Registration form -->
-    <section class="card" aria-labelledby="col-regform-heading">
-        <header class="card__head">
-            <span class="tile" aria-hidden="true">
-                <span class="tile__no">4</span>
-                <span class="tile__sym">Rf</span>
-            </span>
-            <div class="card__titles">
-                <h2 class="card__name" id="col-regform-heading">Registration form</h2>
-                <p class="card__desc">Which form the Create Entity page opens on, in what order the list reads, and what it already knows.</p>
-            </div>
-        </header>
-
-        <div class="card__body card__body--scroll">
-            <div class="eln-id-carry">
-                <p class="eyebrow">From the ELN</p>
-
-                <label class="field-item eln-id-carry__toggle">
-                    <input type="checkbox" id="elnIdCarryEnabled" />
-                    <span>Registering from a stoichiometry row fills the
-                    entry's <strong>ID</strong> into the new entity
-                    — <code>IDEMO-MDX-0014</code>. The entry's second
-                    stoichiometry table adds a <code>B</code>, the third a
-                    <code>C</code>. Only an empty field is filled.</span>
-                </label>
-
-                <div class="eln-id-carry__field">
-                    <label for="elnIdCarryFieldLabel">Field it goes into</label>
-                    <input type="text" id="elnIdCarryFieldLabel"
-                           class="text-input" spellcheck="false"
-                           placeholder="Internal ID" />
+    <section class="group" aria-labelledby="grp-page">
+        <h2 class="group__name" id="grp-page">On the page</h2>
+        <div class="group__grid">
+        <section class="card" aria-labelledby="col-title-heading">
+            <header class="card__head">
+                <span class="tile" aria-hidden="true">
+                    <span class="tile__no"></span>
+                    <span class="tile__sym">Tt</span>
+                </span>
+                <div class="card__titles">
+                    <h3 class="card__name" id="col-title-heading">ELN Tab title</h3>
                 </div>
+            </header>
 
+            <div class="card__body">
                 <p class="note">
-                    The field's name on the Create Entity page. CDD's required
-                    marker doesn't count — <code>Internal ID</code> matches
-                    <code>*Internal ID</code>.
+                    What the browser tab reads on an ELN entry.
                 </p>
 
-                <fieldset class="choices eln-id-carry__format">
-                    <legend class="eyebrow">ELN identifier format</legend>
-
-                    <p class="note eln-id-carry__format-note">
-                        The same three CDD offers under ELN settings. Only an
-                        admin can see which one this vault is on, so pick the
-                        one it uses.
-                    </p>
+                <fieldset class="choices">
+                    <legend class="sr-only">ELN tab title format</legend>
 
                     <label class="choice">
-                        <input type="radio" name="elnIdFormat" value="vault-user" />
+                        <input type="radio" name="elnTitleMode" value="id-title" />
                         <span class="choice__text">
-                            <span class="choice__label">Vault-User Identifier</span>
-                            <span class="choice__sample">PHA-MDX-0095 registers as MDX-0095</span>
+                            <span class="choice__label">Entry ID and title</span>
+                            <span class="choice__sample">4821 — Suzuki coupling</span>
                         </span>
                     </label>
 
                     <label class="choice">
-                        <input type="radio" name="elnIdFormat" value="vault" />
+                        <input type="radio" name="elnTitleMode" value="id-only" />
                         <span class="choice__text">
-                            <span class="choice__label">Vault Identifier</span>
-                            <span class="choice__sample">Carried whole</span>
+                            <span class="choice__label">Entry ID only</span>
+                            <span class="choice__sample">I34E-KRAP-0123</span>
                         </span>
                     </label>
 
                     <label class="choice">
-                        <input type="radio" name="elnIdFormat" value="global" />
+                        <input type="radio" name="elnTitleMode" value="title-only" />
                         <span class="choice__text">
-                            <span class="choice__label">Global Identifier</span>
-                            <span class="choice__sample">Carried whole</span>
+                            <span class="choice__label">Title only</span>
+                            <span class="choice__sample">Suzuki coupling</span>
+                        </span>
+                    </label>
+
+                    <label class="choice">
+                        <input type="radio" name="elnTitleMode" value="original" />
+                        <span class="choice__text">
+                            <span class="choice__label">Leave CDD's title</span>
+                            <span class="choice__sample">ELN: Vault 109</span>
                         </span>
                     </label>
                 </fieldset>
             </div>
+        </section>
+        <section class="card" aria-labelledby="col-fields-heading">
+            <header class="card__head">
+                <span class="tile" aria-hidden="true">
+                    <span class="tile__no"></span>
+                    <span class="tile__sym">Fp</span>
+                </span>
+                <div class="card__titles">
+                    <h3 class="card__name" id="col-fields-heading">Panel fields</h3>
+                </div>
+            </header>
 
-            <fieldset class="choices">
-                <legend class="eyebrow">Preselect</legend>
+            <!-- Outside the scrolling field list on purpose: a setting buried
+                 under 20 field checkboxes is a setting nobody finds. -->
+            <div class="card__body">
+                <p class="note">
+                    Attributes shown in the floating ELN sample panel.
+                </p>
 
-                <label class="choice">
-                    <input type="radio" name="regFormMode" value="remember" />
-                    <span class="choice__text">
-                        <span class="choice__label">The one you used last</span>
-                        <span class="choice__sample">Remembered per vault</span>
-                    </span>
+                <label class="field-item show-products-toggle">
+                    <input type="checkbox" id="panelSourceTableRows" />
+                    <span>Show rows from the <strong>stoichiometry tables</strong>
+                    — the reaction cards, with their fill buttons</span>
                 </label>
-
-                <label class="choice">
-                    <input type="radio" name="regFormMode" value="fixed" />
-                    <span class="choice__text">
-                        <span class="choice__label">Always the same form</span>
-                    </span>
+                <label class="field-item show-products-toggle">
+                    <input type="checkbox" id="panelSourceMentions" />
+                    <span>Show <strong>batches and samples linked in the entry
+                    text</strong>, in their own <em>Mentioned in text</em> group
+                    (display only — a mention has no table row to fill)</span>
                 </label>
+                <label class="field-item show-products-toggle">
+                    <input type="checkbox" id="showProducts" />
+                    <span>Show <strong>products</strong> of each reaction in the
+                    panel and in the print sheets (display only — no fill
+                    buttons, no remembered values)</span>
+                </label>
+            </div>
 
-                <div class="choice__child">
-                    <label class="sr-only" for="regFormFixedName">Form to always use</label>
-                    <select id="regFormFixedName" class="select"></select>
+            <div class="card__body card__body--scroll">
+                <div id="samplePanelFields" class="stack"></div>
+                <div id="samplePanelCustomFields" class="stack"></div>
+            </div>
+        </section>
+        <section class="card" aria-labelledby="col-colours-heading">
+            <header class="card__head">
+                <span class="tile" aria-hidden="true">
+                    <span class="tile__no"></span>
+                    <span class="tile__sym">Px</span>
+                </span>
+                <div class="card__titles">
+                    <h3 class="card__name" id="col-colours-heading">Prefix colours</h3>
+                </div>
+            </header>
+
+            <div class="card__body card__body--scroll">
+                <p class="note">
+                    Tint samples by the prefix of their Sample ID.
+                </p>
+
+                <p class="note">
+                    A prefix is everything before the second dash —
+                    <code>IXX-DEMO</code> in <code>IXX-DEMO-0000048-001-SM000025</code>.
+                    Prefixes appear here on their own as you browse CDD.
+                </p>
+
+                <div id="prefixColorList" class="stack"></div>
+
+                <button id="prefixColorAdd" type="button" class="btn">Add a prefix</button>
+            </div>
+        </section>
+        <section class="card" aria-labelledby="col-heatmap-heading">
+            <header class="card__head">
+                <span class="tile" aria-hidden="true">
+                    <span class="tile__no"></span>
+                    <span class="tile__sym">Hm</span>
+                </span>
+                <div class="card__titles">
+                    <h3 class="card__name" id="col-heatmap-heading">Heat map tooltip</h3>
+                </div>
+            </header>
+
+            <div class="card__body card__body--scroll">
+                <p class="note">
+                    Extra rows in the well popup on run heat maps.
+                </p>
+
+                <p class="note">
+                    Extra rows for the well popup, in the order you arrange them
+                    — the popup follows it exactly. Batch fields appear under
+                    "Available" on their own as you hover heat maps; nothing is
+                    shown until you pick some. Remove everything to switch the
+                    extra rows off again.
+                </p>
+                <div id="heatMapFieldList" class="stack"></div>
+                <p id="heatMapFieldsEmpty" class="empty" hidden>
+                    No batch fields discovered yet. Hover a well on any run's heat
+                    map once and your vault's fields will appear here.
+                </p>
+            </div>
+        </section>
+        </div>
+    </section>
+
+    <section class="group" aria-labelledby="grp-register">
+        <h2 class="group__name" id="grp-register">Registering a compound</h2>
+        <div class="group__grid">
+        <section class="card card--wide" aria-labelledby="col-regform-heading">
+            <header class="card__head">
+                <span class="tile" aria-hidden="true">
+                    <span class="tile__no"></span>
+                    <span class="tile__sym">Rf</span>
+                </span>
+                <div class="card__titles">
+                    <h3 class="card__name" id="col-regform-heading">Registration form</h3>
+                </div>
+            </header>
+
+            <div class="card__body card__body--scroll">
+                <p class="note">
+                    Which form the Create Entity page opens on, in what order the list reads, and what it already knows.
+                </p>
+
+                <div class="eln-id-carry">
+                    <p class="eyebrow">From the ELN</p>
+
+                    <label class="field-item eln-id-carry__toggle">
+                        <input type="checkbox" id="elnIdCarryEnabled" />
+                        <span>Registering from a stoichiometry row fills the
+                        entry's <strong>ID</strong> into the new entity
+                        — <code>IDEMO-MDX-0014</code>. The entry's second
+                        stoichiometry table adds a <code>B</code>, the third a
+                        <code>C</code>. Only an empty field is filled.</span>
+                    </label>
+
+                    <div class="eln-id-carry__field">
+                        <label for="elnIdCarryFieldLabel">Field it goes into</label>
+                        <input type="text" id="elnIdCarryFieldLabel"
+                               class="text-input" spellcheck="false"
+                               placeholder="Internal ID" />
+                    </div>
+
+                    <p class="note">
+                        The field's name on the Create Entity page. CDD's required
+                        marker doesn't count — <code>Internal ID</code> matches
+                        <code>*Internal ID</code>.
+                    </p>
+
+                    <fieldset class="choices eln-id-carry__format">
+                        <legend class="eyebrow">ELN identifier format</legend>
+
+                        <p class="note eln-id-carry__format-note">
+                            The same three CDD offers under ELN settings. Only an
+                            admin can see which one this vault is on, so pick the
+                            one it uses.
+                        </p>
+
+                        <label class="choice">
+                            <input type="radio" name="elnIdFormat" value="vault-user" />
+                            <span class="choice__text">
+                                <span class="choice__label">Vault-User Identifier</span>
+                                <span class="choice__sample">PHA-MDX-0095 registers as MDX-0095</span>
+                            </span>
+                        </label>
+
+                        <label class="choice">
+                            <input type="radio" name="elnIdFormat" value="vault" />
+                            <span class="choice__text">
+                                <span class="choice__label">Vault Identifier</span>
+                                <span class="choice__sample">Carried whole</span>
+                            </span>
+                        </label>
+
+                        <label class="choice">
+                            <input type="radio" name="elnIdFormat" value="global" />
+                            <span class="choice__text">
+                                <span class="choice__label">Global Identifier</span>
+                                <span class="choice__sample">Carried whole</span>
+                            </span>
+                        </label>
+                    </fieldset>
                 </div>
 
-                <label class="choice">
-                    <input type="radio" name="regFormMode" value="off" />
-                    <span class="choice__text">
-                        <span class="choice__label">Leave CDD's choice</span>
-                    </span>
-                </label>
-            </fieldset>
+                <fieldset class="choices">
+                    <legend class="eyebrow">Preselect</legend>
 
-            <div id="regFormMemory" class="memory" hidden>
-                <p class="eyebrow">Remembered</p>
-                <div id="regFormMemoryList" class="stack"></div>
+                    <label class="choice">
+                        <input type="radio" name="regFormMode" value="remember" />
+                        <span class="choice__text">
+                            <span class="choice__label">The one you used last</span>
+                            <span class="choice__sample">Remembered per vault</span>
+                        </span>
+                    </label>
+
+                    <label class="choice">
+                        <input type="radio" name="regFormMode" value="fixed" />
+                        <span class="choice__text">
+                            <span class="choice__label">Always the same form</span>
+                        </span>
+                    </label>
+
+                    <div class="choice__child">
+                        <label class="sr-only" for="regFormFixedName">Form to always use</label>
+                        <select id="regFormFixedName" class="select"></select>
+                    </div>
+
+                    <label class="choice">
+                        <input type="radio" name="regFormMode" value="off" />
+                        <span class="choice__text">
+                            <span class="choice__label">Leave CDD's choice</span>
+                        </span>
+                    </label>
+                </fieldset>
+
+                <div id="regFormMemory" class="memory" hidden>
+                    <p class="eyebrow">Remembered</p>
+                    <div id="regFormMemoryList" class="stack"></div>
+                </div>
+
+                <div class="order">
+                    <p class="eyebrow">Order in the picklist</p>
+                    <p class="note">Drag a form, or use its arrows. The picklist follows this order.</p>
+
+                    <ol id="regFormOrderList" class="order__list"></ol>
+
+                    <p id="regFormEmpty" class="empty" hidden>
+                        No forms yet. Open a Create Entity page once and they'll be listed here.
+                    </p>
+
+                    <button id="regFormOrderReset" type="button" class="btn btn--quiet" hidden>
+                        Restore CDD's order
+                    </button>
+                </div>
             </div>
-
-            <div class="order">
-                <p class="eyebrow">Order in the picklist</p>
-                <p class="note">Drag a form, or use its arrows. The picklist follows this order.</p>
-
-                <ol id="regFormOrderList" class="order__list"></ol>
-
-                <p id="regFormEmpty" class="empty" hidden>
-                    No forms yet. Open a Create Entity page once and they'll be listed here.
-                </p>
-
-                <button id="regFormOrderReset" type="button" class="btn btn--quiet" hidden>
-                    Restore CDD's order
-                </button>
-            </div>
-        </div>
-    </section>
-
-    <!-- 5 · Heat map tooltip -->
-    <section class="card" aria-labelledby="col-heatmap-heading">
-        <header class="card__head">
-            <span class="tile" aria-hidden="true">
-                <span class="tile__no">5</span>
-                <span class="tile__sym">Hm</span>
-            </span>
-            <div class="card__titles">
-                <h2 class="card__name" id="col-heatmap-heading">Heat map tooltip</h2>
-                <p class="card__desc">Extra rows in the well popup on run heat maps.</p>
-            </div>
-        </header>
-
-        <div class="card__body card__body--scroll">
-            <p class="note">
-                Extra rows for the well popup, in the order you arrange them
-                — the popup follows it exactly. Batch fields appear under
-                "Available" on their own as you hover heat maps; nothing is
-                shown until you pick some. Remove everything to switch the
-                extra rows off again.
-            </p>
-            <div id="heatMapFieldList" class="stack"></div>
-            <p id="heatMapFieldsEmpty" class="empty" hidden>
-                No batch fields discovered yet. Hover a well on any run's heat
-                map once and your vault's fields will appear here.
-            </p>
-        </div>
-    </section>
-
-    <!-- 6 · Remembered batch values -->
-    <section class="card card--wide" aria-labelledby="col-densities-heading">
-        <header class="card__head">
-            <span class="tile" aria-hidden="true">
-                <span class="tile__no">6</span>
-                <span class="tile__sym">ρ</span>
-            </span>
-            <div class="card__titles">
-                <h2 class="card__name" id="col-densities-heading">Remembered batch values</h2>
-                <p class="card__desc">
-                    Values you typed into stoichiometry rows (density, purity,
-                    concentration), remembered per molecule batch. A value saved
-                    on the batch or sample record itself always wins and removes
-                    the copy here.
-                </p>
-            </div>
-        </header>
-
-        <div class="card__body">
-            <label class="field-item purity-threshold-row">
-                <span>
-                    <strong>Fill purity threshold (%)</strong> — purity fill
-                    offers appear only at or below this value.
+        </section>
+        <section class="card card--wide" aria-labelledby="col-regdefaults-heading">
+            <header class="card__head">
+                <span class="tile" aria-hidden="true">
+                    <span class="tile__no"></span>
+                    <span class="tile__sym">Rd</span>
                 </span>
-                <input type="number" id="purityFillThreshold"
-                       min="1" max="100" step="0.1"
-                       class="purity-threshold-input" />
-            </label>
+                <div class="card__titles">
+                    <h3 class="card__name" id="col-regdefaults-heading">Registration defaults</h3>
+                </div>
+            </header>
 
-            <label class="field-item purity-threshold-row">
-                <span>
-                    <strong>Low purity warning threshold (%)</strong> — the
-                    ⚠ LOW PURITY badge fires at or below this value.
-                </span>
-                <input type="number" id="purityWarnThreshold"
-                       min="1" max="100" step="0.1"
-                       class="purity-threshold-input" />
-            </label>
-
-            <label class="field-item auto-fill-toggle">
-                <input type="checkbox" id="autoFillEnabled" />
-                <span><strong>Experimental:</strong> auto-fill values into rows
-                you <strong>add while working</strong>. Rows that already existed
-                when the entry loaded are never touched automatically — use the
-                card buttons or the panel's <em>Fill all</em> button for those.
-                Every write goes through CDD's own editor and autosave.</span>
-            </label>
-        </div>
-
-        <div class="card__body card__body--scroll">
-            <p class="density-memory-count">
-                <span id="densityMemoryCount">0</span> / 100 remembered
-            </p>
-            <div id="densityMemoryList" class="stack"></div>
-            <p id="densityMemoryEmpty" class="empty" hidden>
-                Nothing remembered yet. Type a density, purity or concentration
-                into a stoichiometry row whose batch has none — or pick a
-                solvent for a solution row — and it will appear here.
-            </p>
-            <button id="densityMemoryClear" type="button" class="btn btn--quiet" hidden>
-                Clear all
-            </button>
-        </div>
-    </section>
-
-    <section class="card card--wide" aria-labelledby="col-regdefaults-heading">
-        <header class="card__head">
-            <span class="tile" aria-hidden="true">
-                <span class="tile__no">8</span>
-                <span class="tile__sym">Rd</span>
-            </span>
-            <div class="card__titles">
-                <h2 class="card__name" id="col-regdefaults-heading">Registration defaults</h2>
-                <p class="card__desc">
+            <div class="card__body card__body--scroll">
+                <p class="note">
                     Values filled in for you when you register a compound
                     <strong>from an ELN entry</strong> — <code>Origin</code> is
                     <code>Synthesized</code> for anything that came out of a
@@ -387,32 +340,102 @@
                     Explore Data is never touched, and a field that already has a
                     value is never overwritten.
                 </p>
+
+                <p class="note">
+                    Vaults appear here as you add them. The vault number is in the
+                    CDD address bar — <code>/vaults/<strong>8158</strong>/</code>.
+                    For a dropdown field the value must be one of its options
+                    spelled exactly, otherwise the field is left alone.
+                </p>
+
+                <div id="registrationDefaultsList" class="stack"></div>
+
+                <button id="registrationDefaultsAddVault" type="button" class="btn">Add a vault</button>
             </div>
-        </header>
-
-        <div class="card__body card__body--scroll">
-            <p class="note">
-                Vaults appear here as you add them. The vault number is in the
-                CDD address bar — <code>/vaults/<strong>8158</strong>/</code>.
-                For a dropdown field the value must be one of its options
-                spelled exactly, otherwise the field is left alone.
-            </p>
-
-            <div id="registrationDefaultsList" class="stack"></div>
-
-            <button id="registrationDefaultsAddVault" type="button" class="btn">Add a vault</button>
+        </section>
         </div>
     </section>
 
-    <section class="card" aria-labelledby="col-hplc-heading">
-        <header class="card__head">
-            <span class="tile" aria-hidden="true">
-                <span class="tile__no">7</span>
-                <span class="tile__sym">Ij</span>
-            </span>
-            <div class="card__titles">
-                <h2 class="card__name" id="col-hplc-heading">HPLC injection</h2>
-                <p class="card__desc">
+    <section class="group" aria-labelledby="grp-values">
+        <h2 class="group__name" id="grp-values">Values and calculations</h2>
+        <div class="group__grid">
+        <section class="card card--wide" aria-labelledby="col-densities-heading">
+            <header class="card__head">
+                <span class="tile" aria-hidden="true">
+                    <span class="tile__no"></span>
+                    <span class="tile__sym">ρ</span>
+                </span>
+                <div class="card__titles">
+                    <h3 class="card__name" id="col-densities-heading">Remembered batch values</h3>
+                </div>
+            </header>
+
+            <div class="card__body">
+                <p class="note">
+                    Values you typed into stoichiometry rows (density, purity,
+                    concentration), remembered per molecule batch. A value saved
+                    on the batch or sample record itself always wins and removes
+                    the copy here.
+                </p>
+
+                <label class="field-item purity-threshold-row">
+                    <span>
+                        <strong>Fill purity threshold (%)</strong> — purity fill
+                        offers appear only at or below this value.
+                    </span>
+                    <input type="number" id="purityFillThreshold"
+                           min="1" max="100" step="0.1"
+                           class="purity-threshold-input" />
+                </label>
+
+                <label class="field-item purity-threshold-row">
+                    <span>
+                        <strong>Low purity warning threshold (%)</strong> — the
+                        ⚠ LOW PURITY badge fires at or below this value.
+                    </span>
+                    <input type="number" id="purityWarnThreshold"
+                           min="1" max="100" step="0.1"
+                           class="purity-threshold-input" />
+                </label>
+
+                <label class="field-item auto-fill-toggle">
+                    <input type="checkbox" id="autoFillEnabled" />
+                    <span><strong>Experimental:</strong> auto-fill values into rows
+                    you <strong>add while working</strong>. Rows that already existed
+                    when the entry loaded are never touched automatically — use the
+                    card buttons or the panel's <em>Fill all</em> button for those.
+                    Every write goes through CDD's own editor and autosave.</span>
+                </label>
+            </div>
+
+            <div class="card__body card__body--scroll">
+                <p class="density-memory-count">
+                    <span id="densityMemoryCount">0</span> / 100 remembered
+                </p>
+                <div id="densityMemoryList" class="stack"></div>
+                <p id="densityMemoryEmpty" class="empty" hidden>
+                    Nothing remembered yet. Type a density, purity or concentration
+                    into a stoichiometry row whose batch has none — or pick a
+                    solvent for a solution row — and it will appear here.
+                </p>
+                <button id="densityMemoryClear" type="button" class="btn btn--quiet" hidden>
+                    Clear all
+                </button>
+            </div>
+        </section>
+        <section class="card card--wide" aria-labelledby="col-hplc-heading">
+            <header class="card__head">
+                <span class="tile" aria-hidden="true">
+                    <span class="tile__no"></span>
+                    <span class="tile__sym">Ij</span>
+                </span>
+                <div class="card__titles">
+                    <h3 class="card__name" id="col-hplc-heading">HPLC injection</h3>
+                </div>
+            </header>
+
+            <div class="card__body">
+                <p class="note">
                     The panel works out the injection volume for each reaction
                     from the reaction molarity CDD prints on the solvent row:
                     an aliquot of the mixture is diluted to the vial volume,
@@ -422,58 +445,57 @@
                     be recomputed for its own reaction (one drop or two)
                     without changing these or any other reaction.
                 </p>
+
+                <label class="field-item auto-fill-toggle">
+                    <input type="checkbox" id="hplcBlockEnabled" />
+                    <span>Show the <strong>HPLC injection</strong> block in the
+                    Samples panel. Off by default; the values below are kept
+                    either way.</span>
+                </label>
+
+                <label class="field-item purity-threshold-row">
+                    <span>
+                        <strong>Default aliquot volume (µL)</strong> — how much is drawn
+                        out of the reaction mixture.
+                    </span>
+                    <input type="number" id="hplcAliquotVolume"
+                           min="0" step="1"
+                           class="purity-threshold-input" />
+                </label>
+
+                <label class="field-item purity-threshold-row">
+                    <span>
+                        <strong>Default vial volume (mL)</strong> — the final volume
+                        of the diluted sample, aliquot included.
+                    </span>
+                    <input type="number" id="hplcVialVolume"
+                           min="0" step="0.1"
+                           class="purity-threshold-input" />
+                </label>
+
+                <label class="field-item purity-threshold-row">
+                    <span>
+                        <strong>Default target amount (nmol)</strong> — how much
+                        should reach the column.
+                    </span>
+                    <input type="number" id="hplcTargetAmount"
+                           min="0" step="0.1"
+                           class="purity-threshold-input" />
+                </label>
+
+                <label class="field-item purity-threshold-row">
+                    <span>
+                        <strong>Vial volumes you stock (mL)</strong> — when the
+                        injection lands outside 0.5–2 µL, the block suggests a
+                        different dilution, and it picks from this list. Default is the
+                        0.25 mL insert and a vial filled to 1.5 mL.
+                    </span>
+                    <input type="text" id="hplcVialLadder"
+                           class="text-input" spellcheck="false"
+                           placeholder="0.25, 1.5" />
+                </label>
             </div>
-        </header>
-
-        <div class="card__body">
-            <label class="field-item auto-fill-toggle">
-                <input type="checkbox" id="hplcBlockEnabled" />
-                <span>Show the <strong>HPLC injection</strong> block in the
-                Samples panel. Off by default; the values below are kept
-                either way.</span>
-            </label>
-
-            <label class="field-item purity-threshold-row">
-                <span>
-                    <strong>Default aliquot volume (µL)</strong> — how much is drawn
-                    out of the reaction mixture.
-                </span>
-                <input type="number" id="hplcAliquotVolume"
-                       min="0" step="1"
-                       class="purity-threshold-input" />
-            </label>
-
-            <label class="field-item purity-threshold-row">
-                <span>
-                    <strong>Default vial volume (mL)</strong> — the final volume
-                    of the diluted sample, aliquot included.
-                </span>
-                <input type="number" id="hplcVialVolume"
-                       min="0" step="0.1"
-                       class="purity-threshold-input" />
-            </label>
-
-            <label class="field-item purity-threshold-row">
-                <span>
-                    <strong>Default target amount (nmol)</strong> — how much
-                    should reach the column.
-                </span>
-                <input type="number" id="hplcTargetAmount"
-                       min="0" step="0.1"
-                       class="purity-threshold-input" />
-            </label>
-
-            <label class="field-item purity-threshold-row">
-                <span>
-                    <strong>Vial volumes you stock (mL)</strong> — when the
-                    injection lands outside 0.5–2 µL, the block suggests a
-                    different dilution, and it picks from this list. Default is the
-                    0.25 mL insert and a vial filled to 1.5 mL.
-                </span>
-                <input type="text" id="hplcVialLadder"
-                       class="text-input" spellcheck="false"
-                       placeholder="0.25, 1.5" />
-            </label>
+        </section>
         </div>
     </section>
 

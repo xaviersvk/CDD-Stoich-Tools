@@ -150,6 +150,35 @@ body {
     max-width: 1240px;
     margin: 0 auto;
     padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 36px;
+    counter-reset: card;
+}
+
+/* A group heading is a labelled rule, not another card. */
+.group__name {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 14px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.group__name::after {
+    content: "";
+    flex: 1 1 auto;
+    height: 1px;
+    background: var(--rule);
+}
+
+/* 4 + (2+2) + (2+2): every group fills whole rows, so no cell is left empty. */
+.group__grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 20px;
@@ -157,15 +186,19 @@ body {
 }
 
 @media (max-width: 1080px) {
-    .bench {
+    .group__grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
 @media (max-width: 640px) {
     .bench {
-        grid-template-columns: minmax(0, 1fr);
         padding: 16px;
+        gap: 28px;
+    }
+
+    .group__grid {
+        grid-template-columns: minmax(0, 1fr);
     }
 }
 
@@ -182,8 +215,9 @@ body {
 
 .card__head {
     display: flex;
+    align-items: center;
     gap: 12px;
-    padding: 16px;
+    padding: 14px 16px;
     border-bottom: 1px solid var(--rule);
 }
 
@@ -214,24 +248,41 @@ body {
 
 /* A long list of fields or prefixes scrolls inside its own card, so the four
    columns keep their shoulders level. */
+.card__body + .card__body {
+    border-top: 1px solid var(--rule);
+}
+
+/* A long list scrolls inside its own card so the row keeps level shoulders.
+   overscroll-behavior stops the page from taking over once the list bottoms
+   out, which today makes the prefix list feel like it swallowed the scroll. */
 .card__body--scroll {
     max-height: 560px;
     overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
 }
 
 /* --------------------------------------------------- the signature: tiles */
+
+.card {
+    counter-increment: card;
+}
 
 .tile {
     flex: 0 0 auto;
     width: 44px;
     height: 44px;
-    border: 1px solid var(--ink);
+    border: 1px solid var(--rule);
     border-radius: 3px;
     display: grid;
     grid-template-rows: auto 1fr;
     padding: 3px 4px 2px;
     font-family: var(--mono);
     background: var(--accent-wash);
+}
+
+.tile__no::before {
+    content: counter(card);
 }
 
 .tile__no {
@@ -619,8 +670,6 @@ body {
 .show-products-toggle {
     align-items: flex-start;
     gap: 8px;
-    padding-bottom: 4px;
-    border-bottom: 1px solid var(--rule);
 }
 
 /* "From the ELN" sits above the preselect choices, with a rule under it so the
@@ -727,4 +776,14 @@ body {
 
 .reg-defaults-vault > .stack {
     margin: 8px 0;
+}
+
+.prefix-color-item > .text-input {
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+/* Direct child = the vault head row only. A vault number is four digits. */
+.reg-defaults-vault > .prefix-color-item > .text-input:first-child {
+    flex: 0 1 96px;
 }

@@ -128,9 +128,9 @@ The other two are unidentified: the clone check does not run locally, and the
 per-location detail only exists in the cloud report for the run. Open it and
 name them before deciding whether they are worth merging.
 
-**Not smoke-tested yet:** both plate export paths and both entity-type
-picklists. Behaviour is unchanged by construction, but these run against live
-CDD pages and have no test coverage.
+**Smoke-tested 2026-08-21:** both plate export paths and both entity-type
+picklists behave as before. Worth repeating if any of them is touched again —
+they run against live CDD pages and have no test coverage.
 
 #### What is left, and the honest choice
 

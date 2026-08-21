@@ -13,7 +13,24 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
-# What's new in 14.11.0
+# What's new in 14.12.0
+
+---
+
+## 14.12.0 — 2026-08-21
+
+**The HPLC injection block now shows just the number.** Click its header to
+open the calculator when you need to change the aliquot, the vial or the
+target.
+
+- It warns only when the injection is genuinely too big or too small, on one
+  line that says what to change. Click that line to apply it.
+- The comfortable range now starts at 0.1 µL and runs to 5, so an ordinary
+  small injection no longer asks you to re-dilute. If you set your own range it
+  is kept — *Settings → HPLC injection → Comfortable injection range* has a
+  **reset** button.
+- A reaction using its own aliquot or vial is marked with an amber dot next to
+  the title.
 
 ---
 

@@ -20,6 +20,46 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 
 ---
 
+## [14.12.0] — 2026-08-21
+
+### Changed
+- **The HPLC injection block is quiet at rest.** It shows the title and the
+  injection volume on one line; the molarity, the three inputs and `reset` open
+  on a click of the header. The block answers "how much do I inject", and
+  everything else on screen was competing with the answer.
+- **One warning line instead of two.** The note and the advice bar could print
+  at once, one restating what the other had already said with a fix attached.
+  They are one element now, outside the collapse so it stays readable when the
+  calculator is shut, still clickable, and shorter:
+  `⚠ Too dilute → 0.25 mL, 2 drops = 1.2 µL`.
+- **The default comfortable injection range widened from 0.3–2 µL to
+  0.1–5 µL.** 0.3–2 is where the method is happiest, which is not the same
+  question as where a re-dilution is worth the bench time: at 0.3 the block was
+  asking for a sample to be redone over an injection of 0.2 µL, which the loop
+  delivers without complaint. A stored value still wins, so anyone who has
+  edited that setting keeps their own band — **Settings → HPLC injection →
+  Comfortable injection range** gains a `reset` button that returns it to the
+  default. It removes the two keys rather than writing today's numbers into
+  them, so a future default change reaches those users too.
+- **A reaction using its own numbers is marked with an amber dot** after the
+  title. The marked input fields and the `reset` pill that used to show it are
+  now behind the collapse.
+
+### Removed
+- The `exact … µL · … nmol on column` line. Tenth-microlitre rounding moves the
+  delivered amount by a few percent, and this is reaction monitoring, not
+  quantitation — nobody was acting on the difference.
+- The floored note (*"Rounded up to the 0.1 µL minimum…"*). That case is by
+  definition too concentrated, so the optimiser already said the same thing
+  with something to click.
+
+### Fixed
+- The comfortable-range echo under **Vial volumes you stock** was painted only
+  at init, so it sat quoting a band that had already been changed until the
+  options page was reloaded.
+- `.range-pair` was defined twice in the options stylesheet; the first copy was
+  dead.
+
 ## [14.11.0] — 2026-08-21
 
 ### Added

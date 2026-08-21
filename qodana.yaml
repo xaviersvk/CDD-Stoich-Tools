@@ -17,22 +17,22 @@ include:
 #
 # moderate: a RATCHET, not a target. The agreed ceiling is 20.
 #
-# History: `main` peaked at 94 — 63 ignored promises, 24 deprecated, 7 clones —
-# i.e. ABOVE this 80, so the check has been red. Three changes bring it down:
-# `@types/chrome` + jsconfig.json, so the analyser stops resolving
-# `chrome.*.addListener` against the deprecated `MediaQueryList.addListener`
-# (24 → 2); the Paste/Fill race fix; and the five clone merges (7 → 2).
-# Correct typings also reveal five MORE ignored promises, because
-# `chrome.storage.local.set` is finally known to return one (63 → 68).
+# 74 measured in CI on 2026-08-21 (68 ignored promises, 4 clones, 2 deprecated),
+# down from 94 on `main`, which was above the old 80 and therefore red. So this
+# sits at 75 — one above the real count. That keeps the check green while still
+# failing the moment a change ADDS a moderate finding, which is the property
+# worth having.
 #
-# Expected on the next CI run: 68 + 2 + 2 ≈ 72. Read the REAL number off that
-# run before lowering this line. A local run cannot tell you — it reports 70,
-# missing the clone check entirely and already resolving `chrome` from an
-# untracked .idea/workspace.xml.
+# Take the number from CI, never from a local run. A local run reports 70: it
+# does not run the clone check at all, and a dev machine resolves `chrome` from
+# an untracked .idea/workspace.xml whatever the config says. CI needed the
+# `npm ci` step for the same resolution — without node_modules, jsconfig.json's
+# `types: ["chrome"]` finds nothing and 20 false deprecations come back.
 #
-# The remaining ~68 are almost all deliberate fire-and-forget calls. The
-# per-call verdicts, and why `execCommand` and `doc.write` stay, are in
-# docs/BACKLOG.md ("Qodana findings").
+# The remaining 68 promises are almost all deliberate fire-and-forget calls.
+# The per-call verdicts, what the four completed items did and did not move,
+# and why `execCommand` and `doc.write` stay, are in docs/BACKLOG.md
+# ("Qodana findings").
 #
 # NOTE: these count EVERY result, because no baseline is configured yet. Taking
 # a baseline (`--baseline qodana.sarif.json`) would make them count only what a
@@ -42,4 +42,4 @@ failureConditions:
   severityThresholds:
     critical: 0
     high: 0
-    moderate: 80
+    moderate: 75

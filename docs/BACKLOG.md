@@ -11,21 +11,29 @@ would be.
 
 ## Next up
 
-### Qodana findings — triaged 2026-08-19, items 1–4 done 2026-08-21
+### Qodana findings — triaged 2026-08-19, items 1–4 done and measured 2026-08-21
 
-**Where it stands.** `main` reports **94 moderate problems** (63 ignored
-promises, 24 deprecated, 7 clones) against a ratchet of 80 in `qodana.yaml`, so
-the check has been **red**. Branch `qodana-chrome-types` carries the four items
-below; the next CI run is expected to report **≈72** — 68 promises, 2
-deprecated, 2 clones — which is green again but still far from the agreed
-ceiling of 20. Lower the ratchet once that real number is in hand.
+**Where it stands.** `main` reports **94** (63 ignored promises, 24 deprecated,
+7 clones) against a ratchet of 80, so the check has been **red**. Branch
+`qodana-chrome-types` measures **74** in CI — 68 promises, 4 clones, 2
+deprecated — and the ratchet now sits at **75**. Still far from the agreed
+ceiling of 20; see "What is left" below for the only honest ways there.
+
+**A fifth change was needed, and it was a CI defect.** The first run of the
+branch reported **90**, not the ~72 predicted: deprecated had gone 24 → 23, so
+item 2 had done nothing at all. The workflow never ran `npm ci`, so there was
+no `node_modules`, `jsconfig.json`'s `types: ["chrome"]` resolved to nothing,
+`chrome` stayed an unresolved global, and every `chrome.*.addListener` was
+resolved against the DOM — landing on the deprecated
+`MediaQueryList.addListener`. Adding a setup-node + `npm ci` step took the run
+to 74. **A config change that depends on a dependency is worth nothing until
+something installs it.**
 
 **Judge counts by CI, never by a local run.** Locally it reports 70: the clone
 check does not run at all, and a dev machine's untracked `.idea/workspace.xml`
-already tells WebStorm what `chrome` is, which is exactly what item 2 fixed for
-CI. Reproducing CI needs the cloud token (GitHub secret
-`QODANA_TOKEN_2139620105`, same value in the Qodana Cloud project settings — do
-**not** commit it):
+already tells WebStorm what `chrome` is regardless of config. Reproducing CI
+needs the cloud token (GitHub secret `QODANA_TOKEN_2139620105`, same value in
+the Qodana Cloud project settings — do **not** commit it):
 
 ```
 qodana scan --image jetbrains/qodana-js:2026.1 --results-dir <tmp>
@@ -57,7 +65,7 @@ three surviving hits (`:212`, `:249`, `:264`) are at the *call sites* — click
 handlers that must not block, and a storage listener — which stay
 fire-and-forget by design. Worth doing entirely on its own merits.
 
-#### 2. Make `chrome` resolve — DONE, 24 → 2
+#### 2. Make `chrome` resolve — DONE, 24 → 2 (but only after the workflow fix)
 
 `@types/chrome` as a devDependency plus `jsconfig.json` with
 `compilerOptions.types: ["chrome"]`.
@@ -90,7 +98,7 @@ than with `.catch()` at seven call sites is what makes the fire-and-forget calls
 honest rather than merely quiet — and it is also why the finding count did not
 move: Qodana flags the call site, not the callee.
 
-#### 4. Five duplications — DONE, 7 → 2
+#### 4. Five duplications — DONE, 7 → 4
 
 1. `plate-list-export.js` ↔ `plate-location-export.js` — 29 identical lines
    (`mapLimit` over plates, `getPlateInfo` each, progress, cancel check, numeric
@@ -113,6 +121,12 @@ move: Qodana flags the call site, not the callee.
 5. `sample-panel.js` — the clone here *was* the reaction badge, which 14.10.1
    deleted. What was left is four badges built the same three lines each, now
    one `cardTopBadge(className, text, title)`.
+
+**Four clones remain, not the two predicted.** Two are the rAF +
+`MutationObserver` boilerplate left alone deliberately (see "What NOT to do").
+The other two are unidentified: the clone check does not run locally, and the
+per-location detail only exists in the cloud report for the run. Open it and
+name them before deciding whether they are worth merging.
 
 **Not smoke-tested yet:** both plate export paths and both entity-type
 picklists. Behaviour is unchanged by construction, but these run against live

@@ -76,6 +76,10 @@ import {
     saveElnIdCarryFieldLabel,
     saveElnIdFormat,
 } from "../shared/eln-id-carry.js";
+import {
+    loadRegistrationDefaults,
+    saveRegistrationDefaults,
+} from "../shared/registration-defaults.js";
 
 const ELN_TITLE_MODE_KEY = "cddPluginElnTitleMode";
 const DEFAULT_ELN_TITLE_MODE = "id-title";
@@ -285,6 +289,166 @@ prefixAddBtn.addEventListener("click", () => {
     renderPrefixRows();
     // No save yet: a blank prefix is not persisted until the user types one.
 });
+
+/* ============================================ 8 · Registration defaults */
+
+// Working copy the UI edits, mirroring the prefix-colour list above: an
+// ORDERED array of rows rather than the Record we persist, so two rows can
+// briefly share a blank field name without one clobbering the other.
+let regDefaultVaults = [];
+let nextRegDefaultId = 1;
+
+const regDefaultsListEl = document.getElementById("registrationDefaultsList");
+const regDefaultsAddVaultBtn = document.getElementById("registrationDefaultsAddVault");
+
+function saveRegDefaults() {
+    const record = {};
+    for (const vault of regDefaultVaults) {
+        const id = vault.vaultId.trim();
+        if (!/^\d+$/.test(id)) continue; // a vault being typed is not a vault
+        record[id] = {
+            label: vault.label,
+            fields: vault.fields.map((f) => ({ label: f.label, value: f.value })),
+        };
+    }
+    saveRegistrationDefaults(record);
+}
+
+function createRegDefaultFieldRow(vault, field) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "prefix-color-item";
+
+    const labelInput = document.createElement("input");
+    labelInput.type = "text";
+    labelInput.className = "text-input";
+    labelInput.placeholder = "Origin";
+    labelInput.value = field.label;
+    labelInput.setAttribute("aria-label", "Registration form field name");
+    // Persist live without re-rendering, so the caret stays put.
+    labelInput.addEventListener("input", () => {
+        field.label = labelInput.value;
+        saveRegDefaults();
+    });
+
+    const valueInput = document.createElement("input");
+    valueInput.type = "text";
+    valueInput.className = "text-input";
+    valueInput.placeholder = "Synthesized";
+    valueInput.value = field.value;
+    valueInput.setAttribute("aria-label", "Value to fill in");
+    valueInput.addEventListener("input", () => {
+        field.value = valueInput.value;
+        saveRegDefaults();
+    });
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.type = "button";
+    deleteBtn.className = "prefix-color-delete";
+    deleteBtn.textContent = "✕";
+    deleteBtn.setAttribute("aria-label", `Delete default for ${field.label || "(blank)"}`);
+    deleteBtn.addEventListener("click", () => {
+        vault.fields = vault.fields.filter((f) => f.id !== field.id);
+        renderRegDefaults();
+        saveRegDefaults();
+    });
+
+    wrapper.append(labelInput, valueInput, deleteBtn);
+    return wrapper;
+}
+
+function createRegDefaultVault(vault) {
+    const box = document.createElement("div");
+    box.className = "reg-defaults-vault";
+
+    const head = document.createElement("div");
+    head.className = "prefix-color-item";
+
+    const vaultInput = document.createElement("input");
+    vaultInput.type = "text";
+    vaultInput.className = "text-input";
+    vaultInput.placeholder = "8158";
+    vaultInput.value = vault.vaultId;
+    vaultInput.setAttribute("aria-label", "Vault number");
+    vaultInput.addEventListener("input", () => {
+        vault.vaultId = vaultInput.value;
+        saveRegDefaults();
+    });
+
+    const labelInput = document.createElement("input");
+    labelInput.type = "text";
+    labelInput.className = "text-input";
+    labelInput.placeholder = "a name for this vault (optional)";
+    labelInput.value = vault.label;
+    labelInput.setAttribute("aria-label", "Your name for this vault");
+    labelInput.addEventListener("input", () => {
+        vault.label = labelInput.value;
+        saveRegDefaults();
+    });
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.type = "button";
+    deleteBtn.className = "prefix-color-delete";
+    deleteBtn.textContent = "✕";
+    deleteBtn.setAttribute("aria-label", `Delete vault ${vault.vaultId || "(blank)"}`);
+    deleteBtn.addEventListener("click", () => {
+        regDefaultVaults = regDefaultVaults.filter((v) => v.id !== vault.id);
+        renderRegDefaults();
+        saveRegDefaults();
+    });
+
+    head.append(vaultInput, labelInput, deleteBtn);
+
+    const fields = document.createElement("div");
+    fields.className = "stack";
+    for (const field of vault.fields) {
+        fields.appendChild(createRegDefaultFieldRow(vault, field));
+    }
+
+    const addFieldBtn = document.createElement("button");
+    addFieldBtn.type = "button";
+    addFieldBtn.className = "btn btn--quiet";
+    addFieldBtn.textContent = "Add a field";
+    addFieldBtn.addEventListener("click", () => {
+        vault.fields.push({ id: nextRegDefaultId++, label: "", value: "" });
+        renderRegDefaults();
+        // No save yet: a half-typed row is not a rule.
+    });
+
+    box.append(head, fields, addFieldBtn);
+    return box;
+}
+
+function renderRegDefaults() {
+    regDefaultsListEl.replaceChildren();
+    for (const vault of regDefaultVaults) {
+        regDefaultsListEl.appendChild(createRegDefaultVault(vault));
+    }
+}
+
+regDefaultsAddVaultBtn.addEventListener("click", () => {
+    regDefaultVaults.push({
+        id: nextRegDefaultId++,
+        vaultId: "",
+        label: "",
+        fields: [{ id: nextRegDefaultId++, label: "", value: "" }],
+    });
+    renderRegDefaults();
+});
+
+async function initRegistrationDefaultsUI() {
+    const record = await loadRegistrationDefaults();
+    regDefaultVaults = Object.entries(record).map(([vaultId, entry]) => ({
+        id: nextRegDefaultId++,
+        vaultId,
+        label: entry.label || "",
+        fields: (entry.fields || []).map((f) => ({
+            id: nextRegDefaultId++,
+            label: f.label,
+            value: f.value,
+        })),
+    }));
+    renderRegDefaults();
+}
 
 /* ====================================================== 4 · Registration form */
 
@@ -919,3 +1083,4 @@ initShowProductsUI();
 initPanelSourcesUI();
 initHeatMapFieldsUI();
 initHplcInjectionUI();
+initRegistrationDefaultsUI();

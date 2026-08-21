@@ -716,3 +716,15 @@ body {
 .density-memory-delete:hover {
     color: var(--danger);
 }
+
+/* Registration defaults — one box per vault, rows of field -> value inside. */
+.reg-defaults-vault {
+    border: 1px solid var(--line, #d5dae2);
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+.reg-defaults-vault > .stack {
+    margin: 8px 0;
+}

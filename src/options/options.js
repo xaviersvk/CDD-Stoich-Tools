@@ -1390,3 +1390,6 @@ initHeatMapFieldsUI();
 initHplcInjectionUI();
 initRegistrationDefaultsUI();
 initRailUI();
+import { initPhrasesUI } from "./phrases-ui.js";
+    setChip("phrases", Number(document.getElementById("phrasesCount")?.textContent) || null);
+initPhrasesUI();

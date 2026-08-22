@@ -651,3 +651,67 @@
 <script type="module" src="./options.js"></script>
 </body>
 </html>
+            <button type="button" class="rail__item" data-pane="col-phrases-heading">
+                <span class="tile" aria-hidden="true">
+                    <span class="tile__no"></span>
+                    <span class="tile__sym">Ph</span>
+                </span>
+                <span class="rail__label">Phrases</span>
+                <span class="rail__chip" data-chip="phrases" hidden></span>
+            </button>
+        <section class="card" aria-labelledby="col-phrases-heading">
+            <header class="card__head">
+                <span class="tile" aria-hidden="true">
+                    <span class="tile__no"></span>
+                    <span class="tile__sym">Ph</span>
+                </span>
+                <div class="card__titles">
+                    <h3 class="card__name" id="col-phrases-heading">Phrases</h3>
+                </div>
+            </header>
+
+            <div class="card__body">
+                <p class="note">
+                    Text you saved from an ELN entry. In the entry, the floating
+                    panel's <em>Phrases</em> tab copies one with a click; paste
+                    it with Ctrl+V. Formatting (bold, lists, tables) is kept.
+                    A phrase can sit in several categories.
+                </p>
+                <div class="phrase-tools">
+                    <button id="phrasesExport" type="button" class="btn">Export JSON</button>
+                    <button id="phrasesImport" type="button" class="btn">Import JSON</button>
+                    <input id="phrasesImportFile" type="file" accept="application/json,.json" hidden />
+                    <label class="field-item phrase-tools__replace">
+                        <input type="checkbox" id="phrasesImportReplace" />
+                        <span>Import replaces everything</span>
+                    </label>
+                </div>
+                <p id="phrasesStatus" class="note" hidden></p>
+            </div>
+
+            <div class="card__body">
+                <p class="eyebrow">Categories</p>
+                <p class="note">Rename here to rename everywhere. ✕ takes the category off its phrases; the phrases stay.</p>
+                <div id="phrasesCategories" class="phrase-cats"></div>
+            </div>
+
+            <div class="card__body card__body--scroll">
+                <p class="eyebrow">Phrases</p>
+                <p class="density-memory-count">
+                    <span id="phrasesCount">0</span> / 50 saved — past that, the one
+                    copied longest ago is dropped
+                </p>
+                <div class="phrase-filters">
+                    <input id="phrasesFilter" type="search" class="text-input" placeholder="Filter by name or text…" />
+                    <select id="phrasesCategoryFilter" class="select"></select>
+                </div>
+                <div id="phrasesList" class="stack"></div>
+                <p id="phrasesEmpty" class="empty" hidden>
+                    No phrases yet. On an ELN entry, select some text and click
+                    <em>Save phrase</em>.
+                </p>
+                <button id="phrasesClear" type="button" class="btn btn--quiet" hidden>
+                    Delete all
+                </button>
+            </div>
+        </section>

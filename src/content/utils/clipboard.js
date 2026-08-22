@@ -59,3 +59,58 @@ export async function copyTextWithFeedback(element, text, successLabel = "Copied
 
     return true;
 }
+
+// Rich copy: both text/html and text/plain go on the clipboard, so a paste
+// into the ELN editor keeps formatting while a paste into Excel or a plain
+// input gets the text. Falls back to a one-shot `copy` listener that fills
+// clipboardData itself when ClipboardItem is unavailable or refused.
+function copyRichFallback(html, text) {
+    const onCopy = (event) => {
+        event.preventDefault();
+        event.clipboardData.setData("text/html", html);
+        event.clipboardData.setData("text/plain", text);
+    };
+
+    try {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.style.position = "fixed";
+        textarea.style.left = "-9999px";
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+
+        document.addEventListener("copy", onCopy, { once: true });
+        const ok = document.execCommand("copy");
+        document.removeEventListener("copy", onCopy);
+        textarea.remove();
+        return ok;
+    } catch (err) {
+        document.removeEventListener("copy", onCopy);
+        console.warn("[CDD Stoich Tools] Rich clipboard fallback failed:", err);
+        return false;
+    }
+}
+
+export async function copyRichText(html, text) {
+    const plain = String(text ?? "");
+    const markup = String(html ?? "");
+    if (!plain && !markup) return false;
+    if (!markup) return copyText(plain);
+
+    if (navigator.clipboard?.write && typeof ClipboardItem !== "undefined") {
+        try {
+            await navigator.clipboard.write([
+                new ClipboardItem({
+                    "text/html": new Blob([markup], { type: "text/html" }),
+                    "text/plain": new Blob([plain], { type: "text/plain" }),
+                }),
+            ]);
+            return true;
+        } catch (err) {
+            console.warn("[CDD Stoich Tools] Rich clipboard write failed, using fallback:", err);
+        }
+    }
+
+    return copyRichFallback(markup, plain);
+}

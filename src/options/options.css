@@ -930,3 +930,153 @@ body {
     border: 1px solid var(--rule);
     border-radius: var(--radius);
 }
+
+/* Phrases card */
+.phrase-tools {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+}
+.phrase-tools__replace {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--muted);
+}
+.phrase-cats {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.phrase-cat {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 8px;
+}
+.phrase-cat__name { max-width: 320px; }
+.phrase-cat__count { font-size: 12px; color: var(--muted); min-width: 1.5em; text-align: right; }
+.phrase-filters {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+.phrase-filters .select { width: auto; min-width: 160px; }
+.phrase-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 10px;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+}
+.phrase-row__head {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 10px;
+}
+.phrase-row__name { font-weight: 600; }
+.phrase-preview {
+    font-size: 12px;
+    color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.phrase-input {
+    padding: 4px 6px;
+    font-size: 13px;
+}
+
+/* Combo inputs (phrase categories) */
+.cdd-combo { position: relative; display: flex; align-items: stretch; min-width: 0; }
+.cdd-combo > input { flex: 1 1 auto; min-width: 0; border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.cdd-combo__toggle {
+    flex: 0 0 auto;
+    width: 24px;
+    padding: 0;
+    font: inherit;
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-left: 0;
+    border-radius: 0 5px 5px 0;
+    cursor: pointer;
+}
+.cdd-combo__toggle:hover { color: var(--ink); background: var(--paper); }
+.cdd-combo__menu {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    z-index: 10;
+    max-height: 180px;
+    overflow: auto;
+    margin-top: 2px;
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 5px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+}
+.cdd-combo__option {
+    display: block;
+    width: 100%;
+    padding: 5px 8px;
+    text-align: left;
+    font: inherit;
+    font-size: 13px;
+    color: var(--ink);
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+}
+.cdd-combo__option:hover { background: var(--accent-wash); }
+.cdd-combo__option--current { color: var(--accent); }
+.cdd-combo__option--none { cursor: default; color: var(--muted); }
+
+/* Category chips editor */
+.cdd-places { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.cdd-places__chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.cdd-place-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 4px 2px 8px;
+    font-size: 12px;
+    color: var(--ink);
+    background: var(--accent-wash);
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+}
+.cdd-place-chip--none { padding-right: 8px; color: var(--muted); background: var(--paper); }
+.cdd-place-chip__x {
+    padding: 0 5px;
+    font: inherit;
+    font-size: 11px;
+    line-height: 16px;
+    color: var(--muted);
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    cursor: pointer;
+}
+.cdd-place-chip__x:hover { color: var(--ink); background: var(--card); }
+.cdd-places__add { display: flex; gap: 6px; align-items: stretch; max-width: 420px; }
+.cdd-places__add > .cdd-combo { flex: 1 1 0; }
+.cdd-places__add-btn {
+    flex: 0 0 auto;
+    padding: 4px 8px;
+    font: inherit;
+    font-size: 12px;
+    color: var(--accent);
+    background: var(--card);
+    border: 1px solid var(--rule);
+    border-radius: 5px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.cdd-places__add-btn:hover { background: var(--accent-wash); border-color: var(--accent); }

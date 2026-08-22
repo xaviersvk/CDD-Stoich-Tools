@@ -21,6 +21,34 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 ---
 ## [15.1.0] — 2026-08-22
 
+### Added
+- **The ELN entries filter gets the field picker** Inventory and the Search
+  page already have: one searchable panel, built-in ELN fields in one column
+  and the vault's own fields in the next, instead of a 270px list that
+  scrolls. `ui-fixes/eln-filter-field-picker.js` over the shared
+  `field-picker-core.js`. The selector is CDD's own SelectBox, not the MUI
+  menu, and two of its habits shaped the adapter:
+  - The list is virtualised — only the rows inside its 400px window exist in
+    the DOM, so most of a vault's fields never render and could not be
+    clicked. The full option list lives in the SelectBox's React props,
+    readable only from the page world: a new inject bridge
+    (`inject/hooks/selectbox-bridge.js`, events `SELECTBOX_OPTIONS_REQUEST` /
+    `SELECTBOX_OPTIONS` / `SELECTBOX_SELECT`) hands the options over and
+    applies a pick through the component's own `onChange(value, option)`,
+    which also closes the popup. DOM parsing plus a synthetic click on the
+    native option remain as the fallback when the bridge does not answer.
+  - The popup closes the moment its trigger input loses focus. The panel
+    lives in the same floating host as the Keywords picker and swallows the
+    `focusout` that would reach React when focus moves into it, so the search
+    box has real focus and the full keyboard. Should CDD still drop its popup
+    while the user is in the panel, the panel stays; Escape, a click outside
+    or a pick close it (a synthetic Escape on CDD's input closes the popup).
+  - Found on the way: restoring the columns' scrollTop fires scroll events,
+    and a scroll listener that repositioned synchronously froze the page —
+    now one layout pass per frame, host-internal scrolls ignored. And CDD's
+    `option.selected` is a string on every option, so "selected" is computed
+    against the SelectBox's value instead.
+
 ### Changed
 - **The ELN entry moves aside for the panel.** CDD renders an entry at a fixed
   ~1 190px and centres it, so on a laptop the 300px panel pinned to the right

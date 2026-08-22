@@ -29,6 +29,11 @@ stoichiometry table's right-hand columns.
 - On a narrow screen (1366 px, or 150 % display scaling) the panel may still
   overlap a little — drag its left edge to make it narrower.
 
+**The ELN entries filter has the same field picker as Inventory.** Open the
+filter, click the field dropdown: the built-in fields and your vault's own
+fields sit side by side, with a search box that has the cursor the moment the
+panel opens. Type to narrow the list, Enter or a click picks, Escape closes.
+
 ---
 
 ## 15.0.0 — 2026-08-22

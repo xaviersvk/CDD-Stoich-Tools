@@ -13,7 +13,21 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
-# What's new in 15.0.0
+# What's new in 15.1.0
+
+---
+
+## 15.1.0 — 2026-08-22
+
+**The ELN entry now steps aside for the sample panel.** While the panel is
+open, the entry sits at the left edge of the window instead of the middle, so
+on a laptop the panel lands in the empty margin rather than on top of the
+stoichiometry table's right-hand columns.
+
+- On by default. To keep CDD's centred layout, untick *Settings → move the
+  ELN entry to the left edge*.
+- On a narrow screen (1366 px, or 150 % display scaling) the panel may still
+  overlap a little — drag its left edge to make it narrower.
 
 ---
 

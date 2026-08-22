@@ -30,6 +30,7 @@ import {initKeywordsFieldPicker} from "./features/ui-fixes/keywords-field-picker
 import {initColumnManager} from "./features/ui-fixes/column-manager";
 import {initLocationPickerResize} from "./features/ui-fixes/location-picker-resize";
 import {injectMoleculeLinksStyles} from "./features/ui-fixes/molecule-links-fixes";
+import {initElnShiftLeft} from "./features/ui-fixes/eln-shift-left";
 import {watchConsumedBatches} from "./features/ui-fixes/consumed-batches-collapse";
 import {watchInventoryWellStructure} from "./features/ui-fixes/inventory-well-structure";
 import {initInventoryGridColors} from "./features/ui-fixes/inventory-grid-colors";
@@ -145,6 +146,7 @@ function init() {
   initColumnManager();
   initLocationPickerResize();
   injectMoleculeLinksStyles();
+  initElnShiftLeft();
   watchConsumedBatches();
   watchInventoryWellStructure();
   initInventoryGridColors();

@@ -67,6 +67,10 @@ import {
     saveShowProducts,
 } from "../shared/show-products-flag.js";
 import {
+    getElnShiftEnabled,
+    saveElnShiftEnabled,
+} from "../shared/eln-shift-flag.js";
+import {
     getElnIdToBatchEnabled,
     saveElnIdToBatchEnabled,
 } from "../shared/eln-id-to-batch.js";
@@ -1034,6 +1038,16 @@ async function initShowProductsUI() {
     showProductsCheckbox.checked = await getShowProducts();
 }
 
+const elnShiftLeftCheckbox = document.getElementById("elnShiftLeft");
+
+elnShiftLeftCheckbox.addEventListener("change", () => {
+    saveElnShiftEnabled(elnShiftLeftCheckbox.checked);
+});
+
+async function initElnShiftLeftUI() {
+    elnShiftLeftCheckbox.checked = await getElnShiftEnabled();
+}
+
 const elnIdToBatchCheckbox = document.getElementById("elnIdToBatch");
 
 elnIdToBatchCheckbox.addEventListener("change", () => {
@@ -1397,6 +1411,7 @@ initAutoFillUI();
 initFillRowNameUI();
 initPurityThresholdUI();
 initShowProductsUI();
+initElnShiftLeftUI();
 initElnIdToBatchUI();
 initPanelSourcesUI();
 initHeatMapFieldsUI();

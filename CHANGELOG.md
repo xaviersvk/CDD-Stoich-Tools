@@ -19,6 +19,20 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [15.1.0] — 2026-08-22
+
+### Changed
+- **The ELN entry moves aside for the panel.** CDD renders an entry at a fixed
+  ~1 190px and centres it, so on a laptop the 300px panel pinned to the right
+  covered the entry's right-hand columns while the same width sat empty on
+  the left. While the panel is open (not collapsed), `#content-inner` is now
+  pushed to the left edge — one `:has()`-keyed stylesheet in
+  `ui-fixes/eln-shift-left.js`, so nothing has to follow the panel's lifecycle.
+  On a full-HD 14" display at 100–125 % scaling the two fit side by side; at
+  1366px or 150 % the overlap only shrinks, because the entry is wider than
+  what is left. On by default; *Settings → sample panel → move the ELN entry to
+  the left edge* turns it off (`shared/eln-shift-flag.js`).
+
 ## [15.0.0] — 2026-08-22
 
 ### Added

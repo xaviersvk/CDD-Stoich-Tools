@@ -17,62 +17,58 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
-## 15.1.0 — 2026-08-22
+## 15.1.0 — 2026-08-23
 
-**The ELN entry now steps aside for the sample panel.** While the panel is
-open, the entry sits at the left edge of the window instead of the middle, so
-on a laptop the panel lands in the empty margin rather than on top of the
-stoichiometry table's right-hand columns.
+**A stoichiometry row can name itself.** A row's free-text *Name* is filled
+from the names the molecule already answers to, so a table reads `DIPEA`
+instead of `N-ethyldiisopropylamine`.
 
-- On by default. To keep CDD's centred layout, untick *Settings → move the
-  ELN entry to the left edge*.
+- Switch it on at *Settings → Remembered batch values → Row name from
+  synonym*. **Suggest in the Name editor** lists the candidates under CDD's own
+  Name box when you click `Name: Optional`; **Suggest, and fill automatically**
+  also writes the name into rows you add while working. Rows that were already
+  in the entry when you opened it are never written to on their own.
+- The name is chosen in one order: a name you typed for that molecule before,
+  then its shortest synonym, then the batch's Internal ID for a substance whose
+  registrant gave no synonym.
+- Adding a reagent names the row straight away — the synonyms come from the
+  search you just did, so nothing waits for the entry to save. A substance the
+  search returns no synonyms for gets no automatic name; pick one from the list
+  in the Name editor instead.
+- Names you type yourself are remembered per molecule and offered wherever that
+  molecule turns up, including in other entries. See *Settings → Remembered
+  names*. A name that is simply the shortest synonym is not stored — the memory
+  is for the choices that differ from it.
+- Off by default: each new molecule costs one request for its page.
+
+**Save a phrase once, paste it anywhere.** Select text in an ELN entry and
+click *Save phrase*; the phrase keeps its formatting.
+
+- The panel's **Phrases** tab groups them by category, and one click copies.
+- File, rename, delete, export and import at *Settings → Phrases*. Up to 50
+  phrases; past that, the one copied longest ago is dropped.
+
+**The ELN entry steps aside for the panel.** While the panel is open the entry
+sits at the left edge of the window instead of the middle, so on a laptop the
+panel lands in the empty margin rather than over the table's right-hand
+columns.
+
+- On by default. To keep CDD's centred layout, untick *Settings → Panel fields
+  → move the ELN entry to the left edge*.
 - On a narrow screen (1366 px, or 150 % display scaling) the panel may still
   overlap a little — drag its left edge to make it narrower.
 
 **The ELN entries filter has the same field picker as Inventory.** Open the
-filter, click the field dropdown: the built-in fields and your vault's own
-fields sit side by side, with a search box that has the cursor the moment the
-panel opens. Type to narrow the list, Enter or a click picks, Escape closes.
+filter and click the field dropdown: the built-in ELN fields and your vault's
+own fields sit side by side, with a search box that has the cursor as soon as
+the panel opens. Type to narrow the list, Enter or a click picks, Escape
+closes.
 
----
+**Also fixed**
 
-## 15.0.0 — 2026-08-22
-
-**A stoichiometry row can now name itself.** A row's free-text *Name* is filled
-from what the molecule already answers to, so a table reads `DIPEA` instead of
-`N-ethyldiisopropylamine`.
-
-- Switch it on at *Settings → Row name from synonym*. **Suggest in the Name
-  editor** lists the candidates under CDD's own Name box when you click
-  `Name: Optional`; **Suggest, and fill automatically** also writes the name
-  into rows you add while working. Rows already in the entry are never written
-  to on their own.
-- The name is picked in one order: a name you typed for that molecule before,
-  then its shortest synonym, then the batch's Internal ID for a substance the
-  registrant gave no synonym, then the remaining synonyms. Automatic filling
-  lands with the row, not with the next save.
-- Names you type yourself are remembered per molecule and offered everywhere
-  that molecule turns up, including other entries. Manage them at
-  *Settings → Remembered names*. A name that is simply the shortest synonym is
-  not stored: the memory is for the choices that differ.
-- Off by default — each new molecule costs one request for its page.
-
-**Save a phrase once, paste it anywhere.** Select text in the ELN editor and
-click *Save phrase*; it keeps the formatting. The panel's **Phrases** tab groups
-them by category and one click copies. Manage them at *Settings → Phrases*,
-including export and import.
-
-- A phrase can be in several categories — type a new one or pick an existing
-  one with ▾, then *+ Add*.
-- Up to 50 phrases; past that, the one you copied longest ago is dropped.
-- The panel now appears on every ELN entry, not only those with a reaction
-  table.
-
-**The molecule's heading copies with a click** — the ID at the top of a
-molecule page (e.g. `PHA-0334382`), same as the batch and sample fields.
-
-**Fixed:** the panel showed `0 sample(s)` until the entry was next saved — it
-now asks for the entry itself when CDD does not.
+- The panel showed `0 sample(s)` on an entry until the entry was next saved.
+- A card's *Fill name* button stayed on screen after the name had been written,
+  until the next save.
 
 ---
 

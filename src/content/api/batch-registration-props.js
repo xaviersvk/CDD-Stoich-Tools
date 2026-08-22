@@ -88,3 +88,48 @@ export function readFieldByLabel(fieldMap, label) {
 export function vaultIdFromUrl(url) {
     return String(url || "").match(/\/vaults\/(\d+)\//)?.[1] || null;
 }
+
+/**
+ * readBatchFieldsByName(doc) -> Map(batchName -> { fieldName: value })
+ *
+ * Every EXISTING batch on the molecule page, keyed by its Batch Name ("001").
+ * readBatchProps above answers for one batch by its numeric id; this answers
+ * when the id is not known — a stoichiometry row prints the batch's name and
+ * nothing else until the entry is saved.
+ *
+ * The page also carries a blank renderer for "register a new batch"; it has no
+ * name and is skipped.
+ */
+export function readBatchFieldsByName(doc) {
+    const out = new Map();
+
+    for (const el of doc.querySelectorAll(RENDERER_SELECTOR)) {
+        let props;
+        try {
+            props = JSON.parse(el.getAttribute("react_props") || "");
+        } catch {
+            continue;
+        }
+        if (props?.resource_type !== "batch") continue;
+
+        const nameById = new Map(
+            (Array.isArray(props.batch_field_definitions) ? props.batch_field_definitions : [])
+                .filter((d) => d && d.id != null && d.name)
+                .map((d) => [d.id, d.name])
+        );
+
+        const fieldMap = {};
+        for (const entry of Object.values(props.data || {})) {
+            const name = nameById.get(entry?.batch_field_definition_id);
+            if (!name) continue;
+            const value = entry?.text_value ?? entry?.float_value ?? entry?.date_value ?? null;
+            if (value == null || value === "") continue;
+            fieldMap[name] = value;
+        }
+
+        const batchName = String(fieldMap["Batch Name"] || "").trim();
+        if (batchName) out.set(batchName, fieldMap);
+    }
+
+    return out;
+}

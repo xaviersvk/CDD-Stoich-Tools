@@ -7,9 +7,14 @@
 
 import { getRememberedValues, touchValueUsed } from "../../shared/density-memory.js";
 import { getRememberedName, touchNameUsed } from "../../shared/name-memory.js";
-import { isFillRowNameEnabled } from "../../shared/row-name-flag.js";
+import {
+    getCachedRowNamePriority,
+    isFillRowNameEnabled,
+} from "../../shared/row-name-flag.js";
+import { rowNameCandidates } from "../../shared/row-name-choice.js";
+import { getSynonyms } from "../api/molecule-synonyms.js";
 import { getPurityFillThreshold } from "../../shared/purity-threshold.js";
-import { getPrettyName } from "./name-enrichment.js";
+import { runExclusive } from "./write-lock.js";
 import {
     fillDensityIntoTable,
     fillPurityIntoTable,
@@ -42,13 +47,26 @@ export function computeFillOffers(sample) {
     // user typed before is the better guess, so MEMORY WINS HERE. First in
     // the list because a row reads better named than unnamed, and "Fill all"
     // runs offers in order.
+    //
+    // WHICH name is shared/row-name-choice.js's decision, not this module's:
+    // the same rule fills the Name editor's list and drives the automatic
+    // write, and a button that offers something other than what the list puts
+    // on top is worse than no button.
     if (isFillRowNameEnabled() && sample?.moleculeId && !has(sample?.tableName)) {
-        const remembered = getRememberedName(sample.moleculeId);
-        const synonym = getPrettyName(sample.moleculeId);
-        if (remembered) {
-            offers.push({ field: "name", value: remembered, source: "memory" });
-        } else if (synonym) {
-            offers.push({ field: "name", value: synonym, source: "synonym" });
+        const [best] = rowNameCandidates(
+            {
+                remembered: getRememberedName(sample.moleculeId),
+                internalId: sample.internalID,
+                synonyms: getSynonyms(sample.moleculeId) || [],
+            },
+            getCachedRowNamePriority()
+        );
+        if (best) {
+            offers.push({
+                field: "name",
+                value: best.name,
+                source: best.source === "remembered" ? "memory" : best.source,
+            });
         }
     }
 
@@ -124,21 +142,26 @@ export function touchOfferMemory(sample, offer) {
     else touchValueUsed(sample.batchId);
 }
 
+// Serialized: a card button, "Fill all", the auto-fill queue and the row-name
+// watcher can all want the table at once, and two fills at once collide in
+// CDD's editor rather than interleaving. See write-lock.js.
 export function runFillOffer(sample, offer) {
-    switch (offer.field) {
-        case "density":
-            return fillDensityIntoTable(sample, offer.value);
-        case "purity":
-            return fillPurityIntoTable(sample, offer.value);
-        case "concentration":
-            return fillConcentrationIntoTable(sample, offer.value, offer.units, offer.solvent);
-        case "solvent":
-            return fillSolventIntoTable(sample, offer.value);
-        case "name":
-            return fillNameIntoTable(sample, offer.value);
-        default:
-            return Promise.resolve({ ok: false, reason: "unknown field" });
-    }
+    return runExclusive(() => {
+        switch (offer.field) {
+            case "density":
+                return fillDensityIntoTable(sample, offer.value);
+            case "purity":
+                return fillPurityIntoTable(sample, offer.value);
+            case "concentration":
+                return fillConcentrationIntoTable(sample, offer.value, offer.units, offer.solvent);
+            case "solvent":
+                return fillSolventIntoTable(sample, offer.value);
+            case "name":
+                return fillNameIntoTable(sample, offer.value);
+            default:
+                return Promise.resolve({ ok: false, reason: "unknown field" });
+        }
+    });
 }
 
 // Stamp the in-memory sample so the offer disappears on the next render

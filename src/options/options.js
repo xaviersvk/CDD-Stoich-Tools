@@ -8,6 +8,7 @@
 // order + preselect) is new. All four share the shared/ modules with the
 // content script, which is why those modules never touch the DOM.
 
+import { initPhrasesUI } from "./phrases-ui.js";
 import {
     SAMPLE_PANEL_FIELDS,
     SAMPLE_PANEL_CUSTOM_FIELDS_KEY,
@@ -37,8 +38,10 @@ import {
     saveAutoFillEnabled,
 } from "../shared/auto-fill-flag.js";
 import {
-    getFillRowName,
-    saveFillRowName,
+    getFillRowNameMode,
+    getRowNamePriority,
+    saveRowNamePriority,
+    saveFillRowNameMode,
 } from "../shared/row-name-flag.js";
 import {
     loadPurityThresholds,
@@ -907,14 +910,36 @@ async function initAutoFillUI() {
     autoFillCheckbox.checked = await getAutoFillEnabled();
 }
 
-const fillRowNameCheckbox = document.getElementById("fillRowName");
+const fillRowNameRadios = Array.from(
+    document.querySelectorAll('input[name="fillRowName"]')
+);
 
-fillRowNameCheckbox.addEventListener("change", () => {
-    saveFillRowName(fillRowNameCheckbox.checked);
-});
+for (const radio of fillRowNameRadios) {
+    radio.addEventListener("change", () => {
+        if (radio.checked) saveFillRowNameMode(radio.value);
+    });
+}
+
+const rowNamePriorityRadios = Array.from(
+    document.querySelectorAll('input[name="rowNamePriority"]')
+);
+
+for (const radio of rowNamePriorityRadios) {
+    radio.addEventListener("change", () => {
+        if (radio.checked) saveRowNamePriority(radio.value);
+    });
+}
 
 async function initFillRowNameUI() {
-    fillRowNameCheckbox.checked = await getFillRowName();
+    const mode = await getFillRowNameMode();
+    for (const radio of fillRowNameRadios) {
+        radio.checked = radio.value === mode;
+    }
+
+    const priority = await getRowNamePriority();
+    for (const radio of rowNamePriorityRadios) {
+        radio.checked = radio.value === priority;
+    }
 }
 
 const purityFillInput = document.getElementById("purityFillThreshold");
@@ -1334,10 +1359,14 @@ function refreshRailChips() {
     if (fieldBoxes.length) setChip("fields", `${enabled(fieldBoxes)}/${fieldBoxes.length}`);
 
     setChip("prefixes", prefixRows.length || null);
+    setChip("phrases", Number(document.getElementById("phrasesCount")?.textContent) || null);
     setChip("regdefaults", regDefaultVaults.length || null);
 
     const remembered = document.getElementById("densityMemoryCount");
     setChip("densities", remembered ? remembered.textContent.trim() : null);
+
+    const names = document.getElementById("nameMemoryCount");
+    setChip("names", names ? names.textContent.trim() : null);
 
     // Heat map keeps its chosen rows as an ORDERED list, not checkboxes, so
     // the count comes from the same array the card renders from.
@@ -1389,7 +1418,5 @@ initPanelSourcesUI();
 initHeatMapFieldsUI();
 initHplcInjectionUI();
 initRegistrationDefaultsUI();
-initRailUI();
-import { initPhrasesUI } from "./phrases-ui.js";
-    setChip("phrases", Number(document.getElementById("phrasesCount")?.textContent) || null);
 initPhrasesUI();
+initRailUI();

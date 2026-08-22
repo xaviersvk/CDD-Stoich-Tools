@@ -20,6 +20,8 @@
 
 import { isFillRowNameEnabled } from "../../shared/row-name-flag.js";
 import { rememberName } from "../../shared/name-memory.js";
+import { pickShortest } from "../../shared/pretty-name.js";
+import { getSynonyms } from "../api/molecule-synonyms.js";
 
 // `${reactionIndex}:${rowUid ?? batchId}` -> the name the row had when this
 // page load first saw it (empty string for "had none").
@@ -60,6 +62,14 @@ export function captureRowNames(samples) {
         // Clearing a name is not a name — nothing to remember, and nothing to
         // unlearn either (the previous value may still be right).
         if (!current) continue;
+
+        // The memory is for the choices we could not have made ourselves. A
+        // name that IS the molecule's shortest synonym is exactly what the
+        // feature would offer unprompted — storing it spends one of 300 slots
+        // to reach the same answer, and does it for every row the automatic
+        // fill writes.
+        const derivable = pickShortest(getSynonyms(sample.moleculeId));
+        if (derivable && derivable.toLowerCase() === current.toLowerCase()) continue;
 
         rememberName(sample.moleculeId, current, sample.moleculeName);
     }

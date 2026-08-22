@@ -1,7 +1,11 @@
 // content/features/auto-fill.js
 //
-// EXPERIMENTAL, opt-in (options checkbox): runs the same fills the card
-// buttons offer, without the click — but ONLY for rows that were ADDED
+// Runs the same fills the card buttons offer, without the click. Two settings
+// open the door and they are not the same size: the EXPERIMENTAL checkbox lets
+// every field through, while the row-name setting's "Fill automatically" lets
+// through nothing but the Name.
+//
+// Opt-in either way — and ONLY for rows that were ADDED
 // while the user works on the page. Rows that already existed when the
 // entry loaded are never written automatically (deliberate policy: opening
 // an old ELN must not mutate it; the card buttons and the panel's
@@ -22,6 +26,10 @@ import {
 } from "./fill-offers.js";
 
 import { AUTO_FILL_STORAGE_KEY, getAutoFillEnabled } from "../../shared/auto-fill-flag.js";
+import {
+    isRowNameAutoFillEnabled,
+    onFillRowNameChanged,
+} from "../../shared/row-name-flag.js";
 
 let enabled = false;
 let running = false;
@@ -75,19 +83,45 @@ export function initAutoFill() {
             if (enabled) scheduleAutoFill();
         });
     }
+
+
+    // "Fill automatically" in the row-name setting is a second way in. It
+    // borrows this module whole — the baseline, the sequencing, the
+    // one-attempt bookkeeping — and only narrows WHICH offers may run.
+    onFillRowNameChanged(() => scheduleAutoFill());
+}
+
+const NAME_ONLY = new Set(["name"]);
+
+// The fields a run may write: everything when the experimental checkbox is on,
+// the row name alone when only the row-name setting asked for it.
+function allowedFields() {
+    if (enabled) return null;                        // null = no restriction
+    return isRowNameAutoFillEnabled() ? NAME_ONLY : null;
+}
+
+function autoFillWanted() {
+    return enabled || isRowNameAutoFillEnabled();
 }
 
 // Debounced: payloads arrive in bursts (parse, enrichment re-render);
 // wait for the dust to settle before touching the table.
 export function scheduleAutoFill() {
-    if (!enabled) return;
+    if (!autoFillWanted()) return;
     clearTimeout(timer);
     timer = setTimeout(runQueue, 1500);
 }
 
+// name-watch.js writes the same name sooner, straight off the table, without
+// waiting for the payload this run needs. That is the fast path and this is
+// the backstop: whichever gets there first, the other finds the field taken —
+// the offer is computed from `tableName`, which name-watch keeps in step with
+// the table — and does nothing.
 async function runQueue() {
-    if (running || !enabled) return;
+    if (running || !autoFillWanted()) return;
     running = true;
+
+    const fields = allowedFields();
 
     let filled = 0;
     try {
@@ -95,6 +129,7 @@ async function runQueue() {
         for (const sample of samples) {
             if (baselineRows.has(rowKey(sample))) continue;   // pre-existing row
             for (const offer of computeFillOffers(sample)) {
+                if (fields && !fields.has(offer.field)) continue;
                 const key = `${rowKey(sample)}:${offer.field}`;
                 if (attempted.has(key)) continue;
                 attempted.add(key);

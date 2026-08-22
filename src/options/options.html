@@ -89,6 +89,14 @@
                 <span class="rail__label">Remembered batch values</span>
                 <span class="rail__chip" data-chip="densities" hidden></span>
             </button>
+            <button type="button" class="rail__item" data-pane="col-names-heading">
+                <span class="tile" aria-hidden="true">
+                    <span class="tile__no"></span>
+                    <span class="tile__sym">Nm</span>
+                </span>
+                <span class="rail__label">Remembered names</span>
+                <span class="rail__chip" data-chip="names" hidden></span>
+            </button>
             <button type="button" class="rail__item" data-pane="col-hplc-heading">
                 <span class="tile" aria-hidden="true">
                     <span class="tile__no"></span>
@@ -96,6 +104,14 @@
                 </span>
                 <span class="rail__label">HPLC injection</span>
                 <span class="rail__chip" data-chip="hplc" hidden></span>
+            </button>
+            <button type="button" class="rail__item" data-pane="col-phrases-heading">
+                <span class="tile" aria-hidden="true">
+                    <span class="tile__no"></span>
+                    <span class="tile__sym">Ph</span>
+                </span>
+                <span class="rail__label">Phrases</span>
+                <span class="rail__chip" data-chip="phrases" hidden></span>
             </button>
     </nav>
 
@@ -473,14 +489,66 @@
                     Every write goes through CDD's own editor and autosave.</span>
                 </label>
 
-                <label class="field-item auto-fill-toggle">
-                    <input type="checkbox" id="fillRowName" />
-                    <span><strong>Fill row name from synonym</strong> — offer the
-                    molecule's shortest synonym for a stoichiometry row whose
-                    <em>Name</em> is still empty, and remember any name you type
-                    there yourself. Off by default: each new molecule costs one
-                    request for its page.</span>
-                </label>
+                <fieldset class="choices">
+                    <legend class="eyebrow">Row name from synonym</legend>
+
+                    <p class="note">A stoichiometry row's free-text <em>Name</em>,
+                    filled from the molecule's synonyms. Click <em>Name: Optional</em>
+                    in the table and they are listed under the input, shortest first;
+                    typing your own still works, and what you type is remembered and
+                    offered first the next time that molecule turns up. Automatic
+                    filling only touches rows you <strong>add while working</strong> —
+                    rows already in the entry when it opened are never written to.
+                    Off by default: each new molecule costs one request for its page.</p>
+
+                    <label class="choice">
+                        <input type="radio" name="fillRowName" value="off" />
+                        <span class="choice__text">
+                            <span class="choice__label">Off</span>
+                            <span class="choice__sample">No molecule page is fetched</span>
+                        </span>
+                    </label>
+
+                    <label class="choice">
+                        <input type="radio" name="fillRowName" value="suggest" />
+                        <span class="choice__text">
+                            <span class="choice__label">Suggest in the Name editor</span>
+                            <span class="choice__sample">DIPEA, N,N-Diisopropylethylamine…</span>
+                        </span>
+                    </label>
+
+                    <label class="choice">
+                        <input type="radio" name="fillRowName" value="auto" />
+                        <span class="choice__text">
+                            <span class="choice__label">Suggest, and fill automatically</span>
+                            <span class="choice__sample">A new row arrives named DIPEA</span>
+                        </span>
+                    </label>
+                </fieldset>
+
+                <fieldset class="choices">
+                    <legend class="eyebrow">First choice</legend>
+
+                    <p class="note">When nothing is remembered for the molecule,
+                    which of the two derived names to reach for first. The other
+                    one stays in the list, one click away.</p>
+
+                    <label class="choice">
+                        <input type="radio" name="rowNamePriority" value="synonym" />
+                        <span class="choice__text">
+                            <span class="choice__label">Shortest synonym</span>
+                            <span class="choice__sample">DIPEA</span>
+                        </span>
+                    </label>
+
+                    <label class="choice">
+                        <input type="radio" name="rowNamePriority" value="internalId" />
+                        <span class="choice__text">
+                            <span class="choice__label">Internal ID of the batch</span>
+                            <span class="choice__sample">BD18463</span>
+                        </span>
+                    </label>
+                </fieldset>
             </div>
 
             <div class="card__body card__body--scroll">
@@ -644,21 +712,6 @@
                 </label>
             </div>
         </section>
-    </div>
-
-</main>
-
-<script type="module" src="./options.js"></script>
-</body>
-</html>
-            <button type="button" class="rail__item" data-pane="col-phrases-heading">
-                <span class="tile" aria-hidden="true">
-                    <span class="tile__no"></span>
-                    <span class="tile__sym">Ph</span>
-                </span>
-                <span class="rail__label">Phrases</span>
-                <span class="rail__chip" data-chip="phrases" hidden></span>
-            </button>
         <section class="card" aria-labelledby="col-phrases-heading">
             <header class="card__head">
                 <span class="tile" aria-hidden="true">
@@ -715,3 +768,10 @@
                 </button>
             </div>
         </section>
+    </div>
+
+</main>
+
+<script type="module" src="./options.js"></script>
+</body>
+</html>

@@ -1,33 +1,31 @@
 // content/features/name-enrichment.js
 //
-// Keeps a per-session map moleculeId -> shortest synonym, so the offer in
-// fill-offers.js can be computed synchronously inside a render pass.
+// The row-name feature's PREFETCH: makes sure every row that could be offered
+// a name has its molecule's synonyms in hand, so fill-offers.js can decide
+// synchronously inside a render pass.
 //
-// Modelled on synonym-enrichment.js, with two differences: the value is the
-// SHORTEST synonym rather than the first, and it is not written onto the
-// sample (no panel field shows it) but held here, because the offer is the
-// only consumer.
+// The synonyms themselves live in api/molecule-synonyms.js, shared with the
+// panel's Synonym field — this module only decides WHICH molecules are worth
+// asking about, and re-renders when the answers land.
 //
-// Gated on the row-name checkbox: with the feature off, not a single
-// molecule page is requested.
+// Gated on the row-name mode: while that is off, not a single molecule page
+// is requested.
 
 import { STATE } from "../state.js";
 import { renderFromState } from "./sample-panel.js";
 import { detectVaultId } from "../api/molecule-image.js";
-import { getMoleculeSynonymsText } from "../api/molecule-page.js";
-import { pickPrettyName } from "../../shared/pretty-name.js";
+import { getSynonyms, loadSynonyms } from "../api/molecule-synonyms.js";
+import { pickShortest } from "../../shared/pretty-name.js";
 import {
     isFillRowNameEnabled,
     onFillRowNameChanged,
 } from "../../shared/row-name-flag.js";
 
-// moleculeId -> string | null. A stored null means "asked, has none" — a
-// final answer, not a reason to ask again.
-const prettyNames = new Map();
 const inFlight = new Set();
 
+/** The name to offer for this molecule: its shortest synonym, or null. */
 export function getPrettyName(moleculeId) {
-    return prettyNames.get(String(moleculeId)) ?? null;
+    return pickShortest(getSynonyms(moleculeId));
 }
 
 // Ticking the checkbox should fill in the panel that is already open, not the
@@ -55,7 +53,7 @@ export function enrichRowNameSynonyms() {
         if (!sample?.moleculeId) continue;
         if (sample.isProduct || sample.isMention) continue;   // no offer, no fetch
         const id = String(sample.moleculeId);
-        if (prettyNames.has(id) || inFlight.has(id)) continue;
+        if (getSynonyms(id) || inFlight.has(id)) continue;
         wanted.add(id);
     }
     if (!wanted.size) return;
@@ -66,13 +64,10 @@ export function enrichRowNameSynonyms() {
         Array.from(wanted, async (moleculeId) => {
             inFlight.add(moleculeId);
             try {
-                const text = await getMoleculeSynonymsText(vaultId, moleculeId);
-                prettyNames.set(moleculeId, pickPrettyName(text));
-                return prettyNames.get(moleculeId) != null;
+                return pickShortest(await loadSynonyms(vaultId, moleculeId)) != null;
             } catch {
-                // The page did not load. Leave the molecule unrecorded so the
-                // next payload retries — molecule-page.js drops failures from
-                // its cache for exactly this.
+                // The page did not load. Nothing is recorded, so the next
+                // payload retries.
                 return false;
             } finally {
                 inFlight.delete(moleculeId);

@@ -19,6 +19,93 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [15.0.0] — 2026-08-22
+
+### Added
+- **Row name from synonym.** A stoichiometry row's free-text `Name` is filled
+  from the names the molecule already answers to. *Settings → Row name from
+  synonym* has three states: `Off`, `Suggest in the Name editor` (CDD's own
+  Name popup grows a list of candidates), and `Suggest, and fill automatically`
+  (the same list, plus the name is written into rows added while working).
+  Off by default: each new molecule costs one request for its page.
+  - The order — remembered name, then Internal ID or shortest synonym per
+    *Settings → First choice*, then the remaining synonyms — lives in one
+    place, `shared/row-name-choice.js`, because three readers consume it: the
+    automatic write, the panel's offer and the editor's list. They could
+    previously disagree, and a suggestion that differs from what the button
+    writes is worse than either alone.
+  - Names typed by hand are remembered per molecule (300 entries, LRU) and
+    offered wherever that molecule appears, including in other entries.
+    *Settings → Remembered names* lists them; it had no rail entry until now,
+    so the card existed but could not be reached.
+  - A captured name that IS the molecule's shortest synonym is not stored. The
+    memory is for choices that cannot be derived; storing a derivable one
+    spends a slot to reach the same answer.
+- **Saved phrases.** Select text in the ELN editor and click *Save phrase*; the
+  phrase keeps plain text and semantic HTML, so pasting restores formatting.
+  The panel gains an `Entities | Phrases` tab, phrases group by category and one
+  click copies. *Settings → Phrases* renames, re-files, deletes, exports and
+  imports. Capped at 50. The panel now shows on every ELN entry, not only those
+  with a reaction table or mentions.
+  - Categories are one level, and a phrase can sit in several at once
+    (`categories: string[]`). Subcategories were built first and dropped: two
+    levels plus multi-filing made Settings a tree in which one phrase appeared
+    many times. Records saved with a subcategory migrate on read — the
+    category is kept, the subcategory discarded.
+  - The category fields are combo inputs (`shared/combo-input.js`): free text,
+    or ▾ to pick an existing category. A `<datalist>` did the same but Chrome
+    only shows it after a keystroke, so nobody knew the list was there.
+  - Slate's DOM is converted to semantic HTML on save
+    (`phrases/selection-html.js`): `div.slate-p` has no inner `<p>` and gets
+    one; `div.slate-h2` / `slate-ul` already wrap a real `<h2>` / `<ul>` and
+    are unwrapped; marks are real `<strong>` / `<sub>` and stay. Verified
+    against the editor's paste handler: bold, italic, subscript and lists
+    survive a round trip. Reaction tables, attachments and timestamps are
+    kept as text only.
+- **The molecule page heading is click-to-copy** (`#pageHeader h1 > .title`,
+  e.g. `PHA-0334382`), like the batch and sample fields under it. One
+  selector added to `copyable-fields.js`; the generic click path serves it.
+
+### Fixed
+- **The panel stayed empty until the entry was saved.** Opening an ELN entry
+  puts no payload on the wire — measured on entry 2761893, a full load and a
+  Turbo navigation both leave the panel at `0 sample(s) from 0 reaction(s)`
+  while `/vaults/<vault>/eln/v2/entries/<id>` serves the complete thing. The
+  panel only woke on the first autosave, whose response carries the payload, so
+  the entry had to be edited before it could be read. The inject script now
+  asks for the payload itself after a grace period, and only when nothing has
+  arrived on its own.
+- **A failed molecule-page request was retried on every DOM mutation.** The
+  synonym store recorded nothing on failure so the next caller would retry —
+  and the row watcher scans per redraw, which turned one unreachable molecule
+  into a request per frame. Failures are now counted and given up on after two.
+- **`/molecules/null` was requested.** A row is keyed by its printed batch,
+  which exists before the numeric molecule id is known; `String(null)` turned
+  the missing id into the string `"null"`, which passed every emptiness check.
+- **Two fills could drive CDD's editor at once.** Card buttons, *Fill all*, the
+  auto-fill queue and the row-name watcher all write by replaying clicks into
+  one popup; overlapping runs collided rather than interleaving, and both
+  reported failure over a table that had taken one of the writes. Every write
+  now passes through a single queue (`content/features/write-lock.js`).
+- **The Name editor's own suggestion list broke the writer.** A fill identifies
+  that popup by its whole text being the bare word `Name`; the candidate list
+  is rendered inside it, so the marker stopped matching and the fill abandoned
+  an editor it had opened itself. Popup text is now read past anything this
+  extension added to it.
+- **A landed name was reported as not written.** The confirmation looked the row
+  up again by its printed number, but CDD renumbers as it regroups the table
+  (reactants, agents, products), so it read a different row. It now finds the
+  row by the batch it prints, which re-rendering does not change.
+
+### Changed
+- **One reader for a molecule's synonyms.** The panel's Synonym field and the
+  row-name feature each walked the payload and parsed the molecule page for
+  themselves. Both now use `content/api/molecule-synonyms.js`: one fetch, one
+  parse, one list — the first synonym for the panel, the shortest for the
+  offer, all of them for the editor.
+
+---
+
 
 ## [14.12.0] — 2026-08-21
 

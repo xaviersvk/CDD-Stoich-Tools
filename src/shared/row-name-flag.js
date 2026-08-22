@@ -1,31 +1,93 @@
-// shared/row-name-flag.js — opt-in filling of a stoichiometry row's Name
-// field from the molecule's shortest synonym, plus the memory of names the
-// user types by hand. DOM-free; options page uses the async pair, the
-// content script the sync cache.
+// shared/row-name-flag.js — how a stoichiometry row's Name gets filled.
 //
-// While this is off NOTHING happens: no molecule page is fetched, no offer
-// is computed, and no typed name is remembered.
+// Three modes, one setting:
+//
+//   "off"      nothing happens: no molecule page is fetched, no offer is
+//              computed, no typed name is remembered.
+//   "suggest"  the panel offers the name, and CDD's own Name editor grows a
+//              list of that molecule's synonyms to pick from.
+//   "auto"     everything "suggest" does, PLUS the name is written without
+//              being asked for — into rows ADDED while the page is open, the
+//              same policy the experimental auto-fill has always had.
+//
+// The modes stack rather than exclude: writing the name automatically is no
+// reason to take the list away, because the name that gets written is a guess
+// and changing it is the same click as choosing it.
+//
+// DOM-free; the options page uses the async pair, the content script the
+// sync cache.
+//
+// The key predates the modes and used to hold a boolean. `true` reads as
+// "suggest" (what the checkbox did), anything else as "off", so an existing
+// install keeps its behaviour without a migration step.
 
 export const ROW_NAME_STORAGE_KEY = "cddFillRowName";
 
-export async function getFillRowName() {
+// Which of the two derived names goes first, once nothing is remembered for
+// the molecule. See shared/row-name-choice.js for the full order.
+export const ROW_NAME_PRIORITY_KEY = "cddRowNamePriority";
+
+import {
+    NAME_SOURCE_INTERNAL_ID,
+    NAME_SOURCE_SYNONYM,
+} from "./row-name-choice.js";
+
+export const ROW_NAME_OFF = "off";
+export const ROW_NAME_SUGGEST = "suggest";
+export const ROW_NAME_AUTO = "auto";
+
+const MODES = new Set([ROW_NAME_OFF, ROW_NAME_SUGGEST, ROW_NAME_AUTO]);
+
+function normalizeMode(stored) {
+    if (stored === true) return ROW_NAME_SUGGEST;
+    return MODES.has(stored) ? stored : ROW_NAME_OFF;
+}
+
+export async function getFillRowNameMode() {
     try {
         const result = await chrome.storage.local.get(ROW_NAME_STORAGE_KEY);
-        return result?.[ROW_NAME_STORAGE_KEY] === true;
+        return normalizeMode(result?.[ROW_NAME_STORAGE_KEY]);
     } catch {
-        return false;
+        return ROW_NAME_OFF;
     }
 }
 
-export async function saveFillRowName(value) {
+export async function saveFillRowNameMode(mode) {
     try {
-        await chrome.storage.local.set({ [ROW_NAME_STORAGE_KEY]: value === true });
+        await chrome.storage.local.set({
+            [ROW_NAME_STORAGE_KEY]: normalizeMode(mode),
+        });
     } catch {
         // Orphaned content script — nothing useful to do.
     }
 }
 
-let cached = false;
+export async function getRowNamePriority() {
+    try {
+        const result = await chrome.storage.local.get(ROW_NAME_PRIORITY_KEY);
+        return result?.[ROW_NAME_PRIORITY_KEY] === NAME_SOURCE_INTERNAL_ID
+            ? NAME_SOURCE_INTERNAL_ID
+            : NAME_SOURCE_SYNONYM;
+    } catch {
+        return NAME_SOURCE_SYNONYM;
+    }
+}
+
+export async function saveRowNamePriority(value) {
+    try {
+        await chrome.storage.local.set({
+            [ROW_NAME_PRIORITY_KEY]:
+                value === NAME_SOURCE_INTERNAL_ID
+                    ? NAME_SOURCE_INTERNAL_ID
+                    : NAME_SOURCE_SYNONYM,
+        });
+    } catch {
+        // Orphaned content script — nothing useful to do.
+    }
+}
+
+let cached = ROW_NAME_OFF;
+let cachedPriority = NAME_SOURCE_SYNONYM;
 let listenerAttached = false;
 const changeListeners = new Set();
 
@@ -39,8 +101,23 @@ function notify() {
     }
 }
 
-export function isFillRowNameEnabled() {
+export function getRowNameMode() {
     return cached;
+}
+
+/** Anything at all to do: prefetch synonyms, remember typed names, offer. */
+export function isFillRowNameEnabled() {
+    return cached !== ROW_NAME_OFF;
+}
+
+/** List the synonyms inside CDD's Name editor — in both working modes. */
+export function isRowNamePickerEnabled() {
+    return cached === ROW_NAME_SUGGEST || cached === ROW_NAME_AUTO;
+}
+
+/** Write the name into new rows without being asked. */
+export function isRowNameAutoFillEnabled() {
+    return cached === ROW_NAME_AUTO;
 }
 
 export function onFillRowNameChanged(cb) {
@@ -48,16 +125,35 @@ export function onFillRowNameChanged(cb) {
     return () => changeListeners.delete(cb);
 }
 
+/** "synonym" | "internalId" — which derived name is tried first. */
+export function getCachedRowNamePriority() {
+    return cachedPriority;
+}
+
 export async function initFillRowName() {
     if (!listenerAttached && chrome?.storage?.onChanged) {
         listenerAttached = true;
         chrome.storage.onChanged.addListener((changes, areaName) => {
-            if (areaName !== "local" || !changes[ROW_NAME_STORAGE_KEY]) return;
-            cached = changes[ROW_NAME_STORAGE_KEY].newValue === true;
-            notify();
+            if (areaName !== "local") return;
+            let touched = false;
+
+            if (changes[ROW_NAME_STORAGE_KEY]) {
+                cached = normalizeMode(changes[ROW_NAME_STORAGE_KEY].newValue);
+                touched = true;
+            }
+            if (changes[ROW_NAME_PRIORITY_KEY]) {
+                cachedPriority =
+                    changes[ROW_NAME_PRIORITY_KEY].newValue === NAME_SOURCE_INTERNAL_ID
+                        ? NAME_SOURCE_INTERNAL_ID
+                        : NAME_SOURCE_SYNONYM;
+                touched = true;
+            }
+
+            if (touched) notify();
         });
     }
-    cached = await getFillRowName();
+    cached = await getFillRowNameMode();
+    cachedPriority = await getRowNamePriority();
     notify();
     return cached;
 }

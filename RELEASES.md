@@ -13,7 +13,46 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
-# What's new in 14.12.0
+# What's new in 15.0.0
+
+---
+
+## 15.0.0 — 2026-08-22
+
+**A stoichiometry row can now name itself.** A row's free-text *Name* is filled
+from what the molecule already answers to, so a table reads `DIPEA` instead of
+`N-ethyldiisopropylamine`.
+
+- Switch it on at *Settings → Row name from synonym*. **Suggest in the Name
+  editor** lists the candidates under CDD's own Name box when you click
+  `Name: Optional`; **Suggest, and fill automatically** also writes the name
+  into rows you add while working. Rows already in the entry are never written
+  to on their own.
+- The order is: a name you typed for that molecule before, then the batch's
+  Internal ID or the shortest synonym — whichever you put first at
+  *Settings → First choice* — then the remaining synonyms.
+- Names you type yourself are remembered per molecule and offered everywhere
+  that molecule turns up, including other entries. Manage them at
+  *Settings → Remembered names*. A name that is simply the shortest synonym is
+  not stored: the memory is for the choices that differ.
+- Off by default — each new molecule costs one request for its page.
+
+**Save a phrase once, paste it anywhere.** Select text in the ELN editor and
+click *Save phrase*; it keeps the formatting. The panel's **Phrases** tab groups
+them by category and one click copies. Manage them at *Settings → Phrases*,
+including export and import.
+
+- A phrase can be in several categories — type a new one or pick an existing
+  one with ▾, then *+ Add*.
+- Up to 50 phrases; past that, the one you copied longest ago is dropped.
+- The panel now appears on every ELN entry, not only those with a reaction
+  table.
+
+**The molecule's heading copies with a click** — the ID at the top of a
+molecule page (e.g. `PHA-0334382`), same as the batch and sample fields.
+
+**Fixed:** the panel showed `0 sample(s)` until the entry was next saved — it
+now asks for the entry itself when CDD does not.
 
 ---
 

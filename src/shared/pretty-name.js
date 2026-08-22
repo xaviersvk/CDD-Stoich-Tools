@@ -27,12 +27,19 @@ export function splitSynonyms(rawText) {
         .filter((part) => HAS_SUBSTANCE.test(part));
 }
 
-// The shortest synonym, or null when there is none. Ties resolve to the
-// first in document order — CDD lists the registrant's own name first.
-export function pickPrettyName(rawText) {
+// The shortest of an already-split list, or null when it is empty. Ties
+// resolve to the first in document order — CDD lists the registrant's own
+// name first.
+export function pickShortest(synonyms) {
     let best = null;
-    for (const candidate of splitSynonyms(rawText)) {
+    for (const candidate of synonyms || []) {
+        if (typeof candidate !== "string" || !candidate) continue;
         if (best === null || candidate.length < best.length) best = candidate;
     }
     return best;
+}
+
+// The shortest synonym in a raw "Synonyms" cell, or null when there is none.
+export function pickPrettyName(rawText) {
+    return pickShortest(splitSynonyms(rawText));
 }

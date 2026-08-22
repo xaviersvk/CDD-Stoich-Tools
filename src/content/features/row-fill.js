@@ -50,7 +50,7 @@ async function waitFor(probe, attempts = STEP_POLL_ATTEMPTS) {
 
 // Same fallback chain the print buttons use to find one container per
 // displayed reaction; index = display order = sample.reactionIndex.
-function getReactionContainers() {
+export function getReactionContainers() {
     const byTestId = Array.from(
         document.querySelectorAll('[data-autotest-id="reaction"]')
     );
@@ -137,6 +137,25 @@ function findFieldValueLink(row, label, placeholderOnly) {
     return null;
 }
 
+// A popup's own label text, with anything this extension has added to it left
+// out.
+//
+// The Name editor's marker is that its whole text is the bare word "Name" —
+// and name-picker.js hangs a list of candidate names inside that same popup.
+// Reading `innerText` then yields "Name DIPEA remembered …", the marker stops
+// matching, and this fill gives up on an editor it opened itself. Measured:
+// that is what "the editor opens and nothing is chosen" looked like.
+function popupLabelText(box) {
+    let text = "";
+    for (const node of box.childNodes) {
+        if (node.nodeType === Node.ELEMENT_NODE && node.closest?.("[data-cdd-added]")) {
+            continue;
+        }
+        text += node.nodeType === Node.ELEMENT_NODE ? node.innerText || "" : node.textContent || "";
+    }
+    return text;
+}
+
 // The editable text input inside the floating one-field popup whose
 // MuiPaper box text matches labelRe (e.g. /Density\s*\[/i). The input only
 // sometimes carries a placeholder, so the popup label is the reliable
@@ -157,7 +176,7 @@ function findEditorInput(labelRe) {
             box = box.parentElement;
         }
 
-        if (box && labelRe.test(box.innerText || "")) return input;
+        if (box && labelRe.test(popupLabelText(box))) return input;
     }
 
     return null;
@@ -192,7 +211,7 @@ function setNativeSelectValue(select, value) {
     return true;
 }
 
-function setNativeInputValue(input, value) {
+export function setNativeInputValue(input, value) {
     const setter = Object.getOwnPropertyDescriptor(
         window.HTMLInputElement.prototype,
         "value"
@@ -207,7 +226,7 @@ function setNativeInputValue(input, value) {
     input.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
-function pressEnter(target) {
+export function pressEnter(target) {
     const options = {
         bubbles: true,
         cancelable: true,
@@ -620,6 +639,93 @@ export async function fillNameIntoTable(sample, value) {
         return valuesMatch(readRowName(tr), value) ? tr : null;
     });
 
+    if (!confirmed) {
+        pressEscape();
+        return { ok: false, reason: "value did not stick" };
+    }
+
+    clickOutside(container);
+    return { ok: true };
+}
+
+// The batch a row prints ("RGT-0000246-001"), which survives the re-renders
+// its element and its number do not.
+function readMoleculeLabel(tr) {
+    const printed = tr
+        .querySelector?.('[data-autotest-id="field-moleculeName"]')
+        ?.textContent?.replace(/^\s*Molecule:\s*/, "")
+        .trim();
+    return printed || null;
+}
+
+/**
+ * fillNameIntoRow(tr, value) — the same write as fillNameIntoTable, but aimed
+ * at a row ELEMENT rather than a panel record.
+ *
+ * A row the user has just added does not exist in any payload yet: that only
+ * comes back with the next autosave, tens of seconds later. name-watch.js sees
+ * the row itself, so it has the one thing this needs and none of the rest.
+ *
+ * The row may not be in edit mode — a click puts it there, exactly as the
+ * user's would.
+ */
+export async function fillNameIntoRow(tr, value) {
+    value = value != null ? String(value).trim() : "";
+    if (!value) return { ok: false, reason: "no name to write" };
+    if (!tr?.isConnected) return { ok: false, reason: "row is gone" };
+
+    // The click that opens edit mode re-renders the table, and the <tr> handed
+    // in is thrown away with it. Look the row up again after every step.
+    //
+    // By the BATCH it prints, not by its number: numbering shifts as CDD
+    // regroups the table (reactants, then agents, then products), so a row
+    // looked up by number after the write can be a different row — which is
+    // how a landed value came back as "did not stick", six times over.
+    const container =
+        tr.closest('[data-autotest-id="reaction"]') || tr.closest("table") || document.body;
+    const rowNumber = (tr.cells?.[0]?.innerText || "").trim();
+    const batch = readMoleculeLabel(tr);
+
+    const row = () => {
+        if (tr.isConnected) return tr;
+        if (batch) {
+            for (const candidate of container.querySelectorAll("table tr")) {
+                if (readMoleculeLabel(candidate) === batch) return candidate;
+            }
+        }
+        return rowNumber ? findRowByNumber(container, rowNumber) : null;
+    };
+
+    let link = findFieldValueLink(tr, "Name:", true);
+    if (!link) {
+        mouseClick(tr);
+        link = await waitFor(() => {
+            const current = row();
+            return current ? findFieldValueLink(current, "Name:", true) : null;
+        });
+    }
+    if (!link) {
+        pressEscape();
+        return { ok: false, reason: "row has no empty Name field" };
+    }
+
+    mouseClick(link);
+
+    const input = await waitFor(() => findEditorInput(/^\s*Name\s*$/i));
+    if (!input) {
+        pressEscape();
+        return { ok: false, reason: "Name editor did not open" };
+    }
+
+    setNativeInputValue(input, value);
+    pressEnter(input);
+
+    // Same trap as fillNameIntoTable: a filled Name renders as a bare span
+    // with no label, so the confirmation reads the value, not "Name: value".
+    const confirmed = await waitFor(() => {
+        const current = row();
+        return current && valuesMatch(readRowName(current), value) ? current : null;
+    });
     if (!confirmed) {
         pressEscape();
         return { ok: false, reason: "value did not stick" };

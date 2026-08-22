@@ -18,7 +18,7 @@ import {
     onPanelFieldsChanged,
 } from "./sample-panel.js";
 import { detectVaultId } from "../api/molecule-image.js";
-import { getMoleculeSynonym } from "../api/molecule-page.js";
+import { loadSynonyms } from "../api/molecule-synonyms.js";
 import { getMentionSamples } from "./mentions/state.js";
 
 const SYNONYM_FIELD_KEY = "synonym";
@@ -73,7 +73,7 @@ export function enrichSampleSynonyms() {
         Array.from(targetsByMolecule, async ([moleculeId, targets]) => {
             let synonym;
             try {
-                synonym = await getMoleculeSynonym(vaultId, moleculeId);
+                synonym = (await loadSynonyms(vaultId, moleculeId))[0] ?? null;
             } catch {
                 // The page did not load. Leave the samples unmarked so the next
                 // payload retries — molecule-page.js drops failures from its

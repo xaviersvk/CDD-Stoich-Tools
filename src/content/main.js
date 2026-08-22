@@ -7,6 +7,8 @@ import { ensurePanel, renderFromState, initSamplePanelFields, clearElnIdToBatchW
 import { ensurePrintButtons } from "./features/print-buttons.js";
 import { initSynonymEnrichment } from "./features/synonym-enrichment.js";
 import { initRowNameEnrichment } from "./features/name-enrichment.js";
+import { initNamePicker } from "./features/name-picker.js";
+import { initNameWatch } from "./features/name-watch.js";
 import { initPhraseCapture } from "./features/phrases/capture.js";
 import {
   ensureDepletedStyle,
@@ -96,6 +98,8 @@ function init() {
   initSamplePanelFields();
   initSynonymEnrichment();
   initRowNameEnrichment();
+  initNamePicker();
+  initNameWatch();
   initPhraseCapture();
 
   window.addEventListener("message", handleMessage);

@@ -10,6 +10,7 @@ import { extractPrintData } from "./parsers/print-data.js";
 import { installFetchHook } from "./hooks/fetch-hook.js";
 import { installXhrHook } from "./hooks/xhr-hook.js";
 import { installCreateRequestCapture } from "./hooks/create-request-capture.js";
+import { installEntryPayloadFallback } from "./hooks/entry-payload-fallback.js";
 import { installPrintDispatcher } from "./print/dispatcher.js";
 
 
@@ -71,12 +72,23 @@ function maybePostInventoryMolecules(data) {
   }
 }
 
+// Entry ids whose payload has already come past, so the fallback below can
+// tell "CDD never asked for it" from "it arrived on its own".
+const seenEntryIds = new Set();
+
+function hasPayloadForEntry(entryId) {
+  return seenEntryIds.has(String(entryId));
+}
+
 function processJsonPayload(data) {
   if (!data || typeof data !== "object") return;
 
   maybePostInventoryMolecules(data);
 
   if (!isElnPayload(data)) return;
+
+  const entryId = data.eln_entry?.id;
+  if (entryId != null) seenEntryIds.add(String(entryId));
 
   const hasReaction = hasAnyReactionFeature(data);
 
@@ -114,6 +126,10 @@ const tryParseText = createTextParser(processJsonPayload);
   installPrintDispatcher();
   installFetchHook(processJsonPayload, tryParseText);
   installXhrHook(tryParseText);
+
+  // An opening ELN entry puts no payload on the wire; ask for it ourselves and
+  // let the fetch hook above parse the answer.
+  installEntryPayloadFallback(hasPayloadForEntry);
 
   // Snapshot outgoing create-sample requests (read-only) so the content side has
   // a faithful payload template, AND tap their responses so the batch

@@ -80,12 +80,17 @@ export function hasAnyReactionFeature(payload) {
     return features.some((f) => f?.type === "reaction");
 }
 
+// The URL travels WITH the body.
+//
+// Most payloads are recognised by their shape, but the reagent search is
+// recognisable only by where it came from — and it arrives over XHR, the
+// transport that used to drop the URL on the floor one line after storing it.
 export function createTextParser(processJsonPayload) {
-    return function tryParseText(text) {
+    return function tryParseText(text, url) {
         if (!text || typeof text !== "string") return;
 
         try {
-            processJsonPayload(JSON.parse(text));
+            processJsonPayload(JSON.parse(text), url);
         } catch (_) {
             // ignore non-json responses
         }

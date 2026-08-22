@@ -30,10 +30,10 @@ export function installFetchHook(processJsonPayload, tryParseText) {
                     const json = await clone.json();
                     processJsonPayload(json, url);
                 } catch {
-                    tryParseText(await clone.text());
+                    tryParseText(await clone.text(), url);
                 }
             } else {
-                tryParseText(await clone.text());
+                tryParseText(await clone.text(), url);
             }
         } catch (err) {
             console.debug("[CDD Stoich Tools] fetch parse failed", err);

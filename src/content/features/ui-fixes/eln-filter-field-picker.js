@@ -145,9 +145,28 @@ function selectNative(el) {
     el.dispatchEvent(new MouseEvent("click", opts));
 }
 
-function findAnchor() {
-    const trigger = document.querySelector(`${TRIGGER_SELECTOR} [data-component="SelectBox"]`);
-    return trigger || document.querySelector(TRIGGER_SELECTOR);
+// Every filter row has its own field select, all with the same autotest
+// id. The one that opened the popup is the one holding focus (CDD focuses
+// its input on open); it gets a private id so the bridge can address it.
+const TRIGGER_ID_ATTR = "data-cdd-eln-ffp-trigger";
+let triggerCounter = 0;
+
+function findActiveTrigger() {
+    const focused = document.activeElement?.closest?.(TRIGGER_SELECTOR);
+    const trigger = focused || document.querySelector(TRIGGER_SELECTOR);
+    if (!trigger) return null;
+    if (!trigger.getAttribute(TRIGGER_ID_ATTR)) {
+        trigger.setAttribute(TRIGGER_ID_ATTR, String(++triggerCounter));
+    }
+    return trigger;
+}
+
+function triggerSelector(trigger) {
+    return `[${TRIGGER_ID_ATTR}="${trigger.getAttribute(TRIGGER_ID_ATTR)}"]`;
+}
+
+function findAnchor(trigger) {
+    return trigger.querySelector('[data-component="SelectBox"]') || trigger;
 }
 
 // The popup closes the moment CDD's own (read-only) trigger input loses
@@ -162,8 +181,8 @@ function isInsideTrigger(node) {
     return !!node && node.nodeType === Node.ELEMENT_NODE && !!node.closest(TRIGGER_SELECTOR);
 }
 
-function dismissNative() {
-    const input = document.querySelector(`${TRIGGER_SELECTOR} input`);
+function dismissNative(trigger) {
+    const input = trigger?.querySelector("input");
     if (!input) return;
     input.dispatchEvent(
         new KeyboardEvent("keydown", { key: "Escape", code: "Escape", keyCode: 27, which: 27, bubbles: true, cancelable: true })
@@ -179,7 +198,7 @@ let requestCounter = 0;
 
 // Ask the page world for the SelectBox's full option list. Resolves with the
 // serialised options, or null when nothing answers in time.
-function requestOptions() {
+function requestOptions(trigger) {
     return new Promise((resolve) => {
         const requestId = `eln-ffp-${++requestCounter}`;
         let settled = false;
@@ -202,15 +221,15 @@ function requestOptions() {
 
         window.addEventListener("message", onMessage);
         window.postMessage(
-            { source: EVENT_SOURCE, type: EVENTS.SELECTBOX_OPTIONS_REQUEST, payload: { requestId, selector: TRIGGER_SELECTOR } },
+            { source: EVENT_SOURCE, type: EVENTS.SELECTBOX_OPTIONS_REQUEST, payload: { requestId, selector: triggerSelector(trigger) } },
             "*"
         );
     });
 }
 
-function selectViaBridge(value) {
+function selectViaBridge(trigger, value) {
     window.postMessage(
-        { source: EVENT_SOURCE, type: EVENTS.SELECTBOX_SELECT, payload: { selector: TRIGGER_SELECTOR, value } },
+        { source: EVENT_SOURCE, type: EVENTS.SELECTBOX_SELECT, payload: { selector: triggerSelector(trigger), value } },
         "*"
     );
 }
@@ -263,11 +282,13 @@ async function enhance(popup, listbox) {
     // the listbox is built fresh each time.
     listbox.setAttribute(MARK, "1");
 
-    const anchor = findAnchor();
+    const trigger = findActiveTrigger();
+    if (!trigger) return;
+    const anchor = findAnchor(trigger);
 
     // Full list from the page world when it answers; the (partial) DOM
     // otherwise. The popup may have closed while we waited.
-    const options = await requestOptions();
+    const options = await requestOptions(trigger);
     if (!listbox.isConnected) return;
     const groups = options ? groupsFromOptions(options) : parseGroups(listbox);
     if (!groups.length) return;
@@ -277,11 +298,11 @@ async function enhance(popup, listbox) {
         onSelect: (item) => {
             closePicker();
             if (item.el) selectNative(item.el);
-            else selectViaBridge(item.value);
+            else selectViaBridge(trigger, item.value);
         },
         onEscape: () => {
             closePicker();
-            dismissNative();
+            dismissNative(trigger);
         },
     });
     panel.setAttribute(MARK, "1");
@@ -323,12 +344,12 @@ async function enhance(popup, listbox) {
         const to = event.relatedTarget;
         if (!to || host.contains(to) || isInsideTrigger(to)) return;
         closePicker();
-        dismissNative();
+        dismissNative(trigger);
     };
     const onPointerDownOutside = (event) => {
         if (host.contains(event.target) || isInsideTrigger(event.target)) return;
         closePicker();
-        dismissNative();
+        dismissNative(trigger);
     };
     // One layout pass per frame, never re-entrant: positionPanel restores
     // the columns' scrollTop, which itself fires scroll events — a scroll

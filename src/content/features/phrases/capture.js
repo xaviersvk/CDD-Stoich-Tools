@@ -129,7 +129,7 @@ function ensureButton() {
     button.addEventListener("click", (event) => {
         event.preventDefault();
         event.stopPropagation();
-        openDialog();
+        void openDialog();   // a click handler cannot await the dialog
     });
     document.documentElement.appendChild(button);
     return button;

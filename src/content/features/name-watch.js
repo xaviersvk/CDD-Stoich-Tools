@@ -352,7 +352,9 @@ function nameFor(moleculeId, row) {
 
 function enqueueWrite(row, moleculeId, key) {
     writeQueue.push({ row, moleculeId, key });
-    drainWrites();
+    // Fire-and-forget: the queue pump runs until the queue is empty and the
+    // caller has nothing to do with its progress.
+    void drainWrites();
 }
 
 // Sequential: every write drives CDD's real editor and triggers an autosave,

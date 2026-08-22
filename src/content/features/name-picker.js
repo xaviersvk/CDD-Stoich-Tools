@@ -284,7 +284,9 @@ export function initNamePicker() {
             const moleculeId = resolveMoleculeId(field);
             if (!moleculeId) return;
 
-            offerFor(moleculeId, field.closest("tr"));
+            // Fire-and-forget: a click handler cannot await, and the list
+            // fills itself in once the synonyms land.
+            void offerFor(moleculeId, field.closest("tr"));
         },
         true
     );

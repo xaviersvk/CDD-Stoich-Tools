@@ -172,7 +172,7 @@ export function mountPhrasesPane(pane) {
             render();
         });
     }
-    refresh();
+    void refresh();   // first paint; later ones come from onPhrasesChanged
 }
 
 export const PHRASES_PANE_STYLES = (panelId) => `

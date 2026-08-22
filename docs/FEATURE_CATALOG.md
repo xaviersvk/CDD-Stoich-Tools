@@ -114,6 +114,33 @@ The flagship feature group: a floating "CDD Samples" box on ELN entry pages.
 - **Maintenance difficulty:** **low**.
 - **Regression risk:** **low** — self-contained.
 
+### 1.6 Row Name from Synonym (opt-in)
+- **User value:** A stoichiometry row whose free-text **Name** is empty is
+  offered the molecule's shortest synonym (`DIPEA` rather than
+  `N,N-Diisopropylethylamine`); a name typed by hand is remembered per molecule
+  and offered everywhere that molecule appears next.
+- **Entry point:** `shared/pretty-name.js` (`pickPrettyName`),
+  `content/features/name-enrichment.js` (session synonym cache),
+  `content/features/fill-offers.js` (the `name` offer).
+- **Related files:** `shared/name-memory.js` (`cddNameMemoryV1`, 300 entries,
+  keyed by **molecule**), `shared/row-name-flag.js` (`cddFillRowName`, default
+  off), `content/features/name-capture.js` (baseline rule),
+  `content/features/row-fill.js` (`fillNameIntoTable`, `readRowName`),
+  `api/molecule-page.js` (`getMoleculeSynonymsText`), `options/` (checkbox +
+  *Remembered names* card).
+- **Data source:** the molecule page's `Synonyms` row; the row's own
+  `flatSample.tableName` (payload `row.name`).
+- **Dependencies:** the fill-offer chain (card button, *Fill all*, auto-fill);
+  `chrome.storage.local`; one molecule-page GET per molecule per session, and
+  none at all while the checkbox is off.
+- **Maintenance difficulty:** **medium** — the write drives CDD's own editor,
+  and the Name field stops rendering its `<b>Name:</b>` label once it has a
+  value, which is why it has a confirm of its own.
+- **Regression risk:** **medium** — it widened `isEditModeRow()` and rerouted
+  the LRU touch of every fill (`touchOfferMemory`), both shared with the
+  density/purity/concentration/solvent fills.
+- **Full write-up:** [ROW_NAME_FROM_SYNONYM.md](./ROW_NAME_FROM_SYNONYM.md).
+
 ---
 
 ## 2. ELN Enhancements

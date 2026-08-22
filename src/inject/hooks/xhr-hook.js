@@ -19,7 +19,7 @@ export function installXhrHook(tryParseText) {
                     return;
                 }
 
-                tryParseText(this.responseText);
+                tryParseText(this.responseText, this.__cdd_url);
             } catch (err) {
                 console.debug("[CDD Stoich Tools] xhr parse failed", err);
             }

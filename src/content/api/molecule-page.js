@@ -12,8 +12,10 @@
 // One fetch + one DOMParser pass per (vault, molecule) per session. Failures
 // are evicted from the cache so a later payload can retry; a molecule page
 // that simply has no synonym is an ordinary empty result, not a failure.
-
-import { extractSynonym } from "./molecule-image.js";
+//
+// What each caller wants OUT of the page belongs to the caller:
+// api/molecule-synonyms.js reads the Synonyms row, api/batch-registration-props
+// the registration fields. This module only hands over the parsed document.
 
 const LOG_PREFIX = "[CDD stoich plugin]";
 
@@ -30,11 +32,13 @@ async function requestMoleculePage(vaultId, moleculeId) {
     });
 
     if (!res.ok) {
-        console.warn(`${LOG_PREFIX} molecule page request failed`, {
-            vaultId,
-            moleculeId,
-            httpStatus: res.status,
-        });
+        // One line, not an object: the console reporters people paste from
+        // print `[object Object]` and the status — the only thing that says
+        // WHY — never makes it into the report.
+        console.warn(
+            `${LOG_PREFIX} molecule page failed: HTTP ${res.status} for molecule ` +
+            `${moleculeId} in vault ${vaultId} (${res.url || "no url"})`
+        );
         throw new Error(`HTTP ${res.status}`);
     }
 
@@ -108,15 +112,4 @@ export function forgetMoleculePage(moleculeId) {
     for (const key of [...pageCache.keys()]) {
         if (key.endsWith(suffix)) pageCache.delete(key);
     }
-}
-
-// The molecule's FIRST synonym. Resolves to null when the molecule simply has
-// no synonym, and REJECTS when the page could not be loaded — the two are not
-// the same to a caller that remembers what it already looked up: "no synonym"
-// is a final answer, a failed fetch is worth retrying.
-//
-// `extractSynonym` owns the "first of N" rule (and the separator handling that
-// keeps names like "N,N-diethylhydroxylamine" intact); this is only the fetch.
-export async function getMoleculeSynonym(vaultId, moleculeId) {
-    return extractSynonym(await getMoleculePage(vaultId, moleculeId));
 }

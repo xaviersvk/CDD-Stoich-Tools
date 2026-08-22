@@ -38,6 +38,11 @@ const RUN_DEFINITION_VALUE_SELECTOR = "tr > td";
 const SAMPLE_NAME_CONTAINER = "#molecule-inventory_samples";
 const SAMPLE_NAME_SELECTOR = ".sticky-header > .label-text";
 
+// The page heading of a molecule (e.g. "PHA-0334382"): #pageHeader > h1 >
+// span.title. Not a dd/value cell, so it needs its own selector; the text is
+// clean (no nested controls), so the generic click path serves it.
+const PAGE_TITLE_SELECTOR = "#pageHeader h1 > .title";
+
 function log(...args) {
     if (DEBUG) console.log("[COPYABLE-FIELDS]", ...args);
 }
@@ -125,6 +130,8 @@ function findCopyableFieldNodes() {
             nodes.push(...found);
         });
     });
+
+    document.querySelectorAll(PAGE_TITLE_SELECTOR).forEach((node) => nodes.push(node));
 
     RUN_DEFINITION_CONTAINERS.forEach((containerSelector) => {
         document.querySelectorAll(containerSelector).forEach((container) => {

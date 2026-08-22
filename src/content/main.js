@@ -6,6 +6,10 @@ import { watchKetcherDialog } from "./overlay-watcher.js";
 import { ensurePanel, renderFromState, initSamplePanelFields, clearElnIdToBatchWrites } from "./features/sample-panel.js";
 import { ensurePrintButtons } from "./features/print-buttons.js";
 import { initSynonymEnrichment } from "./features/synonym-enrichment.js";
+import { initRowNameEnrichment } from "./features/name-enrichment.js";
+import { initNamePicker } from "./features/name-picker.js";
+import { initNameWatch } from "./features/name-watch.js";
+import { initPhraseCapture } from "./features/phrases/capture.js";
 import {
   ensureDepletedStyle,
   markDepletedSamplesInSelector,
@@ -21,10 +25,12 @@ import {
 import {observeCopyableFields} from "./features/ui-fixes/copyable-fields";
 import {injectLeftEllipsisForLocations} from "./features/ui-fixes/left-ellipsis-locations";
 import {initFilterFieldPicker} from "./features/ui-fixes/filter-field-picker";
+import {initElnFilterFieldPicker} from "./features/ui-fixes/eln-filter-field-picker";
 import {initKeywordsFieldPicker} from "./features/ui-fixes/keywords-field-picker";
 import {initColumnManager} from "./features/ui-fixes/column-manager";
 import {initLocationPickerResize} from "./features/ui-fixes/location-picker-resize";
 import {injectMoleculeLinksStyles} from "./features/ui-fixes/molecule-links-fixes";
+import {initElnShiftLeft} from "./features/ui-fixes/eln-shift-left";
 import {watchConsumedBatches} from "./features/ui-fixes/consumed-batches-collapse";
 import {watchInventoryWellStructure} from "./features/ui-fixes/inventory-well-structure";
 import {initInventoryGridColors} from "./features/ui-fixes/inventory-grid-colors";
@@ -57,6 +63,8 @@ import {initPurityThresholds, onPurityThresholdChanged} from "../shared/purity-t
 import {initHplcSettings, onHplcBlockEnabledChanged} from "../shared/hplc-injection.js";
 import {clearHplcInjectionState} from "./features/hplc-injection-block.js";
 import {initShowProducts, onShowProductsChanged} from "../shared/show-products-flag.js";
+import {initFillRowName} from "../shared/row-name-flag.js";
+import {initNameMemory, onNameMemoryChanged} from "../shared/name-memory.js";
 import {initElnIdToBatch, onElnIdToBatchChanged} from "../shared/eln-id-to-batch.js";
 import {initHeatMapFieldsConfig} from "../shared/heat-map-fields.js";
 import {initPanelSources, onPanelSourcesChanged} from "../shared/panel-sources-flag.js";
@@ -91,6 +99,10 @@ function init() {
   initDoseResponseOverride();
   initSamplePanelFields();
   initSynonymEnrichment();
+  initRowNameEnrichment();
+  initNamePicker();
+  initNameWatch();
+  initPhraseCapture();
 
   window.addEventListener("message", handleMessage);
 
@@ -129,10 +141,12 @@ function init() {
 
   injectLeftEllipsisForLocations();
   initFilterFieldPicker();
+  initElnFilterFieldPicker();
   initKeywordsFieldPicker();
   initColumnManager();
   initLocationPickerResize();
   injectMoleculeLinksStyles();
+  initElnShiftLeft();
   watchConsumedBatches();
   watchInventoryWellStructure();
   initInventoryGridColors();
@@ -226,6 +240,17 @@ function init() {
   // Optional products section (panel + print).
   initShowProducts().then(() => {
     onShowProductsChanged(() => renderFromState());
+  });
+
+  // Row name from synonym. Off by default; nothing that depends on it runs
+  // until the flag is on.
+  initFillRowName();
+
+  // Remembered row names: load the molecule->name map, then re-render the
+  // panel whenever it changes in any context (typing on another tab, deleting
+  // from the options page) so fill offers appear/disappear live.
+  initNameMemory().then(() => {
+    onNameMemoryChanged(() => renderFromState());
   });
 
   // Writing this entry's ID onto a product's existing batch. Off by default:

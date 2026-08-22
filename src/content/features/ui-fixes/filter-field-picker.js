@@ -256,7 +256,7 @@ export function initFilterFieldPicker() {
     started = true;
 
     injectPickerStyles();
-    initFormFilterChips();
+    void initFormFilterChips();   // deliberate: the chips render on their own
 
     const observer = new MutationObserver(() => scan());
     // <html>, not <body>: Turbo swaps <body> on in-app navigation.

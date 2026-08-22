@@ -66,6 +66,18 @@ against https://app.collaborativedrug.com/vaults/6884/eln/entries/2504170.
 - Edit-row `<b>` labels are `Name:`, `IUPAC:`, `MW:`, `FW:`, `Density:`,
   `Purity:`, `Equivalent:`, … — **`Molecule:` is visible text but NOT a
   `<b>` label**. Don't guess markers; dump the DOM first.
+- **A row's Name is free text, and its label vanishes once it is set.**
+  Empty: `<b>Name:</b>` + `<span data-autotest-id="missing-label">Optional</span>`.
+  Set: a bare `<span data-autotest-id="field-name">DIPEA</span>`, no `<b>`,
+  in edit AND view mode. So `Name:` alone is a bad edit-mode marker — the
+  labels measured to be edit-mode-only are `Name:`, `IUPAC:`, `%w/w ratio:`,
+  `%v/v ratio:` and `CAS-RN:` (`FW:`, `Mass:`, `Purity:` and even
+  `Volume: Optional` all render in view mode too).
+  `data-autotest-id="field-name"` is shared with the Solvent field, which
+  keeps its `<b>Solvent:</b>` — that is what tells the two apart.
+- The Name editor popup's MuiPaper text is the bare word `Name`; its input
+  carries `placeholder="Name"`. In the payload the value is the row-level
+  `row.name`, **not** `userInput.name`.
 - The one-field editor popup is a MuiPaper whose **label text** (e.g.
   `Density [g/cm3]`, `Concentration [mol/L]`) is the only reliable marker;
   the input's placeholder is present only sometimes.

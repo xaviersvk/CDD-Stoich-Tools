@@ -14,6 +14,10 @@ export const EVENTS = {
   PRINT_REQUEST: "PRINT_REQUEST",
   INVENTORY_MOLECULES: "INVENTORY_MOLECULES",
   INVENTORY_BOX: "INVENTORY_BOX",
+  // Page world -> content: the answer to CDD.s reagent search, which carries a
+  // molecule.s synonyms while the user is still choosing a batch. It is the
+  // only moment that information exists before the entry is saved.
+  MOLECULE_SEARCH: "MOLECULE_SEARCH",
   // Page world -> content: a snapshot of an outgoing create-sample request body,
   // used as a faithful payload template when FormData(form) cannot reproduce it.
   CREATE_SAMPLE_CAPTURED: "CREATE_SAMPLE_CAPTURED",
@@ -21,4 +25,14 @@ export const EVENTS = {
   // + body text), so the batch orchestrator can confirm the native first save
   // succeeded before it replays the remaining positions.
   CREATE_SAMPLE_RESPONDED: "CREATE_SAMPLE_RESPONDED",
+  // Content -> page world: "read the option list of this CDD SelectBox". The
+  // list lives in React props, which the isolated content world cannot see;
+  // the page-world bridge (inject/hooks/selectbox-bridge.js) answers with
+  // SELECTBOX_OPTIONS. Used by the ELN entries filter picker, whose native
+  // list is virtualised and never renders the tail of the options in the DOM.
+  SELECTBOX_OPTIONS_REQUEST: "SELECTBOX_OPTIONS_REQUEST",
+  SELECTBOX_OPTIONS: "SELECTBOX_OPTIONS",
+  // Content -> page world: pick one option of that SelectBox by value, by
+  // calling its React onChange - the same thing a click on the option does.
+  SELECTBOX_SELECT: "SELECTBOX_SELECT",
 };

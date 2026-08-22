@@ -8,6 +8,7 @@
 // order + preselect) is new. All four share the shared/ modules with the
 // content script, which is why those modules never touch the DOM.
 
+import { initPhrasesUI } from "./phrases-ui.js";
 import {
     SAMPLE_PANEL_FIELDS,
     SAMPLE_PANEL_CUSTOM_FIELDS_KEY,
@@ -29,9 +30,17 @@ import {
     saveDensityMemory,
 } from "../shared/density-memory.js";
 import {
+    loadNameMemory,
+    saveNameMemory,
+} from "../shared/name-memory.js";
+import {
     getAutoFillEnabled,
     saveAutoFillEnabled,
 } from "../shared/auto-fill-flag.js";
+import {
+    getFillRowNameMode,
+    saveFillRowNameMode,
+} from "../shared/row-name-flag.js";
 import {
     loadPurityThresholds,
     savePurityFillThreshold,
@@ -57,6 +66,10 @@ import {
     getShowProducts,
     saveShowProducts,
 } from "../shared/show-products-flag.js";
+import {
+    getElnShiftEnabled,
+    saveElnShiftEnabled,
+} from "../shared/eln-shift-flag.js";
 import {
     getElnIdToBatchEnabled,
     saveElnIdToBatchEnabled,
@@ -819,6 +832,76 @@ async function initDensityMemoryUI() {
     renderDensityMemory(await loadDensityMemory());
 }
 
+/* ==================================================== 5b · Remembered names */
+
+const nameListEl = document.getElementById("nameMemoryList");
+const nameCountEl = document.getElementById("nameMemoryCount");
+const nameEmptyEl = document.getElementById("nameMemoryEmpty");
+const nameClearBtn = document.getElementById("nameMemoryClear");
+
+function createNameRow(moleculeId, entry) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "name-memory-item";
+
+    const molecule = document.createElement("span");
+    molecule.className = "density-memory-name";
+    molecule.textContent = entry.moleculeName || `molecule #${moleculeId}`;
+    molecule.title = `Molecule id ${moleculeId}`;
+
+    const value = document.createElement("span");
+    value.className = "density-memory-value";
+    value.textContent = entry.name;
+    value.title = "Row name";
+
+    const saved = document.createElement("span");
+    saved.className = "density-memory-date";
+    saved.textContent = entry.savedAt
+        ? new Date(entry.savedAt).toLocaleDateString()
+        : "";
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.type = "button";
+    deleteBtn.className = "density-memory-delete";
+    deleteBtn.setAttribute("aria-label", `Forget the name for ${molecule.textContent}`);
+    deleteBtn.textContent = "✕";
+    deleteBtn.addEventListener("click", async () => {
+        const map = await loadNameMemory();
+        delete map[moleculeId];
+        await saveNameMemory(map);
+        renderNameMemory(map);
+    });
+
+    wrapper.append(molecule, value, saved, deleteBtn);
+    return wrapper;
+}
+
+function renderNameMemory(map) {
+    // Newest first — the list is a working set, not an archive.
+    const entries = Object.entries(map).sort(
+        (a, b) => (b[1].savedAt || 0) - (a[1].savedAt || 0)
+    );
+
+    nameListEl.replaceChildren();
+    for (const [moleculeId, entry] of entries) {
+        nameListEl.appendChild(createNameRow(moleculeId, entry));
+    }
+
+    nameCountEl.textContent = String(entries.length);
+    nameEmptyEl.hidden = entries.length > 0;
+    nameClearBtn.hidden = entries.length === 0;
+}
+
+nameClearBtn.addEventListener("click", async () => {
+    const count = nameListEl.children.length;
+    if (!confirm(`Forget all ${count} remembered names?`)) return;
+    await saveNameMemory({});
+    renderNameMemory({});
+});
+
+async function initNameMemoryUI() {
+    renderNameMemory(await loadNameMemory());
+}
+
 const autoFillCheckbox = document.getElementById("autoFillEnabled");
 
 autoFillCheckbox.addEventListener("change", () => {
@@ -827,6 +910,24 @@ autoFillCheckbox.addEventListener("change", () => {
 
 async function initAutoFillUI() {
     autoFillCheckbox.checked = await getAutoFillEnabled();
+}
+
+const fillRowNameRadios = Array.from(
+    document.querySelectorAll('input[name="fillRowName"]')
+);
+
+for (const radio of fillRowNameRadios) {
+    radio.addEventListener("change", () => {
+        if (radio.checked) saveFillRowNameMode(radio.value);
+    });
+}
+
+
+async function initFillRowNameUI() {
+    const mode = await getFillRowNameMode();
+    for (const radio of fillRowNameRadios) {
+        radio.checked = radio.value === mode;
+    }
 }
 
 const purityFillInput = document.getElementById("purityFillThreshold");
@@ -935,6 +1036,16 @@ showProductsCheckbox.addEventListener("change", () => {
 
 async function initShowProductsUI() {
     showProductsCheckbox.checked = await getShowProducts();
+}
+
+const elnShiftLeftCheckbox = document.getElementById("elnShiftLeft");
+
+elnShiftLeftCheckbox.addEventListener("change", () => {
+    saveElnShiftEnabled(elnShiftLeftCheckbox.checked);
+});
+
+async function initElnShiftLeftUI() {
+    elnShiftLeftCheckbox.checked = await getElnShiftEnabled();
 }
 
 const elnIdToBatchCheckbox = document.getElementById("elnIdToBatch");
@@ -1246,10 +1357,14 @@ function refreshRailChips() {
     if (fieldBoxes.length) setChip("fields", `${enabled(fieldBoxes)}/${fieldBoxes.length}`);
 
     setChip("prefixes", prefixRows.length || null);
+    setChip("phrases", Number(document.getElementById("phrasesCount")?.textContent) || null);
     setChip("regdefaults", regDefaultVaults.length || null);
 
     const remembered = document.getElementById("densityMemoryCount");
     setChip("densities", remembered ? remembered.textContent.trim() : null);
+
+    const names = document.getElementById("nameMemoryCount");
+    setChip("names", names ? names.textContent.trim() : null);
 
     // Heat map keeps its chosen rows as an ORDERED list, not checkboxes, so
     // the count comes from the same array the card renders from.
@@ -1291,12 +1406,16 @@ initPrefixColorsUI();
 initRegistrationFormUI();
 initElnIdCarryUI();
 initDensityMemoryUI();
+initNameMemoryUI();
 initAutoFillUI();
+initFillRowNameUI();
 initPurityThresholdUI();
 initShowProductsUI();
+initElnShiftLeftUI();
 initElnIdToBatchUI();
 initPanelSourcesUI();
 initHeatMapFieldsUI();
 initHplcInjectionUI();
 initRegistrationDefaultsUI();
+initPhrasesUI();
 initRailUI();

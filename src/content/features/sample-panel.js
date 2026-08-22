@@ -5,12 +5,9 @@ import {
     computeFillOffers,
     runFillOffer,
     markOfferFilled,
-    offerUsesMemory,
+    touchOfferMemory,
 } from "./fill-offers.js";
-import {
-    captureValuesFromSamples,
-    touchValueUsed,
-} from "../../shared/density-memory.js";
+import { captureValuesFromSamples } from "../../shared/density-memory.js";
 import { getPurityWarnThreshold } from "../../shared/purity-threshold.js";
 import { isShowProductsEnabled } from "../../shared/show-products-flag.js";
 import {
@@ -25,7 +22,6 @@ import { readElnEntryId } from "../utils/eln-entry-id.js";
 import { isElnEntryPage } from "../../shared/page-detection.js";
 import { isTableRowsEnabled } from "../../shared/panel-sources-flag.js";
 import { PANEL_ID, REACTION_COLORS } from "../../shared/plugin-constants.js";
-import { getMentionSamples } from "./mentions/state.js";
 import { getPanelContents } from "./panel-contents.js";
 import { updatePanelVisibilityForOverlays } from "../overlay-watcher.js";
 import { printPanel } from "./panel-print.js";
@@ -52,6 +48,7 @@ import {
     resetHplcInjectionBlocks,
     HPLC_BLOCK_STYLES,
 } from "./hplc-injection-block.js";
+import { mountPhrasesPane, PHRASES_PANE_STYLES } from "./phrases/panel-tab.js";
 
 // Visible-field map, kept in sync with chrome.storage by initSamplePanelFields().
 // Starts from the registry defaults so the first paint is correct even before
@@ -136,8 +133,32 @@ export function makePanelDraggable(panel) {
  * old one down.
  */
 export function shouldShowPanel() {
-    if (!isElnEntryPage()) return false;
-    return STATE.hasReactionFeature || getMentionSamples().length > 0;
+    // Every ELN entry gets a panel since the Phrases tab arrived: phrases
+    // are pasted into entries that have no reaction table yet. The Entities
+    // tab still says so when there is nothing to show.
+    return isElnEntryPage();
+}
+
+// "entities" (the sample cards) or "phrases". Remembered with the panel's
+// other furniture so the tab last used is the one that opens.
+function currentPanelTab() {
+    return loadPanelState().tab === "phrases" ? "phrases" : "entities";
+}
+
+export function setPanelTab(tab) {
+    const panel = document.getElementById(PANEL_ID);
+    if (!panel) return;
+    const next = tab === "phrases" ? "phrases" : "entities";
+    panel.dataset.tab = next;
+    for (const btn of panel.querySelectorAll(".cdd-stoich-tab")) {
+        const active = btn.dataset.tab === next;
+        btn.classList.toggle("cdd-stoich-tab--active", active);
+        btn.setAttribute("aria-selected", active ? "true" : "false");
+    }
+    if (next === "phrases") {
+        mountPhrasesPane(panel.querySelector(".cdd-phrases-pane"));
+    }
+    savePanelState({ tab: next });
 }
 
 export function ensurePanel() {
@@ -168,7 +189,27 @@ export function ensurePanel() {
 
     const title = document.createElement("div");
     title.className = "cdd-stoich-title";
-    title.textContent = "CDD Samples";
+    title.textContent = "CDD";
+
+    // Entities | Phrases. The header is the drag handle, so the tabs stop
+    // mousedown from starting a drag.
+    const tabs = document.createElement("div");
+    tabs.className = "cdd-stoich-tabs";
+    tabs.setAttribute("role", "tablist");
+    tabs.addEventListener("mousedown", (event) => event.stopPropagation());
+    for (const [key, label] of [["entities", "Entities"], ["phrases", "Phrases"]]) {
+        const tab = document.createElement("button");
+        tab.type = "button";
+        tab.className = "cdd-stoich-tab";
+        tab.dataset.tab = key;
+        tab.setAttribute("role", "tab");
+        tab.textContent = label;
+        tab.addEventListener("click", (event) => {
+            event.stopPropagation();
+            setPanelTab(key);
+        });
+        tabs.appendChild(tab);
+    }
 
     const actions = document.createElement("div");
     actions.className = "cdd-stoich-actions";
@@ -239,6 +280,7 @@ export function ensurePanel() {
     actions.appendChild(toggleBtn);
 
     header.appendChild(title);
+    header.appendChild(tabs);
     header.appendChild(actions);
 
     const body = document.createElement("div");
@@ -264,9 +306,17 @@ export function ensurePanel() {
     const list = document.createElement("div");
     list.className = "cdd-stoich-list";
 
-    body.appendChild(status);
-    body.appendChild(fillAllBtn);
-    body.appendChild(list);
+    const entitiesPane = document.createElement("div");
+    entitiesPane.className = "cdd-entities-pane";
+    entitiesPane.appendChild(status);
+    entitiesPane.appendChild(fillAllBtn);
+    entitiesPane.appendChild(list);
+
+    const phrasesPane = document.createElement("div");
+    phrasesPane.className = "cdd-phrases-pane";
+
+    body.appendChild(entitiesPane);
+    body.appendChild(phrasesPane);
 
     panel.appendChild(header);
     panel.appendChild(body);
@@ -666,6 +716,39 @@ ${HPLC_BLOCK_STYLES.replace(/^ {2}\./gm, `  #${PANEL_ID} .`)}
     opacity: 0.6;
     cursor: default;
   }
+
+  /* Entities | Phrases tabs. */
+  #${PANEL_ID} .cdd-stoich-tabs {
+    display: inline-flex;
+    gap: 2px;
+    padding: 2px;
+    background: #111827;
+    border: 1px solid #374151;
+    border-radius: 8px;
+    cursor: default;
+  }
+  #${PANEL_ID} .cdd-stoich-tab {
+    padding: 3px 9px;
+    font: 600 11px Arial, sans-serif;
+    color: #cbd5e1;
+    background: transparent;
+    border: 0;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  #${PANEL_ID} .cdd-stoich-tab:hover { color: #f9fafb; }
+  #${PANEL_ID} .cdd-stoich-tab--active {
+    color: #f9fafb;
+    background: #374151;
+  }
+  #${PANEL_ID}[data-tab="phrases"] .cdd-entities-pane,
+  #${PANEL_ID}[data-tab="phrases"] #${PANEL_ID}-refresh,
+  #${PANEL_ID}[data-tab="phrases"] #${PANEL_ID}-print,
+  #${PANEL_ID}[data-tab="phrases"] .cdd-csv-split,
+  #${PANEL_ID}:not([data-tab="phrases"]) .cdd-phrases-pane {
+    display: none;
+  }
+${PHRASES_PANE_STYLES(PANEL_ID)}
 `;
 
     document.documentElement.appendChild(style);
@@ -750,6 +833,8 @@ ${HPLC_BLOCK_STYLES.replace(/^ {2}\./gm, `  #${PANEL_ID} .`)}
             collapsed,
         });
     });
+
+    setPanelTab(currentPanelTab());
 
     updatePanelVisibilityForOverlays();
     return panel;
@@ -1018,7 +1103,9 @@ function buildFillButton(sample, offer) {
             : `⤵ Fill ${offer.field} (${shown}) into table`;
     btn.title =
         offer.source === "memory"
-            ? `Writes the ${offer.field} you previously typed for this batch into the row, exactly as if you typed it.`
+            ? offer.field === "name"
+                ? "Writes the name you previously typed for this molecule into the row, exactly as if you typed it."
+                : `Writes the ${offer.field} you previously typed for this batch into the row, exactly as if you typed it.`
             : `Writes this ${offer.field} into the row, exactly as if you typed it.`;
 
     // "Some of these values aren't saved on the batch/sample record" used to
@@ -1031,9 +1118,12 @@ function buildFillButton(sample, offer) {
         mark.className = "cdd-fill-memory-mark";
         mark.textContent = "ⓘ";
         mark.title =
-            `This ${offer.field} is remembered from what you typed before — it is not ` +
-            `saved on the batch or sample record. Add it there and it will fill in ` +
-            `automatically from then on.`;
+            offer.field === "name"
+                ? "This name is remembered from what you typed before — CDD has no " +
+                  "field to save a row name in, so the extension keeps it."
+                : `This ${offer.field} is remembered from what you typed before — it is not ` +
+                  `saved on the batch or sample record. Add it there and it will fill in ` +
+                  `automatically from then on.`;
         btn.appendChild(mark);
     }
 
@@ -1054,7 +1144,7 @@ function buildFillButton(sample, offer) {
 
         if (result.ok) {
             markOfferFilled(sample, offer, result);
-            if (offerUsesMemory(offer)) touchValueUsed(sample.batchId);
+            touchOfferMemory(sample, offer);
             // A concentration fill reports a solvent it could not pick
             // rather than failing over it — say so instead of a bare ✓.
             btn.textContent = result.note
@@ -1095,7 +1185,7 @@ async function runAllOffers(btn) {
             if (result.ok) {
                 filled += 1;
                 markOfferFilled(sample, offer, result);
-                if (offerUsesMemory(offer)) touchValueUsed(sample.batchId);
+                touchOfferMemory(sample, offer);
                 if (result.note) {
                     setStatus(`Fill all: ${sample.name} — solvent: ${result.note}`);
                 }

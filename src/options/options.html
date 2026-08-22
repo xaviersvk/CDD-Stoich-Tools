@@ -89,6 +89,14 @@
                 <span class="rail__label">Remembered batch values</span>
                 <span class="rail__chip" data-chip="densities" hidden></span>
             </button>
+            <button type="button" class="rail__item" data-pane="col-names-heading">
+                <span class="tile" aria-hidden="true">
+                    <span class="tile__no"></span>
+                    <span class="tile__sym">Nm</span>
+                </span>
+                <span class="rail__label">Remembered names</span>
+                <span class="rail__chip" data-chip="names" hidden></span>
+            </button>
             <button type="button" class="rail__item" data-pane="col-hplc-heading">
                 <span class="tile" aria-hidden="true">
                     <span class="tile__no"></span>
@@ -96,6 +104,14 @@
                 </span>
                 <span class="rail__label">HPLC injection</span>
                 <span class="rail__chip" data-chip="hplc" hidden></span>
+            </button>
+            <button type="button" class="rail__item" data-pane="col-phrases-heading">
+                <span class="tile" aria-hidden="true">
+                    <span class="tile__no"></span>
+                    <span class="tile__sym">Ph</span>
+                </span>
+                <span class="rail__label">Phrases</span>
+                <span class="rail__chip" data-chip="phrases" hidden></span>
             </button>
     </nav>
 
@@ -195,6 +211,12 @@
                     <strong>Internal ID</strong> — but only while that field is
                     empty. This one <strong>saves to the batch record</strong>;
                     everything else in the panel only fills the table.</span>
+                </label>
+                <label class="field-item show-products-toggle">
+                    <input type="checkbox" id="elnShiftLeft" />
+                    <span>While the panel is open, <strong>move the ELN entry to
+                    the left edge</strong> so the panel sits beside it instead of
+                    over its right-hand columns (helps on laptop screens)</span>
                 </label>
             </div>
 
@@ -472,6 +494,43 @@
                     card buttons or the panel's <em>Fill all</em> button for those.
                     Every write goes through CDD's own editor and autosave.</span>
                 </label>
+
+                <fieldset class="choices">
+                    <legend class="eyebrow">Row name from synonym</legend>
+
+                    <p class="note">A stoichiometry row's free-text <em>Name</em>,
+                    filled from the molecule's synonyms. Click <em>Name: Optional</em>
+                    in the table and they are listed under the input, shortest first;
+                    typing your own still works, and what you type is remembered and
+                    offered first the next time that molecule turns up. Automatic
+                    filling only touches rows you <strong>add while working</strong> —
+                    rows already in the entry when it opened are never written to.
+                    Off by default: each new molecule costs one request for its page.</p>
+
+                    <label class="choice">
+                        <input type="radio" name="fillRowName" value="off" />
+                        <span class="choice__text">
+                            <span class="choice__label">Off</span>
+                            <span class="choice__sample">No molecule page is fetched</span>
+                        </span>
+                    </label>
+
+                    <label class="choice">
+                        <input type="radio" name="fillRowName" value="suggest" />
+                        <span class="choice__text">
+                            <span class="choice__label">Suggest in the Name editor</span>
+                            <span class="choice__sample">DIPEA, N,N-Diisopropylethylamine…</span>
+                        </span>
+                    </label>
+
+                    <label class="choice">
+                        <input type="radio" name="fillRowName" value="auto" />
+                        <span class="choice__text">
+                            <span class="choice__label">Suggest, and fill automatically</span>
+                            <span class="choice__sample">A new row arrives named DIPEA</span>
+                        </span>
+                    </label>
+                </fieldset>
             </div>
 
             <div class="card__body card__body--scroll">
@@ -485,6 +544,40 @@
                     solvent for a solution row — and it will appear here.
                 </p>
                 <button id="densityMemoryClear" type="button" class="btn btn--quiet" hidden>
+                    Clear all
+                </button>
+            </div>
+        </section>
+        <section class="card" aria-labelledby="col-names-heading">
+            <header class="card__head">
+                <span class="tile" aria-hidden="true">
+                    <span class="tile__no"></span>
+                    <span class="tile__sym">Nm</span>
+                </span>
+                <div class="card__titles">
+                    <h3 class="card__name" id="col-names-heading">Remembered names</h3>
+                </div>
+            </header>
+
+            <div class="card__body">
+                <p class="note">
+                    Names you typed into a stoichiometry row's <em>Name</em> field,
+                    remembered per molecule. They are offered ahead of the
+                    molecule's shortest synonym, on every row that molecule
+                    appears in.
+                </p>
+            </div>
+
+            <div class="card__body card__body--scroll">
+                <p class="density-memory-count">
+                    <span id="nameMemoryCount">0</span> / 300 remembered
+                </p>
+                <div id="nameMemoryList" class="stack"></div>
+                <p id="nameMemoryEmpty" class="empty" hidden>
+                    Nothing remembered yet. Switch on <em>Fill row name from
+                    synonym</em> and type a name into a stoichiometry row.
+                </p>
+                <button id="nameMemoryClear" type="button" class="btn btn--quiet" hidden>
                     Clear all
                 </button>
             </div>
@@ -566,29 +659,29 @@
                     </span>
                 </label>
 
-                <label class="field-item purity-threshold-row">
-                    <span>
-                        <strong>Comfortable injection range (µL)</strong> — outside
-                        the block offers you a different dilution. This sits inside the injector range above.
-                    </span>
-                    <span class="range-pair">
-                        <input type="number" id="hplcComfortMin" min="0" step="0.1"
-                               class="purity-threshold-input"
-                               aria-label="Comfortable injection range, from" />
-                        <span class="range-pair__to">to</span>
-                        <input type="number" id="hplcComfortMax" min="0" step="0.1"
-                               class="purity-threshold-input"
-                               aria-label="Comfortable injection range, to" />
-                        <button type="button" id="hplcComfortReset"
-                                class="range-reset"
-                                title="Back to the shipped default, 0.1 to 5 µL">
-                            reset
-                        </button>
-                    </span>
-                </label>
-
-                <label class="field-item purity-threshold-row">
-                    <span>
+                <label class="field-item purity-threshold-row">
+                    <span>
+                        <strong>Comfortable injection range (µL)</strong> — outside
+                        the block offers you a different dilution. This sits inside the injector range above.
+                    </span>
+                    <span class="range-pair">
+                        <input type="number" id="hplcComfortMin" min="0" step="0.1"
+                               class="purity-threshold-input"
+                               aria-label="Comfortable injection range, from" />
+                        <span class="range-pair__to">to</span>
+                        <input type="number" id="hplcComfortMax" min="0" step="0.1"
+                               class="purity-threshold-input"
+                               aria-label="Comfortable injection range, to" />
+                        <button type="button" id="hplcComfortReset"
+                                class="range-reset"
+                                title="Back to the shipped default, 0.1 to 5 µL">
+                            reset
+                        </button>
+                    </span>
+                </label>
+
+                <label class="field-item purity-threshold-row">
+                    <span>
                         <strong>Vial volumes you stock (mL)</strong> — when the
                         injection lands outside <span id="hplcComfortEcho">the
                         comfortable range</span>, the block suggests a different
@@ -599,6 +692,62 @@
                            class="text-input" spellcheck="false"
                            placeholder="0.25, 1.5" />
                 </label>
+            </div>
+        </section>
+        <section class="card" aria-labelledby="col-phrases-heading">
+            <header class="card__head">
+                <span class="tile" aria-hidden="true">
+                    <span class="tile__no"></span>
+                    <span class="tile__sym">Ph</span>
+                </span>
+                <div class="card__titles">
+                    <h3 class="card__name" id="col-phrases-heading">Phrases</h3>
+                </div>
+            </header>
+
+            <div class="card__body">
+                <p class="note">
+                    Text you saved from an ELN entry. In the entry, the floating
+                    panel's <em>Phrases</em> tab copies one with a click; paste
+                    it with Ctrl+V. Formatting (bold, lists, tables) is kept.
+                    A phrase can sit in several categories.
+                </p>
+                <div class="phrase-tools">
+                    <button id="phrasesExport" type="button" class="btn">Export JSON</button>
+                    <button id="phrasesImport" type="button" class="btn">Import JSON</button>
+                    <input id="phrasesImportFile" type="file" accept="application/json,.json" hidden />
+                    <label class="field-item phrase-tools__replace">
+                        <input type="checkbox" id="phrasesImportReplace" />
+                        <span>Import replaces everything</span>
+                    </label>
+                </div>
+                <p id="phrasesStatus" class="note" hidden></p>
+            </div>
+
+            <div class="card__body">
+                <p class="eyebrow">Categories</p>
+                <p class="note">Rename here to rename everywhere. ✕ takes the category off its phrases; the phrases stay.</p>
+                <div id="phrasesCategories" class="phrase-cats"></div>
+            </div>
+
+            <div class="card__body card__body--scroll">
+                <p class="eyebrow">Phrases</p>
+                <p class="density-memory-count">
+                    <span id="phrasesCount">0</span> / 50 saved — past that, the one
+                    copied longest ago is dropped
+                </p>
+                <div class="phrase-filters">
+                    <input id="phrasesFilter" type="search" class="text-input" placeholder="Filter by name or text…" />
+                    <select id="phrasesCategoryFilter" class="select"></select>
+                </div>
+                <div id="phrasesList" class="stack"></div>
+                <p id="phrasesEmpty" class="empty" hidden>
+                    No phrases yet. On an ELN entry, select some text and click
+                    <em>Save phrase</em>.
+                </p>
+                <button id="phrasesClear" type="button" class="btn btn--quiet" hidden>
+                    Delete all
+                </button>
             </div>
         </section>
     </div>

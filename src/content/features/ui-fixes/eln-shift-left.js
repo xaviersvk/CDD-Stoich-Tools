@@ -8,11 +8,12 @@
 // by side. Collapsed or absent panel → CDD's own centring, untouched.
 //
 // One stylesheet, keyed on the panel through `:has()`, so there is nothing to
-// keep in sync with the panel's own lifecycle.
+// keep in sync with the panel's own lifecycle. Injected on every CDD page:
+// the rule only bites where the panel exists, and the panel only exists on an
+// entry — and the entry may be reached by in-app navigation, long after init.
 
 import { PANEL_ID } from "../../../shared/plugin-constants.js";
 import { initElnShift, onElnShiftChanged } from "../../../shared/eln-shift-flag.js";
-import { isElnEntryPage } from "../../../shared/page-detection.js";
 
 const STYLE_ID = "cdd-stoich-eln-shift-left";
 
@@ -37,7 +38,6 @@ function applyElnShift(enabled) {
 }
 
 export function initElnShiftLeft() {
-    if (!isElnEntryPage()) return;
     initElnShift().then(applyElnShift);
     onElnShiftChanged(applyElnShift);
 }

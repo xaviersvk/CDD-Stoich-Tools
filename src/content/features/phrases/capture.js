@@ -252,9 +252,16 @@ async function openDialog() {
 
     const submit = async () => {
         saveBtn.disabled = true;
+
+        // A category half-typed when Save is clicked still counts; commit it
+        // before reading the list. Its own statement, not a comma expression
+        // riding inside the argument — the side effect is the point and has to
+        // be visible.
+        placesEditor.commitPending();
+
         const saved = await addPhrase({
             name: nameInput.value,
-            categories: (placesEditor.commitPending(), placesEditor.getCategories()),
+            categories: placesEditor.getCategories(),
             text,
             html,
         });

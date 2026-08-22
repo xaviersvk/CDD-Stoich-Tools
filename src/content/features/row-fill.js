@@ -610,8 +610,22 @@ export async function fillNameIntoTable(sample, value) {
 
     const { container, name, rowNumber } = ctx;
 
+    return writeNameThroughEditor(
+        () => findTargetRow(container, name, rowNumber),
+        value,
+        container
+    );
+}
+
+// Click the row's empty Name, set the value, press Enter, confirm.
+//
+// `locate` returns the row AS IT STANDS NOW, because every step re-renders the
+// table and the element from the step before is gone. The two callers differ
+// only in how they find it again — by the sample's printed number, or by the
+// batch the row prints — so that is the only thing passed in.
+async function writeNameThroughEditor(locate, value, container) {
     const link = await waitFor(() => {
-        const tr = findTargetRow(container, name, rowNumber);
+        const tr = locate();
         return tr ? findFieldValueLink(tr, "Name:", true) : null;
     });
     if (!link) {
@@ -634,9 +648,8 @@ export async function fillNameIntoTable(sample, value) {
     pressEnter(input);
 
     const confirmed = await waitFor(() => {
-        const tr = findTargetRow(container, name, rowNumber);
-        if (!tr) return null;
-        return valuesMatch(readRowName(tr), value) ? tr : null;
+        const tr = locate();
+        return tr && valuesMatch(readRowName(tr), value) ? tr : null;
     });
 
     if (!confirmed) {
@@ -696,43 +709,11 @@ export async function fillNameIntoRow(tr, value) {
         return rowNumber ? findRowByNumber(container, rowNumber) : null;
     };
 
-    let link = findFieldValueLink(tr, "Name:", true);
-    if (!link) {
-        mouseClick(tr);
-        link = await waitFor(() => {
-            const current = row();
-            return current ? findFieldValueLink(current, "Name:", true) : null;
-        });
-    }
-    if (!link) {
-        pressEscape();
-        return { ok: false, reason: "row has no empty Name field" };
-    }
+    // A row in view mode has no Name link at all; the click puts the table into
+    // edit rendering, exactly as the user's would.
+    if (!findFieldValueLink(tr, "Name:", true)) mouseClick(tr);
 
-    mouseClick(link);
-
-    const input = await waitFor(() => findEditorInput(/^\s*Name\s*$/i));
-    if (!input) {
-        pressEscape();
-        return { ok: false, reason: "Name editor did not open" };
-    }
-
-    setNativeInputValue(input, value);
-    pressEnter(input);
-
-    // Same trap as fillNameIntoTable: a filled Name renders as a bare span
-    // with no label, so the confirmation reads the value, not "Name: value".
-    const confirmed = await waitFor(() => {
-        const current = row();
-        return current && valuesMatch(readRowName(current), value) ? current : null;
-    });
-    if (!confirmed) {
-        pressEscape();
-        return { ok: false, reason: "value did not stick" };
-    }
-
-    clickOutside(container);
-    return { ok: true };
+    return writeNameThroughEditor(row, value, container);
 }
 
 // Fill `value` into the row's Purity field. CDD recalculates this row's

@@ -136,10 +136,6 @@ function batchLabelOf(row) {
 // can be written in — there are no links at all: the row prints
 // `Molecule: RGT-0000246-001` and stops. So the link is also read as a LESSON,
 // and the edit-mode row is answered from what those lessons taught.
-export function batchLabelForRow(row) {
-    return batchLabelOf(row);
-}
-
 export function moleculeIdForRow(row) {
     for (const link of row.querySelectorAll("a[href]")) {
         const match = MOLECULE_HREF.exec(link.getAttribute("href") || "");
@@ -327,7 +323,7 @@ function learnFromMoleculePicker(vaultId) {
 // no batch metafields at all, so the card only learns the Internal ID after an
 // autosave — reading it off the page is what lets the automatic write use it
 // on a row added seconds ago.
-function internalIdForRow(row, moleculeId) {
+export function internalIdForRow(row, moleculeId) {
     const fromPage = getBatchField(moleculeId, batchLabelOf(row), "Internal ID");
     if (fromPage) return fromPage;
 

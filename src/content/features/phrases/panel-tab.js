@@ -66,7 +66,11 @@ function buildPhraseRow(phrase) {
             hint.textContent = "copy";
             row.classList.remove("cdd-phrase-item--done");
         }, 900);
-        if (ok) touchPhrase(phrase.id);
+        // Deliberately not awaited: the copy has already happened and the row
+        // has already said so. This only refreshes the LRU stamp that decides
+        // which phrase is dropped at the cap, and nothing on screen waits for
+        // it.
+        if (ok) void touchPhrase(phrase.id);
     });
     return row;
 }

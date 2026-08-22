@@ -19,13 +19,13 @@
 
 import { STATE } from "../state.js";
 import { detectVaultId } from "../api/molecule-image.js";
-import { getBatchField, getSynonyms, loadSynonyms } from "../api/molecule-synonyms.js";
+import { getSynonyms, loadSynonyms } from "../api/molecule-synonyms.js";
 import { getRememberedName } from "../../shared/name-memory.js";
 import { rowNameCandidates } from "../../shared/row-name-choice.js";
 import {
     isRowNamePickerEnabled,
 } from "../../shared/row-name-flag.js";
-import { batchLabelForRow, moleculeIdForRow } from "./name-watch.js";
+import { internalIdForRow, moleculeIdForRow } from "./name-watch.js";
 import {
     getReactionContainers,
     setNativeInputValue,
@@ -144,27 +144,6 @@ function resolveMoleculeId(field) {
     return byReaction ? String(byReaction.moleculeId) : null;
 }
 
-// The batch's Internal ID, from whichever card describes this row. It belongs
-// to the BATCH, not the molecule, so it is looked up per row rather than kept
-// in the molecule-keyed stores — two batches of one molecule carry two of them.
-function internalIdFor(row, moleculeId) {
-    // The molecule page lists every batch with its fields and is already
-    // fetched for the synonyms; the payload has no batch metafields until an
-    // autosave has been round-tripped.
-    const fromPage = getBatchField(moleculeId, batchLabelForRow(row), "Internal ID");
-    if (fromPage) return fromPage;
-
-    const printed = (row?.cells?.[0]?.innerText || "").trim();
-
-    for (const sample of STATE.lastPayload?.samples || []) {
-        if (String(sample?.moleculeId || "") !== String(moleculeId)) continue;
-        if (printed && sample.rowNumber != null && String(sample.rowNumber) !== printed) {
-            continue;
-        }
-        if (sample.internalID) return String(sample.internalID);
-    }
-    return null;
-}
 
 const MARKS = {
     remembered: "remembered",
@@ -179,7 +158,7 @@ function buildCandidates(moleculeId, row) {
     return rowNameCandidates(
         {
             remembered: getRememberedName(moleculeId),
-            internalId: internalIdFor(row, moleculeId),
+            internalId: internalIdForRow(row, moleculeId),
             synonyms: getSynonyms(moleculeId) || [],
         }
     ).map((candidate, index) => ({

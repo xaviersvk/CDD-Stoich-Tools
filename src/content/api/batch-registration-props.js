@@ -33,32 +33,41 @@ export function readBatchProps(doc, batchId) {
 
         if (Number(props?.object_id) !== wanted) continue;
 
-        const defs = (Array.isArray(props.batch_field_definitions)
-            ? props.batch_field_definitions
-            : []
-        )
-            .filter((d) => d && d.id != null && d.name)
-            .map((d) => ({ id: d.id, name: d.name }));
-
-        const nameById = new Map(defs.map((d) => [d.id, d.name]));
-        const fieldMap = {};
-
-        for (const entry of Object.values(props.data || {})) {
-            const name = nameById.get(entry?.batch_field_definition_id);
-            if (!name) continue;
-
-            // Pick-list ids and file uploads have no readable value here.
-            const value =
-                entry?.text_value ?? entry?.float_value ?? entry?.date_value ?? null;
-            if (value == null || value === "") continue;
-
-            fieldMap[name] = value;
-        }
-
-        return { fieldMap, defs };
+        return readRenderer(props);
     }
 
     return null;
+}
+
+// One registration renderer, turned into { fieldMap, defs }.
+//
+// Shared by the two ways of asking: readBatchProps finds the renderer by the
+// batch's numeric id, readBatchFieldsByName finds every renderer and keys them
+// by the name the batch prints. The turning is the same either way.
+function readRenderer(props) {
+    const defs = (Array.isArray(props?.batch_field_definitions)
+        ? props.batch_field_definitions
+        : []
+    )
+        .filter((d) => d && d.id != null && d.name)
+        .map((d) => ({ id: d.id, name: d.name }));
+
+    const nameById = new Map(defs.map((d) => [d.id, d.name]));
+    const fieldMap = {};
+
+    for (const entry of Object.values(props?.data || {})) {
+        const name = nameById.get(entry?.batch_field_definition_id);
+        if (!name) continue;
+
+        // Pick-list ids and file uploads have no readable value here.
+        const value =
+            entry?.text_value ?? entry?.float_value ?? entry?.date_value ?? null;
+        if (value == null || value === "") continue;
+
+        fieldMap[name] = value;
+    }
+
+    return { fieldMap, defs };
 }
 
 // The definition id behind a user-configured label. `fieldLabelsMatch`
@@ -112,21 +121,7 @@ export function readBatchFieldsByName(doc) {
         }
         if (props?.resource_type !== "batch") continue;
 
-        const nameById = new Map(
-            (Array.isArray(props.batch_field_definitions) ? props.batch_field_definitions : [])
-                .filter((d) => d && d.id != null && d.name)
-                .map((d) => [d.id, d.name])
-        );
-
-        const fieldMap = {};
-        for (const entry of Object.values(props.data || {})) {
-            const name = nameById.get(entry?.batch_field_definition_id);
-            if (!name) continue;
-            const value = entry?.text_value ?? entry?.float_value ?? entry?.date_value ?? null;
-            if (value == null || value === "") continue;
-            fieldMap[name] = value;
-        }
-
+        const { fieldMap } = readRenderer(props);
         const batchName = String(fieldMap["Batch Name"] || "").trim();
         if (batchName) out.set(batchName, fieldMap);
     }

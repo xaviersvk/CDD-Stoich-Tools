@@ -450,7 +450,7 @@ export function initKeywordsFieldPicker() {
     started = true;
 
     injectPickerStyles();
-    initFormFilterChips();
+    void initFormFilterChips();   // deliberate: the chips render on their own
 
     document.addEventListener("mousedown", onDocMouseDown, true);
     document.addEventListener("keydown", onDocKeyDown, true);

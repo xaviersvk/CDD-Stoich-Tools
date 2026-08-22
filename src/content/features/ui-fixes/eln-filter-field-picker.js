@@ -412,7 +412,9 @@ function scan() {
         const listbox = popup.querySelector(`${LISTBOX_SELECTOR}:not([${MARK}])`);
         if (!listbox || !isFieldListbox(listbox)) continue;
         if (loopDetected(popup)) continue;
-        enhance(popup, listbox);
+        // Fire-and-forget: a MutationObserver callback cannot await, and the
+        // panel fills itself in once the options come back from the bridge.
+        void enhance(popup, listbox);
     }
 }
 

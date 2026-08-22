@@ -28,12 +28,15 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   Name popup grows a list of candidates), and `Suggest, and fill automatically`
   (the same list, plus the name is written into rows added while working).
   Off by default: each new molecule costs one request for its page.
-  - The order — remembered name, then Internal ID or shortest synonym per
-    *Settings → First choice*, then the remaining synonyms — lives in one
-    place, `shared/row-name-choice.js`, because three readers consume it: the
+  - The order — remembered name, shortest synonym, the batch's Internal ID,
+    then the remaining synonyms — lives in one place,
+    `shared/row-name-choice.js`, because three readers consume it: the
     automatic write, the panel's offer and the editor's list. They could
     previously disagree, and a suggestion that differs from what the button
-    writes is worse than either alone.
+    writes is worse than either alone. The synonym leads because it describes
+    the SUBSTANCE and is the same wherever the molecule turns up; an Internal
+    ID describes one bottle of it, so it answers when there is no synonym
+    rather than competing with one.
   - Names typed by hand are remembered per molecule (300 entries, LRU) and
     offered wherever that molecule appears, including in other entries.
     *Settings → Remembered names* lists them; it had no rail entry until now,
@@ -67,6 +70,16 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   selector added to `copyable-fields.js`; the generic click path serves it.
 
 ### Fixed
+- **The automatic name arrived only after the entry was saved.** Adding a
+  reagent through the row's own Name field never puts the molecule id on the
+  page — measured on a live row: no `/molecules/<id>` link in edit mode, none
+  in the batch popover, and the only number near the row is the attached
+  STRUCTURE. Everything keyed on the id therefore waited for the payload, which
+  only comes with an autosave. But the search that found the molecule already
+  answered with its synonyms, and the fetch hook sees that response: they are
+  now read from `inventory_search.json` and stored under the molecule's NAME,
+  so the name lands while the user is still choosing a batch. Writing a name
+  never needed the id.
 - **The panel stayed empty until the entry was saved.** Opening an ELN entry
   puts no payload on the wire — measured on entry 2761893, a full load and a
   Turbo navigation both leave the panel at `0 sample(s) from 0 reaction(s)`

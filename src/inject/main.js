@@ -80,8 +80,17 @@ function hasPayloadForEntry(entryId) {
   return seenEntryIds.has(String(entryId));
 }
 
-function processJsonPayload(data) {
+function processJsonPayload(data, url) {
   if (!data || typeof data !== "object") return;
+
+  // The reagent search. Its answer is the only place a molecule's synonyms
+  // exist before the entry is saved — adding a reagent through the row's own
+  // Name field never puts the molecule id on the page — and it is recognisable
+  // by URL alone: the body is an ordinary result list with nothing ELN-shaped
+  // about it.
+  if (/inventory_search/.test(url || "")) {
+    post(EVENTS.MOLECULE_SEARCH, { body: data });
+  }
 
   maybePostInventoryMolecules(data);
 

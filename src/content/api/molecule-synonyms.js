@@ -122,3 +122,43 @@ export function getBatchField(moleculeId, batchLabel, fieldName) {
     const value = fields?.[fieldName];
     return value == null || value === "" ? null : String(value);
 }
+
+// Molecule NAME ("RGT-0000246") -> string[]. Filled from the reagent search,
+// which answers with the synonyms long before anything knows the molecule's
+// numeric id — see features/search-learning.js for why that matters.
+const listsByName = new Map();
+// Molecule NAME -> molecule id, when the search happened to carry one.
+const idByName = new Map();
+
+export function rememberSearchResult({ name, synonyms, moleculeId }) {
+    const key = String(name || "").trim();
+    if (!key) return;
+
+    const list = splitSynonyms(synonyms);
+    if (list.length) listsByName.set(key, list);
+
+    if (moleculeId) {
+        idByName.set(key, String(moleculeId));
+        // The id-keyed store is what every other reader uses; fill it too, so
+        // one search answers for the panel, the offer and the editor alike.
+        if (list.length && !lists.has(String(moleculeId))) {
+            lists.set(String(moleculeId), list);
+        }
+    }
+}
+
+/** Synonyms known for a molecule NAME, for rows whose id is still unknown. */
+export function getSynonymsByName(name) {
+    const key = String(name || "").trim();
+    if (!key) return null;
+    // A row prints the batch ("RGT-0000246-001"); the search answered for the
+    // molecule ("RGT-0000246").
+    return listsByName.get(key) || listsByName.get(key.replace(/-\d+$/, "")) || null;
+}
+
+/** Molecule id learned from a search, by molecule or batch name. */
+export function getMoleculeIdByName(name) {
+    const key = String(name || "").trim();
+    if (!key) return null;
+    return idByName.get(key) || idByName.get(key.replace(/-\d+$/, "")) || null;
+}

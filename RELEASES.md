@@ -28,9 +28,10 @@ from what the molecule already answers to, so a table reads `DIPEA` instead of
   `Name: Optional`; **Suggest, and fill automatically** also writes the name
   into rows you add while working. Rows already in the entry are never written
   to on their own.
-- The order is: a name you typed for that molecule before, then the batch's
-  Internal ID or the shortest synonym — whichever you put first at
-  *Settings → First choice* — then the remaining synonyms.
+- The name is picked in one order: a name you typed for that molecule before,
+  then its shortest synonym, then the batch's Internal ID for a substance the
+  registrant gave no synonym, then the remaining synonyms. Automatic filling
+  lands with the row, not with the next save.
 - Names you type yourself are remembered per molecule and offered everywhere
   that molecule turns up, including other entries. Manage them at
   *Settings → Remembered names*. A name that is simply the shortest synonym is

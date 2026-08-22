@@ -4,6 +4,7 @@ import { renderFromState } from "./features/sample-panel.js";
 import { enrichBatchOnlySamples } from "./features/batch-field-enrichment.js";
 import { enrichSampleSynonyms } from "./features/synonym-enrichment.js";
 import { captureRowNames } from "./features/name-capture.js";
+import { learnFromSearchResponse } from "./features/search-learning.js";
 import { enrichRowNameSynonyms } from "./features/name-enrichment.js";
 import { onSamplePayload } from "./features/auto-fill.js";
 import { ensurePrintButtons } from "./features/print-buttons.js";
@@ -80,6 +81,11 @@ export function handleMessage(event) {
 
         case EVENTS.INVENTORY_BOX: {
             updateBoxData(data.payload?.positions || []);
+            break;
+        }
+
+        case EVENTS.MOLECULE_SEARCH: {
+            learnFromSearchResponse(data.payload?.body);
             break;
         }
 

@@ -35,12 +35,17 @@
 
 import { STATE } from "../state.js";
 import { detectVaultId } from "../api/molecule-image.js";
-import { getBatchField, getSynonyms, loadSynonyms } from "../api/molecule-synonyms.js";
+import {
+    getBatchField,
+    getMoleculeIdByName,
+    getSynonyms,
+    getSynonymsByName,
+    loadSynonyms,
+} from "../api/molecule-synonyms.js";
 import { getRememberedName } from "../../shared/name-memory.js";
 import { pickRowName } from "../../shared/row-name-choice.js";
 import { isElnEntryPage } from "../../shared/page-detection.js";
 import {
-    getCachedRowNamePriority,
     getRowNameMode,
     isFillRowNameEnabled,
     isRowNameAutoFillEnabled,
@@ -152,8 +157,22 @@ export function moleculeIdForRow(row) {
     return (
         idByBatchName.get(printed) ||
         idByBatchName.get(printed.replace(/-\d+$/, "")) ||
+        getMoleculeIdByName(printed) ||
         null
     );
+}
+
+// The synonyms for a row, by molecule id when we have one and by the batch it
+// prints when we do not.
+//
+// The second half is what makes the automatic name arrive with the row rather
+// than with the save: adding a reagent through the row's own Name field never
+// reveals the molecule id, but the search that found the molecule already
+// answered with its synonyms. See features/search-learning.js.
+function synonymsForRow(row, moleculeId) {
+    const byId = moleculeId ? getSynonyms(moleculeId) : null;
+    if (byId && byId.length) return byId;
+    return getSynonymsByName(batchLabelOf(row)) || byId || [];
 }
 
 // The row's Name as the table shows it right now, or null when it has none.
@@ -330,9 +349,8 @@ function nameFor(moleculeId, row) {
         {
             remembered: getRememberedName(moleculeId),
             internalId: internalIdForRow(row, moleculeId),
-            synonyms: getSynonyms(moleculeId) || [],
-        },
-        getCachedRowNamePriority()
+            synonyms: synonymsForRow(row, moleculeId),
+        }
     );
 }
 
@@ -362,6 +380,10 @@ async function drainWrites() {
             const value = nameFor(moleculeId, row);
             if (!value) {
                 autoAttempted.delete(key);
+                say("nothing to write yet", {
+                    row: key,
+                    synonyms: getSynonyms(moleculeId),
+                });
                 continue;
             }
 
@@ -389,6 +411,10 @@ const LOG = "[CDD row-name]";
 // console.debug, not log: this is a diagnostic for when nothing visibly
 // happens, and nothing visibly happening is also the correct outcome most of
 // the time. Set the console to Verbose to see it.
+// console.debug, not log. An automatic write that quietly does nothing looks
+// exactly like one that correctly left the row alone, so the verdicts are
+// worth keeping — but they belong behind the console.s Verbose switch, not in
+// everybody.s log. Throttled to one line per row per change of verdict.
 const say = (...args) => console.debug(LOG, ...args);
 const lastVerdict = new Map();
 
@@ -467,18 +493,14 @@ function scan() {
             continue;
         }
 
-        if (!moleculeId) {
-            trace(key, "no molecule id for this row yet");
-            continue;
-        }
-
-        // Nothing to write yet: the synonyms are still on their way, and the
-        // scan that follows them landing will pick this row up again.
-        const value = nameFor(moleculeId, row);
+        // No id needed if the search already answered for this batch by name:
+        // writing a name wants the NAME, and requiring an id here is what made
+        // the fill wait for the entry to be saved.
+        const value = nameFor(moleculeId, rows[i]);
         if (!value) {
-            trace(key, "no name to write", {
+            trace(key, "nothing to write yet", {
                 moleculeId,
-                synonyms: getSynonyms(moleculeId),
+                synonyms: synonymsForRow(rows[i], moleculeId),
             });
             continue;
         }

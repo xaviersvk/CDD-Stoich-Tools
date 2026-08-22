@@ -23,14 +23,7 @@
 
 export const ROW_NAME_STORAGE_KEY = "cddFillRowName";
 
-// Which of the two derived names goes first, once nothing is remembered for
-// the molecule. See shared/row-name-choice.js for the full order.
-export const ROW_NAME_PRIORITY_KEY = "cddRowNamePriority";
 
-import {
-    NAME_SOURCE_INTERNAL_ID,
-    NAME_SOURCE_SYNONYM,
-} from "./row-name-choice.js";
 
 export const ROW_NAME_OFF = "off";
 export const ROW_NAME_SUGGEST = "suggest";
@@ -62,32 +55,8 @@ export async function saveFillRowNameMode(mode) {
     }
 }
 
-export async function getRowNamePriority() {
-    try {
-        const result = await chrome.storage.local.get(ROW_NAME_PRIORITY_KEY);
-        return result?.[ROW_NAME_PRIORITY_KEY] === NAME_SOURCE_INTERNAL_ID
-            ? NAME_SOURCE_INTERNAL_ID
-            : NAME_SOURCE_SYNONYM;
-    } catch {
-        return NAME_SOURCE_SYNONYM;
-    }
-}
-
-export async function saveRowNamePriority(value) {
-    try {
-        await chrome.storage.local.set({
-            [ROW_NAME_PRIORITY_KEY]:
-                value === NAME_SOURCE_INTERNAL_ID
-                    ? NAME_SOURCE_INTERNAL_ID
-                    : NAME_SOURCE_SYNONYM,
-        });
-    } catch {
-        // Orphaned content script — nothing useful to do.
-    }
-}
 
 let cached = ROW_NAME_OFF;
-let cachedPriority = NAME_SOURCE_SYNONYM;
 let listenerAttached = false;
 const changeListeners = new Set();
 
@@ -125,10 +94,6 @@ export function onFillRowNameChanged(cb) {
     return () => changeListeners.delete(cb);
 }
 
-/** "synonym" | "internalId" — which derived name is tried first. */
-export function getCachedRowNamePriority() {
-    return cachedPriority;
-}
 
 export async function initFillRowName() {
     if (!listenerAttached && chrome?.storage?.onChanged) {
@@ -141,19 +106,11 @@ export async function initFillRowName() {
                 cached = normalizeMode(changes[ROW_NAME_STORAGE_KEY].newValue);
                 touched = true;
             }
-            if (changes[ROW_NAME_PRIORITY_KEY]) {
-                cachedPriority =
-                    changes[ROW_NAME_PRIORITY_KEY].newValue === NAME_SOURCE_INTERNAL_ID
-                        ? NAME_SOURCE_INTERNAL_ID
-                        : NAME_SOURCE_SYNONYM;
-                touched = true;
-            }
 
             if (touched) notify();
         });
     }
     cached = await getFillRowNameMode();
-    cachedPriority = await getRowNamePriority();
     notify();
     return cached;
 }

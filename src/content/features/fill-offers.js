@@ -8,7 +8,6 @@
 import { getRememberedValues, touchValueUsed } from "../../shared/density-memory.js";
 import { getRememberedName, touchNameUsed } from "../../shared/name-memory.js";
 import {
-    getCachedRowNamePriority,
     isFillRowNameEnabled,
 } from "../../shared/row-name-flag.js";
 import { rowNameCandidates } from "../../shared/row-name-choice.js";
@@ -58,8 +57,7 @@ export function computeFillOffers(sample) {
                 remembered: getRememberedName(sample.moleculeId),
                 internalId: sample.internalID,
                 synonyms: getSynonyms(sample.moleculeId) || [],
-            },
-            getCachedRowNamePriority()
+            }
         );
         if (best) {
             offers.push({

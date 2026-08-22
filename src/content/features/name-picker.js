@@ -23,7 +23,6 @@ import { getBatchField, getSynonyms, loadSynonyms } from "../api/molecule-synony
 import { getRememberedName } from "../../shared/name-memory.js";
 import { rowNameCandidates } from "../../shared/row-name-choice.js";
 import {
-    getCachedRowNamePriority,
     isRowNamePickerEnabled,
 } from "../../shared/row-name-flag.js";
 import { batchLabelForRow, moleculeIdForRow } from "./name-watch.js";
@@ -182,8 +181,7 @@ function buildCandidates(moleculeId, row) {
             remembered: getRememberedName(moleculeId),
             internalId: internalIdFor(row, moleculeId),
             synonyms: getSynonyms(moleculeId) || [],
-        },
-        getCachedRowNamePriority()
+        }
     ).map((candidate, index) => ({
         name: candidate.name,
         // The first entry is what you would get without opening this list at

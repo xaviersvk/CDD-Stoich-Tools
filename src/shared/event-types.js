@@ -14,6 +14,10 @@ export const EVENTS = {
   PRINT_REQUEST: "PRINT_REQUEST",
   INVENTORY_MOLECULES: "INVENTORY_MOLECULES",
   INVENTORY_BOX: "INVENTORY_BOX",
+  // Page world -> content: the answer to CDD.s reagent search, which carries a
+  // molecule.s synonyms while the user is still choosing a batch. It is the
+  // only moment that information exists before the entry is saved.
+  MOLECULE_SEARCH: "MOLECULE_SEARCH",
   // Page world -> content: a snapshot of an outgoing create-sample request body,
   // used as a faithful payload template when FormData(form) cannot reproduce it.
   CREATE_SAMPLE_CAPTURED: "CREATE_SAMPLE_CAPTURED",

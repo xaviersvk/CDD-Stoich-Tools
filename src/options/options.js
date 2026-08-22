@@ -39,8 +39,6 @@ import {
 } from "../shared/auto-fill-flag.js";
 import {
     getFillRowNameMode,
-    getRowNamePriority,
-    saveRowNamePriority,
     saveFillRowNameMode,
 } from "../shared/row-name-flag.js";
 import {
@@ -920,25 +918,11 @@ for (const radio of fillRowNameRadios) {
     });
 }
 
-const rowNamePriorityRadios = Array.from(
-    document.querySelectorAll('input[name="rowNamePriority"]')
-);
-
-for (const radio of rowNamePriorityRadios) {
-    radio.addEventListener("change", () => {
-        if (radio.checked) saveRowNamePriority(radio.value);
-    });
-}
 
 async function initFillRowNameUI() {
     const mode = await getFillRowNameMode();
     for (const radio of fillRowNameRadios) {
         radio.checked = radio.value === mode;
-    }
-
-    const priority = await getRowNamePriority();
-    for (const radio of rowNamePriorityRadios) {
-        radio.checked = radio.value === priority;
     }
 }
 

@@ -12,27 +12,27 @@
 //
 //   1. the name remembered for this molecule — a choice already made by hand
 //      beats anything derived, always
-//   2. whichever of {Internal ID, shortest synonym} the setting puts first
-//   3. the other one
+//   2. the shortest synonym, which is what a chemist writes on the bench
+//   3. the batch's Internal ID, for a substance the registrant gave no synonym
 //   4. the remaining synonyms, shortest first
+//
+// The synonym leads deliberately. It describes the SUBSTANCE and is the same
+// wherever the molecule turns up; an Internal ID describes one bottle of it.
+// So the ID is the answer when there is no synonym to give, not a rival to it.
 //
 // Pure: no DOM, no chrome.*.
 
 import { pickShortest } from "./pretty-name.js";
 
-export const NAME_SOURCE_SYNONYM = "synonym";
-export const NAME_SOURCE_INTERNAL_ID = "internalId";
-
 /**
- * rowNameCandidates({ remembered, internalId, synonyms }, priority)
- *   -> [{ name, source }]
+ * rowNameCandidates({ remembered, internalId, synonyms }) -> [{ name, source }]
  *
  * `source` is one of "remembered" | "internalId" | "synonym", and is what the
  * editor prints beside each entry. Empty values are dropped and duplicates
  * removed case-insensitively, so a remembered name that came from a synonym
  * appears once, under the reason that earned it its place.
  */
-export function rowNameCandidates(parts, priority) {
+export function rowNameCandidates(parts) {
     const out = [];
     const seen = new Set();
 
@@ -49,24 +49,16 @@ export function rowNameCandidates(parts, priority) {
         .filter((s) => typeof s === "string" && s.trim())
         .slice()
         .sort((a, b) => a.length - b.length);
-    const shortest = pickShortest(synonyms);
 
     add(parts?.remembered, "remembered");
-
-    if (priority === NAME_SOURCE_INTERNAL_ID) {
-        add(parts?.internalId, "internalId");
-        add(shortest, "synonym");
-    } else {
-        add(shortest, "synonym");
-        add(parts?.internalId, "internalId");
-    }
-
+    add(pickShortest(synonyms), "synonym");
+    add(parts?.internalId, "internalId");
     for (const synonym of synonyms) add(synonym, "synonym");
 
     return out;
 }
 
 /** The one name to write without asking. Null when there is nothing to write. */
-export function pickRowName(parts, priority) {
-    return rowNameCandidates(parts, priority)[0]?.name ?? null;
+export function pickRowName(parts) {
+    return rowNameCandidates(parts)[0]?.name ?? null;
 }

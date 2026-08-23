@@ -23,6 +23,8 @@ import { readElnEntryId } from "../utils/eln-entry-id.js";
 import { isElnEntryPage } from "../../shared/page-detection.js";
 import { isTableRowsEnabled } from "../../shared/panel-sources-flag.js";
 import { PANEL_ID, REACTION_COLORS } from "../../shared/plugin-constants.js";
+import { OPEN_OPTIONS_MESSAGE } from "../../shared/event-types.js";
+import { requestSetupWizard } from "../../shared/setup-wizard-flag.js";
 import { getPanelContents } from "./panel-contents.js";
 import { updatePanelVisibilityForOverlays } from "../overlay-watcher.js";
 import { printPanel } from "./panel-print.js";
@@ -266,8 +268,24 @@ export function ensurePanel() {
         toggleBtn.textContent = "+";
     }
 
+    // ⚙ opens the settings page ON the setup guide — the one-screen tour of
+    // what the extension does and where each switch lives. The guide is what
+    // a newcomer needs; the full settings are one click further.
+    const setupBtn = document.createElement("button");
+    setupBtn.id = `${PANEL_ID}-setup`;
+    setupBtn.type = "button";
+    setupBtn.textContent = "⚙";
+    setupBtn.title = "Setup guide and settings";
+    setupBtn.setAttribute("aria-label", "Open the setup guide and settings");
+    setupBtn.addEventListener("click", async (event) => {
+        event.stopPropagation();
+        await requestSetupWizard();
+        chrome.runtime.sendMessage({ type: OPEN_OPTIONS_MESSAGE });
+    });
+
     actions.appendChild(printBtn);
     actions.appendChild(csvGroup);
+    actions.appendChild(setupBtn);
     actions.appendChild(toggleBtn);
 
     header.appendChild(tabs);

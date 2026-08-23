@@ -9,6 +9,7 @@
 // content script, which is why those modules never touch the DOM.
 
 import { initPhrasesUI } from "./phrases-ui.js";
+import { initSetupWizard } from "./setup-wizard.js";
 import {
     SAMPLE_PANEL_FIELDS,
     SAMPLE_PANEL_CUSTOM_FIELDS_KEY,
@@ -1419,3 +1420,4 @@ initHplcInjectionUI();
 initRegistrationDefaultsUI();
 initPhrasesUI();
 initRailUI();
+initSetupWizard();

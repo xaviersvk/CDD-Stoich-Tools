@@ -141,6 +141,26 @@ The flagship feature group: a floating "CDD Samples" box on ELN entry pages.
   density/purity/concentration/solvent fills.
 - **Full write-up:** [ROW_NAME_FROM_SYNONYM.md](./ROW_NAME_FROM_SYNONYM.md).
 
+### 1.7 Setup Guide (settings page)
+- **User value:** A nine-step tour of what the extension does, where it shows
+  up in CDD, and the switches worth deciding up front. Opens by itself the
+  first time the settings page is shown; afterwards from the **Setup guide**
+  masthead button or the **⚙** in the panel header.
+- **Entry point:** `src/options/setup-wizard.js` (`STEPS`, `initSetupWizard`,
+  `openSetupWizard`).
+- **Related files:** `shared/setup-wizard-flag.js` (`cddSetupWizardSeenV1`,
+  one-shot `cddSetupWizardRequested`), `options.html` (`#setupWizard`,
+  `#openSetupWizard`), `options.css` (`.wizard*`), `sample-panel.js` (the ⚙
+  sends `OPEN_OPTIONS_MESSAGE` after setting the request flag).
+- **Data source:** none of its own — every control **mirrors** a real control
+  under `.panes` and fires its `change`/`input`, so `options.js` stays the
+  only writer of each storage key.
+- **Maintenance difficulty:** **low** — adding a step is one entry in `STEPS`;
+  a mirror that finds no real control renders disabled rather than breaking.
+- **Regression risk:** **low** — a renamed control id on the settings page
+  silently disables its mirror; keep the `mirror` selectors in step with
+  `options.html`.
+
 ---
 
 ## 2. ELN Enhancements

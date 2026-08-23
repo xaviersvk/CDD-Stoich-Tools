@@ -19,6 +19,21 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [15.2.0] — 2026-08-23
+
+### Removed
+- **The floating panel's `Refresh` button.** It only ever called
+  `renderFromState()`, which redraws the panel from `STATE.lastPayload` —
+  it never re-fetched anything from CDD. Every event that changes what the
+  panel should show (a new reaction payload, an edit to the entry text, name /
+  synonym / batch enrichment, auto-fill, any settings change, Ketcher closing,
+  SPA navigation) already triggers that same redraw, so the button duplicated
+  work the panel does on its own while its label promised a reload it did not
+  do. With it gone, the header — `Entities | Phrases` tabs, `Print`, `CSV`,
+  collapse — fits on one row at the default 300px width; the
+  hide-the-title breakpoint moved from 330px to 270px accordingly.
+
+---
 ## [15.1.0] — 2026-08-23
 
 ### Added

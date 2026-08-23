@@ -214,11 +214,6 @@ export function ensurePanel() {
     const actions = document.createElement("div");
     actions.className = "cdd-stoich-actions";
 
-    const refreshBtn = document.createElement("button");
-    refreshBtn.id = `${PANEL_ID}-refresh`;
-    refreshBtn.type = "button";
-    refreshBtn.textContent = "Refresh";
-
     const printBtn = document.createElement("button");
     printBtn.id = `${PANEL_ID}-print`;
     printBtn.type = "button";
@@ -274,7 +269,6 @@ export function ensurePanel() {
         toggleBtn.textContent = "+";
     }
 
-    actions.appendChild(refreshBtn);
     actions.appendChild(printBtn);
     actions.appendChild(csvGroup);
     actions.appendChild(toggleBtn);
@@ -380,12 +374,13 @@ export function ensurePanel() {
 
   /* The title is the first thing to go: it is the only part of the header
      that is decoration rather than a control.
-     330, not 300. Measured in the browser: with the title shown the header
-     still fits on one row at 340px and wraps at 320. A threshold of 300 left
-     a band where a 320px panel had a 66px header while a 300px one had 44 —
-     a wider panel with a taller header, which is silly, and 300 is the
-     default width so everyone would have sat on that edge. */
-  @container (max-width: 330px) {
+     Measured in the browser back when the header still had a Refresh
+     button: it fit on one row at 340px and wrapped at 320. Dropping that
+     button freed about 60px, so the same header now fits down to roughly
+     280 — which keeps the title at the 300px default width. Keep the
+     threshold below the default: a band where a wider panel gets a taller
+     header is silly, and everyone sits on the default. */
+  @container (max-width: 270px) {
     #${PANEL_ID} .cdd-stoich-title {
       display: none;
     }
@@ -742,7 +737,6 @@ ${HPLC_BLOCK_STYLES.replace(/^ {2}\./gm, `  #${PANEL_ID} .`)}
     background: #374151;
   }
   #${PANEL_ID}[data-tab="phrases"] .cdd-entities-pane,
-  #${PANEL_ID}[data-tab="phrases"] #${PANEL_ID}-refresh,
   #${PANEL_ID}[data-tab="phrases"] #${PANEL_ID}-print,
   #${PANEL_ID}[data-tab="phrases"] .cdd-csv-split,
   #${PANEL_ID}:not([data-tab="phrases"]) .cdd-phrases-pane {
@@ -762,10 +756,6 @@ ${PHRASES_PANE_STYLES(PANEL_ID)}
     // remembered position back into the window, which is what stopped a panel
     // placed on a wide monitor from reopening off-screen on a laptop.
     clampPanelIntoView(panel);
-
-    refreshBtn.addEventListener("click", () => {
-        renderFromState();
-    });
 
     printBtn.addEventListener("click", () => {
         printPanel(visibleFields);

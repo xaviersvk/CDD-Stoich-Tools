@@ -149,7 +149,7 @@ sequenceDiagram
   `field-resolvers.js`; the content world only ever receives flat `flatSample`
   objects.
 - **Rendering is idempotent and re-entrant.** `renderFromState()` is called from
-  the router on every message, from the Refresh button, on SPA navigation, and on
+  the router on every message, on SPA navigation, and on
   a settings change — it always rebuilds from `STATE.lastPayload`.
 - **`resolveFieldValue` never throws** — a field with no value returns `null` and
   its row is simply skipped, so a malformed payload degrades to empty rows.

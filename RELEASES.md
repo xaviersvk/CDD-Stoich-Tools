@@ -13,7 +13,16 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
-# What's new in 15.1.0
+# What's new in 15.2.0
+
+---
+
+## 15.2.0 — 2026-08-23
+
+**The floating panel lost its `Refresh` button.** It never reloaded anything —
+the panel already redraws itself whenever the entry, the table or a setting
+changes. The header (*Entities | Phrases*, *Print*, *CSV*) now sits on one
+row.
 
 ---
 

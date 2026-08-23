@@ -75,7 +75,7 @@ const STEPS = [
         title: "The floating panel",
         lead: "Open any ELN entry and a panel appears at the top right. Entities shows one card per stoichiometry row — batch, purity, density, amounts — with buttons that fill the row. Phrases is a pasteboard of reusable text.",
         body: [
-            "Drag it by its header, resize it from the corner, collapse it with −. Print and CSV export what the cards show. The ⚙ brings you back here.",
+            "Drag it by its header, resize it from the corner, collapse it with −. Export prints what the cards show (save as PDF from the print dialog); its ▾ holds the CSV exports. The ⚙ brings you back here.",
         ],
         pane: "col-fields-heading",
         controls: [

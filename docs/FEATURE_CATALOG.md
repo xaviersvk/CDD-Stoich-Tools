@@ -288,12 +288,16 @@ printed in the page world via a hidden iframe.
   depends on print-data row shapes.
 
 ### 3.2 Panel Print
-- **User value:** The Sample Panel's "Print" button prints a table of exactly the
-  columns the user has enabled (empty columns are dropped).
+- **User value:** The Sample Panel's **Export** button prints a table of exactly
+  the columns the user has enabled (empty columns are dropped), with the same
+  header as the stoichiometry sheet — entry title, Experiment ID, source URL,
+  print time — and the same attribution footer. Its ▾ holds the CSV exports
+  (whole table, products only).
 - **Entry point:** `src/content/features/panel-print.js` (`printPanel`).
 - **Related files:** `shared/sample-panel-fields.js` (`SAMPLE_PANEL_FIELDS`,
   `resolveFieldValue`, `getCustomFieldsFromSample`), `content/utils/dom.js`,
-  `inject/print/dispatcher.js`.
+  `inject/print/dispatcher.js`, `content/utils/eln-entry-id.js`; `PRINT_FOOTER_TEXT`
+  is exported from here and shared with `print-buttons.js`.
 - **Data source:** `STATE.lastPayload.samples` + the enabled `visibleFields`.
 - **Dependencies:** the field registry; the print dispatcher.
 - **Maintenance difficulty:** **low-medium**.

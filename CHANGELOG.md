@@ -44,6 +44,20 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
     the `#setupWizard` root in `options.html` — outside `.panes` on purpose,
     because the mirrors look their real controls up under `.panes`.
 
+### Changed
+- **Panel header: one `Export` split button** instead of `Print` + `CSV ▾`.
+  The main half prints (the PDF people actually file); the caret holds
+  `CSV` and `CSV — products only`. One control fewer keeps the header on a
+  single row now that the ⚙ has joined it. Ids are unchanged
+  (`…-print`, `…-csv`, `…-csv-products`).
+- **The panel print sheet says where it came from.** It used to open with a
+  bare `CDD Samples` heading. It now carries the same header as the
+  stoichiometry sheet — the entry's title, *Experiment ID*, source URL, print
+  time, row count — and the same attribution footer, which now lives in one
+  place (`PRINT_FOOTER_TEXT` in `panel-print.js`, imported by
+  `print-buttons.js`). The title is read from `[data-autotest-id="title"]`,
+  the ID through `readElnEntryId()`.
+
 ---
 ## [15.2.0] — 2026-08-23
 

@@ -30,6 +30,12 @@ entry ID on registered batches, HPLC, the registration form.
 - Every switch in the guide is the same switch as in settings — change it in
   either place.
 
+**One Export button in the panel.** *Export* prints the table (save as PDF
+from the print dialog); its ▾ holds *CSV* and *CSV — products only*.
+
+**The panel's print sheet now has a proper header** — entry title, Experiment
+ID, source and print time — and the same footer as the stoichiometry sheet.
+
 ---
 
 ## 15.2.0 — 2026-08-23

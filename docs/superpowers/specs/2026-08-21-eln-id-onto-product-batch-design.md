@@ -146,6 +146,12 @@ The value written is `applyIdentifierFormat(entryId, format)` plus
 already stamps, so a batch filled this way and one registered from the entry
 carry the identical string.
 
+> **Since 15.2.0:** the suffix comes from `productSuffix()` in
+> `shared/eln-id-carry.js`. Ordinary tables keep `tableSuffix`; a product of
+> a parallel (bulk) reaction gets `-<n><letter>` (`-1A`, `-1B`, `-2A`…) from
+> the parser's `parallelOrdinal` / `parallelLetter`. Both writers still go
+> through the one function. See FEATURE_CATALOG §2.4.
+
 ### 3 · Knowing whether it is empty
 
 `batch-field-enrichment.js:139` currently reads:

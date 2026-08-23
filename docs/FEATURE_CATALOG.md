@@ -51,7 +51,7 @@ The flagship feature group: a floating "CDD Samples" box on ELN entry pages.
 - **Maintenance difficulty:** **medium** — single large file (DOM building +
   inline CSS + drag + render loop).
 - **Regression risk:** **medium-high** — it is the central UI; it is re-rendered
-  from many triggers (messages, Refresh, SPA nav, settings change), so a change to
+  from many triggers (messages, SPA nav, settings change, enrichment), so a change to
   `renderFromState`/`renderSamples` can have wide effects.
 
 ### 1.2 Configurable Panel Fields
@@ -191,6 +191,58 @@ Improvements that target ELN entry and sample-data pages.
   several wrapper-selector fallbacks.
 - **Regression risk:** **medium** — fuzzy `text.includes(id)` matching could
   mis-mark on substring collisions; runs on a broad `document` observer.
+
+### 2.4 ELN ID onto the Batch's Internal ID (two writers)
+- **User value:** A product registered from an entry carries the entry's ID in
+  its **Internal ID** (the field label is configurable). Two ways in:
+  1. **Register link** — clicking *Register* in a stoichiometry row stamps the
+     value into the link (`?cdd_eln_id=…`); the registration form pre-fills the
+     field, the user still presses CDD's own Register. On by default.
+  2. **Panel button** — a product card whose batch already exists but has an
+     empty Internal ID shows *⤴ Write … into Internal ID on this batch*; one
+     click saves it onto the batch. **Off by default** (it writes to a record).
+- **Suffix rules** (one place, `productSuffix()` in `shared/eln-id-carry.js`):
+  ordinary tables get the table letter — first bare, then `B`, `C`…; a
+  product of a **parallel (bulk) reaction** gets `-<n><letter>` where `n`
+  counts the entry's parallel reactions only and the letter is the pair's
+  letter in the table (`MDX-0108-1A`, `-1B`, … `-2A`). The vault prefix is
+  trimmed first per the *ELN identifier format* setting (`IDEMO-MDX-0014` →
+  `MDX-0014` for vault-user IDs).
+- **Entry point:** `content/features/ui-fixes/eln-id-to-registration.js`
+  (`stampLink`, `parallelInfoOf`, `fillTargetField`);
+  `content/features/sample-panel.js` (`elnIdToBatchState`,
+  `buildElnIdToBatchButton`); `content/features/eln-id-to-batch-write.js`
+  (`writeElnIdToBatch`).
+- **Related files:** `shared/eln-id-carry.js` (settings, `applyIdentifierFormat`,
+  `tableSuffix`, `parallelSuffix`, `productSuffix`), `shared/eln-id-to-batch.js`
+  (`composeBatchElnId`, `sampleParallelInfo`, the panel flag and its sync
+  caches), `content/utils/eln-entry-id.js` (`readElnEntryId`, the single
+  reader of the on-screen `ID: …`), `content/api/batch-registration-props.js`
+  (`readBatchProps`, `findDefId`, `readFieldByLabel`),
+  `content/features/batch-field-enrichment.js` (fetches the batch's fields so
+  the panel knows Internal ID is empty), `options/` (*Registration form → From
+  the ELN*; panel checkbox).
+- **Data source:** the entry ID from the DOM; for the Register link the table
+  position and, in a bulk block, the letter on the
+  `stoichiometry-table-parallelReactant` row above the product row; for the
+  panel the parser's `reactionIndex` / `parallelOrdinal` / `parallelLetter`
+  (`inject/parsers/sample-data.js`, letter by first appearance of
+  `parallelReactionsPairId`).
+- **Dependencies:** path 2 needs the molecule page fetched by enrichment and
+  submits CDD's **own** batch edit form from a hidden iframe
+  (`POST` + `_method=put` to `/vaults/<v>/specified_batches/<b>`) — it never
+  builds a request body, because that endpoint wants the batch's whole field
+  set.
+- **Maintenance difficulty:** **medium-high** — two DOM contracts (the
+  registration form's `data-editable-cell-label` cells; the molecule page's
+  `specified_batch_<b>_field_<def>` control, sometimes only after an *Edit*
+  nudge) and an iframe render wait gated on `react_props`, not `readyState`.
+- **Regression risk:** **medium** — the two writers must produce the same
+  string; keep both on `productSuffix()`. Known open items in
+  [BACKLOG.md](./BACKLOG.md) (uniqueness collision on a second product).
+- **Full write-up:**
+  [2026-08-21-eln-id-onto-product-batch-design.md](./superpowers/specs/2026-08-21-eln-id-onto-product-batch-design.md);
+  CHANGELOG 14.3.0, 14.5.0, 14.11.0, 15.2.0.
 
 ---
 

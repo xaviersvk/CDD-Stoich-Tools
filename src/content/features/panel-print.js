@@ -18,8 +18,20 @@ export const PRINT_FOOTER_TEXT =
 // The entry's title as CDD shows it, from the same field the tab-title
 // override reads. Empty off an entry.
 function readElnEntryTitle() {
-    const el = document.querySelector('[data-autotest-id="title"]');
-    return (el?.value ?? el?.textContent ?? "").trim();
+    // All of them, first non-empty wins: the page can carry more than one
+    // element tagged "title" (other forms on the page use the same tag), and
+    // the entry's textarea is not always the first in document order.
+    for (const el of document.querySelectorAll('[data-autotest-id="title"]')) {
+        const fromField = (el?.value ?? el?.textContent ?? "").trim();
+        if (fromField) return fromField;
+    }
+
+    // No field (a finalized entry renders differently): the tab title, which
+    // the tab-title override writes as "<ID> - <title>" — keep the title half.
+    const entryId = readElnEntryId();
+    const tab = document.title.replace(/^ELN:\s*/, "").trim();
+    if (entryId && tab.startsWith(`${entryId} - `)) return tab.slice(entryId.length + 3).trim();
+    return tab === entryId ? "" : tab;
 }
 
 // Build print columns from the same enabled fields the floating panel uses:

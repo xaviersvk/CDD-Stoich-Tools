@@ -138,6 +138,80 @@ of a personalised setup over one fixed shared one.
 
 ---
 
+## Post 3 — HPLC injection (published)
+
+The tooling post that isn't about tooling. Column life and ion-source
+cleanliness are what the audience feels; the plugin is the answer to it.
+
+> A standard analytical column takes about 0.2 nmol of reaction mixture per
+> injection. On a day with thirty samples in the queue, nobody stops to work out
+> what that means in microlitres — so you inject what you injected last time, and
+> hope.
+>
+> Overload it and you pay twice: the column loses resolution, and the MS ion
+> source fouls, so it wants cleaning sooner and drifts in between. Neither
+> failure announces itself. Performance just quietly degrades until the peaks
+> aren't what they used to be.
+>
+> My free @Collaborative Drug Discovery - CDD Vault plugin extension now puts
+> that number in the notebook, right beside the stoichiometry, for every
+> reaction. When it falls outside what your injector can comfortably deliver, one
+> sentence says what to change — another drop, a 250 µL insert, or dilute it —
+> and one click applies it. The defaults come from our own bench, Waters and
+> Thermo, down to the sample loop's 0.1–10 µL, and every one is editable.
+>
+> Thank you, @Pavel Kraina of IOCB Prague, who explained which fix is cheap and
+> which one costs five minutes you don't have. At @Ústav organické chemie a
+> biochemie AV ČR and @PharmTheon, instrument lifetime and performance are a
+> standing priority — the column and the source are shared, and a careless
+> injection is paid for by whoever runs next. Which is why this belongs in the
+> notebook, where the decision is actually made.
+>
+> Free, open source, Chrome and Firefox — link in the comments.
+>
+> #HPLC #LCMS #CDDVault #ELN #DrugDiscovery
+
+**How we got here**
+
+- **The hook fuses the number and the behaviour.** Drafts kept them apart: one
+  paragraph on the 0.2 nmol limit, another, later, on nobody doing the
+  arithmetic. Joined into the opening, "so you inject what you injected last
+  time, and hope" lands inside the two lines before the "see more" fold, and the
+  reader recognises themselves before they've decided whether to keep reading.
+- **Thirty samples, not hundreds.** An earlier draft said hundreds, taken from
+  Pavel Kraina's remark about high-throughput days. Thirty is the ordinary
+  queue, and the ordinary queue is where the reader lives — an inflated number
+  would let them off the hook ("that's not my lab").
+- **The consequence comes second, unhurried.** Once the hook has them, the
+  column and the source get a paragraph to themselves without competing for
+  attention.
+- **The plugin arrives as the answer, in paragraph three** — not as the
+  announcement. It gets the longest paragraph, which is right for the hero.
+- **"Many times further" was cut.** It was the payoff line of an earlier draft
+  and the softest claim in it; "you pay twice" already implies it, and no
+  multiplier survives contact with a real method. Same lesson as the 10.1.0
+  notes.
+- **The three fixes named are the three the optimiser actually offers** (drops →
+  vessel → dilution, `hplc-optimizer.js`). Naming a fourth would read better and
+  be false.
+- **The affiliation paragraph carries an argument, not a title card.** Instrument
+  lifetime being a standing priority at IOCB and PharmTheon is the reason the
+  feature exists; the shared column and shared source make it concrete — the cost
+  of a careless injection lands on a colleague, not on whoever made it. "Which is
+  why this belongs in the notebook, where the decision is actually made" is the
+  line that earns the post.
+- **Pavel Kraina is placed at IOCB Prague in his own credit line**, so the thanks
+  and the affiliation sentence reinforce each other rather than reading as two
+  unrelated name-drops. The English name is used for him and the Czech one for
+  the institute's @-tag, which is how LinkedIn resolves them.
+- **Waters and Thermo are our bench, not endorsements** — and "every one is
+  editable" in the same sentence blocks the "only works on their kit" reading.
+- **The link went to the first comment.** LinkedIn suppresses reach on posts with
+  an outbound link in the body; Posts 1 and 2 carried it inline. Worth watching
+  whether this one travels further.
+
+---
+
 ## Backlog — angles not yet written
 
 - The plate tooling (location column, CSV export, Plate Map structure tooltips) —

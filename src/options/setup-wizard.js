@@ -469,7 +469,7 @@ export function openSetupWizard() {
     root.hidden = false;
     document.body.classList.add("has-wizard");
     show(index);
-    markSetupWizardSeen();
+    void markSetupWizardSeen();   // deliberate: nothing waits on the flag
 }
 
 function close() {

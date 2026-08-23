@@ -1,7 +1,7 @@
 // content/features/print-buttons.js
 import { STATE } from "../state.js";
 import { escapeHtml } from "../utils/dom.js";
-import { PRINT_FOOTER_TEXT } from "./panel-print.js";
+import { PRINT_FOOTER_TEXT, PRINT_SHEET_SHARED_CSS } from "./panel-print.js";
 import {EVENT_SOURCE, EVENTS} from "../../shared/event-types";
 import { isShowProductsEnabled } from "../../shared/show-products-flag.js";
 
@@ -343,24 +343,7 @@ function buildPrintHtml(reactionPayload) {
               width: 100%;
             }
 
-            .header {
-              display: flex;
-              justify-content: space-between;
-              align-items: flex-start;
-              gap: 16px;
-              margin-bottom: 8px;
-            }
-
-            .header-left {
-              flex: 1;
-              min-width: 0;
-            }
-
-            .header-right {
-              flex: 0 0 auto;
-              text-align: right;
-              padding-left: 16px;
-            }
+            ${PRINT_SHEET_SHARED_CSS}
 
             .title {
               font-size: 18px;
@@ -368,27 +351,6 @@ function buildPrintHtml(reactionPayload) {
               margin-bottom: 2px;
               line-height: 1.2;
               word-break: break-word;
-            }
-
-            .experiment-label {
-              font-size: 10px;
-              text-transform: uppercase;
-              letter-spacing: 0.08em;
-              color: #6b7280;
-              margin-bottom: 2px;
-            }
-
-            .experiment-id {
-              font-size: 15px;
-              font-weight: 700;
-              color: #111827;
-              line-height: 1.2;
-            }
-
-            .meta {
-              font-size: 11px;
-              color: #666;
-              margin-bottom: 14px;
             }
 
             .scheme {
@@ -561,15 +523,6 @@ function buildPrintHtml(reactionPayload) {
 
             .compact-name.no-index .name-main {
               margin-left: 0;
-            }
-
-            .print-footer {
-              margin-top: 24px;
-              padding-top: 8px;
-              border-top: 1px solid #d1d5db;
-              font-size: 9px;
-              color: #9ca3af;
-              text-align: center;
             }
           </style>
         </head>

@@ -19,6 +19,46 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [15.3.0] — 2026-08-23
+
+### Added
+- **Setup guide.** A nine-step tour on the settings page — what the
+  extension does, where each thing shows up in CDD, and the switches worth
+  deciding up front (vault identifier format and the Internal ID field, what
+  the panel shows, table filling, the two entry-ID writers, HPLC, the
+  registration form, and a list of the always-on page fixes). It opens by
+  itself the first time the settings page is ever shown
+  (`cddSetupWizardSeenV1`), and on demand from the **Setup guide** button in
+  the masthead or the new **⚙** in the floating panel's header. The ⚙ sets a
+  one-shot `cddSetupWizardRequested` flag and asks the background to open the
+  options page, which reads and clears the flag — a content script cannot
+  pass a query string to `openOptionsPage`.
+  - The guide owns no settings. Each of its controls is a **mirror** of the
+    real control on the page behind it: a change copies the value onto the
+    real control and fires its `change`/`input`, so the existing save code
+    runs and there is exactly one writer per storage key. Mirrors are
+    re-read from the real controls every time their step is shown, and the
+    last step prints the live state of every switch.
+  - Files: `options/setup-wizard.js` (steps, mirrors, overlay),
+    `shared/setup-wizard-flag.js`, the `.wizard*` block in `options.css`, and
+    the `#setupWizard` root in `options.html` — outside `.panes` on purpose,
+    because the mirrors look their real controls up under `.panes`.
+
+### Changed
+- **Panel header: one `Export` split button** instead of `Print` + `CSV ▾`.
+  The main half prints (the PDF people actually file); the caret holds
+  `CSV` and `CSV — products only`. One control fewer keeps the header on a
+  single row now that the ⚙ has joined it. Ids are unchanged
+  (`…-print`, `…-csv`, `…-csv-products`).
+- **The panel print sheet says where it came from.** It used to open with a
+  bare `CDD Samples` heading. It now carries the same header as the
+  stoichiometry sheet — the entry's title, *Experiment ID*, source URL, print
+  time, row count — and the same attribution footer, which now lives in one
+  place (`PRINT_FOOTER_TEXT` in `panel-print.js`, imported by
+  `print-buttons.js`). The title is read from `[data-autotest-id="title"]`,
+  the ID through `readElnEntryId()`.
+
+---
 ## [15.2.0] — 2026-08-23
 
 ### Changed

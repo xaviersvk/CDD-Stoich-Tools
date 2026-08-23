@@ -17,6 +17,9 @@
             </div>
             <p class="masthead__meta">
                 <span id="version" class="masthead__version"></span>
+                <button type="button" id="openSetupWizard" class="masthead__guide">
+                    Setup guide
+                </button>
                 <a class="masthead__link"
                    href="https://xaviersvk.github.io/CDD-Stoich-Tools/"
                    target="_blank" rel="noopener noreferrer">What's new</a>
@@ -753,6 +756,11 @@
     </div>
 
 </main>
+
+<!-- The setup guide. Built by setup-wizard.js; every control in it mirrors
+     one on the page above, so it sits OUTSIDE .panes on purpose — the
+     mirrors look their real controls up under .panes. -->
+<div id="setupWizard" class="wizard-backdrop" hidden></div>
 
 <script type="module" src="./options.js"></script>
 </body>

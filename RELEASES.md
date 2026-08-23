@@ -13,7 +13,28 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
-# What's new in 15.2.0
+# What's new in 15.3.0
+
+---
+
+## 15.3.0 — 2026-08-23
+
+**A setup guide walks you through the extension.** Nine short steps: what
+shows up where in CDD, and the switches worth deciding up front — your
+vault's identifier format, what the floating panel shows, table filling, the
+entry ID on registered batches, HPLC, the registration form.
+
+- It opens on its own the first time you open the settings page.
+- Open it again any time: **Setup guide** at the top of the settings page, or
+  the new **⚙** in the floating panel's header.
+- Every switch in the guide is the same switch as in settings — change it in
+  either place.
+
+**One Export button in the panel.** *Export* prints the table (save as PDF
+from the print dialog); its ▾ holds *CSV* and *CSV — products only*.
+
+**The panel's print sheet now has a proper header** — entry title, Experiment
+ID, source and print time — and the same footer as the stoichiometry sheet.
 
 ---
 

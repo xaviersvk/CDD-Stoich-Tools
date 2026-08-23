@@ -23,6 +23,8 @@ import { readElnEntryId } from "../utils/eln-entry-id.js";
 import { isElnEntryPage } from "../../shared/page-detection.js";
 import { isTableRowsEnabled } from "../../shared/panel-sources-flag.js";
 import { PANEL_ID, REACTION_COLORS } from "../../shared/plugin-constants.js";
+import { OPEN_OPTIONS_MESSAGE } from "../../shared/event-types.js";
+import { requestSetupWizard } from "../../shared/setup-wizard-flag.js";
 import { getPanelContents } from "./panel-contents.js";
 import { updatePanelVisibilityForOverlays } from "../overlay-watcher.js";
 import { printPanel } from "./panel-print.js";
@@ -211,27 +213,23 @@ export function ensurePanel() {
     const actions = document.createElement("div");
     actions.className = "cdd-stoich-actions";
 
-    const printBtn = document.createElement("button");
-    printBtn.id = `${PANEL_ID}-print`;
-    printBtn.type = "button";
-    printBtn.textContent = "Print";
-
-    // Split button: CSV exports the whole table as before, the caret opens
-    // the narrower exports.
+    // One split button for everything that leaves the panel: the main half
+    // prints (the PDF people actually file), the caret holds the CSVs. One
+    // control instead of two keeps the header on a single row.
     const csvGroup = document.createElement("div");
     csvGroup.className = "cdd-csv-split";
 
-    const csvBtn = document.createElement("button");
-    csvBtn.id = `${PANEL_ID}-csv`;
-    csvBtn.type = "button";
-    csvBtn.textContent = "CSV";
-    csvBtn.title = "Download this table as a CSV file (opens in Excel).";
+    const printBtn = document.createElement("button");
+    printBtn.id = `${PANEL_ID}-print`;
+    printBtn.type = "button";
+    printBtn.textContent = "Export";
+    printBtn.title = "Print this table (save as PDF from the print dialog).";
 
     const csvMenuBtn = document.createElement("button");
     csvMenuBtn.id = `${PANEL_ID}-csv-menu`;
     csvMenuBtn.type = "button";
     csvMenuBtn.textContent = "▾";
-    csvMenuBtn.title = "Other CSV exports";
+    csvMenuBtn.title = "CSV exports";
     csvMenuBtn.setAttribute("aria-haspopup", "true");
     csvMenuBtn.setAttribute("aria-expanded", "false");
 
@@ -244,15 +242,22 @@ export function ensurePanel() {
     // The header is the drag handle and this menu sits inside it.
     csvMenu.addEventListener("mousedown", (event) => event.stopPropagation());
 
+    const csvBtn = document.createElement("button");
+    csvBtn.id = `${PANEL_ID}-csv`;
+    csvBtn.type = "button";
+    csvBtn.textContent = "CSV";
+    csvBtn.title = "Download this table as a CSV file (opens in Excel).";
+    csvMenu.appendChild(csvBtn);
+
     const csvProductsBtn = document.createElement("button");
     csvProductsBtn.id = `${PANEL_ID}-csv-products`;
     csvProductsBtn.type = "button";
-    csvProductsBtn.textContent = "Products only";
+    csvProductsBtn.textContent = "CSV — products only";
     csvProductsBtn.title =
         "Download just the reaction product rows, whether or not the panel is showing them.";
     csvMenu.appendChild(csvProductsBtn);
 
-    csvGroup.appendChild(csvBtn);
+    csvGroup.appendChild(printBtn);
     csvGroup.appendChild(csvMenuBtn);
     csvGroup.appendChild(csvMenu);
 
@@ -266,8 +271,23 @@ export function ensurePanel() {
         toggleBtn.textContent = "+";
     }
 
-    actions.appendChild(printBtn);
+    // ⚙ opens the settings page ON the setup guide — the one-screen tour of
+    // what the extension does and where each switch lives. The guide is what
+    // a newcomer needs; the full settings are one click further.
+    const setupBtn = document.createElement("button");
+    setupBtn.id = `${PANEL_ID}-setup`;
+    setupBtn.type = "button";
+    setupBtn.textContent = "⚙";
+    setupBtn.title = "Setup guide and settings";
+    setupBtn.setAttribute("aria-label", "Open the setup guide and settings");
+    setupBtn.addEventListener("click", async (event) => {
+        event.stopPropagation();
+        await requestSetupWizard();
+        chrome.runtime.sendMessage({ type: OPEN_OPTIONS_MESSAGE });
+    });
+
     actions.appendChild(csvGroup);
+    actions.appendChild(setupBtn);
     actions.appendChild(toggleBtn);
 
     header.appendChild(tabs);
@@ -728,7 +748,9 @@ ${PHRASES_PANE_STYLES(PANEL_ID)}
         printPanel(visibleFields);
     });
 
-    csvBtn.addEventListener("click", () => {
+    csvBtn.addEventListener("click", (event) => {
+        event.stopPropagation();
+        closeCsvMenu();
         exportPanelCsv(visibleFields);
     });
 

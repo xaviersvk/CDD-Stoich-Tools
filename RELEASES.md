@@ -19,10 +19,10 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ## 15.2.0 — 2026-08-23
 
-**The floating panel lost its `Refresh` button.** It never reloaded anything —
-the panel already redraws itself whenever the entry, the table or a setting
-changes. The header (*Entities | Phrases*, *Print*, *CSV*) now sits on one
-row.
+**The floating panel lost its `Refresh` button and its `CDD` title.** The
+button never reloaded anything — the panel already redraws itself whenever the
+entry, the table or a setting changes. The header (*Entities | Phrases*,
+*Print*, *CSV*) now sits on one row.
 
 ---
 

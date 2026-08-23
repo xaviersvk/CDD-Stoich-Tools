@@ -29,9 +29,12 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   synonym / batch enrichment, auto-fill, any settings change, Ketcher closing,
   SPA navigation) already triggers that same redraw, so the button duplicated
   work the panel does on its own while its label promised a reload it did not
-  do. With it gone, the header — `Entities | Phrases` tabs, `Print`, `CSV`,
-  collapse — fits on one row at the default 300px width; the
-  hide-the-title breakpoint moved from 330px to 270px accordingly.
+  do.
+- **The panel header's `CDD` title.** Decoration, not a control: it was
+  already the first thing hidden when the panel got narrow. With both gone the
+  header — `Entities | Phrases` tabs, `Print`, `CSV`, collapse — fits on one
+  row at the default 300px width, and the `@container` / `container-type`
+  machinery that existed only to hide the title is gone with it.
 
 ---
 ## [15.1.0] — 2026-08-23

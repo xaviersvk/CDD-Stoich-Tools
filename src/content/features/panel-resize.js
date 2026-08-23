@@ -23,13 +23,12 @@ const HEIGHT_VAR = "--cdd-panel-height";
 // 100px is a sliver — deliberately, so the panel can be shoved aside without
 // being collapsed outright.
 //
-// It used to be 240, which was worse than it sounds: the header needs 275 for
-// its six controls and the panel is `overflow: hidden`, so at 240 the collapse
-// toggle sat entirely outside the panel, unclickable, and there was no way
-// back. Going NARROWER than that is only safe because the header now wraps
-// instead of clipping and drops its title under 300px — see the @container
-// rule in sample-panel.js. Every control stays reachable at 100px; the header
-// simply grows taller.
+// It used to be 240, which was worse than it sounds: the header needed 275
+// for its controls and the panel is `overflow: hidden`, so at 240 the
+// collapse toggle sat entirely outside the panel, unclickable, and there was
+// no way back. Going NARROWER than that is only safe because the header now
+// wraps instead of clipping (sample-panel.js). Every control stays reachable
+// at 100px; the header simply grows taller.
 const MIN_WIDTH = 100;
 const MIN_HEIGHT = 160;
 

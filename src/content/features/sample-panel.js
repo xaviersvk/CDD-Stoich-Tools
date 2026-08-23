@@ -187,10 +187,6 @@ export function ensurePanel() {
     const header = document.createElement("div");
     header.className = "cdd-stoich-header";
 
-    const title = document.createElement("div");
-    title.className = "cdd-stoich-title";
-    title.textContent = "CDD";
-
     // Entities | Phrases. The header is the drag handle, so the tabs stop
     // mousedown from starting a drag.
     const tabs = document.createElement("div");
@@ -273,7 +269,6 @@ export function ensurePanel() {
     actions.appendChild(csvGroup);
     actions.appendChild(toggleBtn);
 
-    header.appendChild(title);
     header.appendChild(tabs);
     header.appendChild(actions);
 
@@ -336,10 +331,6 @@ export function ensurePanel() {
     z-index: 2147483647;
     font-family: Arial, sans-serif;
     overflow: hidden;
-    /* Lets the header react to the PANEL's width rather than the window's,
-       which is the only width that matters here — see the @container rule
-       below. */
-    container-type: inline-size;
   }
 
   #${PANEL_ID} .cdd-stoich-header {
@@ -361,36 +352,11 @@ export function ensurePanel() {
     row-gap: 6px;
   }
 
-  #${PANEL_ID} .cdd-stoich-title {
-    font-size: 14px;
-    font-weight: 700;
-    /* Shrinks before the buttons do, and truncates rather than pushing them
-       onto another line. */
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  /* The title is the first thing to go: it is the only part of the header
-     that is decoration rather than a control.
-     Measured in the browser back when the header still had a Refresh
-     button: it fit on one row at 340px and wrapped at 320. Dropping that
-     button freed about 60px, so the same header now fits down to roughly
-     280 — which keeps the title at the 300px default width. Keep the
-     threshold below the default: a band where a wider panel gets a taller
-     header is silly, and everyone sits on the default. */
-  @container (max-width: 270px) {
-    #${PANEL_ID} .cdd-stoich-title {
-      display: none;
-    }
-  }
-
   #${PANEL_ID} .cdd-stoich-actions {
     display: flex;
     gap: 6px;
     flex-wrap: wrap;
-    /* Keeps the actions against the right edge once the title is gone. */
+    /* Keeps the actions against the right edge. */
     margin-left: auto;
   }
 

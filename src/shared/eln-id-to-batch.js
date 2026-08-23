@@ -22,7 +22,7 @@ import {
     DEFAULT_ELN_ID_FORMAT,
     getElnIdCarrySettings,
     applyIdentifierFormat,
-    tableSuffix,
+    productSuffix,
 } from "./eln-id-carry.js";
 
 // boolean — absent means OFF. This one writes to a batch record without
@@ -59,12 +59,23 @@ export function moleculeBatchesUrl(vaultId, moleculeId) {
 // The same string the Register link stamps, so a batch filled this way and
 // one registered from the entry are indistinguishable.
 //
-// Trim first, THEN letter: the letter marks which stoichiometry table the
-// product came from and belongs on the end of whatever the ID was cut to.
-export function composeBatchElnId(entryId, format, reactionIndex) {
+// Trim first, THEN suffix: the suffix marks which stoichiometry table (and,
+// for a parallel reaction, which pair) the product came from and belongs on
+// the end of whatever the ID was cut to.
+//
+// `parallel` is { ordinal, letter } for a product of a parallel (bulk)
+// reaction — "-1A" instead of the table letter — and null for everything
+// else. See productSuffix.
+export function composeBatchElnId(entryId, format, reactionIndex, parallel = null) {
     const trimmed = applyIdentifierFormat(entryId, format);
     if (!trimmed) return "";
-    return `${trimmed}${tableSuffix(reactionIndex)}`;
+    return `${trimmed}${productSuffix({ parallel, tableIndex: reactionIndex })}`;
+}
+
+// The parallel half of a sample's suffix, or null for an ordinary row.
+export function sampleParallelInfo(sample) {
+    if (!sample?.parallelOrdinal || !sample?.parallelLetter) return null;
+    return { ordinal: sample.parallelOrdinal, letter: sample.parallelLetter };
 }
 
 /* ------------------------------------------------------------------ *

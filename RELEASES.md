@@ -19,6 +19,13 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ## 15.2.0 — 2026-08-23
 
+**Products of a parallel reaction now get their own ELN ID.** Instead of one
+table letter for the whole block, each product is suffixed `-1A`, `-1B`, …:
+the number is which parallel reaction of the entry it is, the letter is the
+pair's letter in the table. A second parallel reaction gives `-2A`, `-2B`, ….
+Applies to the Register link and to the panel's *Write … into Internal ID*
+button alike; ordinary reactions keep their old suffix.
+
 **The floating panel lost its `Refresh` button and its `CDD` title.** The
 button never reloaded anything — the panel already redraws itself whenever the
 entry, the table or a setting changes. The header (*Entities | Phrases*,

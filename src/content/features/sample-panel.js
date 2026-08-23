@@ -14,6 +14,7 @@ import {
     isElnIdToBatchEnabled,
     getCarrySettings,
     composeBatchElnId,
+    sampleParallelInfo,
 } from "../../shared/eln-id-to-batch.js";
 import { readFieldByLabel } from "../api/batch-registration-props.js";
 import { writeElnIdToBatch } from "./eln-id-to-batch-write.js";
@@ -1219,7 +1220,12 @@ function elnIdToBatchState(sample) {
     const entryId = readElnEntryId();
     if (!entryId) return null;
 
-    const value = composeBatchElnId(entryId, format, sample.reactionIndex);
+    const value = composeBatchElnId(
+        entryId,
+        format,
+        sample.reactionIndex,
+        sampleParallelInfo(sample)
+    );
     if (!value) return null;
 
     return {

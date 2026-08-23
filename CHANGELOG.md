@@ -21,6 +21,24 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 ---
 ## [15.2.0] — 2026-08-23
 
+### Changed
+- **ELN ID suffix for products of a parallel (bulk) reaction.** They used to
+  get the plain table letter (`MDX-0095B` for every product of the second
+  table), which cannot tell seven products of one bulk block apart. Now the
+  suffix is `-<n><letter>`: `n` counts the entry's PARALLEL reactions only
+  (an ordinary table before the first bulk one does not push it to `-2`),
+  the letter is the one CDD prints beside the reagent/product pair —
+  `MDX-0095-1A`, `-1B`, … `-2A`. Ordinary tables are unchanged (bare, `B`,
+  `C`…). Both writers agree: the Register link reads the letter from the
+  `stoichiometry-table-parallelReactant` row above the product row and
+  counts the tables that hold `stoichiometry-table-parallelProduct` rows
+  (verified on entry 2761893, pairs A–G); the panel's *Write … into Internal
+  ID* button reads `parallelOrdinal` / `parallelLetter`, which the parser now
+  puts on every row (letter by first appearance of
+  `parallelReactionsPairId`, the rule the print sheet already used). The
+  choice lives in one place, `productSuffix()` in `shared/eln-id-carry.js`;
+  `composeBatchElnId` takes the parallel pair as a fourth argument.
+
 ### Removed
 - **The floating panel's `Refresh` button.** It only ever called
   `renderFromState()`, which redraws the panel from `STATE.lastPayload` —

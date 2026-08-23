@@ -45,6 +45,39 @@ function computeDisplayRowNumbers(rows) {
     return numbers;
 }
 
+// The letter CDD prints beside each reagent/product pair of a parallel
+// ("bulk") reaction — A, B, C… by order of first appearance of the pair id,
+// the same rule the print sheet uses. Rows outside a pair get null.
+// Verified on entry 2761893: pairs A–G, the letter sits on the reagent row
+// and the product row beneath it shares the id.
+function computeParallelLetters(rows) {
+    const letters = new Array(rows.length).fill(null);
+    const order = new Map();
+    rows.forEach((row, i) => {
+        const pairId = row?.parallelReactionsPairId;
+        if (!pairId) return;
+        if (!order.has(pairId)) order.set(pairId, order.size);
+        const n = order.get(pairId);
+        let out = "";
+        let k = n + 1;
+        while (k > 0) {
+            out = String.fromCharCode(65 + ((k - 1) % 26)) + out;
+            k = Math.floor((k - 1) / 26);
+        }
+        letters[i] = out;
+    });
+    return letters;
+}
+
+// Does this reaction feature carry a parallel block at all? Asked on the RAW
+// rows, before the extraction loop drops anything.
+function isParallelReactionFeature(feature) {
+    const rows = feature?.data?.stoichiometryTable?.rows;
+    return Array.isArray(rows) && rows.some(
+        (row) => String(row?.role || "").toLowerCase().startsWith("parallel")
+    );
+}
+
 // Typed table purity as a percent string ("98.2"), or null. The row keeps
 // purity as a fraction; exactly 1 is the untyped 100 % default, which we
 // deliberately read as "nothing typed" (a hand-typed 100 is
@@ -80,13 +113,14 @@ function extractReactionSolvents(feature) {
     return { solvents, effectiveMolarity: effectiveMolarity(solvents) };
 }
 
-export function extractRowsFromReactionFeature(feature, reactionIndex) {
+export function extractRowsFromReactionFeature(feature, reactionIndex, parallelOrdinal = null) {
     const stoichTable = feature?.data?.stoichiometryTable;
     const rows = Array.isArray(stoichTable?.rows) ? stoichTable.rows : [];
     const output = [];
     const seen = new Set();
 
     const displayRowNumbers = computeDisplayRowNumbers(rows);
+    const parallelLetters = computeParallelLetters(rows);
 
     // A parallel ("bulk") reaction keeps the template rows it was drawn from.
     // The two slots the enumeration replaces are rendered by CDD as "Variable
@@ -159,6 +193,12 @@ export function extractRowsFromReactionFeature(feature, reactionIndex) {
             // for lettered parallel rows). Lets the fill target a row
             // deterministically even when the same batch appears twice.
             rowNumber: displayRowNumbers[rowIndex],
+            // Parallel (bulk) reaction only: which parallel reaction of the
+            // entry this is (1-based, ordinary tables not counted) and the
+            // letter of the row's reagent/product pair. Both null elsewhere.
+            // The ELN-ID suffix of a parallel product is built from these.
+            parallelOrdinal,
+            parallelLetter: parallelLetters[rowIndex],
             role: row?.role ?? null,
             sampleId,
             hasSample,
@@ -218,8 +258,10 @@ export function extractAllReactionRows(payload) {
     const allRows = [];
     const reactions = [];
 
+    let parallelCount = 0;
     reactionFeatures.forEach((feature, index) => {
-        const rows = extractRowsFromReactionFeature(feature, index);
+        const parallelOrdinal = isParallelReactionFeature(feature) ? ++parallelCount : null;
+        const rows = extractRowsFromReactionFeature(feature, index, parallelOrdinal);
         allRows.push(...rows);
 
         const { solvents, effectiveMolarity: molarity } = extractReactionSolvents(feature);

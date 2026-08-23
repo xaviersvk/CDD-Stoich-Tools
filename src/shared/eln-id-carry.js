@@ -130,6 +130,35 @@ export function tableSuffix(index) {
     return out;
 }
 
+// A product of a parallel ("bulk") reaction gets a different suffix: the
+// reaction's number among the entry's PARALLEL reactions, then the letter CDD
+// prints beside its reagent/product pair.
+//
+//   1st parallel reaction, pair A -> PHA-MDX-0095-1A
+//   1st parallel reaction, pair B -> PHA-MDX-0095-1B
+//   2nd parallel reaction, pair A -> PHA-MDX-0095-2A
+//
+// The number counts parallel reactions only — an ordinary table before the
+// first parallel one does not push it to "-2". Ordinary tables keep
+// tableSuffix; the two schemes never meet on one product.
+export function parallelSuffix(ordinal, letter) {
+    const n = Number(ordinal);
+    const l = String(letter ?? "").trim().toUpperCase();
+    if (!Number.isInteger(n) || n <= 0 || !/^[A-Z]+$/.test(l)) return "";
+    return `-${n}${l}`;
+}
+
+// The suffix for one product row, whichever kind of table it sits in.
+//   parallel: { ordinal, letter } of the bulk pair -> "-1A"
+//   tableIndex: position of the table among ALL tables -> "", "B", "C"…
+export function productSuffix({ parallel, tableIndex }) {
+    if (parallel) {
+        const s = parallelSuffix(parallel.ordinal, parallel.letter);
+        if (s) return s;
+    }
+    return tableSuffix(tableIndex);
+}
+
 // "ID: IDEMO-MDX-0014" -> "IDEMO-MDX-0014". Also copes with the bare value, so
 // a caller that already stripped the prefix is not punished for it.
 export function cleanElnEntryId(raw) {

@@ -63,7 +63,7 @@ import {
     DEFAULT_ELN_ID_FORMAT,
     fieldLabelsMatch,
     getElnIdCarrySettings,
-    tableSuffix,
+    productSuffix,
 } from "../../../shared/eln-id-carry.js";
 import { readElnEntryId } from "../../utils/eln-entry-id.js";
 
@@ -120,6 +120,40 @@ function tableIndexOf(link) {
     return [...document.querySelectorAll(TABLE_SELECTOR)].indexOf(table);
 }
 
+// A parallel ("bulk") reaction renders its pairs as
+//   <tr data-autotest-id="stoichiometry-table-parallelReactant">  A | reagent
+//   <tr data-autotest-id="stoichiometry-table-parallelProduct">     | product
+// — the letter is printed on the REAGENT row, the product row beneath it has
+// an empty first cell (verified on entry 2761893, pairs A–G). A table is
+// parallel when it holds such product rows.
+const PARALLEL_PRODUCT_ROW = 'tr[data-autotest-id="stoichiometry-table-parallelProduct"]';
+const PARALLEL_REACTANT_ROW = 'tr[data-autotest-id="stoichiometry-table-parallelReactant"]';
+
+// { ordinal, letter } for a Register link in a parallel product row; null for
+// any other link. The ordinal counts PARALLEL tables only, in document order,
+// so the first parallel reaction is "-1" even when an ordinary one precedes it
+// — the same rule the panel reads out of the payload.
+function parallelInfoOf(link) {
+    const row = link.closest(PARALLEL_PRODUCT_ROW);
+    if (!row) return null;
+
+    let reagentRow = row.previousElementSibling;
+    while (reagentRow && !reagentRow.matches(PARALLEL_REACTANT_ROW)) {
+        reagentRow = reagentRow.previousElementSibling;
+    }
+    const letter = (reagentRow?.cells?.[0]?.innerText || "").trim().toUpperCase();
+    if (!/^[A-Z]+$/.test(letter)) return null;
+
+    const table = row.closest(TABLE_SELECTOR);
+    const parallelTables = [...document.querySelectorAll(TABLE_SELECTOR)].filter(
+        (t) => t.querySelector(PARALLEL_PRODUCT_ROW)
+    );
+    const ordinal = parallelTables.indexOf(table) + 1;
+    if (ordinal <= 0) return null;
+
+    return { ordinal, letter };
+}
+
 function stampLink(target) {
     if (!settings.enabled) return;
 
@@ -134,14 +168,17 @@ function stampLink(target) {
     const entryId = readElnEntryId();
     if (!entryId) return;
 
-    // Trim first, THEN letter: the letter marks the table and belongs on the end
-    // of whatever the ID has been cut down to.
+    // Trim first, THEN suffix: the suffix marks the table (or the parallel
+    // pair) and belongs on the end of whatever the ID has been cut down to.
     const trimmed = applyIdentifierFormat(entryId, settings.format);
     if (!trimmed) return;
 
     // The finished value, suffix and all — the registration page only has to
     // type out what it is handed.
-    const value = `${trimmed}${tableSuffix(tableIndexOf(link))}`;
+    const value = `${trimmed}${productSuffix({
+        parallel: parallelInfoOf(link),
+        tableIndex: tableIndexOf(link),
+    })}`;
 
     // `location.href` as the base: the href is root-relative, and a URL object
     // is what keeps the existing `eln_attached_structure_id` intact.

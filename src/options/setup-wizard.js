@@ -185,6 +185,23 @@ function fire(el, type) {
     el.dispatchEvent(new Event(type, { bubbles: true }));
 }
 
+// The bold label with an optional second line under it — what every control
+// in the guide shows beside its input.
+function labelText(label, extra, extraClass) {
+    const text = document.createElement("span");
+    text.className = "wizard__check-text";
+    const strong = document.createElement("strong");
+    strong.textContent = label;
+    text.appendChild(strong);
+    if (extra) {
+        const line = document.createElement("span");
+        line.className = extraClass;
+        line.textContent = extra;
+        text.appendChild(line);
+    }
+    return text;
+}
+
 function buildCheck(spec) {
     const real = realControl(spec.mirror);
     const label = document.createElement("label");
@@ -194,17 +211,7 @@ function buildCheck(spec) {
     input.type = "checkbox";
     input.disabled = !real;
 
-    const text = document.createElement("span");
-    text.className = "wizard__check-text";
-    const strong = document.createElement("strong");
-    strong.textContent = spec.label;
-    text.appendChild(strong);
-    if (spec.hint) {
-        const hint = document.createElement("span");
-        hint.className = "wizard__hint";
-        hint.textContent = spec.hint;
-        text.appendChild(hint);
-    }
+    const text = labelText(spec.label, spec.hint, "wizard__hint");
 
     input.addEventListener("change", () => {
         if (!real) return;
@@ -245,17 +252,7 @@ function buildRadio(spec) {
         input.value = opt.value;
         input.disabled = reals.length === 0;
 
-        const text = document.createElement("span");
-        text.className = "wizard__check-text";
-        const strong = document.createElement("strong");
-        strong.textContent = opt.label;
-        text.appendChild(strong);
-        if (opt.sample) {
-            const sample = document.createElement("span");
-            sample.className = "wizard__sample";
-            sample.textContent = opt.sample;
-            text.appendChild(sample);
-        }
+        const text = labelText(opt.label, opt.sample, "wizard__sample");
 
         input.addEventListener("change", () => {
             if (!input.checked) return;
@@ -284,17 +281,7 @@ function buildTextLike(spec) {
     const label = document.createElement("label");
     label.className = spec.inline ? "wizard__field wizard__field--inline" : "wizard__field";
 
-    const text = document.createElement("span");
-    text.className = "wizard__check-text";
-    const strong = document.createElement("strong");
-    strong.textContent = spec.label;
-    text.appendChild(strong);
-    if (spec.hint) {
-        const hint = document.createElement("span");
-        hint.className = "wizard__hint";
-        hint.textContent = spec.hint;
-        text.appendChild(hint);
-    }
+    const text = labelText(spec.label, spec.hint, "wizard__hint");
 
     const input = document.createElement("input");
     input.type = spec.kind === "number" ? "number" : "text";

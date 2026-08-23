@@ -19,6 +19,31 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [15.4.0] — 2026-08-23
+
+### Added
+- **Ctrl+click a search-results cell copies that one value.** The column copy
+  already lived on the header (`search-column-copy.js`); the same gesture on a
+  body cell now puts just that cell on the clipboard — an IP address, a batch
+  name, an id — instead of having to select the text by hand. The cell flashes
+  and a toast shows what was taken (truncated at 60 characters).
+  - The value is read with the same `readCellText()` the column copy uses, so a
+    cell copies as exactly the line the column copy would have produced for
+    that row — including the Molecule cell, where the single `/molecules/` link
+    wins over the structure image and the project chips.
+  - Inside these tables the modifier means **copy**, links included: Ctrl+click
+    on a molecule id no longer opens it in a new tab. The click is swallowed in
+    the capture phase (`preventDefault` + `stopImmediatePropagation`) exactly as
+    the header copy is, now through a shared `swallow()`.
+  - Cells carrying a real control — the select column's checkbox — are left
+    alone and keep their own click, mirroring the `findColumnSpan()` rule that
+    keeps the thead toolbar row out of the column copy.
+  - Alt+Ctrl+click is now ignored by both halves of the feature, so the
+    combination stays free for the browser.
+  - Hovering a body cell sets `title="Ctrl+click to copy this value"`, next to
+    the header's existing hint, and never overwrites a title CDD set itself.
+
+---
 ## [15.3.0] — 2026-08-23
 
 ### Added

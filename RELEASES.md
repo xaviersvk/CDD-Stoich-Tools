@@ -13,7 +13,20 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
-# What's new in 15.3.0
+# What's new in 15.4.0
+
+---
+
+## 15.4.0 — 2026-08-23
+
+**Ctrl+click a value in a search results table and it goes to the clipboard.**
+Same gesture you already use on a column header, now on a single cell — an IP
+address, a batch name, a molecule id — no selecting the text by hand.
+
+- The cell flashes green and a message confirms what was copied.
+- Ctrl+click on a link in the table now copies it instead of opening it in a
+  new tab. Click it normally to open it.
+- The row's checkbox still works as a checkbox.
 
 ---
 

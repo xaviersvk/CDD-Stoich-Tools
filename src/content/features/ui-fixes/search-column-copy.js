@@ -2,7 +2,13 @@
 //
 // Ctrl+click (or Cmd+click) a column header on a search results table and the
 // whole column lands on the clipboard, one value per line, ready to paste into
-// Excel. The copied cells flash so it is obvious what was taken.
+// Excel. Ctrl+click a single cell instead and just that one value is copied —
+// the way to lift one id, batch name or IP address out of the results without
+// selecting it by hand. The copied cells flash so it is obvious what was taken.
+//
+// Inside these tables the modifier means COPY, links included: Ctrl+clicking a
+// molecule id copies the id rather than opening it in a new tab. Cells holding
+// a real control — the select column's checkbox — keep their own click.
 //
 // The table cannot be read with `row.cells[n]`: CDD merges the select and
 // molecule columns across all of a molecule's batches (`rowSpan`, up to 828 in
@@ -17,8 +23,22 @@ const STYLE_ID = "cdd-search-column-copy-style";
 const FLASH_CLASS = "cdd-column-copied";
 const TOAST_ID = "cdd-column-copy-toast";
 const TABLE_SELECTOR = "table.search_results_table";
+const CELL_SELECTOR = "tbody td, tbody th";
+
+// Long values (an IUPAC name, a comment field) would push the toast off both
+// edges of the screen, so the confirmation shows only the start of one.
+const TOAST_VALUE_LIMIT = 60;
 
 let started = false;
+
+// The gesture has to be taken away from CDD completely: the headers carry its
+// sort handler, and both headers and cells are full of links — either would
+// fire alongside the copy.
+function swallow(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+}
 
 // Lay a section's rows onto a grid, repeating a cell across every slot it
 // spans. grid[row][col] is the cell covering that slot, so a value read per row
@@ -139,6 +159,12 @@ function readColumns(table, start, span) {
     return { lines, cells };
 }
 
+// The select column's checkbox — and anything else CDD puts a control in — has
+// its own job on click. Everything else in the body is data worth copying.
+function isCopyableCell(cell) {
+    return !cell.querySelector("button, input, select, textarea");
+}
+
 function flashCells(cells) {
     for (const cell of cells) cell.classList.add(FLASH_CLASS);
     setTimeout(() => {
@@ -195,6 +221,30 @@ async function copyColumns(table, th) {
     return true;
 }
 
+// One cell. Read the same way a column is, so the value that lands on the
+// clipboard is the value the column copy would have put on that line.
+async function copyCell(cell) {
+    const text = readCellText(cell);
+
+    if (!text) {
+        showToast("Nothing to copy");
+        return;
+    }
+
+    const ok = await copyText(text);
+    if (!ok) {
+        showToast("Copy failed");
+        return;
+    }
+
+    flashCells([cell]);
+    showToast(
+        text.length > TOAST_VALUE_LIMIT
+            ? `Copied "${text.slice(0, TOAST_VALUE_LIMIT)}…"`
+            : `Copied "${text}"`
+    );
+}
+
 function injectStyles() {
     if (document.getElementById(STYLE_ID)) return;
 
@@ -244,35 +294,54 @@ export function initSearchColumnCopy() {
     document.documentElement.addEventListener(
         "click",
         (event) => {
-            if (!event.ctrlKey && !event.metaKey) return;
+            // Alt is left out so it stays free for whatever the browser does
+            // with it.
+            if ((!event.ctrlKey && !event.metaKey) || event.altKey) return;
 
             const th = event.target?.closest?.("thead th");
-            if (!th) return;
+            if (th) {
+                const table = th.closest(TABLE_SELECTOR);
+                if (!table) return;
 
-            const table = th.closest(TABLE_SELECTOR);
-            if (!table) return;
+                // Resolve the columns BEFORE swallowing the event: on a header
+                // cell that is not a column heading (the toolbar row) this is
+                // null, and the click has to reach CDD's own control untouched.
+                if (!findColumnSpan(table, th)) return;
 
-            // Resolve the columns BEFORE swallowing the event: on a header cell
-            // that is not a column heading (the toolbar row) this is null, and
-            // the click has to reach CDD's own control untouched.
-            if (!findColumnSpan(table, th)) return;
+                swallow(event);
 
-            event.preventDefault();
-            event.stopPropagation();
-            event.stopImmediatePropagation();
+                copyColumns(table, th).catch((err) =>
+                    console.warn("[CDD Stoich Tools] column copy failed", err)
+                );
+                return;
+            }
 
-            copyColumns(table, th).catch((err) =>
-                console.warn("[CDD Stoich Tools] column copy failed", err)
+            const cell = event.target?.closest?.(CELL_SELECTOR);
+            if (!cell || !cell.closest(TABLE_SELECTOR)) return;
+            if (!isCopyableCell(cell)) return;
+
+            swallow(event);
+
+            copyCell(cell).catch((err) =>
+                console.warn("[CDD Stoich Tools] cell copy failed", err)
             );
         },
         true
     );
 
-    // Discoverability: the hint appears the first time a header is hovered,
-    // and never overwrites a title CDD set itself.
+    // Discoverability: the hint appears the first time a header or a cell is
+    // hovered, and never overwrites a title CDD set itself.
     document.documentElement.addEventListener("mouseover", (event) => {
         const th = event.target?.closest?.("thead th");
-        if (!th || th.title || !th.closest(TABLE_SELECTOR)) return;
-        th.title = "Ctrl+click to copy this column";
+        if (th) {
+            if (th.title || !th.closest(TABLE_SELECTOR)) return;
+            th.title = "Ctrl+click to copy this column";
+            return;
+        }
+
+        const cell = event.target?.closest?.(CELL_SELECTOR);
+        if (!cell || cell.title || !cell.closest(TABLE_SELECTOR)) return;
+        if (!isCopyableCell(cell)) return;
+        cell.title = "Ctrl+click to copy this value";
     });
 }

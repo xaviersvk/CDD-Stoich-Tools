@@ -1420,4 +1420,4 @@ initHplcInjectionUI();
 initRegistrationDefaultsUI();
 initPhrasesUI();
 initRailUI();
-initSetupWizard();
+void initSetupWizard();   // deliberate: the guide opens on its own

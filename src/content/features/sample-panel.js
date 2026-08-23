@@ -283,7 +283,7 @@ export function ensurePanel() {
     setupBtn.addEventListener("click", async (event) => {
         event.stopPropagation();
         await requestSetupWizard();
-        chrome.runtime.sendMessage({ type: OPEN_OPTIONS_MESSAGE });
+        void chrome.runtime.sendMessage({ type: OPEN_OPTIONS_MESSAGE });   // no reply expected
     });
 
     actions.appendChild(csvGroup);

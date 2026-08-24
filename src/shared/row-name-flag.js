@@ -18,8 +18,11 @@
 // sync cache.
 //
 // The key predates the modes and used to hold a boolean. `true` reads as
-// "suggest" (what the checkbox did), anything else as "off", so an existing
+// "suggest" (what the checkbox did) and `false` as "off", so an existing
 // install keeps its behaviour without a migration step.
+//
+// Nothing stored at all is "suggest": a fresh install lists the synonyms in
+// the Name editor. Writing a name without being asked still has to be chosen.
 
 export const ROW_NAME_STORAGE_KEY = "cddFillRowName";
 
@@ -31,9 +34,13 @@ export const ROW_NAME_AUTO = "auto";
 
 const MODES = new Set([ROW_NAME_OFF, ROW_NAME_SUGGEST, ROW_NAME_AUTO]);
 
+/** What an install with nothing stored gets. The one place it is decided. */
+export const ROW_NAME_DEFAULT = ROW_NAME_SUGGEST;
+
 function normalizeMode(stored) {
     if (stored === true) return ROW_NAME_SUGGEST;
-    return MODES.has(stored) ? stored : ROW_NAME_OFF;
+    if (stored === false) return ROW_NAME_OFF;
+    return MODES.has(stored) ? stored : ROW_NAME_DEFAULT;
 }
 
 export async function getFillRowNameMode() {
@@ -41,7 +48,7 @@ export async function getFillRowNameMode() {
         const result = await chrome.storage.local.get(ROW_NAME_STORAGE_KEY);
         return normalizeMode(result?.[ROW_NAME_STORAGE_KEY]);
     } catch {
-        return ROW_NAME_OFF;
+        return ROW_NAME_DEFAULT;
     }
 }
 
@@ -56,6 +63,10 @@ export async function saveFillRowNameMode(mode) {
 }
 
 
+// Not the default — what the sync readers answer until storage has been read.
+// Doing nothing is the safe answer to "should I fetch a molecule page?": the
+// notify() at the end of initFillRowName() starts the work a moment later,
+// whereas guessing "suggest" would fire requests for someone who chose "off".
 let cached = ROW_NAME_OFF;
 let listenerAttached = false;
 const changeListeners = new Set();

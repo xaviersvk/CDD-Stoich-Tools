@@ -24,7 +24,10 @@ const BUBBLE_ID = "cdd-plate-location-tooltip";
 
 // Plate links live inside `.plate_name` on the results table; scoping to that
 // container keeps us off the many other `/plates/` links elsewhere in the app.
-const PLATE_LINK_SELECTOR = '.plate_name a[href*="/plates/"]';
+//
+// Exported because a cell answering a hover with THIS bubble must not also
+// carry a native `title` — see search-column-copy.js.
+export const PLATE_LINK_SELECTOR = '.plate_name a[href*="/plates/"]';
 
 let started = false;
 let bubble = null;

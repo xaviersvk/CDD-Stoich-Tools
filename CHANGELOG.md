@@ -19,6 +19,39 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [15.4.2] — 2026-08-24
+
+### Changed
+- **Row name from synonym now defaults to *Suggest in the Name editor*.** The
+  feature shipped off, so the synonyms only ever appeared for someone who went
+  looking for the setting. A fresh install now lists them under CDD's own Name
+  box; writing a name without being asked (`auto`) is still a separate choice,
+  as is `#autoFillEnabled`.
+  - The default lives in one exported constant, `ROW_NAME_DEFAULT` in
+    `shared/row-name-flag.js`. There was no second copy to keep in step: the
+    options page and the content script both go through `getFillRowNameMode()`,
+    and `options.html` ticks no radio of its own.
+  - `normalizeMode()` gained an explicit `stored === false` → `off` arm. The key
+    predates the modes and used to hold a boolean; with the fallback flipped to
+    `suggest`, a stored `false` would otherwise have switched the feature *on*
+    for exactly the people who had unticked the old checkbox.
+  - `let cached` still starts at `off` — that is not the default but the answer
+    the sync readers give before storage has been read, and guessing `suggest`
+    there would fire a molecule-page request per page load for a user who chose
+    off. `initFillRowName()` ends with `notify()`, which starts the real work.
+
+### Fixed
+- **The plate location bubble is no longer painted over by the copy hint.**
+  Hovering a plate name in the search results shows the plate's Inventory
+  Location in our own bubble (`plate-location-tooltip.js`); a second later the
+  native `title` that `search-column-copy.js` sets for discoverability —
+  "Ctrl+click to copy this value" — drew straight over it. The hint now skips
+  any cell holding a `.plate_name a[href*="/plates/"]`, the same anchor the
+  bubble answers to, so the two features no longer own the same hover. The
+  selector is exported from the tooltip rather than copied a third time.
+  Ctrl+click still copies that cell, and the header's column hint is untouched.
+
+---
 ## [15.4.1] — 2026-08-24
 
 ### Fixed

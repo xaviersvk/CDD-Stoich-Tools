@@ -18,6 +18,7 @@
 // proper grid that honours colspan/rowspan.
 
 import { copyText } from "../../utils/clipboard.js";
+import { PLATE_LINK_SELECTOR } from "./plate-location-tooltip.js";
 
 const STYLE_ID = "cdd-search-column-copy-style";
 const FLASH_CLASS = "cdd-column-copied";
@@ -330,7 +331,8 @@ export function initSearchColumnCopy() {
     );
 
     // Discoverability: the hint appears the first time a header or a cell is
-    // hovered, and never overwrites a title CDD set itself.
+    // hovered, and never overwrites a title CDD set itself — nor one of our
+    // own hover bubbles.
     document.documentElement.addEventListener("mouseover", (event) => {
         const th = event.target?.closest?.("thead th");
         if (th) {
@@ -342,6 +344,10 @@ export function initSearchColumnCopy() {
         const cell = event.target?.closest?.(CELL_SELECTOR);
         if (!cell || cell.title || !cell.closest(TABLE_SELECTOR)) return;
         if (!isCopyableCell(cell)) return;
+        // The plate name cell answers a hover with our own location bubble
+        // (plate-location-tooltip); a native title would draw over it a
+        // second later. Ctrl+click still copies the cell — only the hint goes.
+        if (cell.querySelector(PLATE_LINK_SELECTOR)) return;
         cell.title = "Ctrl+click to copy this value";
     });
 }

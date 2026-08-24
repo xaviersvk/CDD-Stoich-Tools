@@ -242,8 +242,8 @@ function init() {
     onShowProductsChanged(() => renderFromState());
   });
 
-  // Row name from synonym. Off by default; nothing that depends on it runs
-  // until the flag is on.
+  // Row name from synonym. Defaults to "suggest"; nothing that depends on it
+  // runs until the mode has been read out of storage.
   initFillRowName();
 
   // Remembered row names: load the molecule->name map, then re-render the

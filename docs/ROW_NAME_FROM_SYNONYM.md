@@ -28,8 +28,9 @@ Click it and the row is named. Type your own name instead and it is
 remembered for that molecule, then offered everywhere that molecule turns up
 again — including in other entries.
 
-**Switch it on:** *Settings → Fill row name from synonym*. Off by default,
-because each new molecule costs one request for its page.
+**Change it:** *Settings → Row name from synonym*. *Suggest in the Name
+editor* is the default; each new molecule costs one request for its page.
+Writing the name automatically stays a choice.
 
 **Manage what it learned:** *Settings → Remembered names* (300 entries, oldest
 use evicted first, per-row delete and *Clear all*).
@@ -63,7 +64,7 @@ would hand you a comma.
 
 | Key | Shape | Written by |
 | --- | --- | --- |
-| `cddFillRowName` | `boolean`, default `false` | the options checkbox |
+| `cddFillRowName` | `"off"` \| `"suggest"` \| `"auto"`, default `"suggest"` (a legacy `true`/`false` still reads as suggest/off) | the options radio group |
 | `cddNameMemoryV1` | `{ [moleculeId]: { name, moleculeName, savedAt, lastUsedAt } }`, capped at 300 | capture, and a successful fill's LRU touch |
 
 (The shortest synonym itself is **not** persisted. It is a per-session `Map`

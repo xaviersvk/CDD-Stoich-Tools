@@ -13,7 +13,25 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
-# What's new in 15.4.0
+# What's new in 15.4.2
+
+---
+
+## 15.4.2 — 2026-08-24
+
+**Synonyms are now offered in the row Name editor by default.** Click *Name:
+Optional* in a stoichiometry row and the molecule's other names are listed
+under the box — DIPEA rather than N-ethyldiisopropylamine. Typing your own
+still works, and what you type is offered first the next time.
+
+- Nothing is written for you. Filling a name automatically is still a separate
+  choice under *Settings → Row name from synonym*.
+- If you switched the feature off yourself, it stays off.
+- Hover a plate name in search results and you see its location again — the
+  Ctrl+click hint no longer covers the bubble.
+- The setup guide opens by itself only the first time you open the settings
+  page. The ⚙ in the panel goes straight to the settings; the guide is behind
+  **Setup guide** at the top of that page.
 
 ---
 

@@ -124,7 +124,7 @@ The flagship feature group: a floating "CDD Samples" box on ELN entry pages.
   `content/features/fill-offers.js` (the `name` offer).
 - **Related files:** `shared/name-memory.js` (`cddNameMemoryV1`, 300 entries,
   keyed by **molecule**), `shared/row-name-flag.js` (`cddFillRowName`, default
-  off), `content/features/name-capture.js` (baseline rule),
+  `suggest`), `content/features/name-capture.js` (baseline rule),
   `content/features/row-fill.js` (`fillNameIntoTable`, `readRowName`),
   `api/molecule-page.js` (`getMoleculeSynonymsText`), `options/` (checkbox +
   *Remembered names* card).

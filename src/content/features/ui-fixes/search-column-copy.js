@@ -85,6 +85,17 @@ function getBodyRows(table) {
 // one; a section header ("Properties", "Batch Fields") spans all of its
 // columns, so clicking it copies the whole block.
 // Returns { start, span, labels } or null.
+// The select column's checkbox — and anything else CDD puts a control in — has
+// its own job on click. Everything else in the body is data worth copying.
+// CDD's row selector is not an <input>: it is a link styled as a switch,
+// `td.selector` holding a `.toggleSwitch`. Ctrl+clicking it has to keep ticking
+// the row, so a cell counts as a control by either sign.
+const CONTROL_SELECTOR = "button, input, select, textarea, .toggleSwitch";
+
+function isCopyableCell(cell) {
+    return !cell.matches(".selector") && !cell.querySelector(CONTROL_SELECTOR);
+}
+
 function findColumnSpan(table, th) {
     if (!table.tHead) return null;
 
@@ -109,7 +120,25 @@ function findColumnSpan(table, th) {
     // header" and let the click through untouched.
     const span = Math.max(1, Math.min(th.colSpan, totalColumns - start));
     if (span >= totalColumns) return null;
-    if (th.querySelector("button, input, select, textarea")) return null;
+    if (th.querySelector(CONTROL_SELECTOR)) return null;
+
+    // Nor is a column whose BODY is controls a column of values: the select
+    // column carries a checkbox per row, and its "all · none" header would
+    // otherwise swallow the two links that tick them. One body row settles it —
+    // rowSpan merging means the first row of a section covers every column.
+    const firstBodyRow = table.tBodies[0]?.rows[0];
+    if (firstBodyRow) {
+        const bodyRow = buildGrid([firstBodyRow])[0] || [];
+        let holdsValues = false;
+        for (let c = start; c < start + span; c += 1) {
+            const cell = bodyRow[c];
+            if (cell && isCopyableCell(cell)) {
+                holdsValues = true;
+                break;
+            }
+        }
+        if (!holdsValues) return null;
+    }
 
     // The leaf labels under the section, for the header line of a block copy.
     const labels = [];
@@ -158,12 +187,6 @@ function readColumns(table, start, span) {
     });
 
     return { lines, cells };
-}
-
-// The select column's checkbox — and anything else CDD puts a control in — has
-// its own job on click. Everything else in the body is data worth copying.
-function isCopyableCell(cell) {
-    return !cell.querySelector("button, input, select, textarea");
 }
 
 function flashCells(cells) {
@@ -336,7 +359,18 @@ export function initSearchColumnCopy() {
     document.documentElement.addEventListener("mouseover", (event) => {
         const th = event.target?.closest?.("thead th");
         if (th) {
-            if (th.title || !th.closest(TABLE_SELECTOR)) return;
+            if (th.title || th.dataset.cddNoColumnHint) return;
+            const table = th.closest(TABLE_SELECTOR);
+            if (!table) return;
+
+            // The hint must promise exactly what the click keeps. The toolbar
+            // row and the select column resolve to no column, and used to
+            // advertise a copy that never happened. The answer is cached on the
+            // cell so a mouse crossing them is not re-measured every event.
+            if (!findColumnSpan(table, th)) {
+                th.dataset.cddNoColumnHint = "1";
+                return;
+            }
             th.title = "Ctrl+click to copy this column";
             return;
         }

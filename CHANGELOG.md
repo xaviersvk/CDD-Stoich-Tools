@@ -41,6 +41,27 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
     off. `initFillRowName()` ends with `notify()`, which starts the real work.
 
 ### Fixed
+- **The results toolbar and the select column are no longer offered as
+  columns.** Two halves of the same defect, both on `search_results_table`:
+  - The hover hint did not share the click's predicate. `findColumnSpan()`
+    already refused the toolbar row ("N Selected: Launch Visualization · …",
+    one `th` with `colSpan` 21 over 21 columns), so Ctrl+click there was
+    correctly let through to CDD — but the `mouseover` handler set
+    `title="Ctrl+click to copy this column"` on it anyway, advertising a copy
+    that never happened. The hint now asks `findColumnSpan()` too, and caches
+    a refusal on the cell (`data-cdd-no-column-hint`) so a mouse crossing the
+    toolbar is not re-measured on every event.
+  - CDD's row selector is not a checkbox. It is `td.selector` holding
+    `<span class="toggleSwitch"><a href="#">` — no form control at all, so
+    `isCopyableCell()` read it as data: Ctrl+click swallowed the link and
+    copied an empty string instead of ticking the row, and the *all · none*
+    header copied a column of blanks. The control test is now
+    `CONTROL_SELECTOR` (`button, input, select, textarea, .toggleSwitch`) plus
+    `td.selector`, shared by the header and the cell paths.
+  - `findColumnSpan()` also checks the first body row of the resolved span:
+    a column whose body holds only controls is not a column of values.
+    `rowSpan` merging means one body row covers every column, so this costs a
+    one-row grid, not a walk of the table.
 - **The plate location bubble is no longer painted over by the copy hint.**
   Hovering a plate name in the search results shows the plate's Inventory
   Location in our own bubble (`plate-location-tooltip.js`); a second later the

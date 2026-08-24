@@ -29,6 +29,9 @@ still works, and what you type is offered first the next time.
 - If you switched the feature off yourself, it stays off.
 - Hover a plate name in search results and you see its location again — the
   Ctrl+click hint no longer covers the bubble.
+- The toolbar above the results no longer offers a Ctrl+click copy it never
+  performed, and the row-select switch ticks the row again instead of copying
+  an empty column.
 - The setup guide opens by itself only the first time you open the settings
   page. The ⚙ in the panel goes straight to the settings; the guide is behind
   **Setup guide** at the top of that page.

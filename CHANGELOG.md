@@ -19,6 +19,23 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [15.4.1] — 2026-08-24
+
+### Fixed
+- **The setup guide opens itself once, not on every ⚙ click.** The panel's ⚙
+  set a one-shot `cddSetupWizardRequested` flag on every click, and the
+  settings page read that flag *ahead of* `cddSetupWizardSeenV1` — so opening
+  the settings from the panel brought the whole nine-step tour back every
+  time. The ⚙ now only asks the background to open the options page (title
+  **Settings**); a newcomer still lands on the guide, because the seen flag is
+  not set yet, and everyone else lands on the settings with the guide behind
+  the masthead's **Setup guide** button.
+- `cddSetupWizardRequested` and its two helpers (`requestSetupWizard`,
+  `takeSetupWizardRequest`) are gone from `shared/setup-wizard-flag.js`: one
+  flag, one reader. The guide's own wording no longer promises that the ⚙
+  reopens it.
+
+---
 ## [15.4.0] — 2026-08-23
 
 ### Added

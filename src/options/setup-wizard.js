@@ -3,8 +3,8 @@
 // A short tour a newcomer can click through: each step says, in a chemist's
 // words, what one part of the extension does, where it shows up in CDD, and
 // offers the switches that matter for it. It opens by itself the first time
-// the settings page is shown, and whenever asked — the masthead button, or
-// the ⚙ in the floating panel.
+// the settings page is shown, and whenever asked — the Setup guide button in
+// the masthead.
 //
 // It owns NO settings. Every control here is a MIRROR of a control on the
 // settings page behind it: changing a mirror copies the value onto the real
@@ -13,11 +13,7 @@
 // the guide can never disagree with the page — the mirror is re-read from the
 // real control each time its step is shown.
 
-import {
-    getSetupWizardSeen,
-    markSetupWizardSeen,
-    takeSetupWizardRequest,
-} from "../shared/setup-wizard-flag.js";
+import { getSetupWizardSeen, markSetupWizardSeen } from "../shared/setup-wizard-flag.js";
 
 /* ------------------------------------------------------------------ *
  * The steps
@@ -75,7 +71,7 @@ const STEPS = [
         title: "The floating panel",
         lead: "Open any ELN entry and a panel appears at the top right. Entities shows one card per stoichiometry row — batch, purity, density, amounts — with buttons that fill the row. Phrases is a pasteboard of reusable text.",
         body: [
-            "Drag it by its header, resize it from the corner, collapse it with −. Export prints what the cards show (save as PDF from the print dialog); its ▾ holds the CSV exports. The ⚙ brings you back here.",
+            "Drag it by its header, resize it from the corner, collapse it with −. Export prints what the cards show (save as PDF from the print dialog); its ▾ holds the CSV exports. The ⚙ opens these settings.",
         ],
         pane: "col-fields-heading",
         controls: [
@@ -165,7 +161,7 @@ const STEPS = [
         title: "Done",
         lead: "That is the tour. Here is what is switched on right now.",
         summary: true,
-        after: "Open this guide again any time: the Setup guide button at the top of the settings page, or the ⚙ in the floating panel.",
+        after: "Open this guide again any time with the Setup guide button at the top of the settings page.",
     },
 ];
 
@@ -517,12 +513,10 @@ export async function initSetupWizard() {
         openSetupWizard();
     });
 
-    // The ⚙ in the panel asked for the guide, or this is the first time the
-    // settings page has ever been opened. The mirrors read the real controls,
-    // and those are filled by async init code — a breath lets it finish.
-    const requested = await takeSetupWizardRequest();
-    const seen = requested ? true : await getSetupWizardSeen();
-    if (requested || !seen) {
+    // The first time the settings page is ever opened, and never again on its
+    // own. The mirrors read the real controls, and those are filled by async
+    // init code — a breath lets it finish.
+    if (!(await getSetupWizardSeen())) {
         index = 0;
         setTimeout(openSetupWizard, 250);
     }

@@ -19,6 +19,15 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ## 15.4.3 — 2026-08-25
 
+**You can now edit a saved phrase.** Settings → **Phrases**, then **✎** on
+the row. Fix a typo, change a volume — links to CDD records inside the phrase
+stay links, so type around them. **Save** keeps it, **Cancel** drops it.
+
+**This extension is not a CDD product,** and the settings page now says so.
+If CDD misbehaves, switch the extension off, reload the page and check whether
+it still happens — report it to CDD support only if it does. Otherwise
+[open an issue](https://github.com/xaviersvk/CDD-Stoich-Tools/issues).
+
 **Copying text out of a stoichiometry table is switched off in this version.**
 It was losing work: if you added a link with `@` and then edited the table
 without reloading the page in between, the link — and anything else you had

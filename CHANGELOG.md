@@ -21,7 +21,37 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 ---
 ## [15.4.3] — 2026-08-25
 
-Hotfix. One feature is switched off because it loses ELN data.
+Hotfix, plus phrase bodies became editable and a disclaimer the project should
+have carried from the start.
+
+### Added
+- **A saved phrase's wording can be edited in Settings.** `✎` on a phrase row
+  opens its body; *Save* / *Cancel* close it.
+
+  The body is edited **as it looks**, in a `contenteditable`, not as raw text.
+  A phrase saved out of an ELN entry can carry links to CDD records, bold, or a
+  table, and typing around them has to leave them intact — a `<textarea>` could
+  not do that without throwing the markup away. There is deliberately no
+  formatting toolbar: this is for fixing wording, not authoring.
+
+  Both bodies are rewritten together on save. The edited HTML goes through the
+  existing `sanitizePhraseHtml()`, and `text` is recomputed from the result by
+  a new `phraseTextFromHtml()` in `shared/phrases.js` — blocks on their own
+  lines, table cells tab-separated, list items bulleted, the same rules the
+  capture side reads off a selection. The clipboard carries both flavours, so
+  bodies that disagreed would paste differently into the ELN than into Excel.
+
+  Unlike everything else on the page there is a Save button, because a mangled
+  paste into a phrase carrying entity links has no undo. While an editor is
+  open the list does not redraw: copying a phrase in the ELN panel writes to
+  this same storage, and the redraw would otherwise replace the editor
+  mid-sentence. Held changes are painted the moment editing ends.
+
+- **The settings page and the What's new site say plainly that this is not a
+  CDD product**, and ask that any problem be checked with the extension
+  disabled before it reaches CDD support. The bug below is the argument for
+  it — a fault that looks entirely like a CDD defect, right down to CDD's own
+  error box and a 422 from their server.
 
 ### Removed
 - **Stoichiometry table copy is disabled** — `initStoichTableCopy()` is

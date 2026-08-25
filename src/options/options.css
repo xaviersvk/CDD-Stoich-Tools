@@ -1078,6 +1078,88 @@ body {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+/* Editing a phrase body.
+   contenteditable, not a textarea: a phrase can carry links to CDD records,
+   bold and tables, and typing around them has to leave them intact. */
+.phrase-edit-btn {
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 13px;
+    line-height: 1;
+    color: var(--muted);
+}
+
+.phrase-edit-btn:hover { color: var(--accent); }
+
+.phrase-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.phrase-editor__body {
+    min-height: 90px;
+    max-height: 320px;
+    overflow-y: auto;
+    padding: 8px 10px;
+    font-size: 13px;
+    line-height: 1.5;
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    background: var(--card);
+    color: var(--ink);
+}
+
+.phrase-editor__body:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: -1px;
+}
+
+/* Whatever the phrase brought with it, kept readable in the box. */
+.phrase-editor__body p { margin: 0 0 6px; }
+.phrase-editor__body p:last-child { margin-bottom: 0; }
+.phrase-editor__body h1,
+.phrase-editor__body h2,
+.phrase-editor__body h3,
+.phrase-editor__body h4,
+.phrase-editor__body h5,
+.phrase-editor__body h6 { margin: 8px 0 4px; font-size: 14px; }
+.phrase-editor__body ul,
+.phrase-editor__body ol { margin: 0 0 6px; padding-left: 20px; }
+.phrase-editor__body table { border-collapse: collapse; }
+.phrase-editor__body td,
+.phrase-editor__body th {
+    padding: 2px 6px;
+    border: 1px solid var(--rule);
+}
+.phrase-editor__body a { color: var(--accent); }
+
+.phrase-editor__note {
+    margin: 0;
+    font-size: 11px;
+    color: var(--muted);
+}
+
+.phrase-editor__actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* Saving a body is the one deliberate write on this page — the rest persists
+   as you type — so it is the one button that carries weight. */
+.phrase-editor__save {
+    color: var(--card);
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+.phrase-editor__save:hover {
+    background: var(--ink);
+    border-color: var(--ink);
+}
+
 .phrase-input {
     padding: 4px 6px;
     font-size: 13px;

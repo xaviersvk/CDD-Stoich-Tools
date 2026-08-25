@@ -110,6 +110,82 @@ function cleanText(value, max) {
     return String(value ?? "").replace(INVISIBLE_RE, "").trim().slice(0, max);
 }
 
+// ---------------------------------------------------------------------------
+// HTML -> plain text
+// ---------------------------------------------------------------------------
+
+const BLOCK_LEVEL = new Set([
+    "p", "h1", "h2", "h3", "h4", "h5", "h6",
+    "ul", "ol", "li", "blockquote", "pre", "table", "tr", "div",
+]);
+
+// The plain-text twin of an HTML body: blocks on their own lines, table cells
+// tab-separated, list items bulleted. `textContent` runs blocks together,
+// which is why it is not used. Same rules as the capture side reads off a
+// selection, so a phrase edited in Settings comes out looking like one saved
+// from the ELN.
+//
+// Called on every save of an edited body, so `text` and `html` can never
+// drift apart — the clipboard carries both and a pasted phrase would
+// otherwise differ depending on where it landed.
+export function phraseTextFromHtml(html) {
+    const source = String(html ?? "");
+    if (!source.trim()) return "";
+    if (typeof DOMParser === "undefined") return "";
+
+    const doc = new DOMParser().parseFromString(
+        `<body>${source.slice(0, PHRASE_HTML_MAX * 2)}</body>`,
+        "text/html"
+    );
+
+    let out = "";
+    const walk = (node) => {
+        for (const child of node.childNodes) {
+            if (child.nodeType === Node.TEXT_NODE) {
+                out += child.nodeValue;
+                continue;
+            }
+            if (child.nodeType !== Node.ELEMENT_NODE) continue;
+
+            const tag = child.tagName.toLowerCase();
+            if (tag === "br") {
+                out += "\n";
+                continue;
+            }
+            if (tag === "hr") {
+                out += "\n---\n";
+                continue;
+            }
+            if (tag === "td" || tag === "th") {
+                if (out && !out.endsWith("\n") && !out.endsWith("\t")) out += "\t";
+                walk(child);
+                continue;
+            }
+            if (tag === "li") {
+                if (out && !out.endsWith("\n")) out += "\n";
+                out += "- ";
+                walk(child);
+                continue;
+            }
+            if (BLOCK_LEVEL.has(tag)) {
+                if (out && !out.endsWith("\n")) out += "\n";
+                walk(child);
+                if (!out.endsWith("\n")) out += "\n";
+                continue;
+            }
+            walk(child);
+        }
+    };
+    walk(doc.body);
+
+    return out
+        .replace(INVISIBLE_RE, "")
+        .replace(/[ \t]+\n/g, "\n")
+        .replace(/\n{3,}/g, "\n\n")
+        .trim()
+        .slice(0, PHRASE_TEXT_MAX);
+}
+
 // Normalise an arbitrary stored / imported phrase. Returns null when it has
 // no usable body.
 export function sanitizePhrase(raw) {

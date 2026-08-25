@@ -267,3 +267,68 @@ plain search results page supports the Ctrl+click column and section copy.
 
 **Decision.** Parked at low priority (2026-08-12) — revisit only if Export
 turns out not to cover the need.
+
+---
+
+## Stoichiometry table copy — disabled, cause not yet isolated
+
+**Status.** `initStoichTableCopy()` is commented out in `src/content/main.js`
+as of **15.4.3**. The module still builds and one line brings it back.
+
+**Symptom.** Insert an entity link into an ELN entry with `@`, then edit the
+stoichiometry table in the **same page session**, and the link — plus anything
+else typed since the page loaded — disappears. Reload between the two steps and
+it survives, which is why it looked intermittent for a long time.
+
+**Cause.** `src/content/features/ui-fixes/stoich-table-copy.js`. Bisected on
+2026-08-25 with a page-side kill list over 25 feature inits: with only this
+module running the fault reproduces; with only `stoich-amount-editing.js`
+running it does not; with the extension off it never happens.
+
+**Which part of it is still open.** Two suspects were tested and neither is the
+answer on its own:
+
+- `suppressDraggables()` — rewrote the `draggable` attribute on the reaction
+  `<figure>` and the batch `<a>`, both nodes Slate owns. Replaced with a
+  cancelled `dragstart` (no DOM write at all). **Did not fix it.**
+- the `user-select: text !important` rule, which lifts Slate's void
+  protection — ruled out in a separate run.
+
+That leaves the capture-phase gesture handlers (`pointerdown`, `pointerup`,
+`mousedown`, `mouseup`, `click`, `dblclick`), the `copy` handler, and
+`markTables()` adding `cdd-stoich-selectable` to a `<table>` inside the editor.
+
+**The failure chain, measured.** Worth keeping, because every visible symptom is
+the *end* of it and points away from the real cause:
+
+1. a Slate transform throws `undefined is not iterable (cannot read property
+   Symbol(Symbol.iterator))` inside `Object.withoutNormalizing` — no extension
+   frames anywhere on the stack
+2. CDD's error boundary catches it and paints *"The last action caused an
+   error. If the error persists, contact us."*
+3. CDD reports the failure with `PUT /vaults/<v>/eln/entries/<id>` carrying
+   `{"eln_entry":{"lock_version":N},"errored":true}` plus a
+   `POST /eln/debugs/`
+4. that reporter's `lock_version` was captured before the last autosave, so the
+   server answers **422 `["Invalid entry version"]`** — this is the only thing
+   visible in the console, and it is a red herring
+5. the editor is recovered from an earlier document and the next autosave
+   writes it back — the entry body is re-sent **byte-identical** to a previous
+   version
+
+**Ruled out along the way.** The server (saves carrying the link were accepted
+and echoed back with it); `inject/hooks/fetch-hook.js` (entry saves go over
+XHR, so it was never on the path); `print-buttons.js` appending a `<button>`
+inside the contenteditable; the *Mentioned in text* panel source; Grammarly;
+and DOM deletion (`removeChild`/`remove` never fire — the node is dropped from
+Slate's model, not from the DOM).
+
+**Note for whoever picks this up.** CDD's own debug payload says
+`"Editor data not available - likely the error did not occur in the editor"`.
+That is wrong — it only means `slate_history` was not attached. The stack shows
+Slate.
+
+**Reproduction.** ELN entry, extension on: `@` → pick a batch → *Save* → wait
+for *Saved* → change a value in the stoichiometry table. Both steps in one page
+session. Signal to watch: `undefined is not iterable` in the console, or the red
+error box.

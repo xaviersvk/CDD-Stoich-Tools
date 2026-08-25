@@ -8,7 +8,9 @@
 //      elements in a two-reaction table computed `user-select: none`.
 //   2. That same <figure> is `draggable`, so pressing the mouse down on a
 //      molecule name started an HTML5 drag of the whole reaction block.
-//      The browser never got as far as firing `selectstart`.
+//      The browser never got as far as firing `selectstart`. Cancelled at
+//      the `dragstart` event — never by rewriting the attribute, which is
+//      Slate's to own; see Part A for what that cost us.
 //
 // Lift both and the table reads like text: drag across it and it goes blue.
 // CDD's click-to-edit popup is untouched — it opens from a click, and a
@@ -108,9 +110,22 @@ function markTables() {
 /* ------------------------------------------------------------------ *
  * Part A — let the mouse select instead of drag
  *
- * `draggable` is switched off for the length of ONE mouse gesture and put
- * straight back, so Slate can still drag the reaction block by its own
- * chrome and CDD's links stay draggable everywhere else.
+ * The drag is cancelled at the EVENT, never at the DOM.
+ *
+ * This used to walk up from the mousedown target and rewrite `draggable`
+ * on every draggable ancestor, putting the attribute back on mouseup. Two
+ * of those ancestors — the reaction <figure> and the batch <a> — are nodes
+ * Slate owns, and writing an attribute on them is a change Slate did not
+ * make and does not expect. Measured consequence: inserting an @-mention
+ * and then clicking a field in the table threw "undefined is not iterable"
+ * inside a Slate transform, CDD's error boundary painted its red box, the
+ * entry reverted to an earlier body, and the mention was gone. Bisected to
+ * this function with every other feature switched off; the `user-select`
+ * rule below was ruled out in the same way and is not involved.
+ *
+ * Cancelling `dragstart` does the same job: the browser never starts the
+ * HTML5 drag, so the gesture stays a text selection — and no attribute of
+ * CDD's is touched.
  * ------------------------------------------------------------------ */
 
 // A drag that ends inside the field it started in still fires a click, and
@@ -119,48 +134,26 @@ function markTables() {
 // click, and the click is dropped.
 const DRAG_SLOP_PX = 4;
 
-// [element, attribute value it had before, or null for "no attribute"].
-let suppressedDraggables = [];
-
 // Where the current gesture started, or null when it began outside a table.
 let gestureStart = null;
 
-function restoreDraggables() {
-    suppressedDraggables.forEach(([element, original]) => {
-        if (original === null) element.removeAttribute("draggable");
-        else element.setAttribute("draggable", original);
-    });
-
-    suppressedDraggables = [];
-}
-
-// Every draggable ancestor, not just the nearest: pressing down on a batch
-// id sits inside a draggable <a> AND the draggable <figure>, and either one
-// left alone would swallow the gesture.
-function suppressDraggables(target) {
-    let element = target;
-
-    while (element && element !== document.documentElement) {
-        if (element.draggable) {
-            suppressedDraggables.push([element, element.getAttribute("draggable")]);
-            element.setAttribute("draggable", "false");
-        }
-
-        element = element.parentElement;
-    }
-}
-
 function onMouseDown(event) {
-    // A gesture that never got its mouseup (released outside the window,
-    // drag cancelled) would otherwise leave `draggable` off for good.
-    restoreDraggables();
     gestureStart = null;
 
     if (event.button !== 0) return;
     if (!event.target?.closest?.(`.${TABLE_CLASS}`)) return;
 
     gestureStart = { x: event.clientX, y: event.clientY };
-    suppressDraggables(event.target);
+}
+
+// Only a drag THIS gesture started, and only from inside a table: Slate can
+// still drag the reaction block by its own chrome, and CDD's links stay
+// draggable everywhere else on the page.
+function onDragStart(event) {
+    if (!gestureStart) return;
+    if (!event.target?.closest?.(`.${TABLE_CLASS}`)) return;
+
+    event.preventDefault();
 }
 
 // True when this gesture dragged far enough to be a selection AND actually
@@ -371,7 +364,6 @@ function updateArmed(event) {
 
 function disarm() {
     document.documentElement.classList.remove(ARMED_CLASS);
-    restoreDraggables();
     gestureStart = null;
 }
 
@@ -384,8 +376,10 @@ export function initStoichTableCopy() {
     markTables();
 
     document.addEventListener("mousedown", onMouseDown, true);
-    document.addEventListener("mouseup", restoreDraggables, true);
-    document.addEventListener("dragend", restoreDraggables, true);
+
+    // Capture, and on `document`: the drag has to be cancelled before it
+    // reaches the <figure> that would otherwise start it.
+    document.addEventListener("dragstart", onDragStart, true);
 
     GESTURE_EVENTS.forEach((type) => {
         document.addEventListener(type, onGestureEvent, true);

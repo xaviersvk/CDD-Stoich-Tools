@@ -19,6 +19,62 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [15.4.3] — 2026-08-25
+
+Hotfix. One feature is switched off because it loses ELN data.
+
+### Removed
+- **Stoichiometry table copy is disabled** — `initStoichTableCopy()` is
+  commented out in `src/content/main.js`. Selecting table text by dragging,
+  `Ctrl`/`Cmd`+click to copy a field and `Ctrl+C` for a grid are gone for now.
+  The module is untouched apart from one change below and a single line
+  restores it.
+
+### Fixed
+- **Entity links written into an entry no longer vanish when the
+  stoichiometry table is edited.** Insert a link with `@`, then change a value
+  in the table **in the same page session**, and the link — along with
+  anything else typed since the page loaded — was gone. Reload between the two
+  steps and it survived, which is why this read as intermittent for so long.
+
+  The faulty module is
+  **`src/content/features/ui-fixes/stoich-table-copy.js`**, established by
+  bisecting 25 feature inits with a page-side kill list: with only this module
+  running the fault reproduces, with only `stoich-amount-editing.js` running it
+  does not, and with the extension off it never happens. **Which part of it is
+  at fault is still open** — `suppressDraggables()` was the first suspect and
+  replacing it with a cancelled `dragstart` did not fix it, and the
+  `user-select: text` rule was ruled out separately. So the module is disabled
+  rather than patched.
+
+  The failure chain, measured — worth recording because every visible symptom
+  is the *end* of it and points away from the cause:
+  - a Slate transform throws `undefined is not iterable` inside
+    `Object.withoutNormalizing`, with no extension frames on the stack
+  - CDD's error boundary paints *"The last action caused an error"*
+  - CDD reports it with `PUT /eln/entries/<id>` carrying
+    `{"errored": true}` and a stale `lock_version`, which the server rejects
+    with **422 `["Invalid entry version"]`** — the only thing in the console,
+    and a red herring
+  - the editor is recovered from an earlier document and the next autosave
+    writes it back, re-sending the entry body **byte-identical** to a previous
+    version
+
+  Ruled out along the way: the server (saves carrying the link were accepted
+  and echoed back with it), `inject/hooks/fetch-hook.js` (entry saves go over
+  XHR, so it was never on that path), `print-buttons.js`, the *Mentioned in
+  text* panel source, Grammarly, and DOM deletion — `removeChild` never fires,
+  the node is dropped from Slate's model.
+
+  Full notes and the reproduction: [`docs/BACKLOG.md`](./docs/BACKLOG.md).
+
+### Changed
+- `stoich-table-copy.js` no longer rewrites the `draggable` attribute on nodes
+  Slate owns; the drag is cancelled at the `dragstart` event instead. This did
+  not fix the bug above, but writing attributes into someone else's editor is
+  wrong on its own and the module should not come back carrying it.
+
+---
 ## [15.4.2] — 2026-08-24
 
 ### Changed

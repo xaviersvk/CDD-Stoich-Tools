@@ -48,6 +48,8 @@ import {initRegistrationFormDefault} from "./features/ui-fixes/registration-form
 import {initElnIdToRegistration} from "./features/ui-fixes/eln-id-to-registration";
 import {initRegistrationDefaults} from "./features/ui-fixes/registration-defaults";
 import {initStoichAmountEditing} from "./features/ui-fixes/stoich-amount-editing";
+// Disabled in init() since 15.4.3 — see the note there. Import kept so the
+// module stays type-checked and one line brings it back.
 import {initStoichTableCopy} from "./features/ui-fixes/stoich-table-copy";
 import {initSlurpTypeDefault} from "./features/ui-fixes/slurp-type-default";
 import {initOptionsMenuLink} from "./features/ui-fixes/options-menu-link";
@@ -181,9 +183,21 @@ function init() {
 
   // Selecting text in a stoichiometry table: CDD's Slate void turns
   // user-select off and hijacks the mouse into a block drag, so nothing in
-  // the table could be copied. Both are lifted here, plus Ctrl/Cmd+click to
+  // the table could be copied. Both are lifted there, plus Ctrl/Cmd+click to
   // copy a single field.
-  initStoichTableCopy();
+  //
+  // OFF since 15.4.3 — it loses ELN data. Insert an entity link with `@` and
+  // then edit the stoichiometry table in the same page session, and the link
+  // (and anything else typed since the page loaded) is gone: a Slate
+  // transform throws `undefined is not iterable`, CDD's error boundary paints
+  // "The last action caused an error", and the editor is recovered from an
+  // earlier document. Bisected to this module with every other feature
+  // switched off, one at a time; which part of it is at fault is still open —
+  // rewriting `draggable` was the first suspect and replacing that with a
+  // cancelled `dragstart` did NOT fix it, so the cause is elsewhere in the
+  // file. Notes and the full measurement trail: docs/BACKLOG.md.
+  //
+  // initStoichTableCopy();
 
   initSlurpTypeDefault();
   initOptionsMenuLink();

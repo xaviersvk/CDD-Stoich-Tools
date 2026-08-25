@@ -13,7 +13,25 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
-# What's new in 15.4.2
+# What's new in 15.4.3
+
+---
+
+## 15.4.3 — 2026-08-25
+
+**Copying text out of a stoichiometry table is switched off in this version.**
+It was losing work: if you added a link with `@` and then edited the table
+without reloading the page in between, the link — and anything else you had
+typed since opening the entry — disappeared.
+
+- Dragging to select table text, **Ctrl/Cmd+click** to copy one field and
+  **Ctrl+C** for a whole grid are unavailable for now.
+- Nothing else changes, and no setting needs touching.
+- Until it is back, use CDD's own **Export**, or the panel's **Export** button
+  for the reaction rows.
+
+If you have seen an ELN entry lose text after editing a reaction table, this
+was it. Entries already saved are unaffected.
 
 ---
 

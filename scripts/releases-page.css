@@ -21,6 +21,12 @@
     --accent: #033c8e;
     --accent-wash: #e8eefa;
 
+    /* Caution: the one hue on the page that is not the accent. It belongs to
+       the disclaimer band and to nothing else. */
+    --caution: #8a5a00;
+    --caution-wash: #fdf3dd;
+    --caution-rule: #e0c07a;
+
     --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     --mono: ui-monospace, SFMono-Regular, "Cascadia Mono", Consolas, monospace;
 }
@@ -34,6 +40,9 @@
         --rule: #27313a;
         --accent: #7fa9ef;
         --accent-wash: #121d31;
+        --caution: #f2c46b;
+        --caution-wash: #241b09;
+        --caution-rule: #5b4720;
     }
 }
 
@@ -202,6 +211,86 @@ h1 {
 .btn--quiet {
     color: var(--muted);
     font-weight: 500;
+}
+
+/* -------------------------------------------------------------- disclaimer */
+
+/* Whose extension this is, and what to do before blaming CDD for something it
+   did. A full-bleed band directly under the hero, in the one colour nothing
+   else on the page uses, so nobody reaches the release notes without it. */
+.disclaimer {
+    background: var(--caution-wash);
+    border-bottom: 1px solid var(--caution-rule);
+}
+
+.disclaimer__inner {
+    padding-top: 20px;
+    padding-bottom: 20px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+}
+
+/* Square, monospace, hairline-bordered — the tile language of the version
+   tiles, without pretending to be one. */
+.disclaimer__mark {
+    flex: 0 0 auto;
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--caution);
+    border-radius: 3px;
+    font-family: var(--mono);
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--caution);
+}
+
+.disclaimer__body {
+    min-width: 0;
+}
+
+.disclaimer__title {
+    margin: 0 0 6px;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--caution);
+}
+
+.disclaimer__text {
+    margin: 0 0 8px;
+    font-size: 14.5px;
+}
+
+.disclaimer__link {
+    display: inline-block;
+    margin-top: 4px;
+    padding: 7px 13px;
+    border: 1px solid var(--caution);
+    border-radius: 5px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--caution);
+    text-decoration: none;
+}
+
+.disclaimer__link:hover {
+    background: var(--caution);
+    color: var(--caution-wash);
+}
+
+.disclaimer__link:focus-visible {
+    outline: 2px solid var(--caution);
+    outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+    .disclaimer__inner {
+        gap: 10px;
+    }
 }
 
 /* ---------------------------------------------------------------- release */

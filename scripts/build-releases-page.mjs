@@ -222,6 +222,26 @@ function renderPage(releases, version, tags, assets) {
   </div>
 </header>
 
+<aside class="disclaimer" aria-labelledby="disclaimer-title">
+  <div class="wrap disclaimer__inner">
+    <span class="disclaimer__mark" aria-hidden="true">!</span>
+    <div class="disclaimer__body">
+      <h2 class="disclaimer__title" id="disclaimer-title">Not a CDD product</h2>
+      <p class="disclaimer__text">
+        CDD Stoich Tools is an open-source extension written by users of CDD Vault.
+        Collaborative Drug Discovery does not build, endorse, or support it.
+      </p>
+      <p class="disclaimer__text">
+        Before you report a problem to CDD support, turn this extension off, reload the
+        CDD page, and check whether the problem is still there. If it goes away, the
+        extension caused it — report it on GitHub. Take it to CDD support only if it
+        still happens with the extension disabled.
+      </p>
+      <a class="disclaimer__link" href="${REPO}/issues">Report an issue on GitHub</a>
+    </div>
+  </div>
+</aside>
+
 <main class="wrap">
 ${releases
             .map((release) => renderRelease(release, statusOf(release, tags)))

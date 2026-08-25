@@ -21,6 +21,12 @@
     --accent-wash: #e8eefa;
     --danger: #b4241c;
 
+    /* Caution: the one hue on the page that is neither the accent nor an error.
+       It belongs to the disclaimer band and to nothing else. */
+    --caution: #8a5a00;
+    --caution-wash: #fdf3dd;
+    --caution-rule: #e0c07a;
+
     --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     --mono: ui-monospace, SFMono-Regular, "Cascadia Mono", Consolas, monospace;
 
@@ -38,6 +44,9 @@
         --accent: #7fa9ef;
         --accent-wash: #121d31;
         --danger: #f0776c;
+        --caution: #f2c46b;
+        --caution-wash: #241b09;
+        --caution-rule: #5b4720;
     }
 }
 
@@ -142,6 +151,89 @@ body {
     margin: 4px 0 0;
     color: var(--muted);
     font-size: 13px;
+}
+
+/* -------------------------------------------------------------- disclaimer */
+
+/* Whose extension this is, and what to do before blaming CDD for something it
+   did. A full-bleed band in the one colour nothing else on the page uses, so it
+   reads as a standing notice rather than as another card of switches. */
+.disclaimer {
+    background: var(--caution-wash);
+    border-bottom: 1px solid var(--caution-rule);
+}
+
+.disclaimer__inner {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 18px 24px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+}
+
+/* Square, monospace, hairline-bordered — the tile language, without the card
+   counter that a real .tile carries. */
+.disclaimer__mark {
+    flex: 0 0 auto;
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--caution);
+    border-radius: 3px;
+    font-family: var(--mono);
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--caution);
+}
+
+.disclaimer__body {
+    min-width: 0;
+    max-width: 82ch;
+}
+
+.disclaimer__title {
+    margin: 0 0 6px;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--caution);
+}
+
+.disclaimer__text {
+    margin: 0 0 6px;
+    font-size: 13.5px;
+}
+
+.disclaimer__link {
+    display: inline-block;
+    margin-top: 6px;
+    padding: 6px 12px;
+    border: 1px solid var(--caution);
+    border-radius: 5px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--caution);
+    text-decoration: none;
+}
+
+.disclaimer__link:hover {
+    background: var(--caution);
+    color: var(--caution-wash);
+}
+
+.disclaimer__link:focus-visible {
+    outline: 2px solid var(--caution);
+    outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+    .disclaimer__inner {
+        padding: 14px 16px;
+        gap: 10px;
+    }
 }
 
 /* ------------------------------------------------------------------ bench */

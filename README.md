@@ -19,6 +19,19 @@ no backend, collects no data, and never sends anything anywhere.
 
 ---
 
+## ⚠️ Not a CDD product
+
+CDD Stoich Tools is an open-source extension written by users of CDD Vault.
+Collaborative Drug Discovery does not build, endorse, or support it.
+
+**Before you report a problem to CDD support, turn this extension off, reload
+the CDD page, and check whether the problem is still there.** If it goes away,
+the extension caused it — report it on
+[GitHub](https://github.com/xaviersvk/CDD-Stoich-Tools/issues). Take it to CDD
+support only if it still happens with the extension disabled.
+
+---
+
 ## What it does
 
 CDD Vault is powerful but generic, so routine lab work means a lot of manual

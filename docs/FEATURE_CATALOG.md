@@ -27,6 +27,7 @@ All paths are relative to the repository root. Every feature is registered from
 | [Data Extraction](#7-data-extraction) | fetch/XHR hooks · Payload detection · flatSample builder · Field resolvers · Print-data extractor · Messaging bus |
 | [Clipboard Features](#8-clipboard-features) | Unified clipboard helper · CDD-ready concentration copy · Click-to-copy fields |
 | [Inventory](#9-inventory) | Well structure tooltip (structure + synonym, idle prefetch) |
+| [Phrases](#10-phrases) | Save a selection · Panel tab · Manage and edit in Settings · Export / Import |
 
 ---
 
@@ -755,6 +756,112 @@ Copy-to-clipboard behaviour shared across the extension.
 | Unified clipboard | low | medium |
 | CDD-ready concentration copy | low-medium | low |
 | Click-to-copy fields | medium | low |
+| Phrases — save a selection | medium-high | medium |
+| Phrases — panel tab | low | low |
+| Phrases — manage and edit in Settings | medium | low |
+| Phrases — export / import | low | low |
+
+## 10. Phrases
+
+Snippets of ELN text the user marked, filed under categories, and copies back
+out with a click. Sentences that get retyped every entry — a workup, a TLC
+note, a safety line.
+
+A phrase keeps **two bodies**: `text` (plain) and `html` (formatting kept).
+The clipboard gets both, so pasting into the ELN restores bold, lists and
+tables while pasting into Excel or a plain field gets clean text. Everything
+below has to keep those two in step; a phrase whose bodies disagree pastes
+differently depending on where it lands.
+
+Storage is `chrome.storage.local` under `cddPhrasesV1`, capped at
+`PHRASE_LIMIT` (50). Over the cap the phrase **copied** least recently goes —
+looking at one does not count.
+
+### 10.1 Save a selection ("Save phrase")
+- **User value:** Select text in an ELN entry and a small button appears at the
+  end of the selection; it opens a popover for a name and categories, and files
+  the phrase.
+- **Entry point:** `src/content/features/phrases/capture.js`
+  (`initPhraseCapture`).
+- **Related files:** `content/features/phrases/selection-html.js` (turns the
+  Slate selection into semantic HTML + plain text), `shared/phrases.js`,
+  `shared/places-editor.js`, `shared/combo-input.js`.
+- **Data source:** the DOM selection inside `.slate-editor`. Nothing is read
+  from a payload.
+- **Maintenance difficulty:** **medium-high** — `selection-html.js` has to
+  understand CDD's non-semantic Slate DOM (`div.slate-p`,
+  `span[data-slate-leaf]`) and rename blocks by their `slate-*` class. Blocks
+  that cannot round-trip — the reaction table, attachments, timestamps,
+  structures — keep their visible text only.
+- **Regression risk:** **medium** — read-only against CDD, but it lives inside
+  the ELN editor and CDD's Slate markup is not a public contract.
+
+### 10.2 Phrases panel tab
+- **User value:** The floating panel's *Phrases* tab lists saved phrases grouped
+  by category; a click copies one (HTML + text) and counts as a use.
+- **Entry point:** `src/content/features/phrases/panel-tab.js`.
+- **Related files:** `content/utils/clipboard.js` (`copyRichText`),
+  `shared/phrases.js` (`groupPhrases`, `touchPhrase`).
+- **Note:** the copy is what refreshes the LRU stamp deciding which phrase is
+  dropped at the cap. It is fired without awaiting — the clipboard already has
+  the text and nothing on screen waits for the write.
+- **Maintenance difficulty:** **low**.
+- **Regression risk:** **low**.
+
+### 10.3 Manage and edit in Settings
+- **User value:** Rename a phrase, re-file it into other categories, rename or
+  remove a category everywhere, delete a phrase — and, since **15.4.3**, edit
+  the wording itself.
+- **Entry point:** `src/options/phrases-ui.js` (`initPhrasesUI`).
+- **Related files:** `shared/phrases.js`, `shared/places-editor.js`,
+  `src/options/options.html` (the *Phrases* card), `src/options/options.css`
+  (`.phrase-*`).
+
+**Editing the body — how, and why it is built this way**
+
+- The body is edited **as it looks**, in a `contenteditable`, not as raw text.
+  A phrase saved out of an entry can carry links to CDD records, bold, or a
+  table; typing around them has to leave them intact, which a `<textarea>`
+  cannot do without throwing the markup away.
+- There is **no formatting toolbar**, deliberately. This is for fixing wording,
+  not authoring: what the phrase already carries is kept, nothing new is
+  offered.
+- On save, **both bodies are rewritten together**: the edited HTML goes through
+  `sanitizePhraseHtml()`, and `text` is recomputed from the result by
+  `phraseTextFromHtml()` — blocks on their own lines, table cells
+  tab-separated, list items bulleted, matching what `selection-html.js` reads
+  off a live selection.
+- Unlike the rest of the page there **is** a Save button. Name and categories
+  persist as they change; a body does not, because a mangled paste into a
+  phrase carrying entity links has no undo. *Cancel* restores, and Escape is
+  the same as Cancel.
+- While an editor is open **the list does not redraw**. Copying a phrase in the
+  ELN panel writes to this same storage, and the redraw would otherwise replace
+  the editor mid-sentence. Held changes are painted when editing ends
+  (`editingId` / `pendingRender`).
+- Phrases saved before there was an HTML side get an editable body built from
+  their text, so there is always something to type into.
+- An empty body is refused rather than saved — deleting the phrase is the way
+  to get rid of it.
+
+- **Maintenance difficulty:** **medium** — the redraw suppression is the part
+  that will bite. Forget it and the editor closes itself whenever anyone copies
+  a phrase in the ELN.
+- **Regression risk:** **low** against CDD (the options page touches nothing of
+  theirs), **medium** against the phrase model — the two bodies must stay in
+  step.
+
+### 10.4 Export / Import
+- **User value:** Phrases travel as a JSON file, so a set can be shared or kept.
+- **Entry point:** `shared/phrases.js` (`exportPhrasesJson`,
+  `parsePhrasesJson`, `importPhrases`), driven from `options/phrases-ui.js`.
+- **Note:** import is either **merge** (same id replaces) or **replace**, and
+  everything imported goes through the same sanitiser as stored data — an
+  export file is untrusted input.
+- **Maintenance difficulty:** **low**.
+- **Regression risk:** **low**.
+
+---
 
 > **Highest-attention areas when changing the code:** the Dose Response tools
 > (they write to CDD), the field resolvers and network hooks (everything depends

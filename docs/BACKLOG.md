@@ -332,3 +332,38 @@ Slate.
 for *Saved* → change a value in the stoichiometry table. Both steps in one page
 session. Signal to watch: `undefined is not iterable` in the console, or the red
 error box.
+
+---
+
+## Sharing phrases with colleagues — options, and what they cost
+
+Analysed 2026-08-25. Nothing built; this is the decision record so the question
+does not get re-opened from scratch.
+
+**What constrains it**
+
+- The manifest asks for **`permissions: ["storage"]` only**, with the content
+  script confined to `collaborativedrug.com` and no `host_permissions`.
+- The Firefox manifest declares `data_collection_permissions: required: ["none"]`.
+  Anything that sends phrase text to a server changes that declaration and
+  brings a privacy policy and fresh review in both stores.
+- **Phrases are ELN text** — potentially the employer's IP. That is the real
+  constraint, and it is not a technical one.
+
+**The options**
+
+| Path | What it means | Cost | Verdict |
+| --- | --- | --- | --- |
+| **File (today)** | Export JSON → email/Teams → Import | done | works, but is not "online" |
+| **Share code** | Phrases deflated (`CompressionStream('deflate-raw')`) + base64url into one string. "Copy code" in Settings, colleague pastes it into a "Paste code" box. | ~150 lines, **no new permissions, no server, nothing stored anywhere** | **recommended** |
+| **Share link** | Same payload behind `#` on the existing GitHub Pages site — a fragment is never sent to the server, so the page never sees the content. | + a landing page; Teams/Outlook break links past ~2 000 chars, so ~5–15 phrases per link | nice, fragile |
+| **Curated packs** | Starter packs (Workup, HPLC, Safety) as JSON in the repo, served from Pages, "Browse packs" in Settings | + `host_permissions` for the Pages origin | one-way — good for starter sets, not for "send Peter my twelve" |
+| **Own backend** | Short code `CDD-7K2Q`, Cloudflare Worker + KV | hosting, TTL, moderation, GDPR, privacy policy, changed Firefox declaration, review | the only route to a genuinely nice UX, but it puts **ELN text on a third-party server**; defensible only end-to-end encrypted, key in the code, server holding ciphertext |
+| **Through CDD** | The pack lives in a shared vault (an ELN entry, "Phrase library"); the extension already runs there with the user's session | medium, but brittle (DOM / undocumented API) | **data never leaves CDD, permissions handled by CDD** — the right answer for colleagues in the same vault |
+| **`chrome.storage.sync`** | — | — | **not sharing at all** — it syncs a user's own devices, and 8 KB per item against a 20 000-char text limit does not fit anyway |
+
+**Decision.** If this is picked up, build the **share code** first: nothing is
+uploaded, no new permission, identical in Chrome and Firefox, and the "online"
+part is handled by the email or chat everyone already uses. **Through CDD** is
+the natural follow-on once colleagues are known to share a vault. A backend
+should only be opened if those two prove insufficient.

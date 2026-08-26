@@ -323,6 +323,51 @@ inside the contenteditable; the *Mentioned in text* panel source; Grammarly;
 and DOM deletion (`removeChild`/`remove` never fire — the node is dropped from
 Slate's model, not from the DOM).
 
+**Plan for the next session** (parked 2026-08-26, picking up the week of
+2026-08-31).
+
+Four candidates are left in the file. Ranked:
+
+1. **`markTables()`** — the favourite. It does
+   `row.closest("table")?.classList.add("cdd-stoich-selectable")`, which writes
+   an attribute onto a `<table>` **inside the Slate editor**: the same category
+   of sin as `suppressDraggables()`, which was the first suspect. Worse, it is
+   driven by a MutationObserver on a 200 ms debounce, so it fires again every
+   time CDD re-renders the table — immediately after an autosave, which is
+   exactly when the fault lands.
+2. **`onGestureEvent`** — capture-phase listeners on `pointerdown`,
+   `pointerup`, `mousedown`, `mouseup`, `click`, `dblclick`. It only calls
+   `preventDefault`/`stopImmediatePropagation` under a Ctrl/Cmd modifier or a
+   real selection drag, neither of which the reproduction uses — but it is on
+   every one of those events.
+3. **`onCopy`** — capture-phase `copy` on `document`. Not in the reproduction
+   path at all; listed for completeness.
+4. **`updateArmed`** — toggles a class on `document.documentElement`, outside
+   the editor. Lowest risk.
+
+**Method.** Do not re-enable the module for users. Put a kill list inside
+`initStoichTableCopy()` itself, read from `localStorage.CDD_DIAG_STC`
+(`styles`, `mark`, `gestures`, `copy`, `armed`, `dragstart`), and have the
+function return immediately when the key is absent — so the shipped default
+stays off and a page reload is all a test round costs. The same pattern as the
+`CDD_DIAG_OFF` list used to find the module, which worked well: no extension
+reload between rounds.
+
+First round: run **only `mark`**, nothing else. If the fault appears, it is
+confirmed in one step and the fix is to stop marking the table — style it by
+an ancestor outside the editor, or match CDD's own `[data-autotest-id]`
+attributes instead of adding a class of ours.
+
+**Signal to measure**, not "did the link vanish" — that is confounded by
+duplicate Slate node keys (three `a` nodes shared `link-node-key-1`), which
+make a node persist in the body yet never render:
+
+- `undefined is not iterable` in the console, or
+- the red *"The last action caused an error"* box
+
+Both are immediate and unambiguous. The console survives a page reload, so a
+round is: set the list → reload the page → reproduce → read the console.
+
 **Note for whoever picks this up.** CDD's own debug payload says
 `"Editor data not available - likely the error did not occur in the editor"`.
 That is wrong — it only means `slate_history` was not attached. The stack shows

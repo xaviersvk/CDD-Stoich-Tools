@@ -1,7 +1,8 @@
 # ELN ID table suffix: letters or numbers — design
 
 Date: 2026-08-27
-Status: approved by user (conversation)
+Status: implemented — see the amendment at the foot, which supersedes the two
+decisions marked below.
 
 ## Problem
 
@@ -149,3 +150,32 @@ No test runner in this repo — verified by reloading the built extension:
 4. Flipping the radio with an ELN entry already open takes effect without
    a page reload (the `storage.onChanged` path), on the panel card and on
    the Register link alike.
+
+## Amendment — 2026-08-27, after the first working build
+
+The user tested Letters/Numbers on a live entry, then asked for a third style
+(a dash before the letter) and — the real change — for **"does the first table
+get a mark?" to become a setting of its own**, applying to the original letters
+as well, so `MDX-113A` is reachable.
+
+That supersedes two decisions above: "Numbers start at 1, including the first
+table" is no longer baked into the number style, and the styles are three
+rather than two. What shipped:
+
+- **`cddElnTableSuffixStyle`** — `"letter"` (default) | `"dash-letter"` |
+  `"number"`. Second and third table: `MDX-113B, MDX-113C` /
+  `MDX-113-B, MDX-113-C` / `MDX-113-2, MDX-113-3`.
+- **`cddElnTableSuffixFirst`** — boolean, absent means `false`. On, the first
+  table is marked too: `MDX-113A` / `MDX-113-A` / `MDX-113-1`.
+
+The two are independent, six combinations in all, and the defaults are the
+behaviour this plugin has always had. `tableSuffix(index, style, markFirst)`
+holds all of it; the letters come from a `columnName(n)` helper so `A` for the
+first table and `AA` for the 27th fall out of the same rule.
+
+`composeBatchElnId()` takes the pair as one `{ style, markFirst }` object
+rather than growing a sixth positional parameter.
+
+Verified by 21 cases in a throwaway node script over
+`src/shared/eln-id-carry.js` (the module has no imports and no top-level
+`chrome` access, so node can run it), plus the user's own reload test.

@@ -644,7 +644,7 @@ Expected: both builds succeed and `dist/` is refreshed.
 - [ ] **Step 5: Commit everything**
 
 ```bash
-git add manifest.json CHANGELOG.md RELEASES.md dist
+git add manifest.json CHANGELOG.md RELEASES.md
 git commit -m "15.5.0 — number the stoichiometry tables instead of lettering them"
 ```
 

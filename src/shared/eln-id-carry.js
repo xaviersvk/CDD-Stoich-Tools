@@ -45,6 +45,36 @@ export const ELN_ID_FORMATS = ["global", "vault", "vault-user"];
 // actually reads <vault>-<user>-<number>.
 export const DEFAULT_ELN_ID_FORMAT = "vault-user";
 
+// "letter" | "dash-letter" | "number" — how a product is marked with the
+// stoichiometry table it came from. Second and third table:
+//
+//   letter (the original)   MDX-113B    MDX-113C
+//   dash-letter             MDX-113-B   MDX-113-C
+//   number                  MDX-113-2   MDX-113-3
+//
+// The mark is this plugin's own convention, not something CDD prints, so a
+// vault that numbers its reactions can say so. Absent means "letter": the
+// setting must never change an ID nobody asked it to change.
+export const ELN_TABLE_SUFFIX_STYLE_KEY = "cddElnTableSuffixStyle";
+
+export const ELN_TABLE_SUFFIX_STYLES = ["letter", "dash-letter", "number"];
+
+export const DEFAULT_ELN_TABLE_SUFFIX_STYLE = "letter";
+
+// boolean — does the FIRST table get a mark of its own?
+//
+//   off (the original)   MDX-113     MDX-113B   MDX-113C
+//   on                   MDX-113A    MDX-113B   MDX-113C
+//   on, numbered         MDX-113-1   MDX-113-2  MDX-113-3
+//
+// Independent of the style, because the two questions are independent: an
+// entry with one reaction reading MDX-113 is either what you want or it is
+// not, whichever alphabet the others are in. Absent means off — one reaction
+// is the normal case and it should read the way it always has.
+export const ELN_TABLE_SUFFIX_FIRST_KEY = "cddElnTableSuffixFirst";
+
+export const DEFAULT_ELN_TABLE_SUFFIX_FIRST = false;
+
 /* ------------------------------------------------------------------ *
  * The wire between the two pages
  * ------------------------------------------------------------------ */
@@ -105,29 +135,49 @@ export function applyIdentifierFormat(entryId, format) {
     return rest;
 }
 
-// Which stoichiometry table of the entry the registration came from, as a
-// suffix on the entry ID:
-//
-//   table 1 -> PHA-MDX-0095      table 2 -> PHA-MDX-0095B
-//   table 3 -> PHA-MDX-0095C     table 4 -> PHA-MDX-0095D
-//
-// The first table is bare rather than "...A": an entry with one reaction is the
-// normal case, and it should read the way it always has. So the letters are the
-// spreadsheet column names of `index + 1` with the first one left off -- which
-// also settles what a 27th table gets (AA, then AB), instead of running off the
-// end of the alphabet.
-export function tableSuffix(index) {
-    if (!Number.isInteger(index) || index <= 0) return "";
-
-    let n = index + 1;
+// The spreadsheet column name of n: 1 -> A, 2 -> B, 26 -> Z, 27 -> AA. Which
+// also settles what a 27th table gets, instead of running off the end of the
+// alphabet.
+function columnName(n) {
+    let left = n;
     let out = "";
 
-    while (n > 0) {
-        out = String.fromCharCode(65 + ((n - 1) % 26)) + out;
-        n = Math.floor((n - 1) / 26);
+    while (left > 0) {
+        out = String.fromCharCode(65 + ((left - 1) % 26)) + out;
+        left = Math.floor((left - 1) / 26);
     }
 
     return out;
+}
+
+// Which stoichiometry table of the entry the registration came from, as a
+// suffix on the entry ID. Two settings decide what it looks like:
+//
+//   style      letter        PHA-MDX-0095B    PHA-MDX-0095C
+//              dash-letter   PHA-MDX-0095-B   PHA-MDX-0095-C
+//              number        PHA-MDX-0095-2   PHA-MDX-0095-3
+//
+//   markFirst  off           table 1 -> PHA-MDX-0095
+//              on            table 1 -> PHA-MDX-0095A / -A / -1
+//
+// The defaults are the original behaviour: letters, first table bare.
+export function tableSuffix(
+    index,
+    style = DEFAULT_ELN_TABLE_SUFFIX_STYLE,
+    markFirst = DEFAULT_ELN_TABLE_SUFFIX_FIRST
+) {
+    if (!Number.isInteger(index) || index < 0) return "";
+
+    // An entry with one reaction is the normal case, and unless asked it
+    // should read the way it always has.
+    if (index === 0 && !markFirst) return "";
+
+    const n = index + 1;
+
+    if (style === "number") return `-${n}`;
+    if (style === "dash-letter") return `-${columnName(n)}`;
+
+    return columnName(n);
 }
 
 // A product of a parallel ("bulk") reaction gets a different suffix: the
@@ -150,13 +200,17 @@ export function parallelSuffix(ordinal, letter) {
 
 // The suffix for one product row, whichever kind of table it sits in.
 //   parallel: { ordinal, letter } of the bulk pair -> "-1A"
-//   tableIndex: position of the table among ALL tables -> "", "B", "C"…
-export function productSuffix({ parallel, tableIndex }) {
+//   tableIndex: position of the table among ALL tables
+//   style, markFirst: see tableSuffix
+//
+// The two settings reach the table branch only. A parallel pair's letter is
+// CDD's own, printed beside the row, and stays exactly that in every style.
+export function productSuffix({ parallel, tableIndex, style, markFirst }) {
     if (parallel) {
         const s = parallelSuffix(parallel.ordinal, parallel.letter);
         if (s) return s;
     }
-    return tableSuffix(tableIndex);
+    return tableSuffix(tableIndex, style, markFirst);
 }
 
 // "ID: IDEMO-MDX-0014" -> "IDEMO-MDX-0014". Also copes with the bare value, so
@@ -178,6 +232,8 @@ export async function getElnIdCarrySettings() {
             [ELN_ID_CARRY_ENABLED_KEY]: true,
             [ELN_ID_CARRY_FIELD_KEY]: DEFAULT_ELN_ID_CARRY_FIELD,
             [ELN_ID_FORMAT_KEY]: DEFAULT_ELN_ID_FORMAT,
+            [ELN_TABLE_SUFFIX_STYLE_KEY]: DEFAULT_ELN_TABLE_SUFFIX_STYLE,
+            [ELN_TABLE_SUFFIX_FIRST_KEY]: DEFAULT_ELN_TABLE_SUFFIX_FIRST,
         });
 
         return {
@@ -189,12 +245,19 @@ export async function getElnIdCarrySettings() {
             format: ELN_ID_FORMATS.includes(stored[ELN_ID_FORMAT_KEY])
                 ? stored[ELN_ID_FORMAT_KEY]
                 : DEFAULT_ELN_ID_FORMAT,
+            style: ELN_TABLE_SUFFIX_STYLES.includes(stored[ELN_TABLE_SUFFIX_STYLE_KEY])
+                ? stored[ELN_TABLE_SUFFIX_STYLE_KEY]
+                : DEFAULT_ELN_TABLE_SUFFIX_STYLE,
+            // Only an explicit `true` marks the first table.
+            markFirst: stored[ELN_TABLE_SUFFIX_FIRST_KEY] === true,
         };
     } catch {
         return {
             enabled: true,
             fieldLabel: DEFAULT_ELN_ID_CARRY_FIELD,
             format: DEFAULT_ELN_ID_FORMAT,
+            style: DEFAULT_ELN_TABLE_SUFFIX_STYLE,
+            markFirst: DEFAULT_ELN_TABLE_SUFFIX_FIRST,
         };
     }
 }
@@ -209,6 +272,30 @@ export async function saveElnIdFormat(value) {
     }
 
     return format;
+}
+
+export async function saveElnTableSuffixStyle(value) {
+    const style = ELN_TABLE_SUFFIX_STYLES.includes(value)
+        ? value
+        : DEFAULT_ELN_TABLE_SUFFIX_STYLE;
+
+    try {
+        await chrome.storage.local.set({ [ELN_TABLE_SUFFIX_STYLE_KEY]: style });
+    } catch {
+        // Orphaned content script — nothing useful to do.
+    }
+
+    return style;
+}
+
+export async function saveElnTableSuffixFirst(value) {
+    try {
+        await chrome.storage.local.set({
+            [ELN_TABLE_SUFFIX_FIRST_KEY]: value === true,
+        });
+    } catch {
+        // Orphaned content script — nothing useful to do.
+    }
 }
 
 export async function saveElnIdCarryEnabled(value) {

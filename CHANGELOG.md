@@ -19,6 +19,47 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [15.5.0] — 2026-08-27
+
+### Added
+- **The mark that says which stoichiometry table a product came from is now
+  configurable** — Settings → *Product suffix*, in the registration card. Three
+  styles for the second and third table:
+
+  | style | 2nd table | 3rd table |
+  | --- | --- | --- |
+  | Letters (the original) | `MDX-113B` | `MDX-113C` |
+  | Letters after a dash | `MDX-113-B` | `MDX-113-C` |
+  | Numbers | `MDX-113-2` | `MDX-113-3` |
+
+  Plus a separate switch, **Mark the first table too**, which turns the bare
+  `MDX-113` of a first (or only) reaction into `MDX-113A`, `MDX-113-A` or
+  `MDX-113-1`. It is deliberately independent of the style: whether an entry
+  with one reaction should carry a mark at all is a different question from
+  which alphabet the others are in, and it applies to the original letters as
+  much as to the new styles.
+
+  Six combinations, and the defaults — letters, first table bare — are what this
+  plugin has always written. Nothing changes until something is switched.
+
+  Both routes that stamp the ID take it from the same place: the **Register**
+  link in a stoichiometry row and the panel button that writes onto a batch
+  registered earlier. Two new storage keys, `cddElnTableSuffixStyle` and
+  `cddElnTableSuffixFirst`, read through `getElnIdCarrySettings()` and watched
+  by both `storage.onChanged` listeners, so flipping a radio takes effect on an
+  ELN entry already open.
+
+  Parallel ("bulk") reactions are untouched in every combination: their
+  `-1A` / `-1B` carries the pair letter CDD itself prints beside the row, and
+  the ID has to keep matching what is on screen.
+
+  Internally `tableSuffix(index, style, markFirst)` holds all of it, with the
+  letters coming from a `columnName(n)` helper — so `A` for the first table and
+  `AA` for the 27th fall out of one rule rather than two. `composeBatchElnId()`
+  takes the pair as a `{ style, markFirst }` object rather than growing a sixth
+  positional parameter.
+
+---
 ## [15.4.3] — 2026-08-25
 
 Hotfix, plus phrase bodies became editable and a disclaimer the project should

@@ -160,8 +160,8 @@ function columnName(n) {
     return out;
 }
 
-// Which stoichiometry table of the entry the registration came from, as a
-// suffix on the entry ID. Two settings decide what it looks like:
+// Which product of the entry this is, as a suffix on the entry ID. Two
+// settings decide what it looks like:
 //
 //   style      letter              PHA-MDX-0095B    PHA-MDX-0095C
 //              lower-letter        PHA-MDX-0095b    PHA-MDX-0095c
@@ -169,22 +169,27 @@ function columnName(n) {
 //              dash-lower-letter   PHA-MDX-0095-b   PHA-MDX-0095-c
 //              number              PHA-MDX-0095-2   PHA-MDX-0095-3
 //
-//   markFirst  off           table 1 -> PHA-MDX-0095
-//              on            table 1 -> PHA-MDX-0095A / -A / -1 / small
+//   markFirst  off           product 1 -> PHA-MDX-0095
+//              on            product 1 -> PHA-MDX-0095A / -A / -1 / small
 //
-// The defaults are the original behaviour: capital letters, first table bare.
-export function tableSuffix(
-    index,
+// `ordinal` is 0-based over the entry's PRODUCTS, not over its tables: a
+// reaction with two products marks them B and C. Counting tables was the
+// 15.5.0 rule, and it handed both products of one table the same ID.
+//
+// The defaults are the original behaviour: capital letters, first product
+// bare.
+export function productMark(
+    ordinal,
     style = DEFAULT_ELN_TABLE_SUFFIX_STYLE,
     markFirst = DEFAULT_ELN_TABLE_SUFFIX_FIRST
 ) {
-    if (!Number.isInteger(index) || index < 0) return "";
+    if (!Number.isInteger(ordinal) || ordinal < 0) return "";
 
-    // An entry with one reaction is the normal case, and unless asked it
-    // should read the way it always has.
-    if (index === 0 && !markFirst) return "";
+    // One product is the normal case, and unless asked it should read the way
+    // it always has.
+    if (ordinal === 0 && !markFirst) return "";
 
-    const n = index + 1;
+    const n = ordinal + 1;
 
     if (style === "number") return `-${n}`;
 
@@ -211,8 +216,9 @@ export function tableSuffix(
 //   2nd parallel reaction, pair A -> PHA-MDX-0095-2A
 //
 // The number counts parallel reactions only — an ordinary table before the
-// first parallel one does not push it to "-2". Ordinary tables keep
-// tableSuffix; the two schemes never meet on one product.
+// first parallel one does not push it to "-2". Ordinary products keep
+// productMark, and a parallel pair takes no place in that count; the two
+// schemes never meet on one product.
 export function parallelSuffix(ordinal, letter) {
     const n = Number(ordinal);
     const l = String(letter ?? "").trim().toUpperCase();
@@ -222,17 +228,66 @@ export function parallelSuffix(ordinal, letter) {
 
 // The suffix for one product row, whichever kind of table it sits in.
 //   parallel: { ordinal, letter } of the bulk pair -> "-1A"
-//   tableIndex: position of the table among ALL tables
-//   style, markFirst: see tableSuffix
+//   productIndex: which product of the ENTRY this is, 0-based
+//   style, markFirst: see productMark
 //
-// The two settings reach the table branch only. A parallel pair's letter is
-// CDD's own, printed beside the row, and stays exactly that in every style.
-export function productSuffix({ parallel, tableIndex, style, markFirst }) {
+// The two settings reach the ordinary branch only. A parallel pair's letter
+// is CDD's own, printed beside the row, and stays exactly that in every
+// style.
+export function productSuffix({ parallel, productIndex, style, markFirst }) {
     if (parallel) {
         const s = parallelSuffix(parallel.ordinal, parallel.letter);
         if (s) return s;
     }
-    return tableSuffix(tableIndex, style, markFirst);
+    return productMark(productIndex, style, markFirst);
+}
+
+// Which product of the ENTRY a row is, 0-based, or -1 if it is not one.
+//
+// Every ordinary product row counts -- registered or not. Counting only the
+// unregistered ones would renumber the entry as people work, and the ID
+// minted today would not be the one minted tomorrow.
+//
+// Parallel ("bulk") products are NOT counted: they carry CDD's own pair
+// letter (-1A, -1B) and take nothing from this sequence. A seven-pair block
+// must not push the entry's other product to H.
+//
+// Order is by reaction, then by payload order within the reaction -- CDD
+// displays a table's products last, as a group, in payload order, so this is
+// the order the entry shows. `sort` is stable, so the second key needs no
+// tie-breaker.
+export function productOrdinalOf(samples, sample) {
+    if (!Array.isArray(samples) || !sample) return -1;
+
+    const products = samples
+        .filter((s) => s?.isProduct && !s?.parallelLetter)
+        .sort((a, b) => (a.reactionIndex ?? 0) - (b.reactionIndex ?? 0));
+
+    return products.indexOf(sample);
+}
+
+// The sample for one stoichiometry row, addressed the way this codebase
+// always addresses one: the table it sits in and the number the table PRINTS
+// in its first cell.
+//
+// Not the name and not the molecule -- the same batch can sit in one reaction
+// twice with pixel-identical rows, which is why name-watch.js keys on the
+// printed number too. A row with no printed number (a parallel pair, a
+// solution's solvent) has no identity here and returns null.
+export function findRowSample(samples, tableIndex, rowNumber) {
+    if (!Array.isArray(samples)) return null;
+
+    const printed = String(rowNumber ?? "").trim();
+    if (!printed) return null;
+
+    return (
+        samples.find(
+            (s) =>
+                s?.reactionIndex === tableIndex &&
+                s?.rowNumber != null &&
+                String(s.rowNumber) === printed
+        ) || null
+    );
 }
 
 // "ID: IDEMO-MDX-0014" -> "IDEMO-MDX-0014". Also copes with the bare value, so

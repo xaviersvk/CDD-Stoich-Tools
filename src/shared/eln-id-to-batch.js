@@ -63,20 +63,24 @@ export function moleculeBatchesUrl(vaultId, moleculeId) {
 // The same string the Register link stamps, so a batch filled this way and
 // one registered from the entry are indistinguishable.
 //
-// Trim first, THEN suffix: the suffix marks which stoichiometry table (and,
-// for a parallel reaction, which pair) the product came from and belongs on
-// the end of whatever the ID was cut to.
+// Trim first, THEN suffix: the suffix marks WHICH PRODUCT of the entry this is
+// (and, for a parallel reaction, which pair) and belongs on the end of whatever
+// the ID was cut to.
+//
+// `productIndex` is 0-based over the entry's ordinary products —
+// `productOrdinalOf(samples, sample)`. It is NOT the reaction index: a reaction
+// with two products marks them B and C.
 //
 // `parallel` is { ordinal, letter } for a product of a parallel (bulk)
-// reaction — "-1A" instead of the table letter — and null for everything
+// reaction — "-1A" instead of the product mark — and null for everything
 // else. See productSuffix.
 // `suffix` is { style, markFirst } — the two settings that decide what the
-// table mark looks like; see tableSuffix. Omitted, it writes the original
-// letters with a bare first table.
+// mark looks like; see productMark. Omitted, it writes the original letters
+// with a bare first product.
 export function composeBatchElnId(
     entryId,
     format,
-    reactionIndex,
+    productIndex,
     parallel = null,
     suffix = {}
 ) {
@@ -85,7 +89,7 @@ export function composeBatchElnId(
 
     return `${trimmed}${productSuffix({
         parallel,
-        tableIndex: reactionIndex,
+        productIndex,
         style: suffix.style,
         markFirst: suffix.markFirst,
     })}`;

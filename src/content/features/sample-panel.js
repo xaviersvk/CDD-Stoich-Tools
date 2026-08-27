@@ -10,6 +10,7 @@ import {
 import { captureValuesFromSamples } from "../../shared/density-memory.js";
 import { getPurityWarnThreshold } from "../../shared/purity-threshold.js";
 import { isShowProductsEnabled } from "../../shared/show-products-flag.js";
+import { productOrdinalOf } from "../../shared/eln-id-carry.js";
 import {
     isElnIdToBatchEnabled,
     getCarrySettings,
@@ -1241,11 +1242,20 @@ function elnIdToBatchState(sample) {
     const entryId = readElnEntryId();
     if (!entryId) return null;
 
+    // A parallel pair keeps CDD's own -1A and needs no ordinal; everything else
+    // is placed among the entry's products. No place, no button — the same rule
+    // the Register link follows.
+    const parallel = sampleParallelInfo(sample);
+    const productIndex = parallel
+        ? -1
+        : productOrdinalOf(STATE.lastPayload?.samples || [], sample);
+    if (!parallel && productIndex < 0) return null;
+
     const value = composeBatchElnId(
         entryId,
         format,
-        sample.reactionIndex,
-        sampleParallelInfo(sample),
+        productIndex,
+        parallel,
         { style, markFirst }
     );
     if (!value) return null;

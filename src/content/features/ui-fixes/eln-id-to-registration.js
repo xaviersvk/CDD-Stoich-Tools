@@ -59,8 +59,10 @@ import {
     ELN_ID_CARRY_FIELD_KEY,
     ELN_ID_FORMAT_KEY,
     ELN_ID_PARAM,
+    ELN_TABLE_SUFFIX_STYLE_KEY,
     applyIdentifierFormat,
     DEFAULT_ELN_ID_FORMAT,
+    DEFAULT_ELN_TABLE_SUFFIX_STYLE,
     fieldLabelsMatch,
     getElnIdCarrySettings,
     productSuffix,
@@ -95,6 +97,7 @@ let settings = {
     enabled: true,
     fieldLabel: "Internal ID",
     format: DEFAULT_ELN_ID_FORMAT,
+    style: DEFAULT_ELN_TABLE_SUFFIX_STYLE,
 };
 
 // Inputs already filled, by node identity. A re-render hands us a new node (fill
@@ -178,6 +181,7 @@ function stampLink(target) {
     const value = `${trimmed}${productSuffix({
         parallel: parallelInfoOf(link),
         tableIndex: tableIndexOf(link),
+        style: settings.style,
     })}`;
 
     // `location.href` as the base: the href is root-relative, and a URL object
@@ -298,7 +302,8 @@ export async function initElnIdToRegistration() {
         if (
             !changes[ELN_ID_CARRY_ENABLED_KEY] &&
             !changes[ELN_ID_CARRY_FIELD_KEY] &&
-            !changes[ELN_ID_FORMAT_KEY]
+            !changes[ELN_ID_FORMAT_KEY] &&
+            !changes[ELN_TABLE_SUFFIX_STYLE_KEY]
         ) {
             return;
         }

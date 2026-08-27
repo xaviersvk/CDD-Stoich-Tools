@@ -1,7 +1,7 @@
 # Product suffix — which reaction an ID came from
 
-**Since 15.5.0.** Settings → *Registration form → From the ELN* → **Product
-suffix**.
+**Since 15.5.0**, small letters since 15.6.0. Settings → *Registration form →
+From the ELN* → **Product suffix**.
 
 ## 1. What it does
 
@@ -11,22 +11,24 @@ table it came out of — otherwise every product of the entry would register
 under the same Internal ID.
 
 Two settings decide what that mark looks like. They are independent, so there
-are six combinations:
+are ten combinations:
 
 | style ⟍ *Mark the first table too* | off (default) | on |
 | --- | --- | --- |
 | **Letters** (default) | `MDX-113`, `MDX-113B`, `MDX-113C` | `MDX-113A`, `MDX-113B`, `MDX-113C` |
+| **Small letters** | `MDX-113`, `MDX-113b`, `MDX-113c` | `MDX-113a`, `MDX-113b`, `MDX-113c` |
 | **Letters after a dash** | `MDX-113`, `MDX-113-B`, `MDX-113-C` | `MDX-113-A`, `MDX-113-B`, `MDX-113-C` |
+| **Small letters after a dash** | `MDX-113`, `MDX-113-b`, `MDX-113-c` | `MDX-113-a`, `MDX-113-b`, `MDX-113-c` |
 | **Numbers** | `MDX-113`, `MDX-113-2`, `MDX-113-3` | `MDX-113-1`, `MDX-113-2`, `MDX-113-3` |
 
-The default — letters, first table bare — is what the extension wrote before
-15.5.0. Nothing changes until something is switched.
+The default — capital letters, first table bare — is what the extension wrote
+before 15.5.0. Nothing changes until something is switched.
 
 **Parallel ("bulk") reactions ignore both settings.** Their product keeps
 `-<n><letter>`: `MDX-113-1A`, `-1B`, `-2A`, where `n` counts the entry's
 parallel reactions and the letter is the one CDD itself prints beside the
 reagent/product pair. That letter is on screen next to the row, so the ID has
-to keep matching it.
+to keep matching it — capital, even with a small-letter style picked.
 
 Both routes that stamp an ID read the same settings:
 
@@ -41,7 +43,7 @@ Flipping a setting takes effect on an ELN entry already open — no page reload.
 | Piece | File |
 | --- | --- |
 | The rule | `src/shared/eln-id-carry.js` — `tableSuffix(index, style, markFirst)`, reached through `productSuffix()` |
-| Storage | same file — `cddElnTableSuffixStyle` (`"letter"` \| `"dash-letter"` \| `"number"`), `cddElnTableSuffixFirst` (boolean) |
+| Storage | same file — `cddElnTableSuffixStyle` (`"letter"` \| `"lower-letter"` \| `"dash-letter"` \| `"dash-lower-letter"` \| `"number"`), `cddElnTableSuffixFirst` (boolean) |
 | Register link | `src/content/features/ui-fixes/eln-id-to-registration.js` — `stampLink()` |
 | Panel button | `src/shared/eln-id-to-batch.js` — `composeBatchElnId()`, called from `sample-panel.js` |
 | The UI | `src/options/options.html` + `options.js` — radios `elnTableSuffixStyle`, checkbox `elnTableSuffixFirst` |
@@ -53,7 +55,10 @@ function.
 
 Letters come from a `columnName(n)` helper — spreadsheet column names of
 `index + 1` — which is why the 27th table gets `AA` rather than running off
-the end of the alphabet.
+the end of the alphabet. The four letter styles differ in two independent ways,
+dash or no dash and capital or small, and `tableSuffix()` reads both off the
+style name rather than branching four times. An unrecognised style falls back to
+the original bare capital.
 
 ## 3. Two things to know before changing it
 
@@ -75,6 +80,7 @@ so node can exercise it directly:
 node -e "import('./src/shared/eln-id-carry.js').then(m => console.log(
   m.tableSuffix(0, 'letter', true),        // A
   m.tableSuffix(1, 'dash-letter', false),  // -B
+  m.tableSuffix(1, 'lower-letter', false), // b
   m.tableSuffix(2, 'number', true)         // -3
 ))"
 ```

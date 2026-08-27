@@ -13,7 +13,21 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
-# What's new in 15.5.0
+# What's new in 15.6.0
+
+---
+
+## 15.6.0 — 2026-08-27
+
+**The product suffix can now be a small letter.** Settings → **Product
+suffix** has two more styles:
+
+- **Small letters** — `MDX-113b`, `MDX-113c`
+- **Small letters after a dash** — `MDX-113-b`, `MDX-113-c`
+
+They work with **Mark the first table too** like the capitals do —
+`MDX-113a`, `MDX-113-a`. Parallel reactions keep CDD's capital pair letters,
+`MDX-113-1A`, whichever style you pick.
 
 ---
 

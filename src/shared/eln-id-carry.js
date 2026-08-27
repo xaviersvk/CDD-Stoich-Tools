@@ -45,19 +45,29 @@ export const ELN_ID_FORMATS = ["global", "vault", "vault-user"];
 // actually reads <vault>-<user>-<number>.
 export const DEFAULT_ELN_ID_FORMAT = "vault-user";
 
-// "letter" | "dash-letter" | "number" — how a product is marked with the
-// stoichiometry table it came from. Second and third table:
+// "letter" | "lower-letter" | "dash-letter" | "dash-lower-letter" | "number" —
+// how a product is marked with the stoichiometry table it came from. Second and
+// third table:
 //
 //   letter (the original)   MDX-113B    MDX-113C
+//   lower-letter            MDX-113b    MDX-113c
 //   dash-letter             MDX-113-B   MDX-113-C
+//   dash-lower-letter       MDX-113-b   MDX-113-c
 //   number                  MDX-113-2   MDX-113-3
 //
 // The mark is this plugin's own convention, not something CDD prints, so a
-// vault that numbers its reactions can say so. Absent means "letter": the
-// setting must never change an ID nobody asked it to change.
+// vault that numbers its reactions -- or writes its letters small -- can say
+// so. Absent means "letter": the setting must never change an ID nobody asked
+// it to change.
 export const ELN_TABLE_SUFFIX_STYLE_KEY = "cddElnTableSuffixStyle";
 
-export const ELN_TABLE_SUFFIX_STYLES = ["letter", "dash-letter", "number"];
+export const ELN_TABLE_SUFFIX_STYLES = [
+    "letter",
+    "lower-letter",
+    "dash-letter",
+    "dash-lower-letter",
+    "number",
+];
 
 export const DEFAULT_ELN_TABLE_SUFFIX_STYLE = "letter";
 
@@ -153,14 +163,16 @@ function columnName(n) {
 // Which stoichiometry table of the entry the registration came from, as a
 // suffix on the entry ID. Two settings decide what it looks like:
 //
-//   style      letter        PHA-MDX-0095B    PHA-MDX-0095C
-//              dash-letter   PHA-MDX-0095-B   PHA-MDX-0095-C
-//              number        PHA-MDX-0095-2   PHA-MDX-0095-3
+//   style      letter              PHA-MDX-0095B    PHA-MDX-0095C
+//              lower-letter        PHA-MDX-0095b    PHA-MDX-0095c
+//              dash-letter         PHA-MDX-0095-B   PHA-MDX-0095-C
+//              dash-lower-letter   PHA-MDX-0095-b   PHA-MDX-0095-c
+//              number              PHA-MDX-0095-2   PHA-MDX-0095-3
 //
 //   markFirst  off           table 1 -> PHA-MDX-0095
-//              on            table 1 -> PHA-MDX-0095A / -A / -1
+//              on            table 1 -> PHA-MDX-0095A / -A / -1 / small
 //
-// The defaults are the original behaviour: letters, first table bare.
+// The defaults are the original behaviour: capital letters, first table bare.
 export function tableSuffix(
     index,
     style = DEFAULT_ELN_TABLE_SUFFIX_STYLE,
@@ -175,9 +187,19 @@ export function tableSuffix(
     const n = index + 1;
 
     if (style === "number") return `-${n}`;
-    if (style === "dash-letter") return `-${columnName(n)}`;
 
-    return columnName(n);
+    // The four letter styles vary in two independent ways -- dash or no dash,
+    // capital or small -- so both are read off the style name instead of being
+    // spelled out four times. An unknown style lands on the original: a bare
+    // capital letter.
+    const letter =
+        style === "lower-letter" || style === "dash-lower-letter"
+            ? columnName(n).toLowerCase()
+            : columnName(n);
+
+    return style === "dash-letter" || style === "dash-lower-letter"
+        ? `-${letter}`
+        : letter;
 }
 
 // A product of a parallel ("bulk") reaction gets a different suffix: the

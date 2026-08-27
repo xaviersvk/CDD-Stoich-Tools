@@ -19,6 +19,34 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [15.6.0] — 2026-08-27
+
+### Added
+- **Small letters as a product suffix.** *Product suffix* gains two styles
+  beside the three from 15.5.0:
+
+  | style | 2nd table | 3rd table |
+  | --- | --- | --- |
+  | Small letters | `MDX-113b` | `MDX-113c` |
+  | Small letters after a dash | `MDX-113-b` | `MDX-113-c` |
+
+  `cddElnTableSuffixStyle` therefore reads `"letter"` | `"lower-letter"` |
+  `"dash-letter"` | `"dash-lower-letter"` | `"number"`, and with the
+  independent *Mark the first table too* switch there are ten combinations —
+  `MDX-113a` and `MDX-113-a` join the marked first table. Defaults are
+  untouched: capital letters, first table bare.
+
+  `tableSuffix()` stopped branching per style. The four letter styles differ
+  in two independent ways — dash or no dash, capital or small — so both are now
+  read off the style name, and an unrecognised style still falls back to the
+  original bare capital. Nothing else moved: both stamping routes and both
+  `storage.onChanged` listeners already went through `productSuffix()`.
+
+  Parallel ("bulk") pairs are deliberately exempt. `parallelSuffix()` keeps
+  upper-casing the pair letter, because that letter is CDD's own and is printed
+  beside the row — `MDX-113-1A` has to keep matching what is on screen.
+
+---
 ## [15.5.0] — 2026-08-27
 
 ### Added

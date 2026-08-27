@@ -179,3 +179,30 @@ rather than growing a sixth positional parameter.
 Verified by 21 cases in a throwaway node script over
 `src/shared/eln-id-carry.js` (the module has no imports and no top-level
 `chrome` access, so node can run it), plus the user's own reload test.
+
+## Amendment — 2026-08-27, small letters
+
+After testing the three styles the user asked for the letter styles in small
+letters as well: some vaults write `MDX-113b`, not `MDX-113B`.
+
+Two new values rather than a separate "lowercase" checkbox. A checkbox would
+have to sit dead beside **Numbers**, and the radio list already shows each
+style's own example — which is the part that settles the question at a glance.
+
+- **`cddElnTableSuffixStyle`** — now `"letter"` (default) | `"lower-letter"` |
+  `"dash-letter"` | `"dash-lower-letter"` | `"number"`. Second and third
+  table: `MDX-113B` / `MDX-113b` / `MDX-113-B` / `MDX-113-b` / `MDX-113-2`.
+- **`cddElnTableSuffixFirst`** unchanged, and it now reaches ten combinations
+  instead of six: `MDX-113a` and `MDX-113-a` join the marked first table.
+
+`tableSuffix()` no longer branches per style. The four letter styles vary in
+two independent ways — dash or no dash, capital or small — so both are read off
+the style name, and an unrecognised style still lands on the original bare
+capital.
+
+**Parallel pairs keep CDD's capital.** `parallelSuffix()` upper-cases the pair
+letter because that letter is CDD's own, printed beside the row; a small-letter
+style must not make the ID stop matching what is on screen.
+
+Verified over all five styles × markFirst × table 1/2/3/27 in node, plus the
+unknown-style fallback.

@@ -487,10 +487,26 @@
                         </label>
 
                         <label class="choice">
+                            <input type="radio" name="elnTableSuffixStyle" value="lower-letter" />
+                            <span class="choice__text">
+                                <span class="choice__label">Small letters</span>
+                                <span class="choice__sample">MDX-113b, MDX-113c</span>
+                            </span>
+                        </label>
+
+                        <label class="choice">
                             <input type="radio" name="elnTableSuffixStyle" value="dash-letter" />
                             <span class="choice__text">
                                 <span class="choice__label">Letters after a dash</span>
                                 <span class="choice__sample">MDX-113-B, MDX-113-C</span>
+                            </span>
+                        </label>
+
+                        <label class="choice">
+                            <input type="radio" name="elnTableSuffixStyle" value="dash-lower-letter" />
+                            <span class="choice__text">
+                                <span class="choice__label">Small letters after a dash</span>
+                                <span class="choice__sample">MDX-113-b, MDX-113-c</span>
                             </span>
                         </label>
 
@@ -505,8 +521,9 @@
                         <label class="field-item eln-id-carry__toggle">
                             <input type="checkbox" id="elnTableSuffixFirst" />
                             <span>Mark the <strong>first</strong> table too —
-                            <code>MDX-113A</code>, <code>MDX-113-A</code> or
-                            <code>MDX-113-1</code> instead of a bare
+                            <code>MDX-113A</code>, <code>MDX-113-b</code>,
+                            <code>MDX-113-1</code> and so on, in the style picked
+                            above, instead of a bare
                             <code>MDX-113</code>.</span>
                         </label>
                     </fieldset>

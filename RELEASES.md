@@ -13,7 +13,23 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
-# What's new in 15.6.0
+# What's new in 15.7.0
+
+---
+
+## 15.7.0 — 2026-08-28
+
+**A reaction with two products now registers them under two different IDs.**
+The suffix used to count reactions, so both products of one reaction were
+handed the same Internal ID. It now counts products — `MDX-113`, `MDX-113B`,
+`MDX-113C` — in the order the entry shows them.
+
+- One product per reaction reads exactly as before. Nothing to switch.
+- **Reagent rows are no longer filled.** Register from a reagent row and the
+  Internal ID stays empty — a starting material is not a product of the entry.
+- Parallel reactions keep their pair letters, `MDX-113-1A`.
+- *Mark the first table too* is now **Mark the first product too**, Settings →
+  **Product suffix**. Your choice of style is kept.
 
 ---
 

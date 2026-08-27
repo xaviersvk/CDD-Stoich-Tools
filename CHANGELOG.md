@@ -19,6 +19,40 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [15.7.0] — 2026-08-28
+
+### Fixed
+- **Two products of one reaction no longer register under the same Internal
+  ID.** The suffix counted stoichiometry tables, so both product rows of a
+  single table were handed the same mark — the exact collision the mark exists
+  to prevent. It now counts the entry's PRODUCTS, in the order the entry shows
+  them: reaction 1's products, then reaction 2's. Every product row counts,
+  registered or not, so an ordinal minted today is the one minted tomorrow.
+
+  For the ordinary entry — one product per reaction — nothing changes:
+  `MDX-113`, `MDX-113B`, `MDX-113C` as before.
+
+### Changed
+- **Only product rows are filled.** A Register link on a reagent row used to be
+  stamped with its table's mark; it now writes nothing. A starting material is
+  not a product of the entry, and its invented ID collided with a real one. The
+  panel button has always been products-only, so the two routes now agree.
+- The role of a row is read from the entry payload the panel is built from
+  (`isProduct`, `reactionIndex`, `rowNumber`), never guessed from the markup:
+  ordinary product rows carry no autotest id of their own. The clicked row is
+  matched to its sample by the number the table prints, the identity
+  `name-watch.js` already uses. Until that payload arrives, nothing is stamped
+  — an empty field beats a wrong ID on a registration.
+- `tableSuffix()` became `productMark(ordinal, style, markFirst)` and
+  `productSuffix({ tableIndex })` became `productSuffix({ productIndex })`;
+  `composeBatchElnId()`'s third argument is the product ordinal. Two new pure
+  helpers, `productOrdinalOf()` and `findRowSample()`, hold the counting and
+  the row identity. Both storage keys keep their names, so no setting is lost.
+- Parallel ("bulk") products are untouched — `-1A`, `-1B`, `-2A` — and are not
+  counted in the ordinary sequence: a seven-pair block cannot push the entry's
+  other product to `H`.
+
+---
 ## [15.6.0] — 2026-08-27
 
 ### Added

@@ -18,8 +18,10 @@ import {
     ELN_ID_CARRY_ENABLED_KEY,
     ELN_ID_CARRY_FIELD_KEY,
     ELN_ID_FORMAT_KEY,
+    ELN_TABLE_SUFFIX_STYLE_KEY,
     DEFAULT_ELN_ID_CARRY_FIELD,
     DEFAULT_ELN_ID_FORMAT,
+    DEFAULT_ELN_TABLE_SUFFIX_STYLE,
     getElnIdCarrySettings,
     applyIdentifierFormat,
     productSuffix,
@@ -66,10 +68,16 @@ export function moleculeBatchesUrl(vaultId, moleculeId) {
 // `parallel` is { ordinal, letter } for a product of a parallel (bulk)
 // reaction — "-1A" instead of the table letter — and null for everything
 // else. See productSuffix.
-export function composeBatchElnId(entryId, format, reactionIndex, parallel = null) {
+export function composeBatchElnId(
+    entryId,
+    format,
+    reactionIndex,
+    parallel = null,
+    style = DEFAULT_ELN_TABLE_SUFFIX_STYLE
+) {
     const trimmed = applyIdentifierFormat(entryId, format);
     if (!trimmed) return "";
-    return `${trimmed}${productSuffix({ parallel, tableIndex: reactionIndex })}`;
+    return `${trimmed}${productSuffix({ parallel, tableIndex: reactionIndex, style })}`;
 }
 
 // The parallel half of a sample's suffix, or null for an ordinary row.
@@ -110,6 +118,7 @@ let carryCache = {
     enabled: true,
     fieldLabel: DEFAULT_ELN_ID_CARRY_FIELD,
     format: DEFAULT_ELN_ID_FORMAT,
+    style: DEFAULT_ELN_TABLE_SUFFIX_STYLE,
 };
 let listenerAttached = false;
 const changeListeners = new Set();
@@ -155,7 +164,8 @@ export async function initElnIdToBatch() {
             if (
                 changes[ELN_ID_CARRY_ENABLED_KEY] ||
                 changes[ELN_ID_CARRY_FIELD_KEY] ||
-                changes[ELN_ID_FORMAT_KEY]
+                changes[ELN_ID_FORMAT_KEY] ||
+                changes[ELN_TABLE_SUFFIX_STYLE_KEY]
             ) {
                 getElnIdCarrySettings().then((fresh) => {
                     carryCache = fresh;

@@ -11,6 +11,40 @@ would be.
 
 ## Next up
 
+### 15.7.0 reload test — the suffix that counts products
+
+Built and committed on 2026-08-28, branch `eln-id-product-ordinal`, **not
+merged and not tagged**. The pure part is covered — 28 cases over
+`eln-id-carry.js` in node — but everything below is DOM-bound and could only
+be checked on a live entry.
+
+What changed: the ELN-ID suffix counts the entry's PRODUCTS instead of its
+stoichiometry tables (so a reaction with two products stops registering both
+under one Internal ID), and a Register link on a non-product row no longer
+writes anything at all.
+
+*To test,* after reloading the unpacked extension and refreshing the page:
+
+1. **Two products in one reaction.** Their two Register links must pre-fill
+   `MDX-…` and `MDX-…B` (in whichever style is picked), not the same string
+   twice.
+2. **The panel button on those same two product cards** must offer exactly
+   those two strings. The two routes agreeing is the point of the change.
+3. **A reagent row.** Its Register link must leave *Internal ID* empty.
+4. **An entry with a parallel (bulk) block.** Its products still read `-1A`,
+   `-1B`, and the entry's ordinary product is not pushed along by them. This
+   is the riskiest one: the parallel branch is asked before the payload
+   precisely because parallel rows print no row number, and that ordering has
+   been reasoned about but not seen to work.
+5. **Flipping the style or *Mark the first product too*** takes effect on the
+   open entry, no reload.
+
+If it passes: merge to `main --no-ff`, tag `v15.7.0`, push both. If test 1 or
+2 fails, the thing to look at first is whether the product rows of one table
+arrive in the payload in the order the table displays them —
+`productOrdinalOf()` in `src/shared/eln-id-carry.js` assumes they do, and the
+design doc says so in as many words.
+
 ### Two things 14.11.0 shipped without proving
 
 The ELN-id-to-batch write went out on 2026-08-21. Both claims below are

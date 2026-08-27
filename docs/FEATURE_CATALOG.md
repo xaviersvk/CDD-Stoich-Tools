@@ -223,12 +223,15 @@ Improvements that target ELN entry and sample-data pages.
      empty Internal ID shows *⤴ Write … into Internal ID on this batch*; one
      click saves it onto the batch. **Off by default** (it writes to a record).
 - **Suffix rules** (one place, `productSuffix()` in `shared/eln-id-carry.js`):
-  ordinary tables get the table letter — first bare, then `B`, `C`…; a
-  product of a **parallel (bulk) reaction** gets `-<n><letter>` where `n`
-  counts the entry's parallel reactions only and the letter is the pair's
-  letter in the table (`MDX-0108-1A`, `-1B`, … `-2A`). The vault prefix is
-  trimmed first per the *ELN identifier format* setting (`IDEMO-MDX-0014` →
-  `MDX-0014` for vault-user IDs).
+  an ordinary table's mark is configurable since 15.5.0 — *Product suffix* picks
+  letters (`B`, `C`, the default), letters after a dash (`-B`, `-C`) or numbers
+  (`-2`, `-3`), and a separate switch marks the first table too (`A` / `-A` /
+  `-1`) instead of leaving it bare. A product of a **parallel (bulk) reaction**
+  ignores both and gets `-<n><letter>`, where `n` counts the entry's parallel
+  reactions only and the letter is the pair's letter in the table
+  (`MDX-0108-1A`, `-1B`, … `-2A`). The vault prefix is trimmed first per the
+  *ELN identifier format* setting (`IDEMO-MDX-0014` → `MDX-0014` for vault-user
+  IDs). Full detail: [ELN_ID_PRODUCT_SUFFIX.md](./ELN_ID_PRODUCT_SUFFIX.md).
 - **Entry point:** `content/features/ui-fixes/eln-id-to-registration.js`
   (`stampLink`, `parallelInfoOf`, `fillTargetField`);
   `content/features/sample-panel.js` (`elnIdToBatchState`,

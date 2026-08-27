@@ -85,8 +85,8 @@ returns `-${index + 1}` for every index, including 0 — that is what
 `productSuffix` passes `style` through to `tableSuffix` and leaves the
 parallel branch untouched.
 
-Both parameters are optional and default to `"letter"`, so a caller that
-has not been updated still writes what it writes today.
+`style` is optional in both signatures and defaults to `"letter"`, so a
+caller that has not been updated still writes what it writes today.
 
 ### Edge case: a Register link outside any table
 

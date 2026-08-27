@@ -45,6 +45,21 @@ export const ELN_ID_FORMATS = ["global", "vault", "vault-user"];
 // actually reads <vault>-<user>-<number>.
 export const DEFAULT_ELN_ID_FORMAT = "vault-user";
 
+// "letter" | "number" — how a product is marked with the stoichiometry table
+// it came from.
+//
+//   letter (the original)   MDX-113   MDX-113B   MDX-113C
+//   number                  MDX-113-1 MDX-113-2  MDX-113-3
+//
+// Letters are this plugin's own convention, not something CDD prints, so a
+// vault that numbers its reactions can say so. Absent means "letter": the
+// setting must never change an ID nobody asked it to change.
+export const ELN_TABLE_SUFFIX_STYLE_KEY = "cddElnTableSuffixStyle";
+
+export const ELN_TABLE_SUFFIX_STYLES = ["letter", "number"];
+
+export const DEFAULT_ELN_TABLE_SUFFIX_STYLE = "letter";
+
 /* ------------------------------------------------------------------ *
  * The wire between the two pages
  * ------------------------------------------------------------------ */
@@ -116,8 +131,17 @@ export function applyIdentifierFormat(entryId, format) {
 // spreadsheet column names of `index + 1` with the first one left off -- which
 // also settles what a 27th table gets (AA, then AB), instead of running off the
 // end of the alphabet.
-export function tableSuffix(index) {
-    if (!Number.isInteger(index) || index <= 0) return "";
+// The style decides which of the two it is; "letter" is what this has always
+// written, and what an install that never opens the setting keeps writing.
+export function tableSuffix(index, style = DEFAULT_ELN_TABLE_SUFFIX_STYLE) {
+    if (!Number.isInteger(index) || index < 0) return "";
+
+    // Numbering counts from the FIRST table, so a one-reaction entry reads
+    // MDX-113-1. That is the point of the setting: every product carries the
+    // number of the reaction it came out of, with no exception to remember.
+    if (style === "number") return `-${index + 1}`;
+
+    if (index === 0) return "";
 
     let n = index + 1;
     let out = "";
@@ -150,13 +174,17 @@ export function parallelSuffix(ordinal, letter) {
 
 // The suffix for one product row, whichever kind of table it sits in.
 //   parallel: { ordinal, letter } of the bulk pair -> "-1A"
-//   tableIndex: position of the table among ALL tables -> "", "B", "C"…
-export function productSuffix({ parallel, tableIndex }) {
+//   tableIndex: position of the table among ALL tables
+//   style: "letter" -> "", "B", "C"…   "number" -> "-1", "-2", "-3"…
+//
+// The style reaches the table branch only. A parallel pair's letter is CDD's
+// own, printed beside the row, and stays a letter in both styles.
+export function productSuffix({ parallel, tableIndex, style }) {
     if (parallel) {
         const s = parallelSuffix(parallel.ordinal, parallel.letter);
         if (s) return s;
     }
-    return tableSuffix(tableIndex);
+    return tableSuffix(tableIndex, style);
 }
 
 // "ID: IDEMO-MDX-0014" -> "IDEMO-MDX-0014". Also copes with the bare value, so
@@ -178,6 +206,7 @@ export async function getElnIdCarrySettings() {
             [ELN_ID_CARRY_ENABLED_KEY]: true,
             [ELN_ID_CARRY_FIELD_KEY]: DEFAULT_ELN_ID_CARRY_FIELD,
             [ELN_ID_FORMAT_KEY]: DEFAULT_ELN_ID_FORMAT,
+            [ELN_TABLE_SUFFIX_STYLE_KEY]: DEFAULT_ELN_TABLE_SUFFIX_STYLE,
         });
 
         return {
@@ -189,12 +218,16 @@ export async function getElnIdCarrySettings() {
             format: ELN_ID_FORMATS.includes(stored[ELN_ID_FORMAT_KEY])
                 ? stored[ELN_ID_FORMAT_KEY]
                 : DEFAULT_ELN_ID_FORMAT,
+            style: ELN_TABLE_SUFFIX_STYLES.includes(stored[ELN_TABLE_SUFFIX_STYLE_KEY])
+                ? stored[ELN_TABLE_SUFFIX_STYLE_KEY]
+                : DEFAULT_ELN_TABLE_SUFFIX_STYLE,
         };
     } catch {
         return {
             enabled: true,
             fieldLabel: DEFAULT_ELN_ID_CARRY_FIELD,
             format: DEFAULT_ELN_ID_FORMAT,
+            style: DEFAULT_ELN_TABLE_SUFFIX_STYLE,
         };
     }
 }
@@ -209,6 +242,20 @@ export async function saveElnIdFormat(value) {
     }
 
     return format;
+}
+
+export async function saveElnTableSuffixStyle(value) {
+    const style = ELN_TABLE_SUFFIX_STYLES.includes(value)
+        ? value
+        : DEFAULT_ELN_TABLE_SUFFIX_STYLE;
+
+    try {
+        await chrome.storage.local.set({ [ELN_TABLE_SUFFIX_STYLE_KEY]: style });
+    } catch {
+        // Orphaned content script — nothing useful to do.
+    }
+
+    return style;
 }
 
 export async function saveElnIdCarryEnabled(value) {

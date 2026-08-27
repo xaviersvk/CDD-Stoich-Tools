@@ -416,9 +416,10 @@
                         <input type="checkbox" id="elnIdCarryEnabled" />
                         <span>Registering from a stoichiometry row fills the
                         entry's <strong>ID</strong> into the new entity
-                        — <code>IDEMO-MDX-0014</code>. A second or third
-                        stoichiometry table marks the product with the suffix
-                        chosen below. Only an empty field is filled.</span>
+                        — <code>IDEMO-MDX-0014</code>. Every product after the
+                        first is marked with the suffix chosen below, and only
+                        product rows are filled at all. Only an empty field is
+                        filled.</span>
                     </label>
 
                     <div class="eln-id-carry__field">
@@ -472,9 +473,10 @@
                         <legend class="eyebrow">Product suffix</legend>
 
                         <p class="note eln-id-carry__format-note">
-                            How a product is marked with the stoichiometry table
-                            it came from — shown here for the second and third
-                            table. Parallel reactions keep CDD's own pair
+                            How a product is marked with its place among the
+                            entry's products — shown here for the second and
+                            third product, whether they come from one reaction
+                            or three. Parallel reactions keep CDD's own pair
                             letters whatever is picked — <code>MDX-113-1A</code>.
                         </p>
 
@@ -520,7 +522,7 @@
 
                         <label class="field-item eln-id-carry__toggle">
                             <input type="checkbox" id="elnTableSuffixFirst" />
-                            <span>Mark the <strong>first</strong> table too —
+                            <span>Mark the <strong>first</strong> product too —
                             <code>MDX-113A</code>, <code>MDX-113-b</code>,
                             <code>MDX-113-1</code> and so on, in the style picked
                             above, instead of a bare

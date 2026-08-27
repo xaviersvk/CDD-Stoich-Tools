@@ -238,7 +238,8 @@ Improvements that target ELN entry and sample-data pages.
   `buildElnIdToBatchButton`); `content/features/eln-id-to-batch-write.js`
   (`writeElnIdToBatch`).
 - **Related files:** `shared/eln-id-carry.js` (settings, `applyIdentifierFormat`,
-  `tableSuffix`, `parallelSuffix`, `productSuffix`), `shared/eln-id-to-batch.js`
+  `productMark`, `parallelSuffix`, `productSuffix`, `productOrdinalOf`,
+  `findRowSample`), `shared/eln-id-to-batch.js`
   (`composeBatchElnId`, `sampleParallelInfo`, the panel flag and its sync
   caches), `content/utils/eln-entry-id.js` (`readElnEntryId`, the single
   reader of the on-screen `ID: …`), `content/api/batch-registration-props.js`
@@ -246,11 +247,12 @@ Improvements that target ELN entry and sample-data pages.
   `content/features/batch-field-enrichment.js` (fetches the batch's fields so
   the panel knows Internal ID is empty), `options/` (*Registration form → From
   the ELN*; panel checkbox).
-- **Data source:** the entry ID from the DOM; for the Register link the table
-  position and, in a bulk block, the letter on the
-  `stoichiometry-table-parallelReactant` row above the product row; for the
-  panel the parser's `reactionIndex` / `parallelOrdinal` / `parallelLetter`
-  (`inject/parsers/sample-data.js`, letter by first appearance of
+- **Data source:** the entry ID from the DOM; the row's role and its place among
+  the entry's products from the panel payload (`isProduct`, `reactionIndex`,
+  `rowNumber` in `inject/parsers/sample-data.js`), matched to the clicked row by
+  the printed row number; in a bulk block the letter on the
+  `stoichiometry-table-parallelReactant` row above the product row
+  (`parallelOrdinal` / `parallelLetter`, letter by first appearance of
   `parallelReactionsPairId`).
 - **Dependencies:** path 2 needs the molecule page fetched by enrichment and
   submits CDD's **own** batch edit form from a hidden iframe

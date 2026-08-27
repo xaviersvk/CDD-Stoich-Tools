@@ -109,7 +109,7 @@ const STEPS = [
         body: [
             "Register link — click Register in a stoichiometry row and the new entity's Internal ID is already filled in. Nothing is saved until you press CDD's own Register.",
             "Panel button — a product card whose batch exists but has an empty Internal ID offers ⤴ Write … into Internal ID. One click saves it onto the batch record.",
-            "The suffix tells reactions apart: the second stoichiometry table adds a B, the third a C. A product of a parallel (bulk) reaction gets -1A, -1B … for the first parallel reaction, -2A … for the second.",
+            "The suffix tells the entry's products apart: the second product adds a B, the third a C — whether they come from one reaction or three. A product of a parallel (bulk) reaction gets -1A, -1B … for the first parallel reaction, -2A … for the second. Reagent rows are not filled.",
         ],
         pane: "col-fields-heading",
         controls: [

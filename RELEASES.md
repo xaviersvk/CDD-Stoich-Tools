@@ -13,7 +13,28 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
-# What's new in 15.4.3
+# What's new in 15.5.0
+
+---
+
+## 15.5.0 — 2026-08-27
+
+**You can now choose how a product is marked with the reaction it came from.**
+Settings → **Product suffix**. Second and third table:
+
+- **Letters** — `MDX-113B`, `MDX-113C` (what it has always done)
+- **Letters after a dash** — `MDX-113-B`, `MDX-113-C`
+- **Numbers** — `MDX-113-2`, `MDX-113-3`
+
+Tick **Mark the first table too** and the first reaction stops being bare:
+`MDX-113A`, `MDX-113-A` or `MDX-113-1` instead of `MDX-113`.
+
+- It applies to both routes — the **Register** link in a stoichiometry row and
+  the panel button that writes the ID onto a batch you registered earlier.
+- Parallel reactions keep their pair letters — `MDX-113-1A` — so the ID still
+  matches the letter beside the row.
+- Letters with a bare first table stay the default. Nothing changes until you
+  switch it.
 
 ---
 

@@ -416,9 +416,9 @@
                         <input type="checkbox" id="elnIdCarryEnabled" />
                         <span>Registering from a stoichiometry row fills the
                         entry's <strong>ID</strong> into the new entity
-                        — <code>IDEMO-MDX-0014</code>. The entry's second
-                        stoichiometry table adds a <code>B</code>, the third a
-                        <code>C</code>. Only an empty field is filled.</span>
+                        — <code>IDEMO-MDX-0014</code>. A second or third
+                        stoichiometry table marks the product with the suffix
+                        chosen below. Only an empty field is filled.</span>
                     </label>
 
                     <div class="eln-id-carry__field">
@@ -464,6 +464,32 @@
                             <span class="choice__text">
                                 <span class="choice__label">Global Identifier</span>
                                 <span class="choice__sample">Carried whole</span>
+                            </span>
+                        </label>
+                    </fieldset>
+
+                    <fieldset class="choices eln-id-carry__format">
+                        <legend class="eyebrow">Product suffix</legend>
+
+                        <p class="note eln-id-carry__format-note">
+                            How a product is marked with the stoichiometry table
+                            it came from. Parallel reactions keep CDD's own pair
+                            letters either way — <code>MDX-113-1A</code>.
+                        </p>
+
+                        <label class="choice">
+                            <input type="radio" name="elnTableSuffixStyle" value="letter" />
+                            <span class="choice__text">
+                                <span class="choice__label">Letters</span>
+                                <span class="choice__sample">MDX-113, MDX-113B, MDX-113C</span>
+                            </span>
+                        </label>
+
+                        <label class="choice">
+                            <input type="radio" name="elnTableSuffixStyle" value="number" />
+                            <span class="choice__text">
+                                <span class="choice__label">Numbers</span>
+                                <span class="choice__sample">MDX-113-1, MDX-113-2, MDX-113-3</span>
                             </span>
                         </label>
                     </fieldset>

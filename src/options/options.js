@@ -102,6 +102,7 @@ import {
     saveElnIdCarryEnabled,
     saveElnIdCarryFieldLabel,
     saveElnIdFormat,
+    saveElnTableSuffixStyle,
 } from "../shared/eln-id-carry.js";
 import {
     loadRegistrationDefaults,
@@ -736,6 +737,16 @@ for (const radio of elnIdFormatRadios) {
     });
 }
 
+const elnTableSuffixStyleRadios = [
+    ...document.querySelectorAll('input[name="elnTableSuffixStyle"]'),
+];
+
+for (const radio of elnTableSuffixStyleRadios) {
+    radio.addEventListener("change", () => {
+        if (radio.checked) saveElnTableSuffixStyle(radio.value);
+    });
+}
+
 async function initElnIdCarryUI() {
     const settings = await getElnIdCarrySettings();
 
@@ -744,6 +755,11 @@ async function initElnIdCarryUI() {
 
     const format = elnIdFormatRadios.find((radio) => radio.value === settings.format);
     if (format) format.checked = true;
+
+    const style = elnTableSuffixStyleRadios.find(
+        (radio) => radio.value === settings.style
+    );
+    if (style) style.checked = true;
 }
 
 /* ==================================================== 5 · Remembered densities */

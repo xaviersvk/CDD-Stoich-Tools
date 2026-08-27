@@ -18,14 +18,22 @@
 // an admin-only settings page, so it is a plugin setting rather than something
 // read off the page.
 //
-// An entry can hold several reactions, and a product registered from the second
-// table is not the product of the first. So the table the Register link sits in
-// is carried too, as a letter on the end:
+// An entry can hold several products -- two reactions, or one reaction with two
+// products -- and they cannot all register under the same ID. Which product of
+// the entry this is is carried too, as a letter on the end:
 //
-//   1st table -> MDX-0095     2nd -> MDX-0095B     3rd -> MDX-0095C
+//   1st product -> MDX-0095     2nd -> MDX-0095B     3rd -> MDX-0095C
 //
-// The first stays bare -- one reaction is the ordinary case and reads the way it
-// always has.
+// The first stays bare -- one product is the ordinary case and reads the way it
+// always has. Both the mark's style and whether the first one gets one are
+// settings; see shared/eln-id-carry.js.
+//
+// ONLY products are stamped. A Register link on a reagent row leaves the field
+// empty: a starting material is not a product of the entry, and inventing an ID
+// for it would collide with one that is. Which rows are products is read from
+// the entry payload the panel is built from (STATE.lastPayload.samples), never
+// guessed from the markup -- ordinary product rows carry no autotest id of
+// their own.
 //
 // HOW THE ID TRAVELS
 //
@@ -54,6 +62,7 @@
 // node, so it stays cleared.
 
 import { isElnEntryPage } from "../../../shared/page-detection.js";
+import { STATE } from "../../state.js";
 import {
     ELN_ID_CARRY_ENABLED_KEY,
     ELN_ID_CARRY_FIELD_KEY,
@@ -66,7 +75,9 @@ import {
     DEFAULT_ELN_TABLE_SUFFIX_STYLE,
     DEFAULT_ELN_TABLE_SUFFIX_FIRST,
     fieldLabelsMatch,
+    findRowSample,
     getElnIdCarrySettings,
+    productOrdinalOf,
     productSuffix,
 } from "../../../shared/eln-id-carry.js";
 import { readElnEntryId } from "../../utils/eln-entry-id.js";
@@ -116,14 +127,41 @@ function isRegistrationPage() {
  * ELN entry side — put the ID into the link
  * ------------------------------------------------------------------ */
 
-// Document order is the order the tables are read in -- Slate renders the entry
-// body top to bottom. A link outside any table (a Register control CDD grows
-// somewhere else) counts as the first: no suffix, nothing invented.
-function tableIndexOf(link) {
-    const table = link.closest(TABLE_SELECTOR);
-    if (!table) return 0;
+// The suffix for an ordinary (non-parallel) Register link, or null when the row
+// is not one of the entry's products.
+//
+// Null means "write nothing at all". That covers the reagent rows this used to
+// stamp, and it covers the payload not having arrived yet: an empty field is a
+// nuisance, a wrong ID on a registration is a wrong record.
+function ordinaryProductSuffix(link) {
+    const samples = STATE.lastPayload?.samples;
+    if (!Array.isArray(samples) || !samples.length) return null;
 
-    return [...document.querySelectorAll(TABLE_SELECTOR)].indexOf(table);
+    // Outside a stoichiometry table there is no row, so there is no product.
+    const table = link.closest(TABLE_SELECTOR);
+    if (!table) return null;
+
+    const row = link.closest("tr");
+    if (!row) return null;
+
+    // Document order is the order the tables are read in -- Slate renders the
+    // entry body top to bottom, and the parser numbers reactions the same way.
+    const tableIndex = [...document.querySelectorAll(TABLE_SELECTOR)].indexOf(table);
+
+    // The number the table prints in the row's first cell is the row's only
+    // reliable key; name-watch.js reads rows the same way.
+    const printed = (row.cells?.[0]?.innerText || "").trim();
+    const sample = findRowSample(samples, tableIndex, printed);
+    if (!sample?.isProduct) return null;
+
+    const productIndex = productOrdinalOf(samples, sample);
+    if (productIndex < 0) return null;
+
+    return productSuffix({
+        productIndex,
+        style: settings.style,
+        markFirst: settings.markFirst,
+    });
 }
 
 // A parallel ("bulk") reaction renders its pairs as
@@ -174,19 +212,28 @@ function stampLink(target) {
     const entryId = readElnEntryId();
     if (!entryId) return;
 
-    // Trim first, THEN suffix: the suffix marks the table (or the parallel
+    // Trim first, THEN suffix: the suffix marks the product (or the parallel
     // pair) and belongs on the end of whatever the ID has been cut down to.
     const trimmed = applyIdentifierFormat(entryId, settings.format);
     if (!trimmed) return;
 
+    // The parallel branch is asked FIRST. A parallel row prints no number, so
+    // the payload can never match it -- looking there first would silently drop
+    // the -1A stamp that works today. Its letter is CDD's own, on the reagent
+    // row above.
+    const parallel = parallelInfoOf(link);
+    const suffix = parallel
+        ? productSuffix({ parallel })
+        : ordinaryProductSuffix(link);
+
+    // Not a product: nothing is written, and the link keeps the href CDD gave
+    // it. `""` is a real answer -- the entry's first product -- so this test is
+    // strict.
+    if (suffix === null) return;
+
     // The finished value, suffix and all — the registration page only has to
     // type out what it is handed.
-    const value = `${trimmed}${productSuffix({
-        parallel: parallelInfoOf(link),
-        tableIndex: tableIndexOf(link),
-        style: settings.style,
-        markFirst: settings.markFirst,
-    })}`;
+    const value = `${trimmed}${suffix}`;
 
     // `location.href` as the base: the href is root-relative, and a URL object
     // is what keeps the existing `eln_attached_structure_id` intact.

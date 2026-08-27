@@ -1230,7 +1230,7 @@ function elnIdToBatchState(sample) {
     // whose only guard has not run.
     if (!sample.batchFieldsEnriched) return null;
 
-    const { enabled, fieldLabel, format, style } = getCarrySettings();
+    const { enabled, fieldLabel, format, style, markFirst } = getCarrySettings();
     if (!enabled || !fieldLabel) return null;
 
     // Nothing to offer, and nothing to say either. The card already prints
@@ -1246,7 +1246,7 @@ function elnIdToBatchState(sample) {
         format,
         sample.reactionIndex,
         sampleParallelInfo(sample),
-        style
+        { style, markFirst }
     );
     if (!value) return null;
 

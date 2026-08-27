@@ -103,6 +103,7 @@ import {
     saveElnIdCarryFieldLabel,
     saveElnIdFormat,
     saveElnTableSuffixStyle,
+    saveElnTableSuffixFirst,
 } from "../shared/eln-id-carry.js";
 import {
     loadRegistrationDefaults,
@@ -747,6 +748,12 @@ for (const radio of elnTableSuffixStyleRadios) {
     });
 }
 
+const elnTableSuffixFirstCheckbox = document.getElementById("elnTableSuffixFirst");
+
+elnTableSuffixFirstCheckbox.addEventListener("change", () => {
+    saveElnTableSuffixFirst(elnTableSuffixFirstCheckbox.checked);
+});
+
 async function initElnIdCarryUI() {
     const settings = await getElnIdCarrySettings();
 
@@ -760,6 +767,8 @@ async function initElnIdCarryUI() {
         (radio) => radio.value === settings.style
     );
     if (style) style.checked = true;
+
+    elnTableSuffixFirstCheckbox.checked = settings.markFirst;
 }
 
 /* ==================================================== 5 · Remembered densities */

@@ -473,15 +473,24 @@
 
                         <p class="note eln-id-carry__format-note">
                             How a product is marked with the stoichiometry table
-                            it came from. Parallel reactions keep CDD's own pair
-                            letters either way — <code>MDX-113-1A</code>.
+                            it came from — shown here for the second and third
+                            table. Parallel reactions keep CDD's own pair
+                            letters whatever is picked — <code>MDX-113-1A</code>.
                         </p>
 
                         <label class="choice">
                             <input type="radio" name="elnTableSuffixStyle" value="letter" />
                             <span class="choice__text">
                                 <span class="choice__label">Letters</span>
-                                <span class="choice__sample">MDX-113, MDX-113B, MDX-113C</span>
+                                <span class="choice__sample">MDX-113B, MDX-113C</span>
+                            </span>
+                        </label>
+
+                        <label class="choice">
+                            <input type="radio" name="elnTableSuffixStyle" value="dash-letter" />
+                            <span class="choice__text">
+                                <span class="choice__label">Letters after a dash</span>
+                                <span class="choice__sample">MDX-113-B, MDX-113-C</span>
                             </span>
                         </label>
 
@@ -489,8 +498,16 @@
                             <input type="radio" name="elnTableSuffixStyle" value="number" />
                             <span class="choice__text">
                                 <span class="choice__label">Numbers</span>
-                                <span class="choice__sample">MDX-113-1, MDX-113-2, MDX-113-3</span>
+                                <span class="choice__sample">MDX-113-2, MDX-113-3</span>
                             </span>
+                        </label>
+
+                        <label class="field-item eln-id-carry__toggle">
+                            <input type="checkbox" id="elnTableSuffixFirst" />
+                            <span>Mark the <strong>first</strong> table too —
+                            <code>MDX-113A</code>, <code>MDX-113-A</code> or
+                            <code>MDX-113-1</code> instead of a bare
+                            <code>MDX-113</code>.</span>
                         </label>
                     </fieldset>
                 </div>

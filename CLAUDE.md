@@ -44,8 +44,11 @@ the format is a convention rather than a parser rule — keep it ISO, matching
 
 ### How a What's new entry reads
 
-Short, factual, direct. A release should fit on one screen — roughly 120
-words for a feature, one line for a fix.
+Very short, factual, direct. One opening sentence plus at most two or three
+short bullets for a feature; one line for a fix. If an entry needs a
+paragraph, the paragraph belongs in `CHANGELOG.md` instead.
+
+Write the entry, then cut it roughly in half.
 
 - **Open with one sentence** saying what you can now do, in the words the
   user would use.

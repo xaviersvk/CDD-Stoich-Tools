@@ -19,6 +19,48 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [15.8.0] — 2026-09-06
+
+### Added
+- **The inventory location field is a collapsed tree instead of a flat list.**
+  CDD offers all 425 locations as one list of full breadcrumbs, so every row
+  repeats `PharmTheon > MedChem Lab > 01-12: Fume Hoods > 01` and the segment
+  that identifies the location sits at the far right of a line otherwise
+  identical to its neighbours. The field now opens on the five roots and
+  unfolds one level at a time. A node that is both a branch and a choice of its
+  own — `PharmTheon` is an option AND the parent of 306 others — can be either
+  expanded or picked. Collapsed branches carry the count below them. Arrow keys
+  walk the tree (→ unfolds, ← folds or steps to the parent, Enter picks);
+  typing switches the panel to flat search results with the match highlighted,
+  leaf first and path beneath.
+- **A search row at the top of the picker.** It mirrors the field CDD already
+  renders, because it cannot be an input of its own: MUI closes the whole popup
+  the moment focus leaves its own field. CDD's field holds the focus and
+  therefore every keystroke, so typing works with no click; the row shows what
+  is being typed, and a clear button empties it.
+
+### Changed
+- `RELEASES.md` entries are now held to a much shorter form — an opening
+  sentence and two or three bullets. `CLAUDE.md` previously allowed roughly
+  120 words per feature.
+
+### Technical notes
+- New feature at `src/content/features/ui-fixes/inventory-location-tree/`,
+  split into a pure tree model, styles, the view, and discovery, following the
+  shape of `box-selection`. Always on, like the other `ui-fixes`.
+- **The extension never writes the location.** Picking a leaf clicks the
+  original `<li>` CDD rendered and lets CDD's own React set the visible text
+  and `plate[inventory_location_id]`; the source `<ul>` is therefore only
+  visually hidden, never removed or `display:none`d. Verified live against a
+  real plate — the hidden input took the id CDD assigned.
+- Discovery anchors on `.locationPickerFormField` and falls back to a shape
+  test (most options are breadcrumbs), so a portalled popup is caught too.
+- Two guards, because this UI lives inside CDD's React tree: a redraw is
+  skipped when the option set is unchanged, and a redraw budget stands the
+  feature down — restoring CDD's own list — rather than ever locking the tab.
+
+---
+
 ## [15.7.0] — 2026-08-28
 
 ### Fixed

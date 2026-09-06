@@ -29,6 +29,7 @@ import {initElnFilterFieldPicker} from "./features/ui-fixes/eln-filter-field-pic
 import {initKeywordsFieldPicker} from "./features/ui-fixes/keywords-field-picker";
 import {initColumnManager} from "./features/ui-fixes/column-manager";
 import {initLocationPickerResize} from "./features/ui-fixes/location-picker-resize";
+import {initInventoryLocationTree} from "./features/ui-fixes/inventory-location-tree/init";
 import {injectMoleculeLinksStyles} from "./features/ui-fixes/molecule-links-fixes";
 import {initElnShiftLeft} from "./features/ui-fixes/eln-shift-left";
 import {watchConsumedBatches} from "./features/ui-fixes/consumed-batches-collapse";
@@ -147,6 +148,7 @@ function init() {
   initKeywordsFieldPicker();
   initColumnManager();
   initLocationPickerResize();
+  initInventoryLocationTree();
   injectMoleculeLinksStyles();
   initElnShiftLeft();
   watchConsumedBatches();

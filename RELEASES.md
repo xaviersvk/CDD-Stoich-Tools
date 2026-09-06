@@ -13,7 +13,17 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
-# What's new in 15.7.0
+# What's new in 15.8.0
+
+---
+
+## 15.8.0 — 2026-09-06
+
+**Inventory Location now opens as a folder tree instead of 425 full paths.**
+Start at the top and unfold one step at a time.
+
+- Type to search — a match shows the location first, its path underneath.
+- Arrow keys walk the tree: → unfolds, ← folds, Enter picks.
 
 ---
 

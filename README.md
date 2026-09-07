@@ -11,7 +11,7 @@ no backend, collects no data, and never sends anything anywhere.
 - 🧪 Built for medicinal-chemistry / ELN work on CDD Vault
 - 🔒 No tracking, no accounts, no remote code
 - 🌐 Works in Chrome and Firefox (142+)
-- 📦 Current version **9.0.0** — see [what's new](./RELEASES.md)
+- 📝 [What's new](https://xaviersvk.github.io/CDD-Stoich-Tools/) in each version
 
 **Install:**
 [Chrome Web Store](https://chromewebstore.google.com/detail/cdd-stoichiometric-table/ghbhjmmmgejokgekdcbcmgcfaoddlffg)
@@ -396,7 +396,11 @@ There are no servers; "deployment" means publishing the packaged extension.
    - **Chrome Web Store:** <https://chromewebstore.google.com/detail/cdd-stoichiometric-table/ghbhjmmmgejokgekdcbcmgcfaoddlffg>
    - **Firefox Add-ons (AMO):** <https://addons.mozilla.org/en-GB/firefox/addon/cdd-stoichiometric-table-tools/>
 
-> **Version note:** `manifest.json` is now `9.0.0` (see
+   The store page text (subtitle, description, dashboard checklist) lives in
+   [`store/listing.md`](./store/listing.md); paste it into each dashboard when
+   it changes.
+
+> **Version note:** the extension version is `manifest.json` → `version` (see
 > [`RELEASES.md`](./RELEASES.md) and the [CHANGELOG](./CHANGELOG.md)).
 > `package.json` carries an unrelated `1.0.0` and is not used for the extension
 > version. Published store builds may be ahead of or behind this source.

@@ -23,10 +23,11 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 scan.** *Edit Locations* has a new **Scan racks** button next to *Print
 Labels*.
 
-- Scan the whole shelf into the list, then press **Create N boxes** — they
-  arrive 12 × 8 under the location you picked, and you press **Save**.
+- Scan the whole shelf into the list, then press **Create N boxes** under the
+  location you picked — and you press **Save**.
+- Rows start at 12 × 8 and each one can be changed on the row. Paste a list
+  from Excel instead, with two more columns for the size if they differ.
 - A code you already have is struck out and not counted.
-- Switch it on in Settings → **Scan racks**.
 
 ---
 

@@ -120,6 +120,20 @@ export function injectScanStyles() {
         font-variant-numeric: tabular-nums;
     }
     .cdd-scan-name { flex: 1 1 auto; font-weight: 600; }
+
+    /* A shelf is not all one size, so the grid sits on the row. Narrow boxes:
+       they hold two digits and must not compete with the code beside them. */
+    .cdd-scan-size { display: inline-flex; align-items: center; gap: 4px; }
+    .cdd-scan-times { color: rgba(0, 0, 0, 0.45); }
+    .cdd-scan-size-input {
+        font: inherit;
+        width: 46px;
+        padding: 2px 4px;
+        text-align: center;
+        border: 1px solid rgba(0, 0, 0, 0.25);
+        border-radius: 3px;
+        background: #fff;
+    }
     .cdd-scan-why { color: #b3261e; }
     .cdd-scan-row--refused .cdd-scan-name {
         font-weight: 400;
@@ -170,7 +184,6 @@ export function injectScanStyles() {
         cursor: pointer;
     }
     .cdd-scan-status { color: #b3261e; }
-    .cdd-scan-status--ok { color: rgba(0, 0, 0, 0.6); }
     `;
 
     (document.head || document.documentElement).appendChild(style);

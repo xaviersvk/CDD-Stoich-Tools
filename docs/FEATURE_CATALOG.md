@@ -498,14 +498,16 @@ affect the others. These are the **safest** files to touch.
 - **Regression risk:** **low** — keyed by name, never by the per-vault value;
   ordering changes neither `select.value` nor the selected option.
 
-### 6.10 Scan Racks into a Location (opt-in)
+### 6.10 Scan Racks into a Location
 - **User value:** A shelf of SBS racks goes into the inventory location tree in
   one pass. A `Scan racks` button in the `Edit Locations` footer opens a panel
   whose scan box swallows the scanner's Enter — which in that dialog means
   *Save*, and used to cost a round trip through three screens per rack. Codes
   collect into a list, duplicates against the whole tree are refused, and one
-  button creates them all as 12 x 8 organized boxes. **`Save` is never pressed
-  by the extension.**
+  button creates them all. Each row carries its own grid, so a mixed shelf is
+  one pass; and a list can be pasted from Excel instead of scanned, with two
+  more TAB-separated columns for a rack whose size differs. **`Save` is never
+  pressed by the extension.**
 - **Entry point:** `ui-fixes/inventory-location-scan/init.js`
   (`initInventoryLocationScan`); `scan-panel.js` is the overlay,
   `dialog-dom.js` the only file holding CDD's selectors, `tree-model.js` the
@@ -521,8 +523,8 @@ affect the others. These are the **safest** files to touch.
   is also how the root is excluded), that button creates an organized 9 x 9 box
   outright and selects it, and selection is `.Mui-selected` rather than
   `aria-selected`.
-- **Regression risk:** **low** — off after installing, confined to one
-  vault-admin dialog, and every step is checked before the next: an unexpected
+- **Regression risk:** **low** — confined to one vault-admin dialog and
+  switchable off, and every step is checked before the next: an unexpected
   tree, an unselected node or a name CDD refused ("Name is already taken")
   stops the run and reports how far it got.
 

@@ -27,7 +27,7 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   Fields → Edit Locations* grows a **Scan racks** button next to *Print
   Labels*. It opens a panel with one scan box: every code becomes a row in a
   list, and one button turns the list into boxes under a chosen location.
-  Off after installing — Settings → **Scan racks**.
+  On after installing; Settings → **Scan racks** switches it off.
 - Three problems made adding a rack by hand cost a round trip through three
   screens, and the panel answers all three. A handheld scanner ends every
   barcode with a carriage return, and Enter in that dialog is *Save*, so the
@@ -35,6 +35,18 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   with the text selected — which is exactly why the scan lands in it, and
   exactly why the Enter that follows is fatal. And it arrives 9 × 9, while an
   SBS rack is 12 × 8, so both number fields needed correcting every time.
+- **The grid belongs to the row, not to the batch.** A shelf is not all one
+  size. Every scanned row starts at the settings default and carries its own
+  columns and rows, editable in place. The pair at the top of the panel is
+  what the NEXT scan starts from, and changing it rewrites only the rows
+  nobody has touched — otherwise "they are all 10 × 10 actually" would mean
+  editing a hundred rows by hand.
+- **A list can be pasted instead of scanned.** One rack per line. A line may
+  carry two more TAB-separated numbers, which become that rack's columns and
+  rows, so a mixed-size shelf comes straight out of Excel in one paste. Only
+  TAB is a separator — splitting on commas too would quietly cut a rack whose
+  code contains one. A single pasted code with no tabs and no newlines is
+  left alone, because that is someone pasting one barcode.
 - **Duplicates are refused against the whole tree**, not just the target
   location, and case-insensitively. A rack barcode belongs to one rack; the
   same code twice means a double scan or a rack already shelved somewhere

@@ -18,9 +18,11 @@ export const INVENTORY_SCAN_COLUMNS_KEY = "cddInventoryScanColumns";
 export const INVENTORY_SCAN_ROWS_KEY = "cddInventoryScanRows";
 export const INVENTORY_SCAN_ORGANIZED_KEY = "cddInventoryScanOrganized";
 
-// OFF after installing. The button lives in a vault-admin dialog most people
-// never open; nobody's dialog should sprout a control because they upgraded.
-export const DEFAULT_INVENTORY_SCAN_ENABLED = false;
+// ON after installing. It started off, on the reasoning that nobody's dialog
+// should sprout a control because they upgraded — but the button lives in a
+// vault-admin dialog most people never open, so it costs nothing to anyone who
+// does not want it, and hiding it from the people who do was the actual cost.
+export const DEFAULT_INVENTORY_SCAN_ENABLED = true;
 
 // An SBS rack is 12 across and 8 down.
 export const DEFAULT_INVENTORY_SCAN_COLUMNS = 12;
@@ -55,7 +57,8 @@ const KEYS = [
 
 function readSettings(stored) {
     return {
-        enabled: stored?.[INVENTORY_SCAN_ENABLED_KEY] === true,
+        // On is the default, so only an explicit false turns it off.
+        enabled: stored?.[INVENTORY_SCAN_ENABLED_KEY] !== false,
         columns: sanitizeColumns(stored?.[INVENTORY_SCAN_COLUMNS_KEY]),
         rows: sanitizeRows(stored?.[INVENTORY_SCAN_ROWS_KEY]),
         // Organized is the default, so only an explicit false turns it off.

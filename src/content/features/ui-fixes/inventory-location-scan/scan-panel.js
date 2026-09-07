@@ -10,9 +10,18 @@
 // commits a row; anywhere else it puts the cursor back in the scan box, which
 // is where a scan should have landed in the first place.
 //
+// A shelf is not all one size, so the grid belongs to the ROW, not to the
+// batch. The two boxes at the top are what the next scan starts from; each row
+// carries its own pair and can be overwritten in place. Changing the boxes at
+// the top rewrites only the rows nobody has touched — otherwise "they are all
+// 10 x 10 actually" would mean editing a hundred rows by hand.
+//
 // Nothing here presses Save. The run creates pending nodes and steps aside.
 
-import { inventoryScanSettings } from "../../../../shared/inventory-scan.js";
+import {
+    inventoryScanSettings,
+    sanitizeBoxSide,
+} from "../../../../shared/inventory-scan.js";
 import {
     PANEL_CLASS,
     createBoxUnder,
@@ -24,6 +33,7 @@ import {
 import {
     SCAN_IN_LIST,
     SCAN_IN_TREE,
+    SCAN_OK,
     acceptedScans,
     boxTargets,
     buildNodes,
@@ -39,6 +49,27 @@ function el(tag, className, text) {
     if (className) node.className = className;
     if (text != null) node.textContent = text;
     return node;
+}
+
+function numberBox(className, value) {
+    const input = document.createElement("input");
+    input.type = "number";
+    input.min = "1";
+    input.max = "100";
+    input.className = className;
+    input.value = String(value);
+    return input;
+}
+
+// Excel puts a TAB between columns, and only a TAB — splitting on commas too
+// would quietly cut a rack whose code contains one. A line is a name, and
+// optionally the two numbers after it.
+function parsePastedLine(line) {
+    const parts = line.split("\t").map((part) => part.trim());
+    const name = parts.shift() || "";
+    const columns = sanitizeBoxSide(parts[0], null);
+    const rows = sanitizeBoxSide(parts[1], null);
+    return { name, size: columns && rows ? { columns, rows } : null };
 }
 
 // A box's nearest home: itself if it can take one, otherwise the closest
@@ -76,17 +107,17 @@ export function openScanPanel(dialog) {
     const settings = inventoryScanSettings();
 
     const state = {
-        // The scanned codes, in the order they arrived.
+        // The scanned codes, in the order they arrived. Each carries its own
+        // grid and a `sized` flag saying whether a human set it.
         scans: [],
         targetId: defaultTarget(nodes, selectedNodeId(dialog)),
-        // The panel's OWN copy of the grid. Settings hold the default; a batch
-        // of 10 x 10 trays must not redefine what the next batch starts from.
+        // The panel's OWN copy of the default grid. Settings hold what a panel
+        // starts from; a shelf of 10 x 10 trays must not redefine that.
         gridColumns: settings.columns,
         gridRows: settings.rows,
         organized: settings.organized,
         busy: false,
         status: "",
-        statusOk: false,
     };
 
     const panel = el("div", PANEL_CLASS);
@@ -95,7 +126,7 @@ export function openScanPanel(dialog) {
     const head = el("div", "cdd-scan-head");
     head.append(el("span", "cdd-scan-title", "Scan racks"));
     head.append(el("span", "cdd-scan-note",
-        "Enter adds a row. Nothing is saved until you press Save."));
+        "Enter adds a row. Paste a list to add many. Nothing is saved until you press Save."));
     panel.append(head);
 
     /* ----- controls ----- */
@@ -117,31 +148,12 @@ export function openScanPanel(dialog) {
     intoLabel.append(intoSelect);
     controls.append(intoLabel);
 
-    const columnsLabel = el("label", null);
-    columnsLabel.append(el("span", null, "Columns"));
-    const columnsInput = document.createElement("input");
-    columnsInput.type = "number";
-    columnsInput.min = "1";
-    columnsInput.max = "100";
-    columnsInput.value = String(state.gridColumns);
-    columnsInput.addEventListener("change", () => {
-        state.gridColumns = Number(columnsInput.value);
-    });
-    columnsLabel.append(columnsInput);
-    controls.append(columnsLabel);
-
-    const rowsLabel = el("label", null);
-    rowsLabel.append(el("span", null, "Rows"));
-    const rowsInput = document.createElement("input");
-    rowsInput.type = "number";
-    rowsInput.min = "1";
-    rowsInput.max = "100";
-    rowsInput.value = String(state.gridRows);
-    rowsInput.addEventListener("change", () => {
-        state.gridRows = Number(rowsInput.value);
-    });
-    rowsLabel.append(rowsInput);
-    controls.append(rowsLabel);
+    const sizeLabel = el("label", null);
+    sizeLabel.append(el("span", null, "New rows"));
+    const columnsInput = numberBox(null, state.gridColumns);
+    const rowsInput = numberBox(null, state.gridRows);
+    sizeLabel.append(columnsInput, el("span", "cdd-scan-times", "×"), rowsInput);
+    controls.append(sizeLabel);
 
     const organizedLabel = el("label", null);
     const organizedInput = document.createElement("input");
@@ -161,7 +173,7 @@ export function openScanPanel(dialog) {
     const scanInput = document.createElement("input");
     scanInput.type = "text";
     scanInput.className = "cdd-scan-input";
-    scanInput.placeholder = "Scan a rack barcode";
+    scanInput.placeholder = "Scan a rack barcode, or paste a list";
     scanInput.autocomplete = "off";
     scanInput.spellcheck = false;
     panel.append(scanInput);
@@ -181,7 +193,54 @@ export function openScanPanel(dialog) {
     foot.append(createButton, closeButton, status);
     panel.append(foot);
 
+    /* ----- adding rows ----- */
+    function addScan(raw, size) {
+        const scan = classifyScan(raw, nodes, state.scans);
+        if (!scan) return false;
+        scan.columns = size ? size.columns : state.gridColumns;
+        scan.rows = size ? size.rows : state.gridRows;
+        // A size that came in with the row counts as set by hand: the boxes at
+        // the top must not overwrite what an Excel sheet already said.
+        scan.sized = Boolean(size);
+        state.scans.push(scan);
+        return true;
+    }
+
+    function applyDefaultSize() {
+        for (const scan of state.scans) {
+            if (scan.sized) continue;
+            scan.columns = state.gridColumns;
+            scan.rows = state.gridRows;
+        }
+    }
+
+    columnsInput.addEventListener("change", () => {
+        state.gridColumns = sanitizeBoxSide(columnsInput.value, state.gridColumns);
+        columnsInput.value = String(state.gridColumns);
+        applyDefaultSize();
+        render();
+    });
+    rowsInput.addEventListener("change", () => {
+        state.gridRows = sanitizeBoxSide(rowsInput.value, state.gridRows);
+        rowsInput.value = String(state.gridRows);
+        applyDefaultSize();
+        render();
+    });
+
     /* ----- rendering ----- */
+
+    // Deliberately does NOT re-render: the row is being edited, and rebuilding
+    // the list under the cursor would throw the focus out of the box.
+    function sizeInput(scan, field) {
+        const input = numberBox("cdd-scan-size-input", scan[field]);
+        input.addEventListener("change", () => {
+            scan[field] = sanitizeBoxSide(input.value, scan[field]);
+            input.value = String(scan[field]);
+            scan.sized = true;
+        });
+        return input;
+    }
+
     function render() {
         columnsInput.disabled = !state.organized || state.busy;
         rowsInput.disabled = !state.organized || state.busy;
@@ -210,6 +269,14 @@ export function openScanPanel(dialog) {
                 row.append(el("span", "cdd-scan-why", "already in the list"));
             } else if (scan.status === SCAN_CREATED) {
                 row.append(el("span", "cdd-scan-why", "created"));
+            } else if (state.organized && !state.busy) {
+                const size = el("span", "cdd-scan-size");
+                size.append(
+                    sizeInput(scan, "columns"),
+                    el("span", "cdd-scan-times", "×"),
+                    sizeInput(scan, "rows"),
+                );
+                row.append(size);
             }
 
             if (scan.status !== SCAN_CREATED && !state.busy) {
@@ -232,19 +299,36 @@ export function openScanPanel(dialog) {
         createButton.disabled = state.busy || count === 0 || !state.targetId;
 
         status.textContent = state.status;
-        status.classList.toggle("cdd-scan-status--ok", state.statusOk);
 
         list.scrollTop = list.scrollHeight;
     }
 
     function commitScan() {
-        const scan = classifyScan(scanInput.value, nodes, state.scans);
+        const added = addScan(scanInput.value, null);
         scanInput.value = "";
-        if (!scan) return;
-        state.scans.push(scan);
+        if (!added) return;
         state.status = "";
         render();
     }
+
+    // A pasted block is a list: one rack per line, and if a line carries two
+    // more TAB-separated numbers they are that rack's columns and rows. A
+    // single code with no tabs and no newlines is left alone — that is someone
+    // pasting one barcode, and the Enter after it commits the row.
+    scanInput.addEventListener("paste", (event) => {
+        const text = event.clipboardData?.getData("text") ?? "";
+        if (!text.includes("\n") && !text.includes("\t")) return;
+
+        event.preventDefault();
+        let added = 0;
+        for (const line of text.split(/\r?\n/)) {
+            const { name, size } = parsePastedLine(line);
+            if (addScan(name, size)) added += 1;
+        }
+        scanInput.value = "";
+        state.status = added ? "" : "Nothing in that paste looked like a rack.";
+        render();
+    });
 
     /* ----- the create run ----- */
     async function createAll() {
@@ -253,7 +337,6 @@ export function openScanPanel(dialog) {
 
         state.busy = true;
         state.status = "";
-        state.statusOk = false;
         render();
 
         let made = 0;
@@ -262,8 +345,8 @@ export function openScanPanel(dialog) {
                 await createBoxUnder(dialog, {
                     parentId: state.targetId,
                     name: scan.name,
-                    columns: state.gridColumns,
-                    rows: state.gridRows,
+                    columns: scan.columns,
+                    rows: scan.rows,
                     organized: state.organized,
                 });
                 scan.status = SCAN_CREATED;
@@ -277,7 +360,6 @@ export function openScanPanel(dialog) {
             state.busy = false;
             state.status = `Created ${made} of ${pending.length}. `
                 + `Stopped at "${pending[made]?.name}" — ${error.message}.`;
-            state.statusOk = false;
             render();
         }
     }

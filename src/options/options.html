@@ -133,6 +133,14 @@
                 <span class="rail__label">HPLC injection</span>
                 <span class="rail__chip" data-chip="hplc" hidden></span>
             </button>
+            <button type="button" class="rail__item" data-pane="col-inventoryscan-heading">
+                <span class="tile" aria-hidden="true">
+                    <span class="tile__no"></span>
+                    <span class="tile__sym">Rk</span>
+                </span>
+                <span class="rail__label">Scan racks</span>
+                <span class="rail__chip" data-chip="inventoryscan" hidden></span>
+            </button>
             <button type="button" class="rail__item" data-pane="col-phrases-heading">
                 <span class="tile" aria-hidden="true">
                     <span class="tile__no"></span>
@@ -840,6 +848,59 @@
                 <button id="phrasesClear" type="button" class="btn btn--quiet" hidden>
                     Delete all
                 </button>
+            </div>
+        </section>
+        <section class="card" aria-labelledby="col-inventoryscan-heading">
+            <header class="card__head">
+                <span class="tile" aria-hidden="true">
+                    <span class="tile__no"></span>
+                    <span class="tile__sym">Rk</span>
+                </span>
+                <div class="card__titles">
+                    <h3 class="card__name" id="col-inventoryscan-heading">Scan racks</h3>
+                </div>
+            </header>
+
+            <div class="card__body">
+                <p class="note">
+                    A barcode scanner ends every code with Enter, and Enter in
+                    <em>Settings → Sample/Inventory Fields → Add/Edit Inventory
+                    Fields → Edit Locations</em> means <em>Save</em>. This adds a
+                    <strong>Scan racks</strong> button to that dialog: scan a whole
+                    shelf into a list, then create the boxes in one go. The sizes
+                    below are <strong>starting points</strong> — a batch can be
+                    scanned at another size without changing them.
+                </p>
+
+                <label class="field-item auto-fill-toggle">
+                    <input type="checkbox" id="inventoryScanEnabled" />
+                    <span>Show the <strong>Scan racks</strong> button in the
+                    Edit Locations dialog. Off by default.</span>
+                </label>
+
+                <label class="field-item purity-threshold-row">
+                    <span>
+                        <strong>Columns</strong> — positions across a new box.
+                    </span>
+                    <input type="number" id="inventoryScanColumns"
+                           min="1" max="100" step="1" />
+                </label>
+
+                <label class="field-item purity-threshold-row">
+                    <span>
+                        <strong>Rows</strong> — positions down a new box.
+                        12 × 8 is an SBS rack.
+                    </span>
+                    <input type="number" id="inventoryScanRows"
+                           min="1" max="100" step="1" />
+                </label>
+
+                <label class="field-item auto-fill-toggle">
+                    <input type="checkbox" id="inventoryScanOrganized" />
+                    <span>Give new boxes <strong>numbered positions</strong>.
+                    Off makes unorganized boxes, and the sizes above are
+                    ignored.</span>
+                </label>
             </div>
         </section>
     </div>

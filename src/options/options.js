@@ -88,6 +88,13 @@ import {
     normalizeFieldLabel,
 } from "../shared/heat-map-fields.js";
 import {
+    loadInventoryScanSettings,
+    saveInventoryScanColumns,
+    saveInventoryScanEnabled,
+    saveInventoryScanOrganized,
+    saveInventoryScanRows,
+} from "../shared/inventory-scan.js";
+import {
     REG_FORM_NAMES_KEY,
     REG_FORM_LAST_USED_KEY,
     getRegistrationFormSettings,
@@ -1054,6 +1061,41 @@ async function initHplcInjectionUI() {
     paintComfortEcho(settings.comfortMinUl, settings.comfortMaxUl);
 }
 
+const inventoryScanEnabledCheckbox = document.getElementById("inventoryScanEnabled");
+const inventoryScanColumnsInput = document.getElementById("inventoryScanColumns");
+const inventoryScanRowsInput = document.getElementById("inventoryScanRows");
+const inventoryScanOrganizedCheckbox = document.getElementById("inventoryScanOrganized");
+
+inventoryScanEnabledCheckbox.addEventListener("change", () => {
+    saveInventoryScanEnabled(inventoryScanEnabledCheckbox.checked);
+});
+
+// Written back sanitized, then echoed into the box: typing 0 and tabbing away
+// should show what was actually stored, not leave a value the panel will not use.
+inventoryScanColumnsInput.addEventListener("change", async () => {
+    await saveInventoryScanColumns(inventoryScanColumnsInput.value);
+    const settings = await loadInventoryScanSettings();
+    inventoryScanColumnsInput.value = settings.columns;
+});
+
+inventoryScanRowsInput.addEventListener("change", async () => {
+    await saveInventoryScanRows(inventoryScanRowsInput.value);
+    const settings = await loadInventoryScanSettings();
+    inventoryScanRowsInput.value = settings.rows;
+});
+
+inventoryScanOrganizedCheckbox.addEventListener("change", () => {
+    saveInventoryScanOrganized(inventoryScanOrganizedCheckbox.checked);
+});
+
+async function initInventoryScanUI() {
+    const settings = await loadInventoryScanSettings();
+    inventoryScanEnabledCheckbox.checked = settings.enabled;
+    inventoryScanColumnsInput.value = settings.columns;
+    inventoryScanRowsInput.value = settings.rows;
+    inventoryScanOrganizedCheckbox.checked = settings.organized;
+}
+
 const showProductsCheckbox = document.getElementById("showProducts");
 
 showProductsCheckbox.addEventListener("change", () => {
@@ -1399,6 +1441,9 @@ function refreshRailChips() {
     const hplcOn = document.getElementById("hplcBlockEnabled");
     if (hplcOn) setChip("hplc", hplcOn.checked ? "on" : "off");
 
+    const scanOn = document.getElementById("inventoryScanEnabled");
+    if (scanOn) setChip("inventoryscan", scanOn.checked ? "on" : "off");
+
     const mode = titleRadios.find((r) => r.checked);
     setChip("title", mode ? { "id-title": "ID + title", "id-only": "ID", "title-only": "title", original: "CDD" }[mode.value] : null);
 }
@@ -1442,6 +1487,7 @@ initElnIdToBatchUI();
 initPanelSourcesUI();
 initHeatMapFieldsUI();
 initHplcInjectionUI();
+initInventoryScanUI();
 initRegistrationDefaultsUI();
 initPhrasesUI();
 initRailUI();

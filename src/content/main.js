@@ -70,6 +70,7 @@ import {initFillRowName} from "../shared/row-name-flag.js";
 import {initNameMemory, onNameMemoryChanged} from "../shared/name-memory.js";
 import {initElnIdToBatch, onElnIdToBatchChanged} from "../shared/eln-id-to-batch.js";
 import {initHeatMapFieldsConfig} from "../shared/heat-map-fields.js";
+import {initInventoryScan} from "../shared/inventory-scan.js";
 import {initPanelSources, onPanelSourcesChanged} from "../shared/panel-sources-flag.js";
 import {initElnMentions} from "./features/mentions/init.js";
 
@@ -287,6 +288,12 @@ function init() {
   // Extra rows in the heat-map well tooltip. Fire-and-forget: hovers before
   // the (fast) storage read completes just show CDD's native popup.
   initHeatMapFieldsConfig();
+
+  // The "Scan racks" button in CDD's Edit Locations dialog. Fire-and-forget:
+  // the dialog watcher (initInventoryLocationScan) asks the cache each time a
+  // dialog appears, and the cache's own subscription adds or removes the
+  // button if the switch is flipped while one is open.
+  initInventoryScan();
 }
 
 init();

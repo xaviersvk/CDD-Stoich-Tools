@@ -11,25 +11,14 @@ would be.
 
 ## Next up
 
-### Store pages — paste the new text, then redo the screenshots
+### Store pages — redo the screenshots
 
-The Chrome and Firefox pages still show the v3-era description (panel,
-print, filter defaults — nothing about inventory, plates, search pickers,
-registration or HPLC). **The text is written**, committed 2026-09-07 in
-[`store/listing.md`](../store/listing.md), with a plain-text block for
-Chrome, an HTML block for AMO and a per-dashboard checklist. Neither store
-takes listing text from the publish workflow, so this is a hand job:
-
-1. **Chrome** — Developer Dashboard → *Store listing* → Description → paste
-   the plain-text block; *Privacy* tab → Privacy policy URL =
-   `https://xaviersvk.github.io/CDD-Stoich-Tools/privacy.html` → *Submit for
-   review*. Category stays *Functionality & UI*. The subtitle comes from
-   `manifest.description`, already changed; it lands with the next version
-   bump.
-2. **AMO** — Developer Hub → *Edit Product Page*: Summary = the subtitle,
-   Description = the HTML block, category *Web Development → Productivity*,
-   Homepage = `https://xaviersvk.github.io/CDD-Stoich-Tools/`, Privacy policy
-   = the same `privacy.html` URL.
+The text side is done (2026-09-07): AMO is saved and live with the
+description, homepage, support link and privacy policy from
+[`store/listing.md`](../store/listing.md); the Chrome listing was pasted the
+same day and goes through Google's review. The subtitle on Chrome comes from
+`manifest.description`, already changed; it lands with the next version
+bump.
 
 **Screenshots** were deliberately left out. Chrome has ~27 and AMO 5, mostly
 the old panel; nothing shows Column Manager, plate maps, the location tree

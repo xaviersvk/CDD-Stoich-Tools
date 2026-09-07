@@ -19,6 +19,64 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [15.9.0] — 2026-09-07
+
+### Added
+- **A barcode scanner can now fill a whole shelf of racks into the location
+  tree in one pass.** *Settings → Sample/Inventory Fields → Add/Edit Inventory
+  Fields → Edit Locations* grows a **Scan racks** button next to *Print
+  Labels*. It opens a panel with one scan box: every code becomes a row in a
+  list, and one button turns the list into boxes under a chosen location.
+  Off after installing — Settings → **Scan racks**.
+- Three problems made adding a rack by hand cost a round trip through three
+  screens, and the panel answers all three. A handheld scanner ends every
+  barcode with a carriage return, and Enter in that dialog is *Save*, so the
+  dialog closed after every single rack. The new box arrives pre-named `Box N`
+  with the text selected — which is exactly why the scan lands in it, and
+  exactly why the Enter that follows is fatal. And it arrives 9 × 9, while an
+  SBS rack is 12 × 8, so both number fields needed correcting every time.
+- **Duplicates are refused against the whole tree**, not just the target
+  location, and case-insensitively. A rack barcode belongs to one rack; the
+  same code twice means a double scan or a rack already shelved somewhere
+  else. The refused row stays visible, says which it is, and is left out of
+  the count — the number in the button is always the number of boxes that will
+  appear.
+
+### Technical notes
+- New feature at `src/content/features/ui-fixes/inventory-location-scan/`:
+  `tree-model.js` (DOM-free — breadcrumbs, eligibility, the duplicate rule),
+  `dialog-dom.js` (the only file holding CDD's selectors), `scan-panel.js`,
+  `styles.js`, `init.js`. Settings in `src/shared/inventory-scan.js`.
+- **The extension never presses Save.** The run creates pending nodes through
+  CDD's own controls and steps aside; committing them stays a conscious click,
+  as with every other write this extension makes. If a step fails the run
+  stops, keeps what it made, and reports how far it got — discarding those is
+  what CDD's own *Cancel* is for.
+- Enter is claimed on `window` in the **capture** phase while the panel is
+  open, so it runs before anything CDD could have registered on `document` or
+  below, in either phase. In the scan box it commits a row; anywhere else in
+  the dialog it returns focus to the scan box.
+- Three DOM facts were measured rather than assumed, and the code depends on
+  each. Every tree row carries all four action buttons and CDD hides the ones
+  that do not apply with `display: none` — so "can this node take a box?" is a
+  style question, and it is also how the root `Locations` is excluded, since
+  CDD allows no box directly under it. The add-box button creates an organized
+  9 × 9 box **outright** and selects it; the two large cards are the location
+  editor, not a type chooser in the way. Selection is `.Mui-selected` on the
+  row's content div — `aria-selected` is not set at all.
+- Node ids are not a persistence marker: pending nodes are negative, but so is
+  the root, and the root's id changed between two mounts of the same dialog.
+  The root is the node whose `data-parentid` is the string `"undefined"`.
+- `requestAnimationFrame` does not fire while the tab is hidden, and a run
+  started in a background tab stopped dead after the first box. The internal
+  wait races the animation frame against a timer.
+- Measured in the sandbox vault: three boxes created, named as scanned and
+  12 × 8, in 758 ms — roughly 25 s for a hundred racks, with the list showing
+  progress row by row. CDD itself rejects a duplicate name with *"Name is
+  already taken"*; the run's own check that the tree row reads the name it
+  asked for catches that too.
+
+---
 ## [15.8.0] — 2026-09-06
 
 ### Added

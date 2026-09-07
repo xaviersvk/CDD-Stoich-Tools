@@ -498,6 +498,34 @@ affect the others. These are the **safest** files to touch.
 - **Regression risk:** **low** — keyed by name, never by the per-vault value;
   ordering changes neither `select.value` nor the selected option.
 
+### 6.10 Scan Racks into a Location (opt-in)
+- **User value:** A shelf of SBS racks goes into the inventory location tree in
+  one pass. A `Scan racks` button in the `Edit Locations` footer opens a panel
+  whose scan box swallows the scanner's Enter — which in that dialog means
+  *Save*, and used to cost a round trip through three screens per rack. Codes
+  collect into a list, duplicates against the whole tree are refused, and one
+  button creates them all as 12 x 8 organized boxes. **`Save` is never pressed
+  by the extension.**
+- **Entry point:** `ui-fixes/inventory-location-scan/init.js`
+  (`initInventoryLocationScan`); `scan-panel.js` is the overlay,
+  `dialog-dom.js` the only file holding CDD's selectors, `tree-model.js` the
+  DOM-free duplicate and breadcrumb logic.
+- **Data source:** live DOM (`.edit-locations-dialog-paper`,
+  `li[role=treeitem][data-nodeid]`, `#location-box-node-name`) +
+  `shared/inventory-scan.js` (`cddInventoryScanEnabled`, columns, rows,
+  organized in `chrome.storage.local`).
+- **Dependencies:** `shared/inventory-scan.js`.
+- **Maintenance difficulty:** **medium** — drives CDD's own controls through the
+  native value setter, and depends on three measured facts: a row's add-box
+  button is hidden with `display: none` when the node cannot take a box (which
+  is also how the root is excluded), that button creates an organized 9 x 9 box
+  outright and selects it, and selection is `.Mui-selected` rather than
+  `aria-selected`.
+- **Regression risk:** **low** — off after installing, confined to one
+  vault-admin dialog, and every step is checked before the next: an unexpected
+  tree, an unselected node or a name CDD refused ("Name is already taken")
+  stops the run and reports how far it got.
+
 ---
 
 ## 7. Data Extraction

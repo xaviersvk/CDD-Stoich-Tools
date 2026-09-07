@@ -13,7 +13,20 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
-# What's new in 15.8.0
+# What's new in 15.9.0
+
+---
+
+## 15.9.0 — 2026-09-07
+
+**A barcode scanner can now add racks without the dialog saving on every
+scan.** *Edit Locations* has a new **Scan racks** button next to *Print
+Labels*.
+
+- Scan the whole shelf into the list, then press **Create N boxes** — they
+  arrive 12 × 8 under the location you picked, and you press **Save**.
+- A code you already have is struck out and not counted.
+- Switch it on in Settings → **Scan racks**.
 
 ---
 

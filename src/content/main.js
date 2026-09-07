@@ -30,6 +30,7 @@ import {initKeywordsFieldPicker} from "./features/ui-fixes/keywords-field-picker
 import {initColumnManager} from "./features/ui-fixes/column-manager";
 import {initLocationPickerResize} from "./features/ui-fixes/location-picker-resize";
 import {initInventoryLocationTree} from "./features/ui-fixes/inventory-location-tree/init";
+import {initInventoryLocationScan} from "./features/ui-fixes/inventory-location-scan/init";
 import {injectMoleculeLinksStyles} from "./features/ui-fixes/molecule-links-fixes";
 import {initElnShiftLeft} from "./features/ui-fixes/eln-shift-left";
 import {watchConsumedBatches} from "./features/ui-fixes/consumed-batches-collapse";
@@ -150,6 +151,12 @@ function init() {
   initColumnManager();
   initLocationPickerResize();
   initInventoryLocationTree();
+
+  // "Scan racks" in the Edit Locations dialog: a barcode scanner's Enter is
+  // Save there, which made adding a shelf of racks one round trip per rack.
+  // Off unless switched on in the options page.
+  initInventoryLocationScan();
+
   injectMoleculeLinksStyles();
   initElnShiftLeft();
   watchConsumedBatches();

@@ -71,6 +71,25 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   sibling; pick *Letters* in Settings → **Product suffix** to keep the old
   shape.
 
+### Fixed
+- **The settings page fills the window instead of scrolling as one long
+  document.** The masthead and the notice stay put; the rail and the pane
+  each scroll on their own. The rail was `position: sticky`, which only
+  helps while the BODY scrolls — so it slid away the moment a card was
+  taller than the window, which is most of them.
+- The card lists that capped themselves at 560px no longer do inside that
+  shell: the pane supplies the height, and the cap was putting a scrollbar
+  inside a scrollbar.
+- Guarded on both axes (`min-width: 641px and min-height: 560px`) — below
+  640px the rail is a strip above the pane and wants a normal page scroll,
+  and a short window is better off scrolling than squeezed into panes a few
+  lines tall. The block sits LAST in `options.css` on purpose: a media query
+  carries no extra specificity, so placed earlier every one of these rules
+  would have lost to the base `.rail` / `.panes` / `.card__body--scroll`.
+- **The *Not a CDD product* notice runs the full width of the page.** It was
+  capped at `82ch` against a 1180px layout, which read as a narrow column
+  pinned to the left; the extra width also buys back two lines of height.
+
 ### Technical notes
 - New feature at `src/content/features/ui-fixes/inventory-location-scan/`:
   `tree-model.js` (DOM-free — breadcrumbs, eligibility, the duplicate rule),

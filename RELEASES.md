@@ -37,6 +37,9 @@ part of the compound number.
   it.
 - To keep the old shape, pick **Letters** in Settings → **Product suffix**.
 
+**The settings page now fills the window** instead of scrolling as one long
+page, and the *Not a CDD product* notice runs the full width.
+
 ---
 
 ## 15.8.0 — 2026-09-06

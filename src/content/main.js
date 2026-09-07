@@ -30,6 +30,7 @@ import {initKeywordsFieldPicker} from "./features/ui-fixes/keywords-field-picker
 import {initColumnManager} from "./features/ui-fixes/column-manager";
 import {initLocationPickerResize} from "./features/ui-fixes/location-picker-resize";
 import {initInventoryLocationTree} from "./features/ui-fixes/inventory-location-tree/init";
+import {initInventoryLocationScan} from "./features/ui-fixes/inventory-location-scan/init";
 import {injectMoleculeLinksStyles} from "./features/ui-fixes/molecule-links-fixes";
 import {initElnShiftLeft} from "./features/ui-fixes/eln-shift-left";
 import {watchConsumedBatches} from "./features/ui-fixes/consumed-batches-collapse";
@@ -70,6 +71,7 @@ import {initFillRowName} from "../shared/row-name-flag.js";
 import {initNameMemory, onNameMemoryChanged} from "../shared/name-memory.js";
 import {initElnIdToBatch, onElnIdToBatchChanged} from "../shared/eln-id-to-batch.js";
 import {initHeatMapFieldsConfig} from "../shared/heat-map-fields.js";
+import {initInventoryScan} from "../shared/inventory-scan.js";
 import {initPanelSources, onPanelSourcesChanged} from "../shared/panel-sources-flag.js";
 import {initElnMentions} from "./features/mentions/init.js";
 
@@ -149,6 +151,12 @@ function init() {
   initColumnManager();
   initLocationPickerResize();
   initInventoryLocationTree();
+
+  // "Scan racks" in the Edit Locations dialog: a barcode scanner's Enter is
+  // Save there, which made adding a shelf of racks one round trip per rack.
+  // Off unless switched on in the options page.
+  initInventoryLocationScan();
+
   injectMoleculeLinksStyles();
   initElnShiftLeft();
   watchConsumedBatches();
@@ -287,6 +295,12 @@ function init() {
   // Extra rows in the heat-map well tooltip. Fire-and-forget: hovers before
   // the (fast) storage read completes just show CDD's native popup.
   initHeatMapFieldsConfig();
+
+  // The "Scan racks" button in CDD's Edit Locations dialog. Fire-and-forget:
+  // the dialog watcher (initInventoryLocationScan) asks the cache each time a
+  // dialog appears, and the cache's own subscription adds or removes the
+  // button if the switch is flipped while one is open.
+  initInventoryScan();
 }
 
 init();

@@ -29,28 +29,40 @@ The dialog is MUI, rendered under `.EditLocationsDialog` /
 
 - **Tree** — `ul[role="tree"]`, one `li[role="treeitem"]` per node carrying
   `data-nodeid` and `data-parentid`. Saved nodes have positive ids; nodes
-  created in the open dialog get negative ones (`-3`, `-4`), which is a clean
-  "not yet persisted" marker.
+  created in the open dialog get negative ones. The **root** also has a
+  negative id (it was `-2` on one mount and `-4` on the next), so a negative id
+  does not mean "unsaved" — the root is the node whose `data-parentid` is the
+  string `"undefined"`, and its id must never be hard-coded.
+- **Selection** — the selected row carries `.Mui-selected` on its
+  `.MuiTreeItem-content`. `aria-selected` is not set, so it cannot be used.
 - **Row buttons** — icon buttons identified by `aria-label`: `Create new
   location`, `Create new organized or unorganized box`, `Duplicate`, `Delete`
   (the delete label is replaced by an explanation when the node holds samples).
+  All four are in the DOM on **every** row; CDD hides the ones that do not
+  apply with `display: none`. So "can this node take a box?" is not a guess
+  about icons — it is whether that row's add-box button is displayed. Measured:
+  the root shows only `Create new location`, a location shows the add-box
+  button, a box shows neither.
 - **Right pane, box selected** — `#location-box-node-name` (text, stable id),
   two `input[type="number"]` for *# columns* / *# rows* (MUI-generated ids, so
   they must be found positionally within the paper), an `Organized` checkbox,
   and a grid preview.
 - **Right pane, location selected** — the Name field plus two large cards,
   *Add an organized box at this location* and *Add an unorganized box at this
-  location*.
+  location*. These are the location editor, **not** a step in adding a box —
+  see below.
 - **Footer** — `Print Labels`, `Cancel`, `Save`. Nothing is written until
   `Save`; `Cancel` discards every pending node.
 
 Two behaviours were confirmed by driving the dialog directly:
 
-- **The add-box icon is not consistent.** On a location that already holds
-  organized boxes it creates the box immediately. On a location that holds
-  none it first shows the two chooser cards. The implementation must handle
-  both: click the icon, wait a frame, and click the organized card only if it
-  appeared.
+- **The add-box icon always creates the box outright.** One click appends an
+  **organized 9 × 9** box named `Box N` under that location and selects it, so
+  `#location-box-node-name` is the new node's. Measured on two different
+  locations, twice each; the chooser cards never appeared. (They showed up once
+  early on only because a stray click had landed on the row rather than on the
+  icon, which selected the *location* and painted its editor.) An unorganized
+  box therefore means creating the box and then unticking `Organized`.
 - **Native value setters work.** Setting `#location-box-node-name` and the two
   number inputs through
   `Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set`
@@ -102,11 +114,12 @@ Replaces the right pane while open (the dialog's own right pane is restored on
 close). Contents, top to bottom:
 
 - **Into** — a `<select>` of every *location* in the tree (boxes excluded),
-  labelled by its breadcrumb path. The root `Locations` node is included: it
-  carries the same add-box button as any other level. Defaults to the node
-  selected in the tree, or its nearest location ancestor when a box is
-  selected. The list is read once when the panel opens; the tree behind it
-  cannot change while the panel is up.
+  labelled by its breadcrumb path. The list is exactly the nodes whose add-box
+  button is displayed, which excludes boxes **and** the root — CDD does not
+  allow a box directly under `Locations`. Defaults to the node selected in the
+  tree, or its nearest eligible ancestor when a box is selected. The list is
+  read once when the panel opens; the tree behind it cannot change while the
+  panel is up.
 - **Layout** — `# columns`, `# rows`, and an `Organized` checkbox. Seeded from
   the options defaults (12 × 8, organized); edits live in the panel only and
   are never written back to settings.
@@ -145,13 +158,15 @@ in the button is therefore always the number of boxes that will appear.
 
 For each accepted row, in list order:
 
-1. Click the target location's `Create new organized or unorganized box`
+1. Note the set of node ids in the tree.
+2. Click the target location's `Create new organized or unorganized box`
    button.
-2. Wait a frame. If the chooser cards are present, click *Add an organized box
-   at this location* (or the unorganized one).
-3. Set `#location-box-node-name` to the row's name.
-4. When organized, set the two number inputs to the panel's columns and rows.
-5. Confirm the new node carries the expected name before moving on.
+3. Wait for a node id that was not there before, and check that node is the
+   selected one — that is what the right pane is now editing.
+4. Set `#location-box-node-name` to the row's name.
+5. Set the two number inputs to the panel's columns and rows; when the panel
+   asks for unorganized, untick `Organized` instead.
+6. Confirm the new node's label reads the expected name before moving on.
 
 Then the panel closes and the tree is left showing the new nodes, unsaved.
 

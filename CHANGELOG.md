@@ -19,6 +19,133 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [15.9.0] — 2026-09-07
+
+### Added
+- **A barcode scanner can now fill a whole shelf of racks into the location
+  tree in one pass.** *Settings → Sample/Inventory Fields → Add/Edit Inventory
+  Fields → Edit Locations* grows a **Scan racks** button next to *Print
+  Labels*. It opens a panel with one scan box: every code becomes a row in a
+  list, and one button turns the list into boxes under a chosen location.
+  On after installing; Settings → **Scan racks** switches it off.
+- Three problems made adding a rack by hand cost a round trip through three
+  screens, and the panel answers all three. A handheld scanner ends every
+  barcode with a carriage return, and Enter in that dialog is *Save*, so the
+  dialog closed after every single rack. The new box arrives pre-named `Box N`
+  with the text selected — which is exactly why the scan lands in it, and
+  exactly why the Enter that follows is fatal. And it arrives 9 × 9, while an
+  SBS rack is 12 × 8, so both number fields needed correcting every time.
+- **The grid belongs to the row, not to the batch.** A shelf is not all one
+  size. Every scanned row starts at the settings default and carries its own
+  columns and rows, editable in place. The pair at the top of the panel is
+  what the NEXT scan starts from, and changing it rewrites only the rows
+  nobody has touched — otherwise "they are all 10 × 10 actually" would mean
+  editing a hundred rows by hand.
+- **A list can be pasted instead of scanned.** One rack per line. A line may
+  carry two more TAB-separated numbers, which become that rack's columns and
+  rows, so a mixed-size shelf comes straight out of Excel in one paste. Only
+  TAB is a separator — splitting on commas too would quietly cut a rack whose
+  code contains one. A single pasted code with no tabs and no newlines is
+  left alone, because that is someone pasting one barcode.
+- **The target location can be clicked in the tree**, not only chosen from
+  the dropdown — the tree is already sitting on the left of that dialog.
+  Clicking a BOX picks the location holding it, which is the only reading
+  that is ever useful since a box cannot hold a box, and the targeted row
+  is outlined so the click has an answer. A click that merely unfolds a
+  branch selects nothing and leaves the target alone; falling back to the
+  first location there would move the shelf out from under the user
+  without a word. The tree is re-read on every such click, so a location
+  added with CDD's own + button while the panel is open is both offered
+  and checked against.
+- **Duplicates are refused against the whole tree**, not just the target
+  location, and case-insensitively. A rack barcode belongs to one rack; the
+  same code twice means a double scan or a rack already shelved somewhere
+  else. The refused row stays visible, says which it is, and is left out of
+  the count — the number in the button is always the number of boxes that will
+  appear.
+
+### Changed
+- **The product suffix now defaults to letters after a dash** — `MDX-113`,
+  `MDX-113-B`, `MDX-113-C`. It was a bare letter, `MDX-113B`, which reads as
+  part of the compound number rather than as a mark on it.
+- **Only the default moved.** `cddElnTableSuffixStyle` is written to storage
+  solely when someone picks a style (`options.js:752` — a `change` handler on
+  the radios, nothing writes it on load), so an absent key is the honest
+  signal for "never chose". The new default therefore reaches exactly the
+  people who never chose, and anyone who did — *Letters* included — keeps
+  what they picked. No stored preference is overwritten, the same rule the
+  HPLC comfort band followed in 14.12.0.
+- An ID already written into a record is never rewritten. Only the next one
+  minted follows the new default, so an entry whose first product was
+  registered before the upgrade can end up beside a differently-marked
+  sibling; pick *Letters* in Settings → **Product suffix** to keep the old
+  shape.
+
+### Fixed
+- **The settings page fills the window instead of scrolling as one long
+  document.** The masthead and the notice stay put; the rail and the pane
+  each scroll on their own. The rail was `position: sticky`, which only
+  helps while the BODY scrolls — so it slid away the moment a card was
+  taller than the window, which is most of them.
+- The card lists that capped themselves at 560px no longer do inside that
+  shell: the pane supplies the height, and the cap was putting a scrollbar
+  inside a scrollbar.
+- Guarded on both axes (`min-width: 641px and min-height: 560px`) — below
+  640px the rail is a strip above the pane and wants a normal page scroll,
+  and a short window is better off scrolling than squeezed into panes a few
+  lines tall. The block sits LAST in `options.css` on purpose: a media query
+  carries no extra specificity, so placed earlier every one of these rules
+  would have lost to the base `.rail` / `.panes` / `.card__body--scroll`.
+- **The *Not a CDD product* notice runs the full width of the page.** It was
+  capped at `82ch` against a 1180px layout, which read as a narrow column
+  pinned to the left; the extra width also buys back two lines of height.
+
+- The panel sits at `z-index: 1200`. At 5 it covered CDD's inputs but not
+  its LABELS: MUI floats those at `position: absolute; z-index: 1000`, and
+  `.MuiDialogContent-root` is `z-index: auto` so it opens no stacking
+  context to contain them — the panel and the labels competed directly, and
+  the header read "Scan racksName" with *# columns* and *# rows* printed
+  through it. The dialog root is `z-index: 1300` and IS a stacking context,
+  so nothing here escapes the dialog.
+- Discovery debounces on the same timer-raced frame the create run uses.
+  A bare `requestAnimationFrame` is paused in a hidden tab, which left the
+  footer empty until the tab was looked at — measured, not guessed.
+
+### Technical notes
+- New feature at `src/content/features/ui-fixes/inventory-location-scan/`:
+  `tree-model.js` (DOM-free — breadcrumbs, eligibility, the duplicate rule),
+  `dialog-dom.js` (the only file holding CDD's selectors), `scan-panel.js`,
+  `styles.js`, `init.js`. Settings in `src/shared/inventory-scan.js`.
+- **The extension never presses Save.** The run creates pending nodes through
+  CDD's own controls and steps aside; committing them stays a conscious click,
+  as with every other write this extension makes. If a step fails the run
+  stops, keeps what it made, and reports how far it got — discarding those is
+  what CDD's own *Cancel* is for.
+- Enter is claimed on `window` in the **capture** phase while the panel is
+  open, so it runs before anything CDD could have registered on `document` or
+  below, in either phase. In the scan box it commits a row; anywhere else in
+  the dialog it returns focus to the scan box.
+- Three DOM facts were measured rather than assumed, and the code depends on
+  each. Every tree row carries all four action buttons and CDD hides the ones
+  that do not apply with `display: none` — so "can this node take a box?" is a
+  style question, and it is also how the root `Locations` is excluded, since
+  CDD allows no box directly under it. The add-box button creates an organized
+  9 × 9 box **outright** and selects it; the two large cards are the location
+  editor, not a type chooser in the way. Selection is `.Mui-selected` on the
+  row's content div — `aria-selected` is not set at all.
+- Node ids are not a persistence marker: pending nodes are negative, but so is
+  the root, and the root's id changed between two mounts of the same dialog.
+  The root is the node whose `data-parentid` is the string `"undefined"`.
+- `requestAnimationFrame` does not fire while the tab is hidden, and a run
+  started in a background tab stopped dead after the first box. The internal
+  wait races the animation frame against a timer.
+- Measured in the sandbox vault: three boxes created, named as scanned and
+  12 × 8, in 758 ms — roughly 25 s for a hundred racks, with the list showing
+  progress row by row. CDD itself rejects a duplicate name with *"Name is
+  already taken"*; the run's own check that the tree row reads the name it
+  asked for catches that too.
+
+---
 ## [15.8.0] — 2026-09-06
 
 ### Added

@@ -13,7 +13,33 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
-# What's new in 15.8.0
+# What's new in 15.9.0
+
+---
+
+## 15.9.0 — 2026-09-07
+
+**A barcode scanner can now add racks without the dialog saving on every
+scan.** *Edit Locations* has a new **Scan racks** button next to *Print
+Labels*.
+
+- Scan the whole shelf into the list, then press **Create N boxes** under the
+  location you picked — and you press **Save**.
+- Pick the location by clicking it in the tree on the left, or from **Into**.
+- Rows start at 12 × 8 and each one can be changed on the row. Paste a list
+  from Excel instead, with two more columns for the size if they differ.
+- A code you already have is struck out and not counted.
+
+**Internal IDs now mark the second product `-B` instead of `B`.**
+`MDX-113`, `MDX-113-B`, `MDX-113-C` — the dash keeps the mark from reading as
+part of the compound number.
+
+- Only people who never picked a style are moved. If you chose one, you keep
+  it.
+- To keep the old shape, pick **Letters** in Settings → **Product suffix**.
+
+**The settings page now fills the window** instead of scrolling as one long
+page, and the *Not a CDD product* notice runs the full width.
 
 ---
 

@@ -189,9 +189,11 @@ body {
     color: var(--caution);
 }
 
+/* No measure cap. 82ch left it a narrow column against a 1180px page, and
+   the extra width also buys back two lines of height — which the shell below
+   spends on the settings themselves. */
 .disclaimer__body {
     min-width: 0;
-    max-width: 82ch;
 }
 
 .disclaimer__title {
@@ -1585,5 +1587,71 @@ body.has-wizard {
     }
     .wizard__skip {
         display: none;
+    }
+}
+
+/* ============================================================ full-height
+
+   LAST in the file on purpose. These override .rail, .panes and
+   .card__body--scroll, which are declared further up at the same
+   specificity — a media query carries no extra weight, so placed earlier
+   every one of them would have lost. */
+/* The page is an app shell, not a document: the masthead and the notice stay
+   put, and the bench under them takes whatever height is left and scrolls
+   inside itself. Scrolling the whole body took the rail away with it — the
+   rail is `position: sticky`, which only helps while the BODY scrolls, and it
+   stopped helping the moment a card was taller than the window.
+
+   Guarded on both axes: under 640px the rail is a strip above the pane and
+   wants the body to scroll normally, and a short window (a laptop with the
+   dev tools open) is better off scrolling than squeezed into panes of a few
+   lines each. */
+@media (min-width: 641px) and (min-height: 560px) {
+    html,
+    body {
+        height: 100%;
+    }
+
+    body {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .masthead,
+    .disclaimer {
+        flex: 0 0 auto;
+    }
+
+    .bench {
+        flex: 1 1 auto;
+        width: 100%;
+        /* Without this a grid item taller than the row refuses to shrink and
+           the body grows a scrollbar again. */
+        min-height: 0;
+        /* Content-sized rows cannot give a child a height to scroll within. */
+        align-items: stretch;
+        overflow: hidden;
+    }
+
+    /* Each column now scrolls on its own, so a long rail and a long card are
+       independent — and sticky has nothing left to do. */
+    .rail {
+        position: static;
+        min-height: 0;
+        overflow-y: auto;
+    }
+
+    .panes {
+        min-height: 0;
+        overflow-y: auto;
+    }
+
+    /* The pane supplies the height now, so a long list no longer needs a cap
+       of its own. Keeping it would put a 560px scroller inside a scroller —
+       two bars for one list, and the card ending well short of the window. */
+    .card__body--scroll {
+        max-height: none;
+        overflow-y: visible;
     }
 }

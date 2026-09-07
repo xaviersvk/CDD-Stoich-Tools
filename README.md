@@ -482,6 +482,10 @@ No remote code is executed; all logic is bundled locally with Vite. The manifest
 declares `data_collection → none` and requests only the `storage` permission. The
 extension acts strictly within the user's existing CDD session.
 
+The public privacy policy the store listings link to is
+<https://xaviersvk.github.io/CDD-Stoich-Tools/privacy.html>, written in
+`scripts/privacy.html` and published with the What's new page.
+
 ---
 
 ## License

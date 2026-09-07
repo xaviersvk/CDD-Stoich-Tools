@@ -59,7 +59,7 @@ Not a CDD product
 This is an open-source extension written by CDD Vault users. Collaborative Drug Discovery does not build, endorse or support it. If something in CDD looks wrong, disable the extension, reload the page and check again before contacting CDD support. Report problems on GitHub: https://github.com/xaviersvk/CDD-Stoich-Tools/issues
 
 Privacy
-Runs only on CDD Vault pages. No accounts, no backend, no analytics — nothing leaves your browser. The only permission is "storage", for your own settings.
+Runs only on CDD Vault pages. No accounts, no backend, no analytics — nothing leaves your browser. The only permission is "storage", for your own settings. Full policy: https://xaviersvk.github.io/CDD-Stoich-Tools/privacy.html
 
 What changed in each version: https://xaviersvk.github.io/CDD-Stoich-Tools/
 ```
@@ -107,7 +107,7 @@ Click the extension icon, or open <i>CDD Plugin options</i> from CDD's user menu
 This is an open-source extension written by CDD Vault users. Collaborative Drug Discovery does not build, endorse or support it. If something in CDD looks wrong, disable the extension, reload the page and check again before contacting CDD support. Report problems on GitHub: <a href="https://github.com/xaviersvk/CDD-Stoich-Tools/issues">github.com/xaviersvk/CDD-Stoich-Tools/issues</a>
 
 <b>Privacy</b>
-Runs only on CDD Vault pages. No accounts, no backend, no analytics — nothing leaves your browser. The only permission is <i>storage</i>, for your own settings.
+Runs only on CDD Vault pages. No accounts, no backend, no analytics — nothing leaves your browser. The only permission is <i>storage</i>, for your own settings. Full policy: <a href="https://xaviersvk.github.io/CDD-Stoich-Tools/privacy.html">xaviersvk.github.io/CDD-Stoich-Tools/privacy.html</a>
 
 What changed in each version: <a href="https://xaviersvk.github.io/CDD-Stoich-Tools/">xaviersvk.github.io/CDD-Stoich-Tools</a>
 ```
@@ -120,6 +120,7 @@ Done by hand, once per wording change.
 - [ ] Description → paste the plain-text block
 - [ ] Category stays *Functionality & UI*
 - [ ] Support URL → `https://github.com/xaviersvk/CDD-Stoich-Tools/issues`
+- [ ] *Privacy* tab → Privacy policy URL → `https://xaviersvk.github.io/CDD-Stoich-Tools/privacy.html`
 - [ ] Save draft → *Submit for review* (listing-only changes still go through review)
 
 **Firefox Add-ons** — Developer Hub → add-on → *Edit Product Page*
@@ -128,6 +129,11 @@ Done by hand, once per wording change.
 - [ ] Category: *Web Development* → *Productivity*
 - [ ] Homepage → `https://xaviersvk.github.io/CDD-Stoich-Tools/`
 - [ ] Support site → `https://github.com/xaviersvk/CDD-Stoich-Tools/issues`
+- [ ] Privacy policy → `https://xaviersvk.github.io/CDD-Stoich-Tools/privacy.html`
+
+The policy itself is `scripts/privacy.html`, published to GitHub Pages by
+`scripts/build-releases-page.mjs`. Update the *Last updated* line when the
+wording changes.
 
 ## Keeping it current
 

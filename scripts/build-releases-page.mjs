@@ -1,7 +1,8 @@
 // scripts/build-releases-page.mjs
 //
 // Renders RELEASES.md into the public "What's new" page published by GitHub
-// Pages (.github/workflows/pages.yml). Output: site/index.html + site/style.css.
+// Pages (.github/workflows/pages.yml). Output: site/index.html + site/style.css,
+// plus site/privacy.html from scripts/privacy.html.
 //
 // Deliberately dependency-free -- no markdown library. RELEASES.md uses a small,
 // known subset (bold, code, links, bullet lists, blockquotes, paragraphs) and a
@@ -321,6 +322,13 @@ const fingerprint = (path) =>
 const assets = { style: fingerprint(cssSource), icon: fingerprint(iconSource) };
 
 writeFileSync(resolve(outDir, "index.html"), renderPage(releases, version, tags, assets));
+
+// The privacy policy the store listings link to. Static, hand-written; it only
+// needs the same fingerprinted asset URLs as the release page.
+const privacy = readFileSync(resolve(here, "privacy.html"), "utf8")
+    .replaceAll("__STYLE__", assets.style)
+    .replaceAll("__ICON__", assets.icon);
+writeFileSync(resolve(outDir, "privacy.html"), privacy);
 
 const unreleased = releases
     .filter((release) => statusOf(release, tags).kind === "unreleased")

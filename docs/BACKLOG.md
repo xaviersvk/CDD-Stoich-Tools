@@ -21,12 +21,15 @@ Chrome, an HTML block for AMO and a per-dashboard checklist. Neither store
 takes listing text from the publish workflow, so this is a hand job:
 
 1. **Chrome** — Developer Dashboard → *Store listing* → Description → paste
-   the plain-text block → *Submit for review*. Category stays *Functionality
-   & UI*. The subtitle comes from `manifest.description`, already changed;
-   it lands with the next version bump.
+   the plain-text block; *Privacy* tab → Privacy policy URL =
+   `https://xaviersvk.github.io/CDD-Stoich-Tools/privacy.html` → *Submit for
+   review*. Category stays *Functionality & UI*. The subtitle comes from
+   `manifest.description`, already changed; it lands with the next version
+   bump.
 2. **AMO** — Developer Hub → *Edit Product Page*: Summary = the subtitle,
    Description = the HTML block, category *Web Development → Productivity*,
-   Homepage = `https://xaviersvk.github.io/CDD-Stoich-Tools/`.
+   Homepage = `https://xaviersvk.github.io/CDD-Stoich-Tools/`, Privacy policy
+   = the same `privacy.html` URL.
 
 **Screenshots** were deliberately left out. Chrome has ~27 and AMO 5, mostly
 the old panel; nothing shows Column Manager, plate maps, the location tree

@@ -57,8 +57,13 @@ export const DEFAULT_ELN_ID_FORMAT = "vault-user";
 //
 // The mark is this plugin's own convention, not something CDD prints, so a
 // vault that numbers its reactions -- or writes its letters small -- can say
-// so. Absent means "letter": the setting must never change an ID nobody asked
-// it to change.
+// so.
+//
+// Absent means "dash-letter" -- MDX-113-B. It meant "letter" (MDX-113B) up to
+// 15.8.0; the default moved in 15.9.0 because a bare letter reads as part of
+// the compound number rather than as a mark on it. Only the DEFAULT moved: the
+// key is written solely when someone picks a style (options.js), so anyone who
+// ever chose one -- Letters included -- keeps exactly what they chose.
 export const ELN_TABLE_SUFFIX_STYLE_KEY = "cddElnTableSuffixStyle";
 
 export const ELN_TABLE_SUFFIX_STYLES = [
@@ -69,7 +74,7 @@ export const ELN_TABLE_SUFFIX_STYLES = [
     "number",
 ];
 
-export const DEFAULT_ELN_TABLE_SUFFIX_STYLE = "letter";
+export const DEFAULT_ELN_TABLE_SUFFIX_STYLE = "dash-letter";
 
 // boolean — does the FIRST table get a mark of its own?
 //
@@ -176,8 +181,7 @@ function columnName(n) {
 // reaction with two products marks them B and C. Counting tables was the
 // 15.5.0 rule, and it handed both products of one table the same ID.
 //
-// The defaults are the original behaviour: capital letters, first product
-// bare.
+// The defaults are capital letters after a dash, first product bare.
 export function productMark(
     ordinal,
     style = DEFAULT_ELN_TABLE_SUFFIX_STYLE,

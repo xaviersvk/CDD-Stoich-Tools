@@ -29,6 +29,14 @@ Labels*.
   from Excel instead, with two more columns for the size if they differ.
 - A code you already have is struck out and not counted.
 
+**Internal IDs now mark the second product `-B` instead of `B`.**
+`MDX-113`, `MDX-113-B`, `MDX-113-C` — the dash keeps the mark from reading as
+part of the compound number.
+
+- Only people who never picked a style are moved. If you chose one, you keep
+  it.
+- To keep the old shape, pick **Letters** in Settings → **Product suffix**.
+
 ---
 
 ## 15.8.0 — 2026-09-06

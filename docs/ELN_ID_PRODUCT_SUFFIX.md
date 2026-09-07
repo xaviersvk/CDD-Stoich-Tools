@@ -19,14 +19,21 @@ are ten combinations:
 
 | style ⟍ *Mark the first product too* | off (default) | on |
 | --- | --- | --- |
-| **Letters** (default) | `MDX-113`, `MDX-113B`, `MDX-113C` | `MDX-113A`, `MDX-113B`, `MDX-113C` |
+| **Letters** | `MDX-113`, `MDX-113B`, `MDX-113C` | `MDX-113A`, `MDX-113B`, `MDX-113C` |
 | **Small letters** | `MDX-113`, `MDX-113b`, `MDX-113c` | `MDX-113a`, `MDX-113b`, `MDX-113c` |
-| **Letters after a dash** | `MDX-113`, `MDX-113-B`, `MDX-113-C` | `MDX-113-A`, `MDX-113-B`, `MDX-113-C` |
+| **Letters after a dash** (default) | `MDX-113`, `MDX-113-B`, `MDX-113-C` | `MDX-113-A`, `MDX-113-B`, `MDX-113-C` |
 | **Small letters after a dash** | `MDX-113`, `MDX-113-b`, `MDX-113-c` | `MDX-113-a`, `MDX-113-b`, `MDX-113-c` |
 | **Numbers** | `MDX-113`, `MDX-113-2`, `MDX-113-3` | `MDX-113-1`, `MDX-113-2`, `MDX-113-3` |
 
-The default — capital letters, first product bare — is what the extension wrote
-before 15.5.0. Nothing changes until something is switched.
+The default is **letters after a dash**, first product bare: `MDX-113`,
+`MDX-113-B`. Up to 15.8.0 it was a bare letter, `MDX-113B`, which reads as part
+of the compound number rather than as a mark on it.
+
+The default moved in 15.9.0 and nothing else did. The style is written to
+storage only when someone picks one, so the change reaches exactly the people
+who never chose — anyone who did, Letters included, keeps their choice. An ID
+already written into a record is never rewritten; only the next one minted
+follows the new default.
 
 **Only products are marked, and only products are filled.** A Register link on
 a reagent row writes nothing — a starting material is not a product of the

@@ -224,7 +224,7 @@ Improvements that target ELN entry and sample-data pages.
      click saves it onto the batch. **Off by default** (it writes to a record).
 - **Suffix rules** (one place, `productSuffix()` in `shared/eln-id-carry.js`):
   an ordinary table's mark is configurable since 15.5.0 — *Product suffix* picks
-  letters (`B`, `C`, the default), letters after a dash (`-B`, `-C`) or numbers
+  letters (`B`, `C`), letters after a dash (`-B`, `-C`, the default) or numbers
   (`-2`, `-3`), and a separate switch marks the first table too (`A` / `-A` /
   `-1`) instead of leaving it bare. A product of a **parallel (bulk) reaction**
   ignores both and gets `-<n><letter>`, where `n` counts the entry's parallel

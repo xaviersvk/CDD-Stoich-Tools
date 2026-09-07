@@ -54,6 +54,23 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   the count — the number in the button is always the number of boxes that will
   appear.
 
+### Changed
+- **The product suffix now defaults to letters after a dash** — `MDX-113`,
+  `MDX-113-B`, `MDX-113-C`. It was a bare letter, `MDX-113B`, which reads as
+  part of the compound number rather than as a mark on it.
+- **Only the default moved.** `cddElnTableSuffixStyle` is written to storage
+  solely when someone picks a style (`options.js:752` — a `change` handler on
+  the radios, nothing writes it on load), so an absent key is the honest
+  signal for "never chose". The new default therefore reaches exactly the
+  people who never chose, and anyone who did — *Letters* included — keeps
+  what they picked. No stored preference is overwritten, the same rule the
+  HPLC comfort band followed in 14.12.0.
+- An ID already written into a record is never rewritten. Only the next one
+  minted follows the new default, so an entry whose first product was
+  registered before the upgrade can end up beside a differently-marked
+  sibling; pick *Letters* in Settings → **Product suffix** to keep the old
+  shape.
+
 ### Technical notes
 - New feature at `src/content/features/ui-fixes/inventory-location-scan/`:
   `tree-model.js` (DOM-free — breadcrumbs, eligibility, the duplicate rule),

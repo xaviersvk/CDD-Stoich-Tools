@@ -16,7 +16,7 @@ import {
     isInventoryScanEnabled,
     onInventoryScanChanged,
 } from "../../../../shared/inventory-scan.js";
-import { findDialog, findFooter, footerAnchor } from "./dialog-dom.js";
+import { findDialog, findFooter, footerAnchor, nextFrame } from "./dialog-dom.js";
 import { closeScanPanel, openScanPanel } from "./scan-panel.js";
 import { injectScanStyles } from "./styles.js";
 
@@ -63,10 +63,14 @@ export function initInventoryLocationScan() {
 
     let scheduled = false;
 
+    // nextFrame rather than a bare requestAnimationFrame: rAF is paused in a
+    // hidden tab, and the button would then not appear until the tab was
+    // looked at. Measured — a dialog opened in a background tab kept an empty
+    // footer through any number of mutations.
     function schedule() {
         if (scheduled) return;
         scheduled = true;
-        requestAnimationFrame(() => {
+        nextFrame().then(() => {
             scheduled = false;
             try {
                 sync();

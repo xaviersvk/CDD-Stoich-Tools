@@ -39,7 +39,14 @@ export function injectScanStyles() {
         top: 0;
         right: 0;
         bottom: 0;
-        z-index: 5;
+        /* Above MUI's floating field labels, which are position:absolute with
+           z-index 1000. .MuiDialogContent-root is z-index:auto and so opens no
+           stacking context of its own, which left the panel competing with
+           those labels directly: at 5 it covered the INPUTS and the labels
+           printed straight through the header — "Scan racksName", "# columns",
+           "# rows". The dialog root is z-index 1300 and IS a stacking context,
+           so nothing here escapes the dialog. */
+        z-index: 1200;
         display: flex;
         flex-direction: column;
         gap: 12px;

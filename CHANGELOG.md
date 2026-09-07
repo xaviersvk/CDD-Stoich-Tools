@@ -100,6 +100,17 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   capped at `82ch` against a 1180px layout, which read as a narrow column
   pinned to the left; the extra width also buys back two lines of height.
 
+- The panel sits at `z-index: 1200`. At 5 it covered CDD's inputs but not
+  its LABELS: MUI floats those at `position: absolute; z-index: 1000`, and
+  `.MuiDialogContent-root` is `z-index: auto` so it opens no stacking
+  context to contain them — the panel and the labels competed directly, and
+  the header read "Scan racksName" with *# columns* and *# rows* printed
+  through it. The dialog root is `z-index: 1300` and IS a stacking context,
+  so nothing here escapes the dialog.
+- Discovery debounces on the same timer-raced frame the create run uses.
+  A bare `requestAnimationFrame` is paused in a hidden tab, which left the
+  footer empty until the tab was looked at — measured, not guessed.
+
 ### Technical notes
 - New feature at `src/content/features/ui-fixes/inventory-location-scan/`:
   `tree-model.js` (DOM-free — breadcrumbs, eligibility, the duplicate rule),

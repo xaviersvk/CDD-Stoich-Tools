@@ -25,6 +25,7 @@ Labels*.
 
 - Scan the whole shelf into the list, then press **Create N boxes** under the
   location you picked — and you press **Save**.
+- Pick the location by clicking it in the tree on the left, or from **Into**.
 - Rows start at 12 × 8 and each one can be changed on the row. Paste a list
   from Excel instead, with two more columns for the size if they differ.
 - A code you already have is struck out and not counted.

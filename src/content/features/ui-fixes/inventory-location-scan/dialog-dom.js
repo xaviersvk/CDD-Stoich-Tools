@@ -129,7 +129,9 @@ function cddElements(dialog, selector) {
 // can be left open in a background tab — measured: a run started there stopped
 // dead after the first box. So the frame is raced against a timer, and a run
 // that cannot see the screen still finishes.
-function frame() {
+// Exported: the panel needs it too — CDD paints a tree selection on the next
+// frame, so a click has to be read after one, not during it.
+export function nextFrame() {
     return new Promise((resolve) => {
         let settled = false;
         const finish = () => {
@@ -146,7 +148,7 @@ async function waitFor(predicate, tries = 40) {
     for (let attempt = 0; attempt < tries; attempt += 1) {
         const value = predicate();
         if (value) return value;
-        await frame();
+        await nextFrame();
     }
     return null;
 }
@@ -175,20 +177,20 @@ export async function createBoxUnder(dialog, { parentId, name, columns, rows, or
     const nameInput = document.getElementById(NAME_INPUT_ID);
     if (!nameInput) throw new Error("the name field did not appear");
     setNativeValue(nameInput, name);
-    await frame();
+    await nextFrame();
 
     if (organized) {
         const [columnsInput, rowsInput] = cddElements(dialog, 'input[type="number"]');
         if (!columnsInput || !rowsInput) throw new Error("the grid size fields did not appear");
         setNativeValue(columnsInput, String(columns));
-        await frame();
+        await nextFrame();
         setNativeValue(rowsInput, String(rows));
     } else {
         const organizedBox = cddElements(dialog, 'input[type="checkbox"]')[0];
         if (organizedBox?.checked) organizedBox.click();
     }
 
-    await frame();
+    await nextFrame();
 
     const painted = labelOf(created);
     if (painted !== name) {

@@ -47,6 +47,16 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   TAB is a separator — splitting on commas too would quietly cut a rack whose
   code contains one. A single pasted code with no tabs and no newlines is
   left alone, because that is someone pasting one barcode.
+- **The target location can be clicked in the tree**, not only chosen from
+  the dropdown — the tree is already sitting on the left of that dialog.
+  Clicking a BOX picks the location holding it, which is the only reading
+  that is ever useful since a box cannot hold a box, and the targeted row
+  is outlined so the click has an answer. A click that merely unfolds a
+  branch selects nothing and leaves the target alone; falling back to the
+  first location there would move the shelf out from under the user
+  without a word. The tree is re-read on every such click, so a location
+  added with CDD's own + button while the panel is open is both offered
+  and checked against.
 - **Duplicates are refused against the whole tree**, not just the target
   location, and case-insensitively. A rack barcode belongs to one rack; the
   same code twice means a double scan or a rack already shelved somewhere

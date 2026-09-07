@@ -16,6 +16,11 @@
 // the top rewrites only the rows nobody has touched — otherwise "they are all
 // 10 x 10 actually" would mean editing a hundred rows by hand.
 //
+// The target location can be picked two ways: from the dropdown, or by
+// clicking the tree on the left, which is already sitting there. Clicking a
+// BOX picks the location holding it — the forgiving reading of the click, and
+// the only one that is ever useful, since a box cannot hold a box.
+//
 // Nothing here presses Save. The run creates pending nodes and steps aside.
 
 import {
@@ -27,13 +32,14 @@ import {
     createBoxUnder,
     findContent,
     findLeftColumn,
+    nextFrame,
     readTreeRows,
     selectedNodeId,
+    treeItems,
 } from "./dialog-dom.js";
 import {
     SCAN_IN_LIST,
     SCAN_IN_TREE,
-    SCAN_OK,
     acceptedScans,
     boxTargets,
     buildNodes,
@@ -41,6 +47,7 @@ import {
 } from "./tree-model.js";
 
 const SCAN_CREATED = "created";
+const TARGET_CLASS = "cdd-scan-target";
 
 let open = null;
 
@@ -72,25 +79,39 @@ function parsePastedLine(line) {
     return { name, size: columns && rows ? { columns, rows } : null };
 }
 
-// A box's nearest home: itself if it can take one, otherwise the closest
-// ancestor that can. Opening the panel with the wrong location preselected is
-// how a shelf ends up in the wrong room.
-function defaultTarget(nodes, selectedId) {
+// The node itself if it can take a box, otherwise the closest ancestor that
+// can. Returns null when nothing in that line can — which is what tells a
+// click on the root apart from a click on a location.
+function nearestTarget(nodes, id) {
     const byId = new Map(nodes.map((node) => [node.id, node]));
-    let cursor = byId.get(String(selectedId));
+    let cursor = byId.get(String(id));
     const seen = new Set();
     while (cursor && !seen.has(cursor.id)) {
         seen.add(cursor.id);
         if (cursor.canTakeBox) return cursor.id;
         cursor = cursor.parentId ? byId.get(cursor.parentId) : null;
     }
+    return null;
+}
+
+// On opening, fall back to the first location there is: a panel that starts
+// pointing nowhere cannot be scanned into.
+function defaultTarget(nodes, selectedId) {
+    const near = nearestTarget(nodes, selectedId);
+    if (near) return near;
     const targets = boxTargets(nodes);
     return targets.length ? targets[0].id : null;
+}
+
+function clearTargetMarks(dialog) {
+    for (const item of treeItems(dialog)) item.classList.remove(TARGET_CLASS);
 }
 
 export function closeScanPanel() {
     if (!open) return;
     window.removeEventListener("keydown", open.onKeyDown, true);
+    open.leftColumn?.removeEventListener("click", open.onTreeClick);
+    clearTargetMarks(open.dialog);
     open.panel.remove();
     if (open.content) open.content.style.position = open.contentPosition;
     open = null;
@@ -102,8 +123,12 @@ export function openScanPanel(dialog) {
     const content = findContent(dialog);
     if (!content) return;
 
-    const nodes = buildNodes(readTreeRows(dialog));
-    const targets = boxTargets(nodes);
+    // Re-read on every tree click: CDD's own + button can add a location while
+    // the panel is up, and a stale snapshot would neither offer it nor catch a
+    // duplicate against it.
+    let nodes = buildNodes(readTreeRows(dialog));
+    let targets = boxTargets(nodes);
+
     const settings = inventoryScanSettings();
 
     const state = {
@@ -135,18 +160,13 @@ export function openScanPanel(dialog) {
     const intoLabel = el("label", null);
     intoLabel.append(el("span", null, "Into"));
     const intoSelect = document.createElement("select");
-    for (const target of targets) {
-        const option = document.createElement("option");
-        option.value = target.id;
-        option.textContent = target.path;
-        intoSelect.append(option);
-    }
-    if (state.targetId) intoSelect.value = state.targetId;
     intoSelect.addEventListener("change", () => {
         state.targetId = intoSelect.value;
+        paintTargetRow();
     });
     intoLabel.append(intoSelect);
     controls.append(intoLabel);
+    controls.append(el("span", "cdd-scan-hint", "or click a location on the left"));
 
     const sizeLabel = el("label", null);
     sizeLabel.append(el("span", null, "New rows"));
@@ -192,6 +212,51 @@ export function openScanPanel(dialog) {
     const status = el("span", "cdd-scan-status");
     foot.append(createButton, closeButton, status);
     panel.append(foot);
+
+    /* ----- the target ----- */
+    function paintTargets() {
+        intoSelect.textContent = "";
+        for (const target of targets) {
+            const option = document.createElement("option");
+            option.value = target.id;
+            option.textContent = target.path;
+            intoSelect.append(option);
+        }
+        if (state.targetId) intoSelect.value = state.targetId;
+    }
+
+    // The dropdown says which location in words; this says which ROW, so a
+    // click on the left has something to answer it.
+    function paintTargetRow() {
+        clearTargetMarks(dialog);
+        if (!state.targetId) return;
+        for (const item of treeItems(dialog)) {
+            if (item.dataset.nodeid === String(state.targetId)) {
+                item.classList.add(TARGET_CLASS);
+            }
+        }
+    }
+
+    async function onTreeClick() {
+        if (state.busy) return;
+
+        // CDD paints the selection on the next frame, so reading it during the
+        // click would answer with the PREVIOUS row.
+        await nextFrame();
+
+        nodes = buildNodes(readTreeRows(dialog));
+        targets = boxTargets(nodes);
+
+        // A click that only unfolds a branch selects nothing. Leaving the
+        // target where it was is right; falling back to the first location
+        // would move the shelf out from under the user without a word.
+        const picked = nearestTarget(nodes, selectedNodeId(dialog));
+        if (picked) state.targetId = picked;
+
+        paintTargets();
+        render();
+        scanInput.focus();
+    }
 
     /* ----- adding rows ----- */
     function addScan(raw, size) {
@@ -300,6 +365,7 @@ export function openScanPanel(dialog) {
 
         status.textContent = state.status;
 
+        paintTargetRow();
         list.scrollTop = list.scrollHeight;
     }
 
@@ -385,16 +451,21 @@ export function openScanPanel(dialog) {
     const contentPosition = content.style.position;
     if (!contentPosition) content.style.position = "relative";
 
-    const left = findLeftColumn(dialog);
-    panel.style.left = `${left ? left.offsetWidth : 320}px`;
+    const leftColumn = findLeftColumn(dialog);
+    panel.style.left = `${leftColumn ? leftColumn.offsetWidth : 320}px`;
+
+    // Bubble phase, and nothing is prevented: CDD still selects the row and
+    // still expands the branch. We only read what it decided.
+    leftColumn?.addEventListener("click", onTreeClick);
 
     content.append(panel);
-    open = { panel, content, contentPosition, onKeyDown };
+    open = { panel, content, contentPosition, onKeyDown, leftColumn, onTreeClick, dialog };
 
     if (!targets.length) {
         state.status = "There is no location that can hold a box. Create one first.";
     }
 
+    paintTargets();
     render();
     scanInput.focus();
 }

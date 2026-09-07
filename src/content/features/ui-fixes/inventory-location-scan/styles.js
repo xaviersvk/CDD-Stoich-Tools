@@ -82,6 +82,18 @@ export function injectScanStyles() {
         background: #fff;
     }
     .cdd-scan-controls select { max-width: 320px; }
+    .cdd-scan-hint { color: rgba(0, 0, 0, 0.5); }
+
+    /* The dropdown says which location in words; this says which ROW, so a
+       click on the tree has something to answer it. Outline rather than a
+       background: CDD paints its own selection there and the two must not
+       fight — a click on a BOX targets the location above it, and then the
+       two marks are deliberately on different rows. */
+    li[role="treeitem"].cdd-scan-target > .MuiTreeItem-content {
+        outline: 2px solid #1565c0;
+        outline-offset: -2px;
+        border-radius: 3px;
+    }
     .cdd-scan-controls input[type="number"] { width: 60px; }
 
     /* The scan box is the one thing on this panel that matters, so it is the

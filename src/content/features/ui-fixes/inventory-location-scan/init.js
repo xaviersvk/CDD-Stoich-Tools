@@ -34,7 +34,7 @@ function mount(dialog) {
     button.textContent = "Scan racks";
     button.addEventListener("click", () => openScanPanel(dialog));
 
-    const anchor = footerAnchor(dialog, footer);
+    const anchor = footerAnchor(footer);
     if (anchor) footer.insertBefore(button, anchor);
     else footer.prepend(button);
 }

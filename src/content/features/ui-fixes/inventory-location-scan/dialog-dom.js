@@ -50,16 +50,13 @@ export function findFooter(dialog) {
     return save ? save.parentElement : null;
 }
 
-export function footerAnchor(dialog, footer) {
-    if (!dialog || !footer) return null;
-    const label = [...dialog.querySelectorAll("a, button, span, div")]
-        .find((el) => el.children.length === 0
-            && el.textContent.trim() === PRINT_LABELS_TEXT);
-    if (!label) return null;
-
-    let cursor = label;
-    while (cursor && cursor.parentElement !== footer) cursor = cursor.parentElement;
-    return cursor;
+// Print Labels is not a leaf: it is a <div> wrapping an <a> that carries an
+// icon of its own. Matching on the footer's own children sidesteps the whole
+// question of how deep the text sits.
+export function footerAnchor(footer) {
+    if (!footer) return null;
+    return [...footer.children]
+        .find((child) => child.textContent.trim() === PRINT_LABELS_TEXT) || null;
 }
 
 function contentOf(item) {
@@ -128,9 +125,20 @@ function cddElements(dialog, selector) {
         .filter((element) => !element.closest(`.${PANEL_CLASS}`));
 }
 
+// requestAnimationFrame does NOT fire while the tab is hidden, and this dialog
+// can be left open in a background tab — measured: a run started there stopped
+// dead after the first box. So the frame is raced against a timer, and a run
+// that cannot see the screen still finishes.
 function frame() {
     return new Promise((resolve) => {
-        requestAnimationFrame(() => requestAnimationFrame(resolve));
+        let settled = false;
+        const finish = () => {
+            if (settled) return;
+            settled = true;
+            resolve();
+        };
+        requestAnimationFrame(() => requestAnimationFrame(finish));
+        setTimeout(finish, 32);
     });
 }
 

@@ -276,6 +276,65 @@ lines of `.catch(() => {})` in front of callees that already swallow the error.
 
 ## Low priority
 
+### Measure what the extension costs the browser
+
+Asked for on 2026-09-08, nothing built. The wish is two things at once: a
+**one-off diagnosis** of which features are expensive, and a **regression
+guard** that gives a comparable number release over release.
+
+**What the code looks like today**
+
+- `dist/assets/content.js` is **902 kB** — parsed and compiled on every CDD
+  page load.
+- `src/` holds **39 `new MutationObserver`**, of which **36 observe
+  `document.documentElement` or `document.body` with `subtree: true`**. Every
+  DOM mutation on the page is delivered to all of them; most callbacks are
+  debounced through `requestAnimationFrame`, which softens the callback cost
+  but not the delivery.
+- **31 `requestAnimationFrame`**, one `setInterval`, no `ResizeObserver`.
+- **No `performance.mark` / `measure` anywhere.** Nothing in the extension
+  knows what it costs.
+- [`PERFORMANCE_AUDIT.md`](../PERFORMANCE_AUDIT.md) (2026-06-30) already called
+  the observer count the biggest systemic problem — at **6–8** observers. There
+  are now five times as many.
+
+**What can be measured today, with no code**
+
+- **Chrome Task Manager (Shift+Esc) is a trap here.** Content scripts run in
+  the *page's* process, so the "Extension: CDD Stoich Tools" row shows only the
+  service worker and the options page — near zero. The cost sits in the CDD tab
+  row.
+- **DevTools → Performance, A/B.** Record ~10 s of typical work, filter
+  *Bottom-Up* by `content.js` for scripting time, watch Long Tasks (>50 ms) and
+  recalculate-style; repeat with the extension toggled off in
+  `chrome://extensions`. Three runs per side, or the noise swallows the
+  difference.
+- **Firefox `about:performance`** for a rough second reading per add-on.
+
+**What an automatic version would need**
+
+1. **One `MutationObserver` wrapper** that counts callbacks and accumulated ms
+   per observer. One place in the code, covers 36 of the 39 suspects at once,
+   and is the only way to tell whether one feature dominates or the cost is
+   spread evenly.
+2. **`performance.mark` around each feature's init**, so the startup cost is
+   attributable feature by feature.
+3. **A console dump** (`__cddPerf()`) sorted by ms, off by default.
+4. **Fixtures for the repeatable run.** The vault the numbers come from must be
+   identical every time, so a live vault is out. Agreed direction: capture the
+   DOM of 3–4 typical pages (reaction with a stoichiometry table, inventory
+   grid, plate view) **from the demo vault**, commit them, and have headless
+   Chrome load them, run `content.js` and report. Re-capture when CDD changes
+   its UI.
+
+**Open question, not answered.** The repo is public. Whether demo-vault DOM can
+be committed as-is, or whether the capture script has to rewrite sample IDs and
+project names to neutral ones first, was asked and never settled.
+
+**Note.** There is no test or benchmark infrastructure in this repo at all —
+Vite build plus a few Node scripts. Whatever runs the fixtures is built from
+scratch, including the headless browser dependency.
+
 ### Copy a column on the Visualization page
 
 **Request.** Extend the search-results column copy

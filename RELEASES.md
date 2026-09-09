@@ -13,7 +13,18 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
-# What's new in 15.9.0
+# What's new in 15.10.0
+
+---
+
+## 15.10.0 — 2026-09-09
+
+**Ctrl+click a column header on Inventory search and the whole column is
+copied** — the same copy Explore search results already had.
+
+- Ctrl+click a single cell to copy just that value.
+- Expanded event rows are copied under their sample; collapsed ones are left
+  out.
 
 ---
 

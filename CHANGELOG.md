@@ -19,6 +19,28 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [15.10.0] — 2026-09-09
+
+### Added
+- **Column copy now covers the Inventory search results.** Ctrl+click (Cmd on a
+  Mac) a column header on *Inventory → search* copies the whole column, one
+  value per line; Ctrl+click a single cell copies just that value. Same gesture,
+  same green flash and toast as Explore's search results.
+- The inventory grid is a different table — MUI's `NestedExpandableDataTable`
+  rather than the Rails `search_results_table` — so the module now matches
+  a list of tables. The injected CSS is composed per selector: pasting a comma
+  list in front of a descendant combinator (`"a, b thead th"`) would have
+  scoped the second half only.
+- Every sample hangs an event row underneath it that stays in the DOM while it
+  is collapsed, with every cell empty. Those are left out of the copy: taken as
+  they stand they would drop a blank line between two samples and pull every
+  value below them out of step with the other columns. An expanded event row is
+  copied, so its Debit/Credit amount lands under its own sample.
+- The expand and gear columns are untouched. Both carry controls, so the existing
+  "a column whose body is controls is not a column of values" check lets those
+  clicks through to CDD.
+
+---
 ## [15.9.0] — 2026-09-07
 
 ### Added

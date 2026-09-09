@@ -6,6 +6,10 @@
 // the way to lift one id, batch name or IP address out of the results without
 // selecting it by hand. The copied cells flash so it is obvious what was taken.
 //
+// Both result tables are covered: Explore's search results and the Inventory
+// search grid. The inventory grid hangs an event row under each sample, empty
+// until the row is expanded, so it joins the copy only once it is opened.
+//
 // Inside these tables the modifier means COPY, links included: Ctrl+clicking a
 // molecule id copies the id rather than opening it in a new tab. Cells holding
 // a real control — the select column's checkbox — keep their own click.
@@ -23,8 +27,18 @@ import { PLATE_LINK_SELECTOR } from "./plate-location-tooltip.js";
 const STYLE_ID = "cdd-search-column-copy-style";
 const FLASH_CLASS = "cdd-column-copied";
 const TOAST_ID = "cdd-column-copy-toast";
-const TABLE_SELECTOR = "table.search_results_table";
+// Two tables answer to this: Explore's Rails-rendered search results, and the
+// Inventory search's MUI grid, whose expandable event rows sit in the same
+// column grid as the sample row above them.
+const TABLE_SELECTORS = ["table.search_results_table", "table.NestedExpandableDataTable"];
+const TABLE_SELECTOR = TABLE_SELECTORS.join(", ");
 const CELL_SELECTOR = "tbody td, tbody th";
+
+// An inventory row that has not been expanded still keeps its event row in the
+// DOM, with every cell empty. Copied as it stands it would drop a blank line
+// between two samples and pull every value below it out of step with the other
+// columns, so it is left out until the user opens it.
+const COLLAPSED_ROW_SELECTOR = "tr.collapsed-table-row";
 
 // Long values (an IUPAC name, a comment field) would push the toast off both
 // edges of the screen, so the confirmation shows only the start of one.
@@ -77,7 +91,12 @@ function buildGrid(rows) {
 
 function getBodyRows(table) {
     const rows = [];
-    for (const body of table.tBodies) rows.push(...body.rows);
+    for (const body of table.tBodies) {
+        for (const row of body.rows) {
+            if (row.matches(COLLAPSED_ROW_SELECTOR)) continue;
+            rows.push(row);
+        }
+    }
     return rows;
 }
 
@@ -126,7 +145,7 @@ function findColumnSpan(table, th) {
     // column carries a checkbox per row, and its "all · none" header would
     // otherwise swallow the two links that tick them. One body row settles it —
     // rowSpan merging means the first row of a section covers every column.
-    const firstBodyRow = table.tBodies[0]?.rows[0];
+    const firstBodyRow = getBodyRows(table)[0];
     if (firstBodyRow) {
         const bodyRow = buildGrid([firstBodyRow])[0] || [];
         let holdsValues = false;
@@ -274,10 +293,14 @@ function injectStyles() {
 
     const style = document.createElement("style");
     style.id = STYLE_ID;
-    style.textContent = `
-    ${TABLE_SELECTOR} thead th { cursor: copy; }
+    // The selector is a list, so it cannot be pasted in front of a descendant
+    // combinator: "a, b thead th" would scope the second half only.
+    const scoped = (suffix) => TABLE_SELECTORS.map((sel) => `${sel} ${suffix}`).join(",\n    ");
 
-    ${TABLE_SELECTOR} .${FLASH_CLASS} {
+    style.textContent = `
+    ${scoped("thead th")} { cursor: copy; }
+
+    ${scoped(`.${FLASH_CLASS}`)} {
         background: rgba(34, 197, 94, 0.28) !important;
         transition: background 120ms ease-out;
     }

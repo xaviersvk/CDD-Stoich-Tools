@@ -289,8 +289,11 @@ guard** that gives a comparable number release over release.
 - `src/` holds **39 `new MutationObserver`**, of which **36 observe
   `document.documentElement` or `document.body` with `subtree: true`**. Every
   DOM mutation on the page is delivered to all of them; most callbacks are
-  debounced through `requestAnimationFrame`, which softens the callback cost
-  but not the delivery.
+  debounced through `requestAnimationFrame`.
+  **Corrected 2026-09-10:** this entry used to add "which softens the callback
+  cost but not the delivery", suspecting delivery. Delivery was then measured
+  and is free — the cost is entirely in what the callbacks do. See
+  [What a link-heavy ELN costs](#what-a-link-heavy-eln-costs--measured-2026-09-10).
 - **31 `requestAnimationFrame`**, one `setInterval`, no `ResizeObserver`.
 - **No `performance.mark` / `measure` anywhere.** Nothing in the extension
   knows what it costs.
@@ -334,6 +337,134 @@ project names to neutral ones first, was asked and never settled.
 **Note.** There is no test or benchmark infrastructure in this repo at all —
 Vite build plus a few Node scripts. Whatever runs the fixtures is built from
 scratch, including the headless browser dependency.
+
+### What a link-heavy ELN costs — measured 2026-09-10
+
+Asked on 2026-09-10, after Firefox started complaining on entries carrying many
+entity links. Two questions: what that actually costs, and whether we throw away
+the parts of a CDD API answer we do not need. Nothing built — this entry is the
+measurement, so picking it up does not mean measuring again.
+
+Measured on synthetic fixtures, not on a live vault: a payload builder for the
+parser half, and a page approximating an ELN entry (chrome + a Slate body of
+`a.slate-a` links) for the DOM half, run in Chrome. Absolute milliseconds are
+therefore indicative; the shape of the curves is the finding.
+
+#### The parser half is not the problem
+
+Real `extractAllReactionRows` + `extractPrintData` over a two-reaction entry:
+
+| entity links | body | `JSON.parse` + both parsers |
+|---|---|---|
+| 20 | 6 kB | 0.08 ms |
+| 200 | 62 kB | 0.54 ms |
+| 400 | 124 kB | 1.05 ms |
+
+About 1 ms per autosave at 400 links. Worth one cheap fix anyway:
+`getReactionFeatures()` runs **three times per payload**
+(`sample-data.js:257`, `print-data.js:149`, `print-data.js:200`) and each call
+does its own `JSON.parse(eln_entry.body)` plus a full walk of the document tree.
+That is why `extractPrintData` measures exactly twice `extractAllReactionRows`.
+Passing the features in, or memoising per payload, removes two thirds of it.
+
+#### The DOM half is the problem
+
+36 observers on the document root, each `requestAnimationFrame`-coalesced, means
+up to 36 whole-document `querySelectorAll` calls in every frame the DOM moved.
+Sweeping the 30 selectors those callbacks actually use:
+
+| nodes | mentions selector alone | all 30 selectors |
+|---|---|---|
+| 4 500 | 0.21 ms | 1.2 ms |
+| 18 300 | 0.99 ms | 5.2 ms |
+| 38 400 | 2.11 ms | 12.8 ms |
+
+At ~38 k nodes one sweep is 12.8 ms of a 16.7 ms frame, on every keystroke into
+the Slate editor. Firefox is generally slower than Chrome on the
+`a[href*="#molecule-batches"]` substring form, which is the mentions scan's own
+selector (`mentions/scan.js:21`).
+
+**Delivery is free.** 200 mutations with 0 vs 36 observers whose callbacks do
+nothing: 971 ms vs 999 ms, with 7 200 callbacks delivered in the second run. The
+observer *count* is not what costs; the sweeps inside the callbacks are. This is
+the correction to the entry above.
+
+**The cost tracks node count, not link count.** Links matter because they add
+nodes and because each one can pull a request (below), not because the selector
+is link-sensitive.
+
+Three findings that follow from this, cheapest first:
+
+1. **Most of those observers can never match on an ELN entry page** and still
+   sweep it on every frame. No page guard in: `box-selection/init`,
+   `control-layout/init`, `depleted-marker`, `dose-response-override/init`,
+   `multi-position-sample-create/init`, `run-form-templates/init`,
+   `ui-fixes/column-manager`, `ui-fixes/copyable-fields`,
+   `ui-fixes/filter-field-picker`, `ui-fixes/inventory-grid-colors`,
+   `ui-fixes/inventory-location-tree/init`, `ui-fixes/location-picker-resize`,
+   `ui-fixes/options-menu-link`, `ui-fixes/plate-list-locations`,
+   `ui-fixes/plate-location-export`, `ui-fixes/registration-project-mirror`,
+   and `main.js watchFileDialog`. A one-line path test at the top of each
+   callback is the whole fix.
+2. **`mentions/init.js:60` fans out with an unbounded `Promise.all`** — one
+   request per distinct molecule, all at once. The codebase already decided this
+   question elsewhere and capped it at 2–3 (`api/molecule-image.js:223`,
+   `api/batch-fields.js:138`), and `utils/concurrency.js` exists for it. Same
+   unbounded shape in `synonym-enrichment.js:72`, `name-enrichment.js:63` and
+   `batch-field-enrichment.js:94`.
+3. **A latent cliff in `utils/eln-entry-id.js:26`.** Its fallback is
+   `document.querySelectorAll("div, span")` followed by a `textContent` read per
+   element. It sleeps only because CDD still emits
+   `[data-autotest-id="entry-identifier"]`. The day that hook goes, this runs on
+   every mutation frame.
+
+#### Do we discard what we do not need?
+
+Some of it. Trimmed properly: `api/molecule-image.js` keeps only
+`{ svg, synonym }`, and both ELN parsers project onto a fixed field set.
+
+Not trimmed:
+
+- **`api/molecule-page.js:23` — the biggest item.** The cache holds a whole
+  parsed `Document` per (vault, molecule) for the life of the tab. It is fetched
+  to read one *Synonyms* row (`api/molecule-synonyms.js:86`) and a few
+  registration fields (`batch-field-enrichment.js:98`). An entry linking N
+  molecules retains N detached HTML documents. Extracting the handful of values
+  at parse time and caching those instead would drop the document.
+- **`mentions/store.js:44`** keeps the full raw sample records, referenced from
+  three Maps, for the life of the tab. `buildMentionSample` reads about a dozen
+  fields off each.
+- **`reactionImage` is dead weight.** `print-data.js:209` copies it into every
+  PRINT_DATA payload, it crosses `postMessage` by structured clone, and
+  `PRINT_STATE.lastNonEmptyReactionPayloads` retains it forever — and nothing
+  reads it. `print-buttons.js:754` takes the image off the DOM
+  (`.ChemistryImage img`). Deleting the field costs nothing.
+- **`MOLECULE_SEARCH` ships the entire search body** across `postMessage`
+  (`inject/main.js`), and `search-learning.js` then walks it for
+  `{ name, synonyms, moleculeId }`. That walk can run in the inject world so
+  only the result crosses.
+- **`hooks/fetch-hook.js` clones and `JSON.parse`s every response** on any CDD
+  page, whatever its URL or size, before deciding it is uninteresting. A URL or
+  `content-length` test in front of the clone would skip most of them.
+- **No cache is cleared on navigation.** `resetState()` clears `STATE` but not
+  `pageCache`, `moleculeSamplesCache`, `moleculeCache` or `PRINT_STATE`, so they
+  accumulate across every entry visited in a tab session. Some of that is
+  deliberate caching; that it is unbounded and survives the entry it belongs to
+  is not a decision anyone recorded.
+
+#### Not verified
+
+The real node count of a CDD ELN entry page and the real size of a molecule
+page, both of which set the true scale of the numbers above — that needs a
+logged-in vault. On a CDD page:
+
+```js
+document.getElementsByTagName("*").length
+(await (await fetch(location.pathname)).text()).length
+```
+
+The fixture-based harness the entry above asks for would make all of this
+repeatable; none of the fixes listed here have to wait for it.
 
 ### Copy a column on the Visualization page
 

@@ -16,6 +16,11 @@
 // the top rewrites only the rows nobody has touched — otherwise "they are all
 // 10 x 10 actually" would mean editing a hundred rows by hand.
 //
+// A line may carry a path — `Shelf A > Bay 2 > R-1` — and the run makes the
+// locations that are missing on the way before it makes the box. The path is
+// relative to the target location; a first segment naming the root makes it
+// absolute, so a whole vault can be pasted from one column.
+//
 // The target location can be picked two ways: from the dropdown, or by
 // clicking the tree on the left, which is already sitting there. Clicking a
 // BOX picks the location holding it — the forgiving reading of the click, and
@@ -30,6 +35,7 @@ import {
 import {
     PANEL_CLASS,
     createBoxUnder,
+    createLocationUnder,
     findContent,
     findLeftColumn,
     nextFrame,
@@ -42,11 +48,25 @@ import {
     acceptedScans,
     boxTargets,
     classifyScan,
+    findPreset,
+    locationsToCreate,
+    resolvePath,
+    rootOf,
 } from "./tree-model.js";
 import { readTreeNodes } from "./tree-source.js";
 
 const SCAN_CREATED = "created";
 const TARGET_CLASS = "cdd-scan-target";
+const CUSTOM_PRESET = "custom";
+
+// The rack shapes a bench actually has. Picking one fills the two number
+// boxes; the boxes stay, because the fifth shape always exists.
+const PRESETS = [
+    { label: "SBS 96 · 12 × 8", columns: 12, rows: 8 },
+    { label: "SBS 384 · 24 × 16", columns: 24, rows: 16 },
+    { label: "Cryobox 9 × 9", columns: 9, rows: 9 },
+    { label: "Cryobox 10 × 10", columns: 10, rows: 10 },
+];
 
 let open = null;
 
@@ -68,8 +88,8 @@ function numberBox(className, value) {
 }
 
 // Excel puts a TAB between columns, and only a TAB — splitting on commas too
-// would quietly cut a rack whose code contains one. A line is a name, and
-// optionally the two numbers after it.
+// would quietly cut a rack whose code contains one. A line is a name or a
+// path, and optionally the two numbers after it.
 function parsePastedLine(line) {
     const parts = line.split("\t").map((part) => part.trim());
     const name = parts.shift() || "";
@@ -104,6 +124,10 @@ function defaultTarget(nodes, selectedId) {
 
 function clearTargetMarks(dialog) {
     for (const item of treeItems(dialog)) item.classList.remove(TARGET_CLASS);
+}
+
+function plural(count, noun) {
+    return `${count} ${noun}${count === 1 ? "" : (noun === "box" ? "es" : "s")}`;
 }
 
 export function closeScanPanel() {
@@ -173,16 +197,30 @@ export async function openScanPanel(dialog) {
     intoSelect.addEventListener("change", () => {
         state.targetId = intoSelect.value;
         paintTargetRow();
+        render();
     });
     intoLabel.append(intoSelect);
     controls.append(intoLabel);
-    controls.append(el("span", "cdd-scan-hint", "or click a location on the left"));
+    controls.append(el("span", "cdd-scan-hint",
+        "or click a location on the left. A path like Shelf A > R-1 makes the shelf on the way."));
 
     const sizeLabel = el("label", null);
     sizeLabel.append(el("span", null, "New rows"));
+    const presetSelect = document.createElement("select");
+    presetSelect.className = "cdd-scan-preset";
+    for (const preset of PRESETS) {
+        const option = document.createElement("option");
+        option.value = preset.label;
+        option.textContent = preset.label;
+        presetSelect.append(option);
+    }
+    const customOption = document.createElement("option");
+    customOption.value = CUSTOM_PRESET;
+    customOption.textContent = "Custom";
+    presetSelect.append(customOption);
     const columnsInput = numberBox(null, state.gridColumns);
     const rowsInput = numberBox(null, state.gridRows);
-    sizeLabel.append(columnsInput, el("span", "cdd-scan-times", "×"), rowsInput);
+    sizeLabel.append(presetSelect, columnsInput, el("span", "cdd-scan-times", "×"), rowsInput);
     controls.append(sizeLabel);
 
     const organizedLabel = el("label", null);
@@ -270,7 +308,7 @@ export async function openScanPanel(dialog) {
 
     /* ----- adding rows ----- */
     function addScan(raw, size) {
-        const scan = classifyScan(raw, nodes, state.scans);
+        const scan = classifyScan(raw, nodes, state.scans, { targetId: state.targetId });
         if (!scan) return false;
         scan.columns = size ? size.columns : state.gridColumns;
         scan.rows = size ? size.rows : state.gridRows;
@@ -289,16 +327,34 @@ export async function openScanPanel(dialog) {
         }
     }
 
+    /* ----- the grid at the top ----- */
+    function syncPreset() {
+        const preset = findPreset(PRESETS, state.gridColumns, state.gridRows);
+        presetSelect.value = preset ? preset.label : CUSTOM_PRESET;
+    }
+
+    presetSelect.addEventListener("change", () => {
+        const preset = PRESETS.find((candidate) => candidate.label === presetSelect.value);
+        if (!preset) return;
+        state.gridColumns = preset.columns;
+        state.gridRows = preset.rows;
+        columnsInput.value = String(preset.columns);
+        rowsInput.value = String(preset.rows);
+        applyDefaultSize();
+        render();
+    });
     columnsInput.addEventListener("change", () => {
         state.gridColumns = sanitizeBoxSide(columnsInput.value, state.gridColumns);
         columnsInput.value = String(state.gridColumns);
         applyDefaultSize();
+        syncPreset();
         render();
     });
     rowsInput.addEventListener("change", () => {
         state.gridRows = sanitizeBoxSide(rowsInput.value, state.gridRows);
         rowsInput.value = String(state.gridRows);
         applyDefaultSize();
+        syncPreset();
         render();
     });
 
@@ -319,6 +375,7 @@ export async function openScanPanel(dialog) {
     function render() {
         columnsInput.disabled = !state.organized || state.busy;
         rowsInput.disabled = !state.organized || state.busy;
+        presetSelect.disabled = !state.organized || state.busy;
         organizedInput.disabled = state.busy;
         intoSelect.disabled = state.busy;
         scanInput.disabled = state.busy || !targets.length;
@@ -336,7 +393,12 @@ export async function openScanPanel(dialog) {
             if (scan.status === SCAN_CREATED) row.classList.add("cdd-scan-row--created");
 
             row.append(el("span", "cdd-scan-ordinal", String(index + 1)));
-            row.append(el("span", "cdd-scan-name", scan.name));
+            const name = el("span", "cdd-scan-name");
+            if (scan.pathLabel) {
+                name.append(el("span", "cdd-scan-path", `${scan.absolute ? "Locations > " : ""}${scan.pathLabel} ›`));
+            }
+            name.append(document.createTextNode(scan.name));
+            row.append(name);
 
             if (scan.status === SCAN_IN_TREE) {
                 row.append(el("span", "cdd-scan-why", `already in ${scan.where}`));
@@ -344,6 +406,8 @@ export async function openScanPanel(dialog) {
                 row.append(el("span", "cdd-scan-why", "already in the list"));
             } else if (scan.status === SCAN_CREATED) {
                 row.append(el("span", "cdd-scan-why", "created"));
+            } else if (!scan.box) {
+                row.append(el("span", "cdd-scan-kind", "location"));
             } else if (state.organized && !state.busy) {
                 const size = el("span", "cdd-scan-size");
                 size.append(
@@ -369,9 +433,13 @@ export async function openScanPanel(dialog) {
             list.append(row);
         });
 
-        const count = acceptedScans(state.scans).length;
-        createButton.textContent = count === 1 ? "Create 1 box" : `Create ${count} boxes`;
-        createButton.disabled = state.busy || count === 0 || !state.targetId;
+        const boxes = acceptedScans(state.scans).filter((scan) => scan.box).length;
+        const locations = locationsToCreate(state.scans, nodes, state.targetId);
+        const parts = [];
+        if (boxes || !locations) parts.push(plural(boxes, "box"));
+        if (locations) parts.push(plural(locations, "location"));
+        createButton.textContent = `Create ${parts.join(", ")}`;
+        createButton.disabled = state.busy || (boxes + locations) === 0 || !state.targetId;
 
         status.textContent = state.status;
 
@@ -407,6 +475,28 @@ export async function openScanPanel(dialog) {
     });
 
     /* ----- the create run ----- */
+
+    // Walk the row's path from its anchor, making each missing location
+    // through CDD's own button and re-reading the tree after every one — the
+    // next step needs the id CDD just handed out. Returns the id of the
+    // location the box goes under.
+    async function ensurePath(scan) {
+        const anchorId = scan.absolute ? rootOf(nodes)?.id : state.targetId;
+        if (anchorId == null) throw new Error("there is no location to build under");
+
+        for (;;) {
+            const resolved = resolvePath(nodes, anchorId, scan.segments);
+            if (resolved.error) throw new Error(resolved.error);
+            if (!resolved.missing.length) return resolved.nodeId;
+
+            await createLocationUnder(dialog, {
+                parentId: resolved.nodeId,
+                name: resolved.missing[0],
+            });
+            nodes = await readTreeNodes(dialog);
+        }
+    }
+
     async function createAll() {
         const pending = acceptedScans(state.scans);
         if (state.busy || !pending.length || !state.targetId) return;
@@ -418,13 +508,17 @@ export async function openScanPanel(dialog) {
         let made = 0;
         try {
             for (const scan of pending) {
-                await createBoxUnder(dialog, {
-                    parentId: state.targetId,
-                    name: scan.name,
-                    columns: scan.columns,
-                    rows: scan.rows,
-                    organized: state.organized,
-                });
+                const parentId = await ensurePath(scan);
+                if (scan.box) {
+                    await createBoxUnder(dialog, {
+                        parentId,
+                        name: scan.box,
+                        columns: scan.columns,
+                        rows: scan.rows,
+                        organized: state.organized,
+                    });
+                    nodes = await readTreeNodes(dialog);
+                }
                 scan.status = SCAN_CREATED;
                 made += 1;
                 render();
@@ -434,6 +528,8 @@ export async function openScanPanel(dialog) {
             // Whatever was created stays: those rows are in the tree, they are
             // visible, and discarding them is what CDD's own Cancel is for.
             state.busy = false;
+            targets = boxTargets(nodes);
+            paintTargets();
             state.status = `Created ${made} of ${pending.length}. `
                 + `Stopped at "${pending[made]?.name}" — ${error.message}.`;
             render();
@@ -476,6 +572,7 @@ export async function openScanPanel(dialog) {
     }
 
     paintTargets();
+    syncPreset();
     render();
     scanInput.focus();
 }

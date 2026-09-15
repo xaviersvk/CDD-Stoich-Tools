@@ -145,6 +145,10 @@ export function injectScanStyles() {
         font-variant-numeric: tabular-nums;
     }
     .cdd-scan-name { flex: 1 1 auto; font-weight: 600; }
+    /* The path a row will build is context, the box is the thing. */
+    .cdd-scan-path { color: rgba(0, 0, 0, 0.5); font-weight: 400; margin-right: 5px; }
+    .cdd-scan-kind { color: rgba(0, 0, 0, 0.5); font-style: italic; }
+    .cdd-scan-preset { max-width: 170px; }
 
     /* A shelf is not all one size, so the grid sits on the row. Narrow boxes:
        they hold two digits and must not compete with the code beside them. */

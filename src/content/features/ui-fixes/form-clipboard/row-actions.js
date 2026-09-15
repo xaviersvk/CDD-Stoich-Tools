@@ -54,6 +54,15 @@ async function duplicate(tr, link) {
 // Idempotent: React and Turbo repaint rows, and the observer calls this on
 // every pass. One link per row, in a cell of its own at the end.
 export function ensureDuplicateLinks(table) {
+    // A header cell of its own, so the new column has a width like the others.
+    const headerRow = table.querySelector("thead tr");
+    if (headerRow && !headerRow.querySelector(".cdd-form-duplicate-cell")) {
+        const th = document.createElement("th");
+        th.className = "cdd-form-duplicate-cell";
+        th.setAttribute("aria-label", "Duplicate");
+        headerRow.append(th);
+    }
+
     const rows = [...table.querySelectorAll("tbody tr")].filter((tr) => rowName(tr));
     const counts = new Map();
     for (const tr of rows) counts.set(rowName(tr), (counts.get(rowName(tr)) || 0) + 1);

@@ -35,8 +35,18 @@ export function injectFieldClipboardStyles() {
     .cdd-fc-button:hover { text-decoration: underline; }
     .cdd-fc-button[disabled] { color: rgba(0, 0, 0, 0.38); cursor: default; text-decoration: none; }
     .cdd-fc-status { color: #b3261e; }
-    /* The form table's Duplicate link, in a cell of its own. */
-    .cdd-form-duplicate-cell { text-align: right; white-space: nowrap; }
+    /* The form table's Duplicate link, in a cell of its own. The cells around
+       it are MUI's, padded 16px; ours has to match or the link sits glued to
+       the date beside it. */
+    .cdd-form-duplicate-cell {
+        padding: 16px;
+        text-align: right;
+        white-space: nowrap;
+        width: 1%;
+        font-size: 13px;
+        border-bottom: 1px solid rgba(224, 224, 224, 1);
+    }
+    thead .cdd-form-duplicate-cell { padding: 16px; }
     .cdd-form-duplicate.is-busy { color: rgba(0, 0, 0, 0.5); cursor: default; }
     .cdd-form-duplicate.is-failed { color: #b3261e; }
 

@@ -32,6 +32,7 @@ import {initLocationPickerResize} from "./features/ui-fixes/location-picker-resi
 import {initInventoryLocationTree} from "./features/ui-fixes/inventory-location-tree/init";
 import {initInventoryLocationScan} from "./features/ui-fixes/inventory-location-scan/init";
 import {initCreateLocationLink} from "./features/ui-fixes/create-location-link/init";
+import {initFieldClipboard} from "./features/ui-fixes/field-clipboard/init";
 import {injectMoleculeLinksStyles} from "./features/ui-fixes/molecule-links-fixes";
 import {initElnShiftLeft} from "./features/ui-fixes/eln-shift-left";
 import {watchConsumedBatches} from "./features/ui-fixes/consumed-batches-collapse";
@@ -158,6 +159,7 @@ function init() {
   // Off unless switched on in the options page.
   initInventoryLocationScan();
   initCreateLocationLink();
+  initFieldClipboard();
 
   injectMoleculeLinksStyles();
   initElnShiftLeft();

@@ -45,4 +45,10 @@ export const EVENTS = {
   // onExpandedItemsChange, called with string ids. No answer; the repaint is
   // the answer.
   LOCATION_TREE_EXPAND: "LOCATION_TREE_EXPAND",
+  // Content -> page world: "read the field definitions behind the Nth table"
+  // on a "... Fields" settings page. They live in React state, and most of
+  // those pages have no JSON endpoint. inject/hooks/field-rows-bridge.js
+  // answers with FIELD_ROWS.
+  FIELD_ROWS_REQUEST: "FIELD_ROWS_REQUEST",
+  FIELD_ROWS: "FIELD_ROWS",
 };

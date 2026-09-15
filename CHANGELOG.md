@@ -19,6 +19,58 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [15.14.0] — 2026-09-15
+
+### Added
+- **Field definitions can be copied from one vault and pasted into
+  another.** Every *… Fields* settings page — Molecule, Batch, Sample,
+  Inventory, Protocol, Run, ELN — grows **Copy N fields** and **Paste**
+  above its table, beside CDD's own *Add/Edit* link and therefore only for
+  administrators. Copy reads the page's definitions and keeps them in the
+  extension's storage under that page's kind, one clipboard per kind, so a
+  whole vault can be copied page by page and pasted page by page.
+- **Paste shows its plan before it touches anything**: one line per copied
+  field with the type and either the size of its pick list or the reason it
+  will be skipped. A field whose exact name — case-sensitive, trimmed at
+  the ends — is already on the page is skipped. A type the target page does
+  not offer is skipped. A field that was *or X is required* is added as
+  *is optional* and says so; the group is rebuilt by hand. *Add N fields*
+  counts only what will appear.
+- **The run drives CDD's own edit mode**: *Add a … field*, name, type,
+  *Must be Unique*, *Overwritable*, *Single Use*, *Dropdown Display*,
+  *is required* / *is optional*, and for a pick list the pencil, the dialog
+  and *Update Pick List*. **The extension never presses *Update … fields***;
+  the status line says to, or to cancel. On a failure the run stops, keeps
+  the rows it made, and says how far it got.
+- Never copied: built-in rows (CDD marks them `disabled`), hidden pick-list
+  values, and the *Sample Identifier* flag — one field per vault, and the
+  target may already have one.
+
+### Technical notes
+- New `src/content/features/ui-fixes/field-clipboard/`: `field-model.js`
+  (kinds, `normalizeRows`, `planPaste` — DOM-free), `clipboard.js`
+  (`chrome.storage.local`, key `cddFieldClipboard`), `page-dom.js` (the only
+  file with these pages' selectors), `panel.js`, `styles.js`, `init.js`.
+- New `inject/hooks/field-rows-bridge.js` (`FIELD_ROWS_REQUEST { tableIndex }`
+  → `FIELD_ROWS`). Most of these pages have no JSON endpoint (`406`), and
+  the read-mode table shows neither pick-list values nor which rows are
+  built in; the rows in React state above each table do. Measured:
+  `memoizedState.rows` on the `vault_*` pages, `memoizedProps.rows` on the
+  Sample/Inventory page, which draws two tables.
+- `required_group_number` is a group id: `null` is optional, a group of one
+  is *is required*, a group of several is *or X is required*. Type option
+  VALUES are `Text`, `Number`, `Date`, `PickList`, `File`, plus `LongText`
+  and `BatchLink` where offered — read live from the select at run time.
+- The pick-list dialog takes values only through a keystroke or a paste —
+  its placeholder says so — so the run dispatches one `paste` event with all
+  values joined by newlines, waits until every value is in an input, and
+  presses *Update Pick List*. Measured on an unsaved row: the pencil exists
+  as soon as the type is *Pick List*, and the values stay on the row after
+  the dialog closes.
+- *Must be Unique* is disabled by CDD on anything but a Text field; the run
+  leaves disabled checkboxes alone rather than fail on them.
+
+---
 ## [15.13.0] — 2026-09-15
 
 ### Added

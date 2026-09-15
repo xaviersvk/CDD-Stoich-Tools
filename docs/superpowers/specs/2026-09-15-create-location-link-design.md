@@ -73,7 +73,7 @@ Pure (`node`): `vaultIdFromPath` on `/vaults/6772/searches/new`,
 
 Live, vault 6772, admin account: the entry appears last in *Create a new…*
 on `/searches/new`; clicking it lands on the settings page with the dialog
-open and the hash gone; Back returns to the search; a reload of the settings
+open and the hash gone, in a new tab; a reload of the settings
 page does not reopen the dialog.
 
 By the user: a plain member sees no entry; an inventory administrator does.

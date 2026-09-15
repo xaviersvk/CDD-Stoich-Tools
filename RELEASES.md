@@ -19,40 +19,15 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ## 15.15.0 — 2026-09-15
 
-One update, five things. The version numbers in between were used while the
-work was written and tested and never shipped.
+**Copy fields and protocol forms between vaults.** Press **Copy** on a
+*… Fields* or *Protocol Forms* settings page, then **Paste** on the same page
+in the other vault. Names already there are skipped; you see the list first.
 
-**Copy field definitions and protocol forms between vaults.** On any
-*Settings → Vault → … Fields* page, and on *Protocol Forms*, press **Copy**,
-open the same page in the other vault and press **Paste**.
-
-- You see the list before anything is created: a field or form whose exact
-  name is already there is skipped, so is a field type the page does not
-  offer. Pick-list values come along.
-- Fields go first, forms second: a form that uses a field the other vault
-  does not have is skipped and the list says which fields are missing.
-- Fields land as pending rows and you press *Update* yourself. Forms are
-  created straight away; tick the ones you want, and give a clashing name a
-  new one right in the list.
-- To copy one form inside a vault, press *Duplicate* in its row.
-
-**Edit Locations is one click from Explore Data.** *Create a new…* has a
-*Location* entry that opens the dialog in a new tab. Vault and inventory
-administrators only.
-
-**Scan racks builds the shelf as well as the rack.** Scan or paste
-`Shelf A > R-1` and the shelf is created on the way.
-
-- End a line with `>` to make locations only. Start it with *Locations* to
-  build from the top of the vault. A shelf cannot go under a location that
-  already holds racks — CDD's rule — and the row says so before Create.
-- Pick a rack size from the dropdown; unorganized boxes take a capacity.
-- The ⓘ next to *Scan racks* explains the panel; the same lines are under
-  *How it works* in Settings → Scan racks.
-
-**The location tree got a filter and a warning colour.** A box above the tree
-shows only the names that match; Escape clears it. Two boxes with the same
-name are orange — hover one to see where the other is.
+- *Duplicate* in a form's row copies it inside the vault.
+- *Create a new… → Location* on Explore Data opens Edit Locations (admins).
+- Scan racks: `Shelf A > R-1` builds the shelf too; size presets; capacity for
+  unorganized boxes; ⓘ explains the panel.
+- Location tree: a filter box, and boxes with the same name turn orange.
 
 ---
 

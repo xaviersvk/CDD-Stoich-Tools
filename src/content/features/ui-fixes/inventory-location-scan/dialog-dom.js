@@ -25,6 +25,7 @@ export const NAME_INPUT_ID = "location-box-node-name";
 export const PANEL_CLASS = "cdd-scan-panel";
 
 const ADD_BOX_LABEL = "Create new organized or unorganized box";
+const ADD_LOCATION_LABEL = "Create new location";
 const PRINT_LABELS_TEXT = "Print Labels";
 
 export function findDialog() {
@@ -63,13 +64,17 @@ function contentOf(item) {
     return item.querySelector(":scope > .MuiTreeItem-content");
 }
 
-function addBoxButton(item) {
+function rowButton(item, label) {
     const content = contentOf(item);
     if (!content) return null;
     for (const button of content.querySelectorAll("button")) {
-        if (button.getAttribute("aria-label") === ADD_BOX_LABEL) return button;
+        if (button.getAttribute("aria-label") === label) return button;
     }
     return null;
+}
+
+function addBoxButton(item) {
+    return rowButton(item, ADD_BOX_LABEL);
 }
 
 function isShown(element) {
@@ -153,31 +158,72 @@ async function waitFor(predicate, tries = 40) {
     return null;
 }
 
-export async function createBoxUnder(dialog, { parentId, name, columns, rows, organized }) {
+// The part a box and a location share: press the row's button, wait for the
+// node, make sure it is the one the right pane is editing, name it, and read
+// the name back off the tree. The Name field carries the same id for both
+// kinds — measured — which is exactly why the selection check matters.
+async function createNamedNode(dialog, { parentId, buttonLabel, name, cannot, kind }) {
     const parent = treeItems(dialog)
         .find((item) => item.dataset.nodeid === String(parentId));
     if (!parent) throw new Error("that location is no longer in the tree");
 
-    const button = addBoxButton(parent);
-    if (!isShown(button)) throw new Error("that location cannot take a box");
+    const button = rowButton(parent, buttonLabel);
+    if (!isShown(button)) throw new Error(cannot);
 
     const before = new Set(treeItems(dialog).map((item) => item.dataset.nodeid));
     button.click();
 
     const created = await waitFor(() =>
         treeItems(dialog).find((item) => !before.has(item.dataset.nodeid)) || null);
-    if (!created) throw new Error("CDD did not add a box");
+    if (!created) throw new Error(`CDD did not add a ${kind}`);
 
-    // The right pane belongs to whatever is selected. If the new box is not it,
-    // writing the name would rename something else.
+    // The right pane belongs to whatever is selected. If the new node is not
+    // it, writing the name would rename something else.
     if (!contentOf(created)?.classList.contains("Mui-selected")) {
-        throw new Error("CDD is not editing the box it just added");
+        throw new Error(`CDD is not editing the ${kind} it just added`);
     }
 
     const nameInput = document.getElementById(NAME_INPUT_ID);
     if (!nameInput) throw new Error("the name field did not appear");
     setNativeValue(nameInput, name);
     await nextFrame();
+
+    return created;
+}
+
+function confirmLabel(created, name) {
+    const painted = labelOf(created);
+    if (painted !== name) {
+        throw new Error(`the row reads "${painted}" instead of "${name}"`);
+    }
+    return created.dataset.nodeid;
+}
+
+// A location under a location. CDD hides the button once the parent holds a
+// box — a level is shelves or racks, not both — and that is the one refusal
+// worth a sentence of its own.
+export async function createLocationUnder(dialog, { parentId, name }) {
+    const parentName = labelOf(treeItems(dialog)
+        .find((item) => item.dataset.nodeid === String(parentId)) || document.createElement("li"));
+    const created = await createNamedNode(dialog, {
+        parentId,
+        buttonLabel: ADD_LOCATION_LABEL,
+        name,
+        kind: "location",
+        cannot: `"${parentName}" already holds boxes and cannot hold a location`,
+    });
+    await nextFrame();
+    return confirmLabel(created, name);
+}
+
+export async function createBoxUnder(dialog, { parentId, name, columns, rows, organized }) {
+    const created = await createNamedNode(dialog, {
+        parentId,
+        buttonLabel: ADD_BOX_LABEL,
+        name,
+        kind: "box",
+        cannot: "that location cannot take a box",
+    });
 
     if (organized) {
         const [columnsInput, rowsInput] = cddElements(dialog, 'input[type="number"]');
@@ -192,10 +238,5 @@ export async function createBoxUnder(dialog, { parentId, name, columns, rows, or
 
     await nextFrame();
 
-    const painted = labelOf(created);
-    if (painted !== name) {
-        throw new Error(`the row reads "${painted}" instead of "${name}"`);
-    }
-
-    return created.dataset.nodeid;
+    return confirmLabel(created, name);
 }

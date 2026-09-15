@@ -51,6 +51,11 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 - The marks are `data-cdd-dup` on the `li` and `title` on the label —
   attributes React does not manage, so its re-renders leave them alone. The
   box icon sits inside the label and inherits the colour, which reads well.
+- A rename repaints the tree label as a **characterData** mutation — React
+  rewrites the text node in place. The discovery observer therefore watches
+  `characterData` as well as `childList`; with children alone the pass ran
+  only when something else on the page changed shape, and the colour
+  arrived seconds late.
 - Measured on the way: the Name field carries the id `location-box-node-name`
   for a LOCATION too, not only for a box. `createBoxUnder` is unaffected — it
   checks that the node it just made is the selected one before writing.

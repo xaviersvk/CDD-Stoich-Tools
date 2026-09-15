@@ -14,9 +14,12 @@
 //
 // Independently of the switch, every sync also runs the duplicate-name pass:
 // the whole tree from the bridge, the twins from tree-model, the colour from
-// name-marks. A rename typed into CDD's name field repaints the label, which
-// is a childList mutation, which is a pass — so the row turns orange while
-// the user is still typing.
+// name-marks. A rename typed into CDD's name field repaints the label — as a
+// characterData mutation, measured: React rewrites the text node in place
+// and adds no element — so the observer watches text as well as children,
+// and the row turns orange while the user is still typing. With childList
+// alone the pass ran only when something ELSE on the page changed shape,
+// which read as "the colour takes a while".
 
 import {
     isInventoryScanEnabled,
@@ -50,7 +53,7 @@ function mount(dialog) {
 
 // One pass in flight at a time; a mutation that lands during one asks for a
 // single follow-up rather than a queue of them. The marks are attributes and
-// the observer watches childList only, so a pass never re-triggers itself.
+// the observer does not watch attributes, so a pass never re-triggers itself.
 let marking = false;
 let markAgain = false;
 
@@ -124,6 +127,7 @@ export function initInventoryLocationScan() {
     const observer = new MutationObserver(schedule);
     observer.observe(document.documentElement, {
         childList: true,
+        characterData: true,
         subtree: true,
     });
 

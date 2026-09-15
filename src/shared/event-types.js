@@ -35,4 +35,10 @@ export const EVENTS = {
   // Content -> page world: pick one option of that SelectBox by value, by
   // calling its React onChange - the same thing a click on the option does.
   SELECTBOX_SELECT: "SELECTBOX_SELECT",
+  // Content -> page world: "read the whole Edit Locations tree". MUI does not
+  // render the children of a collapsed node at all, so the DOM is not the
+  // tree; the props behind ul[role="tree"] are. The bridge
+  // (inject/hooks/location-tree-bridge.js) answers with LOCATION_TREE.
+  LOCATION_TREE_REQUEST: "LOCATION_TREE_REQUEST",
+  LOCATION_TREE: "LOCATION_TREE",
 };

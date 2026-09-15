@@ -512,7 +512,14 @@ affect the others. These are the **safest** files to touch.
   (`initInventoryLocationScan`); `scan-panel.js` is the overlay,
   `dialog-dom.js` the only file holding CDD's selectors, `tree-model.js` the
   DOM-free duplicate and breadcrumb logic.
-- **Data source:** live DOM (`.edit-locations-dialog-paper`,
+- **Duplicate names:** `inventory-location-scan/name-marks.js` paints orange
+  every box whose name another box carries (`tree-model.js
+  duplicateBoxNames`). The tree is read whole — collapsed branches included —
+  from React props via `inject/hooks/location-tree-bridge.js`, wrapped by
+  `tree-source.js` with a DOM fallback. Always on, no switch.
+- **Data source:** the whole tree from React props through the page-world
+  bridge (MUI does not render a collapsed node's children, so the DOM alone is
+  not the tree), live DOM for what is clickable (`.edit-locations-dialog-paper`,
   `li[role=treeitem][data-nodeid]`, `#location-box-node-name`) +
   `shared/inventory-scan.js` (`cddInventoryScanEnabled`, columns, rows,
   organized in `chrome.storage.local`).

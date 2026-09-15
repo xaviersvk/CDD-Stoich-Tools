@@ -11,14 +11,23 @@
 // The switch is read from the sync cache on every scan rather than once at
 // start-up, so flipping it in the options page adds or removes the button on a
 // dialog that is already open.
+//
+// Independently of the switch, every sync also runs the duplicate-name pass:
+// the whole tree from the bridge, the twins from tree-model, the colour from
+// name-marks. A rename typed into CDD's name field repaints the label, which
+// is a childList mutation, which is a pass — so the row turns orange while
+// the user is still typing.
 
 import {
     isInventoryScanEnabled,
     onInventoryScanChanged,
 } from "../../../../shared/inventory-scan.js";
 import { findDialog, findFooter, footerAnchor, nextFrame } from "./dialog-dom.js";
+import { markDuplicateNames } from "./name-marks.js";
 import { closeScanPanel, openScanPanel } from "./scan-panel.js";
 import { injectScanStyles } from "./styles.js";
+import { duplicateBoxNames } from "./tree-model.js";
+import { readTreeNodes } from "./tree-source.js";
 
 const BUTTON_CLASS = "cdd-scan-open";
 
@@ -39,12 +48,43 @@ function mount(dialog) {
     else footer.prepend(button);
 }
 
+// One pass in flight at a time; a mutation that lands during one asks for a
+// single follow-up rather than a queue of them. The marks are attributes and
+// the observer watches childList only, so a pass never re-triggers itself.
+let marking = false;
+let markAgain = false;
+
+async function markPass(dialog) {
+    if (marking) {
+        markAgain = true;
+        return;
+    }
+    marking = true;
+    try {
+        const nodes = await readTreeNodes(dialog);
+        if (dialog.isConnected) markDuplicateNames(dialog, duplicateBoxNames(nodes));
+    } catch (error) {
+        // A missed colour must never cost the user the dialog.
+        console.warn("[CDD scan-racks] duplicate-name pass failed", error);
+    } finally {
+        marking = false;
+        if (markAgain) {
+            markAgain = false;
+            if (dialog.isConnected) markPass(dialog);
+        }
+    }
+}
+
 function sync() {
     const dialog = findDialog();
     if (!dialog) {
         closeScanPanel();
         return;
     }
+
+    // Always on: a colour in a dialog, no switch. Runs whether or not the
+    // scan button is mounted.
+    markPass(dialog);
 
     const existing = dialog.querySelector(`.${BUTTON_CLASS}`);
     if (isInventoryScanEnabled()) {

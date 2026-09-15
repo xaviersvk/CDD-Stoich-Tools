@@ -19,6 +19,43 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [15.11.0] — 2026-09-15
+
+### Added
+- **A box whose name another box already carries is orange in the *Edit
+  Locations* tree.** Hovering it names the twins by path — *Same name:
+  Locations > Racks > AAA*. Box against box only, anywhere in the vault,
+  case-insensitively; a location sharing a box's name is not a clash, and
+  neither are two locations. Always on. CDD itself accepts the duplicate
+  without a word — measured: a second `AAA` under a different location, Save
+  enabled.
+- The rename repaints the row while it is being typed, and *Cancel* clears
+  everything with the dialog.
+
+### Fixed
+- **The Scan racks duplicate check now sees collapsed branches.** MUI does not
+  render a collapsed node's children at all, so the 15.9.0 check — read from
+  the DOM — missed every rack in a folded location, contrary to what its
+  notes claimed. Both the check and the new colour read the whole tree from
+  React props through a page-world bridge, pending nodes included; if the
+  bridge cannot answer, the DOM read stands in and behaves as before.
+
+### Technical notes
+- New `src/inject/hooks/location-tree-bridge.js` (`LOCATION_TREE_REQUEST` →
+  `LOCATION_TREE`), the SelectBox bridge's pattern. The content side is
+  `inventory-location-scan/tree-source.js` (merges `canTakeBox` from the DOM,
+  500 ms timeout, DOM fallback), `tree-model.js` (`isBoxNode`,
+  `duplicateBoxNames`) and `name-marks.js`.
+- Box versus location is not typed in CDD's props. The rule that held for all
+  nine measured node shapes: `organized === false || num_columns > 0`.
+- The marks are `data-cdd-dup` on the `li` and `title` on the label —
+  attributes React does not manage, so its re-renders leave them alone. The
+  box icon sits inside the label and inherits the colour, which reads well.
+- Measured on the way: the Name field carries the id `location-box-node-name`
+  for a LOCATION too, not only for a box. `createBoxUnder` is unaffected — it
+  checks that the node it just made is the selected one before writing.
+
+---
 ## [15.10.0] — 2026-09-09
 
 ### Added

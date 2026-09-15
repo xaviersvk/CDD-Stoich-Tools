@@ -31,6 +31,7 @@ import {initColumnManager} from "./features/ui-fixes/column-manager";
 import {initLocationPickerResize} from "./features/ui-fixes/location-picker-resize";
 import {initInventoryLocationTree} from "./features/ui-fixes/inventory-location-tree/init";
 import {initInventoryLocationScan} from "./features/ui-fixes/inventory-location-scan/init";
+import {initCreateLocationLink} from "./features/ui-fixes/create-location-link/init";
 import {injectMoleculeLinksStyles} from "./features/ui-fixes/molecule-links-fixes";
 import {initElnShiftLeft} from "./features/ui-fixes/eln-shift-left";
 import {watchConsumedBatches} from "./features/ui-fixes/consumed-batches-collapse";
@@ -156,6 +157,7 @@ function init() {
   // Save there, which made adding a shelf of racks one round trip per rack.
   // Off unless switched on in the options page.
   initInventoryLocationScan();
+  initCreateLocationLink();
 
   injectMoleculeLinksStyles();
   initElnShiftLeft();

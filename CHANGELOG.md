@@ -19,6 +19,53 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [15.12.0] — 2026-09-15
+
+### Added
+- **A scanned or pasted line may carry a path, and the shelf is made on the
+  way.** `Shelf A > Bay 2 > R-1` in the Scan racks box creates *Shelf A* and
+  *Bay 2* under the target location if they are not there, then the box.
+  Existing segments are reused, case-insensitively. A line ending in `>`
+  creates locations only. A first segment naming the root (*Locations*)
+  makes the path absolute, so a whole vault can be pasted from one Excel
+  column. The button says what it will do: *Create 3 boxes, 2 locations*,
+  the shelf counted once however many racks go on it.
+- Two refusals a run can stop on, each named in the status line: a segment
+  that is a box (`"AAA" is a box, not a location`) and a location that
+  already holds boxes, under which CDD allows no sub-location
+  (`"room" already holds boxes and cannot hold a location`). Measured: a
+  location with a box shows only the add-box button; a location with
+  locations, or nothing, shows both.
+- **A filter box above the location tree.** Type part of a name; rows that
+  match stay, with the path above them, and everything else is hidden.
+  Branches that hold a match unfold. Clearing the box, or Escape, puts the
+  tree back the way it was. Enter in it does nothing — it would have been
+  *Save*. Always on.
+- **Size presets in Scan racks.** *SBS 96 · 12 × 8*, *SBS 384 · 24 × 16*,
+  *Cryobox 9 × 9*, *Cryobox 10 × 10* in a dropdown before the two number
+  fields. A preset fills the fields and follows the same rule as typing into
+  them: rows nobody sized by hand take the new size. Typing a size the
+  presets do not know reads *Custom*. Settings keep their numeric defaults.
+
+### Technical notes
+- `tree-model.js` grows `parsePath`, `resolvePath`, `childNamed`, `rootOf`,
+  `locationsToCreate` and `findPreset`, all DOM-free. `classifyScan` takes a
+  fourth argument `{ targetId }` and returns the parsed path with the row.
+- `dialog-dom.js`: `createBoxUnder` and the new `createLocationUnder` share
+  `createNamedNode` — press the row's button, wait for the node, check it is
+  the selected one, name it, read the label back. The Name field has the
+  same id for both kinds, which is why the selection check is the guard.
+- The run re-reads the tree through the bridge after every node it makes:
+  the next step needs the id CDD just handed out.
+- The bridge's `LOCATION_TREE` answer carries `expanded` (the tree's
+  `expandedItems`, string ids) and a new `LOCATION_TREE_EXPAND { ids }`
+  calls the tree's own `onExpandedItemsChange`. Measured: a number where a
+  string id is expected expands nothing.
+- `tree-filter.js` hides rows with `data-cdd-filtered`, an attribute React
+  does not manage, and the discovery pass re-applies it after the duplicate
+  marks so a repainted row stays hidden.
+
+---
 ## [15.11.0] — 2026-09-15
 
 ### Added

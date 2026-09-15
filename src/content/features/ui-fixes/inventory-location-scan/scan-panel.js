@@ -33,7 +33,6 @@ import {
     findContent,
     findLeftColumn,
     nextFrame,
-    readTreeRows,
     selectedNodeId,
     treeItems,
 } from "./dialog-dom.js";
@@ -42,9 +41,9 @@ import {
     SCAN_IN_TREE,
     acceptedScans,
     boxTargets,
-    buildNodes,
     classifyScan,
 } from "./tree-model.js";
+import { readTreeNodes } from "./tree-source.js";
 
 const SCAN_CREATED = "created";
 const TARGET_CLASS = "cdd-scan-target";
@@ -117,16 +116,27 @@ export function closeScanPanel() {
     open = null;
 }
 
-export function openScanPanel(dialog) {
+// Two clicks on the footer button before the first answer arrives must not
+// open two panels.
+let opening = false;
+
+export async function openScanPanel(dialog) {
+    if (opening) return;
+    opening = true;
     closeScanPanel();
 
     const content = findContent(dialog);
-    if (!content) return;
+    if (!content) {
+        opening = false;
+        return;
+    }
 
     // Re-read on every tree click: CDD's own + button can add a location while
     // the panel is up, and a stale snapshot would neither offer it nor catch a
-    // duplicate against it.
-    let nodes = buildNodes(readTreeRows(dialog));
+    // duplicate against it. The bridge sees collapsed branches; the DOM does not.
+    let nodes = await readTreeNodes(dialog);
+    opening = false;
+    if (!dialog.isConnected) return;
     let targets = boxTargets(nodes);
 
     const settings = inventoryScanSettings();
@@ -244,7 +254,7 @@ export function openScanPanel(dialog) {
         // click would answer with the PREVIOUS row.
         await nextFrame();
 
-        nodes = buildNodes(readTreeRows(dialog));
+        nodes = await readTreeNodes(dialog);
         targets = boxTargets(nodes);
 
         // A click that only unfolds a branch selects nothing. Leaving the

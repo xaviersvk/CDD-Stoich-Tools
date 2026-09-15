@@ -29,8 +29,11 @@
 // Nothing here presses Save. The run creates pending nodes and steps aside.
 
 import {
+    DEFAULT_BOX_CAPACITY,
+    MAX_BOX_CAPACITY,
     inventoryScanSettings,
     sanitizeBoxSide,
+    sanitizeCapacity,
 } from "../../../../shared/inventory-scan.js";
 import {
     PANEL_CLASS,
@@ -78,11 +81,11 @@ function el(tag, className, text) {
     return node;
 }
 
-function numberBox(className, value) {
+function numberBox(className, value, max = 100) {
     const input = document.createElement("input");
     input.type = "number";
     input.min = "1";
-    input.max = "100";
+    input.max = String(max);
     input.className = className;
     input.value = String(value);
     return input;
@@ -90,13 +93,16 @@ function numberBox(className, value) {
 
 // Excel puts a TAB between columns, and only a TAB — splitting on commas too
 // would quietly cut a rack whose code contains one. A line is a name or a
-// path, and optionally the two numbers after it.
+// path, then optionally two numbers (columns and rows) or one (capacity, for
+// an unorganized shelf).
 function parsePastedLine(line) {
     const parts = line.split("\t").map((part) => part.trim());
     const name = parts.shift() || "";
     const columns = sanitizeBoxSide(parts[0], null);
     const rows = sanitizeBoxSide(parts[1], null);
-    return { name, size: columns && rows ? { columns, rows } : null };
+    if (columns && rows) return { name, size: { columns, rows } };
+    const capacity = parts[1] === undefined || parts[1] === "" ? sanitizeCapacity(parts[0], null) : null;
+    return { name, size: capacity ? { capacity } : null };
 }
 
 // The node itself if it can take a box, otherwise the closest ancestor that
@@ -175,6 +181,7 @@ export async function openScanPanel(dialog) {
         // starts from; a shelf of 10 x 10 trays must not redefine that.
         gridColumns: settings.columns,
         gridRows: settings.rows,
+        capacity: DEFAULT_BOX_CAPACITY,
         organized: settings.organized,
         busy: false,
         status: "",
@@ -223,6 +230,13 @@ export async function openScanPanel(dialog) {
     const rowsInput = numberBox(null, state.gridRows);
     sizeLabel.append(presetSelect, columnsInput, el("span", "cdd-scan-times", "×"), rowsInput);
     controls.append(sizeLabel);
+
+    // Shown in place of the grid while Organized is off.
+    const capacityLabel = el("label", null);
+    capacityLabel.append(el("span", null, "Capacity"));
+    const capacityInput = numberBox(null, state.capacity, MAX_BOX_CAPACITY);
+    capacityLabel.append(capacityInput);
+    controls.append(capacityLabel);
 
     const organizedLabel = el("label", null);
     const organizedInput = document.createElement("input");
@@ -313,8 +327,9 @@ export async function openScanPanel(dialog) {
         const scan = classifyScan(raw, nodes, state.scans, { targetId: state.targetId });
         if (!scan) return false;
         scan.raw = raw;
-        scan.columns = size ? size.columns : state.gridColumns;
-        scan.rows = size ? size.rows : state.gridRows;
+        scan.columns = size?.columns ?? state.gridColumns;
+        scan.rows = size?.rows ?? state.gridRows;
+        scan.capacity = size?.capacity ?? state.capacity;
         // A size that came in with the row counts as set by hand: the boxes at
         // the top must not overwrite what an Excel sheet already said.
         scan.sized = Boolean(size);
@@ -347,8 +362,16 @@ export async function openScanPanel(dialog) {
             if (scan.sized) continue;
             scan.columns = state.gridColumns;
             scan.rows = state.gridRows;
+            scan.capacity = state.capacity;
         }
     }
+
+    capacityInput.addEventListener("change", () => {
+        state.capacity = sanitizeCapacity(capacityInput.value, state.capacity);
+        capacityInput.value = String(state.capacity);
+        applyDefaultSize();
+        render();
+    });
 
     /* ----- the grid at the top ----- */
     function syncPreset() {
@@ -386,9 +409,16 @@ export async function openScanPanel(dialog) {
     // Deliberately does NOT re-render: the row is being edited, and rebuilding
     // the list under the cursor would throw the focus out of the box.
     function sizeInput(scan, field) {
-        const input = numberBox("cdd-scan-size-input", scan[field]);
+        const isCapacity = field === "capacity";
+        const input = numberBox(
+            isCapacity ? "cdd-scan-size-input cdd-scan-size-input--wide" : "cdd-scan-size-input",
+            scan[field],
+            isCapacity ? MAX_BOX_CAPACITY : 100,
+        );
         input.addEventListener("change", () => {
-            scan[field] = sanitizeBoxSide(input.value, scan[field]);
+            scan[field] = isCapacity
+                ? sanitizeCapacity(input.value, scan[field])
+                : sanitizeBoxSide(input.value, scan[field]);
             input.value = String(scan[field]);
             scan.sized = true;
         });
@@ -396,9 +426,12 @@ export async function openScanPanel(dialog) {
     }
 
     function render() {
-        columnsInput.disabled = !state.organized || state.busy;
-        rowsInput.disabled = !state.organized || state.busy;
-        presetSelect.disabled = !state.organized || state.busy;
+        sizeLabel.hidden = !state.organized;
+        capacityLabel.hidden = state.organized;
+        columnsInput.disabled = state.busy;
+        rowsInput.disabled = state.busy;
+        presetSelect.disabled = state.busy;
+        capacityInput.disabled = state.busy;
         organizedInput.disabled = state.busy;
         intoSelect.disabled = state.busy;
         scanInput.disabled = state.busy || !targets.length;
@@ -440,6 +473,10 @@ export async function openScanPanel(dialog) {
                     el("span", "cdd-scan-times", "×"),
                     sizeInput(scan, "rows"),
                 );
+                row.append(size);
+            } else if (!state.busy) {
+                const size = el("span", "cdd-scan-size");
+                size.append(el("span", "cdd-scan-times", "capacity"), sizeInput(scan, "capacity"));
                 row.append(size);
             }
 
@@ -541,6 +578,7 @@ export async function openScanPanel(dialog) {
                         columns: scan.columns,
                         rows: scan.rows,
                         organized: state.organized,
+                        capacity: scan.capacity,
                     });
                     nodes = await readTreeNodes(dialog);
                 }

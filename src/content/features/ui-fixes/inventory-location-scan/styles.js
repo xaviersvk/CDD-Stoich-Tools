@@ -102,6 +102,9 @@ export function injectScanStyles() {
         align-items: center;
         gap: 6px;
     }
+    /* The grid pair and the capacity field take turns; the attribute must
+       win over the inline-flex above. */
+    .cdd-scan-controls label[hidden] { display: none; }
     .cdd-scan-controls select,
     .cdd-scan-controls input[type="number"] {
         font: inherit;
@@ -179,6 +182,7 @@ export function injectScanStyles() {
         border-radius: 3px;
         background: #fff;
     }
+    .cdd-scan-size-input--wide { width: 64px; }
     .cdd-scan-why { color: #b3261e; }
     .cdd-scan-row--refused .cdd-scan-name {
         font-weight: 400;

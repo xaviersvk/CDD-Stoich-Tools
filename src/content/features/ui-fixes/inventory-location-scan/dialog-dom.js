@@ -222,7 +222,7 @@ export async function createLocationUnder(dialog, { parentId, name }) {
     return confirmLabel(created, name);
 }
 
-export async function createBoxUnder(dialog, { parentId, name, columns, rows, organized }) {
+export async function createBoxUnder(dialog, { parentId, name, columns, rows, organized, capacity }) {
     const created = await createNamedNode(dialog, {
         parentId,
         buttonLabel: ADD_BOX_LABEL,
@@ -238,8 +238,16 @@ export async function createBoxUnder(dialog, { parentId, name, columns, rows, or
         await nextFrame();
         setNativeValue(rowsInput, String(rows));
     } else {
+        // Unticking swaps the two grid fields for one Capacity field, which
+        // CDD starts at 100 — measured; the native setter reaches it too.
         const organizedBox = cddElements(dialog, 'input[type="checkbox"]')[0];
         if (organizedBox?.checked) organizedBox.click();
+        if (capacity != null) {
+            await nextFrame();
+            const capacityInput = cddElements(dialog, 'input[type="number"]')[0];
+            if (!capacityInput) throw new Error("the capacity field did not appear");
+            setNativeValue(capacityInput, String(capacity));
+        }
     }
 
     await nextFrame();

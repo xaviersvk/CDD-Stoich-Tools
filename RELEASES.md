@@ -28,6 +28,7 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
   The row says so before you press Create.
 - A filter box above the tree shows only the names that match. Escape clears it.
 - Pick a rack size from the dropdown — SBS 96, SBS 384, 9 × 9, 10 × 10.
+- Unorganized boxes take a capacity, per row, instead of CDD's fixed 100.
 
 ---
 

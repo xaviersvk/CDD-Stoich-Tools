@@ -47,6 +47,13 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   Branches that hold a match unfold. Clearing the box, or Escape, puts the
   tree back the way it was. Enter in it does nothing — it would have been
   *Save*. Always on.
+- **An unorganized box gets its capacity from the panel.** With *Organized*
+  off, the grid fields give way to one *Capacity* field, starting at CDD's
+  own 100, and every row carries its own — the same "untouched rows follow"
+  rule as the grid. A pasted line with one number after the name sets the
+  capacity; two numbers stay columns and rows. Measured: unticking
+  *Organized* in CDD swaps the two grid inputs for one Capacity input, and
+  the native setter reaches it.
 - **Size presets in Scan racks.** *SBS 96 · 12 × 8*, *SBS 384 · 24 × 16*,
   *Cryobox 9 × 9*, *Cryobox 10 × 10* in a dropdown before the two number
   fields. A preset fills the fields and follows the same rule as typing into

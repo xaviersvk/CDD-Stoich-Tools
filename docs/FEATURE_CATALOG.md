@@ -498,6 +498,25 @@ affect the others. These are the **safest** files to touch.
 - **Regression risk:** **low** — keyed by name, never by the per-vault value;
   ordering changes neither `select.value` nor the selected option.
 
+### 6.9b Copy Field Definitions Between Vaults
+- **User value:** *Copy N fields* / *Paste* above every *… Fields* settings
+  table (Molecule, Batch, Sample, Inventory, Protocol, Run, ELN). Copy keeps
+  the definitions per kind in extension storage; Paste on the same page in
+  another vault previews add/skip per field (exact-name match skipped, type
+  not offered skipped, group requirement pasted as optional), then drives
+  CDD's edit mode — rows, types, flags, pick-list values — and stops before
+  *Update … fields*.
+- **Entry point:** `ui-fixes/field-clipboard/init.js`; `field-model.js` is
+  DOM-free, `page-dom.js` holds the selectors, `panel.js` the card.
+- **Data source:** React state above each table through
+  `inject/hooks/field-rows-bridge.js` (no JSON endpoint on most pages);
+  `chrome.storage.local` key `cddFieldClipboard`.
+- **Maintenance difficulty:** **medium** — depends on the row input names,
+  the type option values, the pick-list dialog's paste handling, and the
+  fiber walk for the rows.
+- **Regression risk:** **low** — admin-only settings pages, preview first,
+  every step checked, Update never pressed.
+
 ### 6.10 Scan Racks into a Location
 - **User value:** A shelf of SBS racks goes into the inventory location tree in
   one pass. A `Scan racks` button in the `Edit Locations` footer opens a panel

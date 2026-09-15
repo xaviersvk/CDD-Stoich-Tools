@@ -17,6 +17,19 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 15.14.0 — 2026-09-15
+
+**Field definitions can now be copied between vaults.** On any *… Fields*
+settings page press **Copy**, open the same page in the other vault and
+press **Paste**.
+
+- A field whose exact name is already there is skipped; so is a type the
+  page does not offer. Pick-list values come along.
+- You see the list before anything is added, and you press *Update* yourself.
+- A field that was "or X is required" arrives as optional; rebuild the group by hand.
+
+---
+
 ## 15.13.0 — 2026-09-15
 
 **Edit Locations is now one click from Explore Data.** *Create a new…* has

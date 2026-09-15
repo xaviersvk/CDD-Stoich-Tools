@@ -86,6 +86,17 @@ Here's the short version of everything it adds:
   typing), category chips with counts, coloured type badges, a visible/total
   summary, and drag handles only on the columns you've actually selected.
 
+### Copy fields between vaults
+
+On every *Settings → Vault → … Fields* page (Molecule, Batch, Sample,
+Inventory, Protocol, Run, ELN) the extension adds **Copy N fields** and
+**Paste** above the table. Press *Copy* in one vault, open the same page in
+the other vault and press *Paste*: you get a list of what will be added and
+what will be skipped — a field whose exact name is already there, a type
+the page does not offer — and a field that was "or X is required" arrives
+as optional. *Add N fields* fills the rows, pick-list values included; you
+press CDD's own *Update … fields* to save, or *cancel* to discard.
+
 ### Location tree (Edit Locations)
 
 *Settings → Sample/Inventory Fields → Add/Edit Inventory Fields → Edit

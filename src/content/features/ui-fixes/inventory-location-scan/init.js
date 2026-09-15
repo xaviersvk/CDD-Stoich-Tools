@@ -29,6 +29,7 @@ import { findDialog, findFooter, footerAnchor, nextFrame } from "./dialog-dom.js
 import { markDuplicateNames } from "./name-marks.js";
 import { closeScanPanel, openScanPanel } from "./scan-panel.js";
 import { injectScanStyles } from "./styles.js";
+import { mountTreeFilter, paintTreeFilter, unmountTreeFilter } from "./tree-filter.js";
 import { duplicateBoxNames } from "./tree-model.js";
 import { readTreeNodes } from "./tree-source.js";
 
@@ -65,7 +66,11 @@ async function markPass(dialog) {
     marking = true;
     try {
         const nodes = await readTreeNodes(dialog);
-        if (dialog.isConnected) markDuplicateNames(dialog, duplicateBoxNames(nodes));
+        if (dialog.isConnected) {
+            markDuplicateNames(dialog, duplicateBoxNames(nodes));
+            // React may have repainted rows the filter had hidden.
+            paintTreeFilter(dialog);
+        }
     } catch (error) {
         // A missed colour must never cost the user the dialog.
         console.warn("[CDD scan-racks] duplicate-name pass failed", error);
@@ -82,11 +87,13 @@ function sync() {
     const dialog = findDialog();
     if (!dialog) {
         closeScanPanel();
+        unmountTreeFilter();
         return;
     }
 
-    // Always on: a colour in a dialog, no switch. Runs whether or not the
-    // scan button is mounted.
+    // Always on: a colour in a dialog and a filter box above the tree, no
+    // switch. Both run whether or not the scan button is mounted.
+    mountTreeFilter(dialog);
     markPass(dialog);
 
     const existing = dialog.querySelector(`.${BUTTON_CLASS}`);

@@ -24,6 +24,22 @@ export function injectScanStyles() {
         color: #e65100;
     }
 
+    /* ===== THE FILTER ABOVE THE TREE ===== */
+    .cdd-tree-filter {
+        display: block;
+        box-sizing: border-box;
+        width: calc(100% - 16px);
+        margin: 0 8px 8px;
+        padding: 6px 9px;
+        font: inherit;
+        font-size: 13px;
+        border: 1px solid rgba(0, 0, 0, 0.3);
+        border-radius: 4px;
+        background: #fff;
+    }
+    .cdd-tree-filter:focus { outline: none; border-color: #1565c0; }
+    li[role="treeitem"][data-cdd-filtered] { display: none; }
+
     /* ===== THE FOOTER BUTTON ===== */
     .cdd-scan-open {
         appearance: none;

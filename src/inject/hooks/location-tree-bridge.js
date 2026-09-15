@@ -10,10 +10,17 @@
 //
 // Protocol (window.postMessage, source EVENT_SOURCE):
 //   LOCATION_TREE_REQUEST { requestId }
-//     -> LOCATION_TREE    { requestId, nodes: [{ id, parentId, name, isBox }] | null }
+//     -> LOCATION_TREE    { requestId, nodes: [{ id, parentId, name, isBox }] | null,
+//                           expanded: string[] }
+//   LOCATION_TREE_EXPAND  { ids: string[] }   (no answer)
 //
 // `null` means "could not read it" — no dialog, no fiber, or a shape this
 // file does not recognise — and the content side falls back to the DOM.
+//
+// The tree is a controlled MUI SimpleTreeView: its props carry
+// `expandedItems` (STRING ids — a number in that array expands nothing,
+// measured) and `onExpandedItemsChange(event, ids)`. Calling the handler is
+// what a click on a chevron does, minus the chevron.
 
 import { post } from "../bus.js";
 import { EVENTS, EVENT_SOURCE } from "../../shared/event-types.js";
@@ -30,14 +37,19 @@ function fiberOf(element) {
 // Up the `return` chain from the <ul> to the first component whose props carry
 // a `nodes` array — measured: the root of CDD's tree, one entry, with
 // `children` all the way down and a `parent` back-pointer on every node.
-function findTreeNodes(fiber) {
+function findTreeProps(fiber) {
     let cursor = fiber;
     for (let step = 0; cursor && step < MAX_WALK; step += 1) {
-        const nodes = cursor.memoizedProps?.nodes;
-        if (Array.isArray(nodes)) return nodes;
+        const props = cursor.memoizedProps;
+        if (props && Array.isArray(props.nodes)) return props;
         cursor = cursor.return;
     }
     return null;
+}
+
+function treeProps() {
+    const tree = document.querySelector(`${DIALOG_SELECTOR} ul[role="tree"]`);
+    return findTreeProps(fiberOf(tree));
 }
 
 // The same rule as content/.../tree-model.js isBoxNode. Repeated because the
@@ -69,9 +81,18 @@ function flatten(roots) {
 }
 
 function readTree() {
-    const tree = document.querySelector(`${DIALOG_SELECTOR} ul[role="tree"]`);
-    const nodes = findTreeNodes(fiberOf(tree));
-    return nodes ? flatten(nodes) : null;
+    const props = treeProps();
+    if (!props) return { nodes: null, expanded: [] };
+    return {
+        nodes: flatten(props.nodes),
+        expanded: (props.expandedItems || []).map(String),
+    };
+}
+
+function expandTree(ids) {
+    const props = treeProps();
+    if (!props || typeof props.onExpandedItemsChange !== "function") return;
+    props.onExpandedItemsChange(new Event("cdd-tree-filter"), (ids || []).map(String));
 }
 
 export function installLocationTreeBridge() {
@@ -79,15 +100,24 @@ export function installLocationTreeBridge() {
         if (event.source !== window) return;
         const data = event.data;
         if (!data || data.source !== EVENT_SOURCE) return;
+        if (data.type === EVENTS.LOCATION_TREE_EXPAND) {
+            try {
+                expandTree(data.payload?.ids);
+            } catch (err) {
+                console.warn("[CDD Stoich Tools] location tree expand failed:", err);
+            }
+            return;
+        }
+
         if (data.type !== EVENTS.LOCATION_TREE_REQUEST) return;
 
         const requestId = data.payload?.requestId;
-        let nodes = null;
+        let answer = { nodes: null, expanded: [] };
         try {
-            nodes = readTree();
+            answer = readTree();
         } catch (err) {
             console.warn("[CDD Stoich Tools] location tree read failed:", err);
         }
-        post(EVENTS.LOCATION_TREE, { requestId, nodes });
+        post(EVENTS.LOCATION_TREE, { requestId, ...answer });
     });
 }

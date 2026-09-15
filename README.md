@@ -86,6 +86,55 @@ Here's the short version of everything it adds:
   typing), category chips with counts, coloured type badges, a visible/total
   summary, and drag handles only on the columns you've actually selected.
 
+### Location tree (Edit Locations)
+
+*Settings → Sample/Inventory Fields → Add/Edit Inventory Fields → Edit
+Locations.* The extension adds a **Scan racks** button to the dialog's footer,
+a **filter box** above the tree, and **orange names** for boxes that share a
+name. The ⓘ next to *Scan racks* shows the short version of this guide inside
+the panel.
+
+**Scan racks** collects racks into a list first and creates them all at once,
+so a handheld scanner's Enter no longer saves the dialog after every code.
+
+- **Scan** a barcode, or type a name and press Enter. Each becomes one row.
+- **Paste** a list, one rack per line. After the name, TAB-separated: two
+  numbers are columns × rows, one number is the capacity of an unorganized
+  box. Straight out of Excel.
+- **Paths.** `Shelf A > Bay 2 > R-1` creates the missing locations on the way,
+  then the box. Existing ones are reused. End a line with `>` to create
+  locations only. Start it with `Locations >` to build from the top of the
+  vault instead of under *Into*.
+- **Where a shelf can go.** A location that already holds racks cannot take a
+  sub-location — that is CDD's rule, not ours. Such a row is struck out with
+  the reason and not counted; move *Into* to a location without racks and
+  the row comes back.
+- **Into.** The location the rows go under: pick it from the dropdown or
+  click it in the tree. Clicking a box picks the location that holds it.
+- **Duplicates.** A name already anywhere in the vault, or twice in the list,
+  is struck out and not counted. The number on the button is always the
+  number of boxes and locations that will appear.
+- **Size.** Pick a preset (SBS 96, SBS 384, 9 × 9, 10 × 10) or type
+  columns × rows. The pair at the top is what the next row starts from; every
+  row can be changed on the row. Changing the top pair rewrites only rows
+  nobody sized by hand. With **Organized** off, rows take a **capacity**
+  instead (CDD's default is 100).
+- **Create** makes the boxes as pending changes and leaves the dialog open,
+  so you can look before you commit. **Nothing is saved until you press
+  CDD's Save**; *Cancel* discards everything. If a step fails, the run stops,
+  keeps what it made, and says how far it got.
+
+**Filter.** Type part of a name above the tree; rows that match stay, with the
+path above them, and folded branches that hold a match unfold. Clearing the
+box, or Esc, puts the tree back the way it was.
+
+**Orange names.** Two boxes with the same name anywhere in the vault are shown
+in orange; hover one to see where the other is. CDD itself accepts the
+duplicate silently. Boxes only — a location may share a box's name.
+
+Settings → **Scan racks** switches the button off; the filter and the colour
+are always on.
+
 ### 🧬 Registration
 - **Entity-type picklists in your order, defaulted to your last choice** — both
   the Create Entity form picker and the bulk-registration ("slurp") type list

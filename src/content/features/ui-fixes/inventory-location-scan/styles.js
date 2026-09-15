@@ -89,6 +89,48 @@ export function injectScanStyles() {
         border-bottom: 1px solid rgba(0, 0, 0, 0.12);
     }
     .cdd-scan-title { font-size: 15px; font-weight: 600; }
+
+    /* The i: a small ring beside the title. Pressed, it shows the manual
+       below the controls; the panel is the manual's home, not a new tab. */
+    .cdd-scan-help-toggle {
+        appearance: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        margin-left: 8px;
+        padding: 0;
+        border: 1.5px solid #1565c0;
+        border-radius: 50%;
+        background: #fff;
+        color: #1565c0;
+        font: inherit;
+        font-size: 12px;
+        font-weight: 700;
+        font-style: italic;
+        line-height: 1;
+        vertical-align: 2px;
+        cursor: pointer;
+    }
+    .cdd-scan-help-toggle:hover,
+    .cdd-scan-help-toggle--on { background: #1565c0; color: #fff; }
+
+    .cdd-scan-help {
+        display: grid;
+        grid-template-columns: max-content 1fr;
+        gap: 6px 12px;
+        padding: 10px 12px;
+        border: 1px solid rgba(0, 0, 0, 0.12);
+        border-radius: 4px;
+        background: #f7f9fc;
+        font-size: 12.5px;
+        line-height: 1.45;
+    }
+    .cdd-scan-help[hidden] { display: none; }
+    .cdd-scan-help-item { display: contents; }
+    .cdd-scan-help-item b { font-weight: 600; white-space: nowrap; }
+    .cdd-scan-help-link { grid-column: 2; color: #1565c0; }
     .cdd-scan-note { color: rgba(0, 0, 0, 0.6); }
 
     .cdd-scan-controls {

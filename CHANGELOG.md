@@ -54,6 +54,11 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   capacity; two numbers stay columns and rows. Measured: unticking
   *Organized* in CDD swaps the two grid inputs for one Capacity input, and
   the native setter reaches it.
+- **An ⓘ beside the Scan racks title opens the manual inside the panel** —
+  eight lines, one per thing the panel does, and a link to the full guide.
+  The full guide is a new *Location tree (Edit Locations)* section in
+  `README.md`, the first user-facing description of the scan panel, the
+  filter and the orange names.
 - **Size presets in Scan racks.** *SBS 96 · 12 × 8*, *SBS 384 · 24 × 16*,
   *Cryobox 9 × 9*, *Cryobox 10 × 10* in a dropdown before the two number
   fields. A preset fills the fields and follows the same rule as typing into

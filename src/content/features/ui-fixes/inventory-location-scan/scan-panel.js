@@ -60,6 +60,7 @@ import {
 import { readTreeNodes } from "./tree-source.js";
 
 const SCAN_CREATED = "created";
+const GUIDE_URL = "https://github.com/xaviersvk/CDD-Stoich-Tools#location-tree-edit-locations";
 const TARGET_CLASS = "cdd-scan-target";
 const CUSTOM_PRESET = "custom";
 
@@ -191,10 +192,47 @@ export async function openScanPanel(dialog) {
 
     /* ----- head ----- */
     const head = el("div", "cdd-scan-head");
-    head.append(el("span", "cdd-scan-title", "Scan racks"));
+    const title = el("span", "cdd-scan-title", "Scan racks");
+    const helpToggle = el("button", "cdd-scan-help-toggle", "i");
+    helpToggle.type = "button";
+    helpToggle.title = "How it works";
+    helpToggle.setAttribute("aria-label", "How it works");
+    title.append(helpToggle);
+    head.append(title);
     head.append(el("span", "cdd-scan-note",
-        "Enter adds a row. Paste a list to add many. Shelf A > R-1 makes the shelf on the way. Nothing is saved until you press Save."));
+        "Enter adds a row. Paste a list to add many. Nothing is saved until you press Save."));
     panel.append(head);
+
+    /* ----- the manual, folded until the i is pressed ----- */
+    const help = el("div", "cdd-scan-help");
+    help.hidden = true;
+    const helpItems = [
+        ["Scan", "Scan a barcode, or type a name and press Enter. Each becomes one row."],
+        ["Paste", "One rack per line. After the name, TAB-separated: two numbers are columns × rows, one number is the capacity of an unorganized box."],
+        ["Paths", "Shelf A > Bay 2 > R-1 makes the missing locations, then the box. End a line with > to make locations only. Start it with Locations > to build from the top of the vault."],
+        ["Where a shelf can go", "Under a location that holds no racks yet — CDD's rule. A row that cannot be built is struck out with the reason; move Into to an empty location and it comes back."],
+        ["Duplicates", "A name already in the vault, or twice in the list, is struck out and not counted. In the tree, boxes that share a name are orange."],
+        ["Size", "Pick a preset or type columns × rows; every row can differ. With Organized off, rows take a capacity instead."],
+        ["Create", "Makes the boxes as pending changes and leaves the dialog open. Nothing is saved until you press CDD's Save; Cancel discards everything."],
+        ["Filter", "The box above the tree shows only the names that match. Esc clears it."],
+    ];
+    for (const [term, text] of helpItems) {
+        const item = el("div", "cdd-scan-help-item");
+        item.append(el("b", null, term), el("span", null, text));
+        help.append(item);
+    }
+    const guide = document.createElement("a");
+    guide.className = "cdd-scan-help-link";
+    guide.href = GUIDE_URL;
+    guide.target = "_blank";
+    guide.rel = "noopener";
+    guide.textContent = "Full guide";
+    help.append(guide);
+    helpToggle.addEventListener("click", () => {
+        help.hidden = !help.hidden;
+        helpToggle.classList.toggle("cdd-scan-help-toggle--on", !help.hidden);
+        if (help.hidden) scanInput.focus();
+    });
 
     /* ----- controls ----- */
     const controls = el("div", "cdd-scan-controls");
@@ -251,6 +289,7 @@ export async function openScanPanel(dialog) {
     controls.append(organizedLabel);
 
     panel.append(controls);
+    panel.append(help);
 
     /* ----- scan box ----- */
     const scanInput = document.createElement("input");

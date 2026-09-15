@@ -17,6 +17,16 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 15.11.0 — 2026-09-15
+
+**Two boxes with the same name now show up orange in *Edit Locations*.**
+Hover the name to see where the other one is.
+
+- Boxes only, across the whole vault. Rename one and the colour goes.
+- Scan racks now refuses a code that is already in a folded branch of the tree.
+
+---
+
 ## 15.10.0 — 2026-09-09
 
 **Ctrl+click a column header on Inventory search and the whole column is

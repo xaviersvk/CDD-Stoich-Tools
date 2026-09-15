@@ -19,65 +19,40 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ## 15.15.0 — 2026-09-15
 
-**Protocol forms can now be copied between vaults.** On *Settings → Vault →
-Protocol Forms* press **Copy**, open the same page in the other vault and
-press **Paste**.
+One update, five things. The version numbers in between were used while the
+work was written and tested and never shipped.
 
-- Copy the fields first: a form that uses a field the other vault does not
-  have is skipped, and the list says which fields are missing.
-- Tick the forms you want at Copy and again at Paste. A form whose name is
-  already there needs a new one — typed right in the list.
+**Copy field definitions and protocol forms between vaults.** On any
+*Settings → Vault → … Fields* page, and on *Protocol Forms*, press **Copy**,
+open the same page in the other vault and press **Paste**.
+
+- You see the list before anything is created: a field or form whose exact
+  name is already there is skipped, so is a field type the page does not
+  offer. Pick-list values come along.
+- Fields go first, forms second: a form that uses a field the other vault
+  does not have is skipped and the list says which fields are missing.
+- Fields land as pending rows and you press *Update* yourself. Forms are
+  created straight away; tick the ones you want, and give a clashing name a
+  new one right in the list.
 - To copy one form inside a vault, press *Duplicate* in its row.
 
----
+**Edit Locations is one click from Explore Data.** *Create a new…* has a
+*Location* entry that opens the dialog in a new tab. Vault and inventory
+administrators only.
 
-## 15.14.0 — 2026-09-15
-
-**Field definitions can now be copied between vaults.** On any *… Fields*
-settings page press **Copy**, open the same page in the other vault and
-press **Paste**.
-
-- A field whose exact name is already there is skipped; so is a type the
-  page does not offer. Pick-list values come along.
-- You see the list before anything is added, and you press *Update* yourself.
-- A field that was "or X is required" arrives as optional; rebuild the group by hand.
-
----
-
-## 15.13.0 — 2026-09-15
-
-**Edit Locations is now one click from Explore Data.** *Create a new…* has
-a *Location* entry that opens the dialog straight away.
-
-- Shown to vault administrators and inventory administrators only.
-- Opens in a new tab; your search stays put.
-
----
-
-## 15.12.0 — 2026-09-15
-
-**Scan racks can now build the shelf as well as the rack.** Scan or paste
-`Shelf A > R-1` and the shelf is created on the way if it is missing.
+**Scan racks builds the shelf as well as the rack.** Scan or paste
+`Shelf A > R-1` and the shelf is created on the way.
 
 - End a line with `>` to make locations only. Start it with *Locations* to
-  build from the top of the vault.
-- A shelf cannot go under a location that already holds racks — CDD's rule.
-  The row says so before you press Create.
-- A filter box above the tree shows only the names that match. Escape clears it.
-- Pick a rack size from the dropdown — SBS 96, SBS 384, 9 × 9, 10 × 10.
-- Unorganized boxes take a capacity, per row, instead of CDD's fixed 100.
-- The ⓘ next to *Scan racks* explains the panel. The same lines are under
-  *How it works* in Settings → Scan racks; the full guide is in the README.
+  build from the top of the vault. A shelf cannot go under a location that
+  already holds racks — CDD's rule — and the row says so before Create.
+- Pick a rack size from the dropdown; unorganized boxes take a capacity.
+- The ⓘ next to *Scan racks* explains the panel; the same lines are under
+  *How it works* in Settings → Scan racks.
 
----
-
-## 15.11.0 — 2026-09-15
-
-**Two boxes with the same name now show up orange in *Edit Locations*.**
-Hover the name to see where the other one is.
-
-- Boxes only, across the whole vault. Rename one and the colour goes.
-- Scan racks now refuses a code that is already in a folded branch of the tree.
+**The location tree got a filter and a warning colour.** A box above the tree
+shows only the names that match; Escape clears it. Two boxes with the same
+name are orange — hover one to see where the other is.
 
 ---
 

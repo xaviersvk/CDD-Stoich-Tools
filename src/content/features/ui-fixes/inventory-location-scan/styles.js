@@ -18,6 +18,12 @@ export function injectScanStyles() {
     style.id = "cdd-inventory-location-scan-style";
 
     style.textContent = `
+    /* ===== A BOX NAME ANOTHER BOX ALREADY CARRIES ===== */
+    /* Colour only: weight is for structure, this is state. */
+    li[role="treeitem"][data-cdd-dup] > .MuiTreeItem-content .MuiTreeItem-label {
+        color: #e65100;
+    }
+
     /* ===== THE FOOTER BUTTON ===== */
     .cdd-scan-open {
         appearance: none;

@@ -24,12 +24,24 @@ function key(name) {
     return normalizeScan(name).toLowerCase();
 }
 
+// Box versus location is not a typed field in CDD's tree. Nine node shapes
+// were measured (saved and pending, organized and not, root, saved and
+// pending location) and this is the rule that holds for all of them: a
+// saved location is `organized: true, num_columns: 0`, a pending location
+// has neither key, and every box is either unorganized or has columns.
+export function isBoxNode(raw) {
+    if (!raw || typeof raw !== "object") return false;
+    if (raw.organized === false) return true;
+    return Number(raw.num_columns) > 0;
+}
+
 export function buildNodes(rows) {
     const nodes = (rows || []).map((row) => ({
         id: String(row.id),
         parentId: parentOf(row.parentId),
         name: String(row.name ?? "").trim(),
         canTakeBox: row.canTakeBox === true,
+        isBox: row.isBox === true,
         path: "",
         depth: 0,
     }));
@@ -56,6 +68,29 @@ export function buildNodes(rows) {
 
 export function boxTargets(nodes) {
     return (nodes || []).filter((node) => node.canTakeBox);
+}
+
+// Every box whose name another box carries, mapped to where the others are.
+// Locations are neither keys nor twins: a rack barcode names a rack, and a
+// shelf called the same thing is not a second rack.
+export function duplicateBoxNames(nodes) {
+    const groups = new Map();
+    for (const node of nodes || []) {
+        if (!node.isBox) continue;
+        const k = key(node.name);
+        if (!k) continue;
+        if (!groups.has(k)) groups.set(k, []);
+        groups.get(k).push(node);
+    }
+
+    const twins = new Map();
+    for (const group of groups.values()) {
+        if (group.length < 2) continue;
+        for (const node of group) {
+            twins.set(node.id, group.filter((other) => other !== node).map((other) => other.path));
+        }
+    }
+    return twins;
 }
 
 // The whole tree, not just the target location. A rack barcode belongs to one

@@ -89,7 +89,9 @@ Here's the short version of everything it adds:
 ### Location tree (Edit Locations)
 
 *Settings → Sample/Inventory Fields → Add/Edit Inventory Fields → Edit
-Locations.* The extension adds a **Scan racks** button to the dialog's footer,
+Locations* — or, for vault and inventory administrators, **Explore Data →
+Create a new… → Location**, which opens the same dialog in one click. The
+extension adds a **Scan racks** button to the dialog's footer,
 a **filter box** above the tree, and **orange names** for boxes that share a
 name. The ⓘ next to *Scan racks* shows the short version of this guide inside
 the panel.

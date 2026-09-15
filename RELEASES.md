@@ -17,6 +17,16 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 15.13.0 — 2026-09-15
+
+**Edit Locations is now one click from Explore Data.** *Create a new…* has
+a *Location* entry that opens the dialog straight away.
+
+- Shown to vault administrators and inventory administrators only.
+- Back returns you to the search.
+
+---
+
 ## 15.12.0 — 2026-09-15
 
 **Scan racks can now build the shelf as well as the rack.** Scan or paste

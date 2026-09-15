@@ -18,24 +18,29 @@ const BRIDGE_TIMEOUT_MS = 500;
 let requestCounter = 0;
 let warned = false;
 
-function requestBridgeNodes() {
+// Resolves with { nodes, expanded }, or null when the bridge is silent or
+// could not read the tree.
+function requestBridge() {
     return new Promise((resolve) => {
         const requestId = `cdd-loc-tree-${++requestCounter}`;
         let settled = false;
 
-        const finish = (nodes) => {
+        const finish = (answer) => {
             if (settled) return;
             settled = true;
             window.removeEventListener("message", onMessage);
             clearTimeout(timer);
-            resolve(nodes);
+            resolve(answer);
         };
         const onMessage = (event) => {
             if (event.source !== window) return;
             const data = event.data;
             if (!data || data.source !== EVENT_SOURCE || data.type !== EVENTS.LOCATION_TREE) return;
             if (data.payload?.requestId !== requestId) return;
-            finish(Array.isArray(data.payload.nodes) ? data.payload.nodes : null);
+            const nodes = data.payload.nodes;
+            if (!Array.isArray(nodes)) return finish(null);
+            const expanded = Array.isArray(data.payload.expanded) ? data.payload.expanded.map(String) : [];
+            finish({ nodes, expanded });
         };
         const timer = setTimeout(() => finish(null), BRIDGE_TIMEOUT_MS);
 
@@ -47,24 +52,45 @@ function requestBridgeNodes() {
     });
 }
 
-export async function readTreeNodes(dialog) {
+// The nodes plus which of them are expanded — the filter needs both, to put
+// the user's expansion back when the box is cleared. On fallback `expanded`
+// is empty: the DOM cannot say what is folded.
+export async function readTreeState(dialog) {
     const domRows = readTreeRows(dialog);
-    const bridged = await requestBridgeNodes();
+    const bridged = await requestBridge();
 
     if (!bridged) {
         if (!warned) {
             warned = true;
             console.warn("[CDD scan-racks] tree bridge silent; collapsed branches are not checked");
         }
-        return buildNodes(domRows);
+        return { nodes: buildNodes(domRows), expanded: [] };
     }
 
-    const canTakeBox = new Map(domRows.map((row) => [String(row.id), row.canTakeBox]));
-    return buildNodes(bridged.map((node) => ({
-        id: node.id,
-        parentId: node.parentId,
-        name: node.name,
-        isBox: node.isBox,
-        canTakeBox: canTakeBox.get(String(node.id)) === true,
-    })));
+    const rendered = new Map(domRows.map((row) => [String(row.id), row]));
+    const nodes = buildNodes(bridged.nodes.map((node) => {
+        const row = rendered.get(String(node.id));
+        return {
+            id: node.id,
+            parentId: node.parentId,
+            name: node.name,
+            isBox: node.isBox,
+            rendered: Boolean(row),
+            canTakeBox: row?.canTakeBox === true,
+            canTakeLocation: row?.canTakeLocation === true,
+        };
+    }));
+    return { nodes, expanded: bridged.expanded };
+}
+
+export async function readTreeNodes(dialog) {
+    return (await readTreeState(dialog)).nodes;
+}
+
+// Fire and forget: the tree repaints, and the discovery pass sees that.
+export function expandTree(ids) {
+    window.postMessage(
+        { source: EVENT_SOURCE, type: EVENTS.LOCATION_TREE_EXPAND, payload: { ids: (ids || []).map(String) } },
+        "*",
+    );
 }

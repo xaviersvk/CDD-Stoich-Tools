@@ -512,6 +512,14 @@ affect the others. These are the **safest** files to touch.
   (`initInventoryLocationScan`); `scan-panel.js` is the overlay,
   `dialog-dom.js` the only file holding CDD's selectors, `tree-model.js` the
   DOM-free duplicate and breadcrumb logic.
+- **Paths:** a line such as `Shelf A > Bay 2 > R-1` creates the missing
+  locations before the box (`tree-model.js parsePath`/`resolvePath`,
+  `dialog-dom.js createLocationUnder`), relative to the target or absolute
+  when it starts with the root's name; a trailing `>` means locations only.
+- **Filter:** `inventory-location-scan/tree-filter.js` — a box above the
+  tree; matches and their ancestors stay, branches unfold through the bridge
+  (`LOCATION_TREE_EXPAND`), clearing restores the previous expansion.
+- **Size presets:** SBS 96 / SBS 384 / 9 × 9 / 10 × 10 / Custom in the panel.
 - **Duplicate names:** `inventory-location-scan/name-marks.js` paints orange
   every box whose name another box carries (`tree-model.js
   duplicateBoxNames`). The tree is read whole — collapsed branches included —

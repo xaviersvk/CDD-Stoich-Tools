@@ -19,6 +19,66 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [15.12.0] — 2026-09-15
+
+### Added
+- **A scanned or pasted line may carry a path, and the shelf is made on the
+  way.** `Shelf A > Bay 2 > R-1` in the Scan racks box creates *Shelf A* and
+  *Bay 2* under the target location if they are not there, then the box.
+  Existing segments are reused, case-insensitively. A line ending in `>`
+  creates locations only. A first segment naming the root (*Locations*)
+  makes the path absolute, so a whole vault can be pasted from one Excel
+  column. The button says what it will do: *Create 3 boxes, 2 locations*,
+  the shelf counted once however many racks go on it.
+- **A row that cannot be built is refused as it is typed**, struck out with
+  the reason, and left out of the count — like a duplicate. Three reasons:
+  `"Racks" already holds boxes` (CDD allows no sub-location under a location
+  that holds a box — measured: such a row shows only the add-box button,
+  while a location with locations, or nothing, shows both), `"AAA" is a
+  box, not a location`, and `"Locations" cannot hold a box`. The verdict is
+  judged again whenever *Into* moves or the tree is clicked, so pointing the
+  panel at an empty shelf un-refuses the rows. A folded location has not
+  shown its buttons and is not judged; the run says if it must.
+- The practical consequence for a vault whose every location already holds
+  racks: a new shelf goes in from the top, `Locations > Cold room > R-9`,
+  or under a location that holds only locations. Under *Racks* it cannot.
+- **A filter box above the location tree.** Type part of a name; rows that
+  match stay, with the path above them, and everything else is hidden.
+  Branches that hold a match unfold. Clearing the box, or Escape, puts the
+  tree back the way it was. Enter in it does nothing — it would have been
+  *Save*. Always on.
+- **An unorganized box gets its capacity from the panel.** With *Organized*
+  off, the grid fields give way to one *Capacity* field, starting at CDD's
+  own 100, and every row carries its own — the same "untouched rows follow"
+  rule as the grid. A pasted line with one number after the name sets the
+  capacity; two numbers stay columns and rows. Measured: unticking
+  *Organized* in CDD swaps the two grid inputs for one Capacity input, and
+  the native setter reaches it.
+- **Size presets in Scan racks.** *SBS 96 · 12 × 8*, *SBS 384 · 24 × 16*,
+  *Cryobox 9 × 9*, *Cryobox 10 × 10* in a dropdown before the two number
+  fields. A preset fills the fields and follows the same rule as typing into
+  them: rows nobody sized by hand take the new size. Typing a size the
+  presets do not know reads *Custom*. Settings keep their numeric defaults.
+
+### Technical notes
+- `tree-model.js` grows `parsePath`, `resolvePath`, `childNamed`, `rootOf`,
+  `locationsToCreate` and `findPreset`, all DOM-free. `classifyScan` takes a
+  fourth argument `{ targetId }` and returns the parsed path with the row.
+- `dialog-dom.js`: `createBoxUnder` and the new `createLocationUnder` share
+  `createNamedNode` — press the row's button, wait for the node, check it is
+  the selected one, name it, read the label back. The Name field has the
+  same id for both kinds, which is why the selection check is the guard.
+- The run re-reads the tree through the bridge after every node it makes:
+  the next step needs the id CDD just handed out.
+- The bridge's `LOCATION_TREE` answer carries `expanded` (the tree's
+  `expandedItems`, string ids) and a new `LOCATION_TREE_EXPAND { ids }`
+  calls the tree's own `onExpandedItemsChange`. Measured: a number where a
+  string id is expected expands nothing.
+- `tree-filter.js` hides rows with `data-cdd-filtered`, an attribute React
+  does not manage, and the discovery pass re-applies it after the duplicate
+  marks so a repainted row stays hidden.
+
+---
 ## [15.11.0] — 2026-09-15
 
 ### Added

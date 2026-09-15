@@ -40,6 +40,17 @@ export function sanitizeBoxSide(raw, fallback) {
     return n;
 }
 
+// An unorganized box has no grid, only a capacity. CDD starts it at 100;
+// the ceiling here is our own guard against a barcode landing in the field.
+export const DEFAULT_BOX_CAPACITY = 100;
+export const MAX_BOX_CAPACITY = 100000;
+
+export function sanitizeCapacity(raw, fallback) {
+    const n = Math.trunc(Number(raw));
+    if (!Number.isFinite(n) || n < 1 || n > MAX_BOX_CAPACITY) return fallback;
+    return n;
+}
+
 export function sanitizeColumns(raw) {
     return sanitizeBoxSide(raw, DEFAULT_INVENTORY_SCAN_COLUMNS);
 }

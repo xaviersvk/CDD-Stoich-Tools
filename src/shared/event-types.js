@@ -41,4 +41,8 @@ export const EVENTS = {
   // (inject/hooks/location-tree-bridge.js) answers with LOCATION_TREE.
   LOCATION_TREE_REQUEST: "LOCATION_TREE_REQUEST",
   LOCATION_TREE: "LOCATION_TREE",
+  // Content -> page world: "expand exactly these nodes" — the tree's own
+  // onExpandedItemsChange, called with string ids. No answer; the repaint is
+  // the answer.
+  LOCATION_TREE_EXPAND: "LOCATION_TREE_EXPAND",
 };

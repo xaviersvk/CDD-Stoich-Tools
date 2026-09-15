@@ -17,6 +17,21 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 15.12.0 — 2026-09-15
+
+**Scan racks can now build the shelf as well as the rack.** Scan or paste
+`Shelf A > R-1` and the shelf is created on the way if it is missing.
+
+- End a line with `>` to make locations only. Start it with *Locations* to
+  build from the top of the vault.
+- A shelf cannot go under a location that already holds racks — CDD's rule.
+  The row says so before you press Create.
+- A filter box above the tree shows only the names that match. Escape clears it.
+- Pick a rack size from the dropdown — SBS 96, SBS 384, 9 × 9, 10 × 10.
+- Unorganized boxes take a capacity, per row, instead of CDD's fixed 100.
+
+---
+
 ## 15.11.0 — 2026-09-15
 
 **Two boxes with the same name now show up orange in *Edit Locations*.**

@@ -24,6 +24,22 @@ export function injectScanStyles() {
         color: #e65100;
     }
 
+    /* ===== THE FILTER ABOVE THE TREE ===== */
+    .cdd-tree-filter {
+        display: block;
+        box-sizing: border-box;
+        width: calc(100% - 16px);
+        margin: 0 8px 8px;
+        padding: 6px 9px;
+        font: inherit;
+        font-size: 13px;
+        border: 1px solid rgba(0, 0, 0, 0.3);
+        border-radius: 4px;
+        background: #fff;
+    }
+    .cdd-tree-filter:focus { outline: none; border-color: #1565c0; }
+    li[role="treeitem"][data-cdd-filtered] { display: none; }
+
     /* ===== THE FOOTER BUTTON ===== */
     .cdd-scan-open {
         appearance: none;
@@ -86,6 +102,9 @@ export function injectScanStyles() {
         align-items: center;
         gap: 6px;
     }
+    /* The grid pair and the capacity field take turns; the attribute must
+       win over the inline-flex above. */
+    .cdd-scan-controls label[hidden] { display: none; }
     .cdd-scan-controls select,
     .cdd-scan-controls input[type="number"] {
         font: inherit;
@@ -145,6 +164,10 @@ export function injectScanStyles() {
         font-variant-numeric: tabular-nums;
     }
     .cdd-scan-name { flex: 1 1 auto; font-weight: 600; }
+    /* The path a row will build is context, the box is the thing. */
+    .cdd-scan-path { color: rgba(0, 0, 0, 0.5); font-weight: 400; margin-right: 5px; }
+    .cdd-scan-kind { color: rgba(0, 0, 0, 0.5); font-style: italic; }
+    .cdd-scan-preset { max-width: 170px; }
 
     /* A shelf is not all one size, so the grid sits on the row. Narrow boxes:
        they hold two digits and must not compete with the code beside them. */
@@ -159,6 +182,7 @@ export function injectScanStyles() {
         border-radius: 3px;
         background: #fff;
     }
+    .cdd-scan-size-input--wide { width: 64px; }
     .cdd-scan-why { color: #b3261e; }
     .cdd-scan-row--refused .cdd-scan-name {
         font-weight: 400;

@@ -10,6 +10,7 @@
 
 import { injectFieldClipboardStyles } from "../field-clipboard/styles.js";
 import { BAR_CLASS, buildBar } from "./panel.js";
+import { ensureDuplicateLinks } from "./row-actions.js";
 
 const PAGE = /\/vaults\/\d+\/vault_protocol_form_definitions$/;
 
@@ -17,13 +18,14 @@ let started = false;
 
 function mount() {
     if (!PAGE.test(location.pathname)) return;
-    if (document.querySelector(`.${BAR_CLASS}`)) return;
     const table = document.querySelector("table");
     if (!table) return;
     const create = [...document.querySelectorAll("a, button")]
         .find((el) => /Create a new form/.test(el.textContent) && el.offsetParent !== null);
     if (!create) return;
-    table.parentElement.insertBefore(buildBar(), table);
+    if (!document.querySelector(`.${BAR_CLASS}`)) table.parentElement.insertBefore(buildBar(), table);
+    // Rows are repainted by React; the links are re-checked on every pass.
+    ensureDuplicateLinks(table);
 }
 
 export function initFormClipboard() {

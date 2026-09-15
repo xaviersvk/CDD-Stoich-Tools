@@ -29,9 +29,13 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   form can travel alone. Paste previews every copied form with a checkbox
   and an **editable name** — add, *same name here*, or *missing fields:
   Lab, SOP* — and **Create N forms** makes the checked ones.
-- **A form can be duplicated inside one vault**: Copy, Paste on the same
-  page, and the clash gets a free name proposed — *X (copy)*, *X (copy 2)*
-  — which can be changed before pressing Create. A name still taken, on
+- **Every row of the forms table gets a *Duplicate* link**: one click makes
+  *X (copy)* beside the original through the same names-not-ids model and
+  the same POST, and the page reloads. Two forms sharing a name cannot be
+  told apart by the row, so their links are disabled with a tooltip.
+- **A form can also be duplicated through the clipboard**: Copy, Paste on
+  the same page, and the clash gets a free name proposed — *X (copy)*,
+  *X (copy 2)* — which can be changed before pressing Create. A name still taken, on
   the page or by another checked row, keeps its row unticked; the count on
   the button is always the number of forms that will appear.
 - **Nothing that identifies the source vault is ever sent to the target.**

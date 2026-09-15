@@ -9,6 +9,13 @@
 //
 // The hash is dropped BEFORE the first click. A reload of the settings page,
 // or Back landing on it, must not open the dialog again on its own.
+//
+// The second link is clicked until the dialog answers. Measured on a fresh
+// load: "Edit Locations" is rendered before it is ready — a click straight
+// after it appears does nothing, the same click a few seconds later opens
+// the dialog. A Turbo visit from the search page had its data warm and
+// never showed this. So: click, give it a moment, look for the dialog, and
+// click again if it is not there, for up to ten seconds.
 
 import { EDIT_LOCATIONS_HASH } from "./menu-item.js";
 
@@ -18,6 +25,8 @@ const EDIT_LOCATIONS_TEXT = "Edit Locations";
 const DIALOG_SELECTOR = ".edit-locations-dialog-paper";
 const WAIT_TRIES = 100;
 const WAIT_MS = 50;
+const CLICK_TRIES = 25;
+const CLICK_SETTLE_MS = 400;
 
 function visibleWithText(text) {
     return [...document.querySelectorAll("a, button, span")]
@@ -61,7 +70,16 @@ export async function autoOpenIfAsked() {
             console.warn("[CDD create-location] Edit Locations did not appear");
             return;
         }
-        editLocations.click();
+
+        for (let attempt = 0; attempt < CLICK_TRIES; attempt += 1) {
+            // Re-found each time: React may have replaced the element.
+            const link = visibleWithText(EDIT_LOCATIONS_TEXT);
+            if (!link) break;
+            link.click();
+            await wait(CLICK_SETTLE_MS);
+            if (document.querySelector(DIALOG_SELECTOR)) return;
+        }
+        console.warn("[CDD create-location] Edit Locations did not open the dialog");
     } finally {
         running = false;
     }

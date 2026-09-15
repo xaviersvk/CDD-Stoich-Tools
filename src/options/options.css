@@ -506,6 +506,42 @@ body {
     font-size: 12.5px;
 }
 
+/* A folded manual inside a card. The summary reads as a link, the body is
+   the term/sentence grid the panel's ⓘ draws in the dialog. */
+.howto {
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 0 12px;
+}
+.howto__summary {
+    padding: 8px 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent, #1565c0);
+    cursor: pointer;
+    list-style: none;
+}
+.howto__summary::-webkit-details-marker { display: none; }
+.howto__summary::before {
+    content: "▸";
+    display: inline-block;
+    width: 14px;
+    transition: transform 120ms ease;
+}
+.howto[open] .howto__summary::before { transform: rotate(90deg); }
+.howto__body {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 6px 12px;
+    padding: 4px 0 10px;
+    font-size: 12.5px;
+    line-height: 1.45;
+}
+.howto__item { display: contents; }
+.howto__item b { font-weight: 600; white-space: nowrap; }
+.howto__link { grid-column: 2; color: var(--accent, #1565c0); }
+.howto .note { padding-bottom: 10px; }
+
 .note code {
     font-family: var(--mono);
     font-size: 11.5px;

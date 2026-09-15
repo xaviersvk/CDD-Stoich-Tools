@@ -29,8 +29,8 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 - A filter box above the tree shows only the names that match. Escape clears it.
 - Pick a rack size from the dropdown — SBS 96, SBS 384, 9 × 9, 10 × 10.
 - Unorganized boxes take a capacity, per row, instead of CDD's fixed 100.
-- The ⓘ next to *Scan racks* explains the panel; the full guide is in the
-  README under *Location tree*.
+- The ⓘ next to *Scan racks* explains the panel. The same lines are under
+  *How it works* in Settings → Scan racks; the full guide is in the README.
 
 ---
 

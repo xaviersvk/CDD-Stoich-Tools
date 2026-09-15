@@ -51,4 +51,10 @@ export const EVENTS = {
   // answers with FIELD_ROWS.
   FIELD_ROWS_REQUEST: "FIELD_ROWS_REQUEST",
   FIELD_ROWS: "FIELD_ROWS",
+  // Content -> page world: "read the protocol and run field definitions the
+  // Protocol Forms page holds" — a form's cells refer to them by id, and no
+  // internal endpoint serves the names. inject/hooks/form-store-bridge.js
+  // answers with FORM_FIELD_MAP.
+  FORM_FIELD_MAP_REQUEST: "FORM_FIELD_MAP_REQUEST",
+  FORM_FIELD_MAP: "FORM_FIELD_MAP",
 };

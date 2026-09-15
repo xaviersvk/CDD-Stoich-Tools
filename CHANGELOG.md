@@ -19,6 +19,46 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [15.13.0] — 2026-09-15
+
+### Added
+- **A *Location* entry in Explore Data's *Create a new…* menu**, after
+  Protocol, Molecule, Project and ELN Entry. It lands on the vault's
+  inventory-field settings with *Edit Locations* already open — the same
+  dialog, with Scan racks, the filter and the orange names — instead of
+  four clicks through Settings. Opens in a new tab, so the search being
+  built stays where it is.
+- **Shown only to people who may edit locations.** Two gates, the cheap one
+  first: the header's user dropdown names the user's role as a link to the
+  help topic `user_roles`, and *Vault Administrator* is enough with no
+  request. Anyone else is judged by the door itself — one `GET` of the
+  settings page, allowed when it answers `200` at the path asked for (a
+  redirect to the vault home also ends in 200, so the path is checked),
+  remembered per vault for the session. That is how inventory
+  administrators get in: the help page lists roles from Read Only to Vault
+  Admin and no inventory role, because it is a grant on top of a role and
+  the header does not show it.
+- The negative case — a plain member sees nothing, an inventory
+  administrator sees the entry — was not verifiable with the one admin
+  account at hand and is the reload test. If CDD answered an unauthorised
+  `GET` with 200 on the same path, the entry would show and the click
+  would land on CDD's own refusal; nothing worse.
+
+### Technical notes
+- New `src/content/features/ui-fixes/create-location-link/`:
+  `permission.js` (`vaultIdFromPath`, `headerSaysAdmin`,
+  `canEditLocations` with a session cache and one in-flight probe),
+  `menu-item.js` (a plain `<li><a>` appended to `#dataSources-createNew
+  ul`, so CDD's styling and Turbo's link handling apply), `auto-open.js`,
+  `init.js`.
+- The link carries `#edit-locations`. On the settings page the hash is
+  dropped with `replaceState` first — a reload must not reopen the dialog —
+  then CDD's own two links are waited for and clicked: *Add/Edit Inventory
+  Fields*, then *Edit Locations*, which exists only once the table is in
+  edit mode. Measured: Turbo keeps the hash across the visit, both links are
+  `<a>`, and the dialog is up about two seconds after the click.
+
+---
 ## [15.12.0] — 2026-09-15
 
 ### Added
@@ -54,6 +94,13 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   capacity; two numbers stay columns and rows. Measured: unticking
   *Organized* in CDD swaps the two grid inputs for one Capacity input, and
   the native setter reaches it.
+- **An ⓘ beside the Scan racks title opens the manual inside the panel** —
+  eight lines, one per thing the panel does, and a link to the full guide.
+  The same eight lines sit under **How it works** on the Scan racks card in
+  Settings, rendered from one shared list (`shared/location-tree-guide.js`)
+  so the two cannot drift. The full guide is a new *Location tree (Edit
+  Locations)* section in `README.md`, the first user-facing description of
+  the scan panel, the filter and the orange names.
 - **Size presets in Scan racks.** *SBS 96 · 12 × 8*, *SBS 384 · 24 × 16*,
   *Cryobox 9 × 9*, *Cryobox 10 × 10* in a dropdown before the two number
   fields. A preset fills the fields and follows the same rule as typing into

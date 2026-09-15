@@ -58,6 +58,7 @@ import {
     rootOf,
 } from "./tree-model.js";
 import { readTreeNodes } from "./tree-source.js";
+import { renderLocationTreeGuide } from "../../../../shared/location-tree-guide.js";
 
 const SCAN_CREATED = "created";
 const TARGET_CLASS = "cdd-scan-target";
@@ -191,10 +192,30 @@ export async function openScanPanel(dialog) {
 
     /* ----- head ----- */
     const head = el("div", "cdd-scan-head");
-    head.append(el("span", "cdd-scan-title", "Scan racks"));
+    const title = el("span", "cdd-scan-title", "Scan racks");
+    const helpToggle = el("button", "cdd-scan-help-toggle", "i");
+    helpToggle.type = "button";
+    helpToggle.title = "How it works";
+    helpToggle.setAttribute("aria-label", "How it works");
+    title.append(helpToggle);
+    head.append(title);
     head.append(el("span", "cdd-scan-note",
-        "Enter adds a row. Paste a list to add many. Shelf A > R-1 makes the shelf on the way. Nothing is saved until you press Save."));
+        "Enter adds a row. Paste a list to add many. Nothing is saved until you press Save."));
     panel.append(head);
+
+    /* ----- the manual, folded until the i is pressed ----- */
+    // The same eight lines the settings page shows under Scan racks.
+    const help = renderLocationTreeGuide(document, {
+        box: "cdd-scan-help",
+        item: "cdd-scan-help-item",
+        link: "cdd-scan-help-link",
+    });
+    help.hidden = true;
+    helpToggle.addEventListener("click", () => {
+        help.hidden = !help.hidden;
+        helpToggle.classList.toggle("cdd-scan-help-toggle--on", !help.hidden);
+        if (help.hidden) scanInput.focus();
+    });
 
     /* ----- controls ----- */
     const controls = el("div", "cdd-scan-controls");
@@ -251,6 +272,7 @@ export async function openScanPanel(dialog) {
     controls.append(organizedLabel);
 
     panel.append(controls);
+    panel.append(help);
 
     /* ----- scan box ----- */
     const scanInput = document.createElement("input");

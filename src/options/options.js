@@ -9,6 +9,7 @@
 // content script, which is why those modules never touch the DOM.
 
 import { initPhrasesUI } from "./phrases-ui.js";
+import { renderLocationTreeGuide } from "../shared/location-tree-guide.js";
 import { initSetupWizard } from "./setup-wizard.js";
 import {
     SAMPLE_PANEL_FIELDS,
@@ -1088,7 +1089,21 @@ inventoryScanOrganizedCheckbox.addEventListener("change", () => {
     saveInventoryScanOrganized(inventoryScanOrganizedCheckbox.checked);
 });
 
+// The manual under "How it works": the same lines the panel's ⓘ shows,
+// rendered from one shared list so the two cannot disagree.
+function mountInventoryScanGuide() {
+    const details = document.getElementById("inventoryScanGuide");
+    if (!details || details.querySelector(".howto__body")) return;
+    const body = renderLocationTreeGuide(document, {
+        box: "howto__body",
+        item: "howto__item",
+        link: "howto__link",
+    });
+    details.insertBefore(body, details.querySelector(".note"));
+}
+
 async function initInventoryScanUI() {
+    mountInventoryScanGuide();
     const settings = await loadInventoryScanSettings();
     inventoryScanEnabledCheckbox.checked = settings.enabled;
     inventoryScanColumnsInput.value = settings.columns;

@@ -512,6 +512,11 @@ affect the others. These are the **safest** files to touch.
   (`initInventoryLocationScan`); `scan-panel.js` is the overlay,
   `dialog-dom.js` the only file holding CDD's selectors, `tree-model.js` the
   DOM-free duplicate and breadcrumb logic.
+- **From Explore Data:** `ui-fixes/create-location-link/` adds a *Location*
+  entry to *Create a new…* that lands on the settings page with the dialog
+  open (`#edit-locations`, consumed on arrival). Shown when the header role
+  reads *Vault Administrator*, else when one cached GET of the settings page
+  answers 200 at that path — the inventory-admin case.
 - **Paths:** a line such as `Shelf A > Bay 2 > R-1` creates the missing
   locations before the box (`tree-model.js parsePath`/`resolvePath`,
   `dialog-dom.js createLocationUnder`), relative to the target or absolute

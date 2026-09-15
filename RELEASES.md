@@ -17,6 +17,16 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 15.13.0 — 2026-09-15
+
+**Edit Locations is now one click from Explore Data.** *Create a new…* has
+a *Location* entry that opens the dialog straight away.
+
+- Shown to vault administrators and inventory administrators only.
+- Opens in a new tab; your search stays put.
+
+---
+
 ## 15.12.0 — 2026-09-15
 
 **Scan racks can now build the shelf as well as the rack.** Scan or paste
@@ -29,6 +39,8 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 - A filter box above the tree shows only the names that match. Escape clears it.
 - Pick a rack size from the dropdown — SBS 96, SBS 384, 9 × 9, 10 × 10.
 - Unorganized boxes take a capacity, per row, instead of CDD's fixed 100.
+- The ⓘ next to *Scan racks* explains the panel. The same lines are under
+  *How it works* in Settings → Scan racks; the full guide is in the README.
 
 ---
 

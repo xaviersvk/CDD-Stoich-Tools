@@ -160,6 +160,17 @@ export function planForms(neutralForms, targetNames, targetMap) {
     });
 }
 
+// A name for a copy that lands beside its original: "X (copy)", then
+// "X (copy 2)", … — the first one not already taken.
+export function suggestName(name, takenNames) {
+    const taken = new Set((takenNames || []).map((entry) => cleanName(entry)));
+    const base = cleanName(name);
+    if (!taken.has(base)) return base;
+    let candidate = `${base} (copy)`;
+    for (let n = 2; taken.has(candidate); n += 1) candidate = `${base} (copy ${n})`;
+    return candidate;
+}
+
 export function countPlan(plan) {
     let add = 0;
     let skip = 0;

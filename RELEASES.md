@@ -25,8 +25,9 @@ press **Paste**.
 
 - Copy the fields first: a form that uses a field the other vault does not
   have is skipped, and the list says which fields are missing.
-- A form whose name is already there is skipped. You see the list, tick
-  what you want, and press *Create*.
+- Tick the forms you want at Copy and again at Paste. A form whose name is
+  already there needs a new one — typed right in the list.
+- The same works inside one vault: Copy, Paste, and you get *X (copy)*.
 
 ---
 

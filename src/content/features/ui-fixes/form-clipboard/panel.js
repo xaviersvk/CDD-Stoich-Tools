@@ -1,26 +1,31 @@
 // content/features/ui-fixes/form-clipboard/panel.js
 //
-// Copy / Paste above the Protocol Forms table, and the card Paste opens.
+// Copy / Paste above the Protocol Forms table, and the cards they open.
 //
-// Copy: the page's own form list plus the names behind the field ids, from
-// the bridge; every form is neutralized — names, never ids — and the lot
-// goes to the clipboard. A form that carries an id this extension cannot
-// translate is left out and named, not shipped half-translated.
+// Copy opens a card listing the page's forms with a checkbox each; the
+// chosen ones are neutralized — names, never ids — and go to the clipboard.
+// A form that carries an id this extension cannot translate is shown
+// disabled with the reason, never shipped half-translated.
 //
-// Paste: the target's list and names, a plan, and a card with a checkbox per
-// form. "Create N forms" POSTs the checked ones one by one through the
-// internal API the page uses, stops on the first failure with the server's
-// words, and on success reloads the page so the table shows what it made.
+// Paste opens a card with a checkbox and an editable name per form. The
+// name matters twice: a form whose name is already on the page is skipped
+// unless it is renamed, and within one vault that is exactly how a form is
+// duplicated — Paste beside its original as "X (copy)". "Create N forms"
+// POSTs the checked ones one by one through the internal API the page uses,
+// stops on the first failure with the server's words, and on success
+// reloads the page so the table shows what it made.
 
 import { createForm, listForms, requestFieldMap, vaultIdFromPath, vaultName } from "./api.js";
 import { onFormClipboardChanged, readFormClipboard, writeFormClipboard } from "./clipboard.js";
 import {
     PLAN_ADD,
-    countPlan,
+    PLAN_MISSING_FIELDS,
+    PLAN_SAME_NAME,
     formFieldNames,
     neutralize,
     planForms,
     resolve,
+    suggestName,
 } from "./form-model.js";
 
 export const BAR_CLASS = "cdd-form-clip-bar";
@@ -38,6 +43,14 @@ function plural(count, noun) {
 
 function when(timestamp) {
     return new Date(timestamp).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+}
+
+function checkbox(checked, disabled) {
+    const box = document.createElement("input");
+    box.type = "checkbox";
+    box.checked = checked;
+    box.disabled = disabled;
+    return box;
 }
 
 export function buildBar() {
@@ -68,33 +81,76 @@ export function buildBar() {
             pasteButton.title = `${plural(entry.forms.length, "form")} from ${entry.vaultName || "vault " + entry.vaultId}, copied ${when(entry.copiedAt)}`;
         } else {
             pasteButton.disabled = true;
-            pasteButton.title = "Nothing copied yet. Copy forms in another vault first.";
+            pasteButton.title = "Nothing copied yet. Copy forms first.";
         }
+    }
+
+    function openCard(title, note) {
+        card.textContent = "";
+        card.hidden = false;
+        const head = el("div", "cdd-fc-head");
+        head.append(el("span", "cdd-fc-title", title));
+        head.append(el("span", "cdd-fc-note", note));
+        card.append(head);
+        const list = el("div", "cdd-fc-list");
+        card.append(list);
+        const foot = el("div", "cdd-fc-foot");
+        const action = el("button", "cdd-fc-add", "");
+        action.type = "button";
+        const cancel = el("button", "cdd-fc-cancel", "Cancel");
+        cancel.type = "button";
+        cancel.addEventListener("click", () => { card.hidden = true; });
+        foot.append(action, cancel);
+        card.append(foot);
+        return { list, action, cancel };
     }
 
     /* ----- copy ----- */
     copyButton.addEventListener("click", async () => {
         status.textContent = "";
         card.hidden = true;
+        let forms;
+        let map;
         try {
-            const [forms, map] = await Promise.all([listForms(vaultId), requestFieldMap()]);
+            [forms, map] = await Promise.all([listForms(vaultId), requestFieldMap()]);
             if (!map) throw new Error("could not read the field names behind this page");
-
-            const kept = [];
-            const refused = [];
-            for (const form of forms) {
-                const { form: neutral, unknownIds, missingNames } = neutralize(form, map);
-                const problems = [...unknownIds, ...missingNames];
-                if (problems.length) refused.push(`${form.name} (${problems.join("; ")})`);
-                else kept.push(neutral);
-            }
-
-            await writeFormClipboard({ vaultId, vaultName: vaultName(), copiedAt: Date.now(), forms: kept });
-            status.textContent = `Copied ${plural(kept.length, "form")} from ${vaultName() || "this vault"}. Open Protocol Forms in the other vault and press Paste.`
-                + (refused.length ? ` Left out, carrying ids this extension cannot translate: ${refused.join(", ")}.` : "");
         } catch (error) {
             status.textContent = `Copy failed — ${error.message}.`;
+            return;
         }
+
+        const { list, action } = openCard("Copy protocol forms", `${plural(forms.length, "form")} in ${vaultName() || "this vault"}`);
+        const rows = forms.map((form) => {
+            const { form: neutral, unknownIds, missingNames } = neutralize(form, map);
+            const problems = [...unknownIds, ...missingNames];
+            const line = el("label", "cdd-fc-row");
+            const box = checkbox(problems.length === 0, problems.length > 0);
+            if (problems.length) line.classList.add("cdd-fc-row--skip");
+            line.append(box, el("span", "cdd-fc-name", form.name));
+            line.append(el("span", "cdd-fc-type", plural(formFieldNames(neutral).length, "field")));
+            line.append(el("span", problems.length ? "cdd-fc-why" : "cdd-fc-detail",
+                problems.length ? `carries an id this extension cannot translate: ${problems.join("; ")}` : ""));
+            list.append(line);
+            box.addEventListener("change", updateCount);
+            return { neutral, box };
+        });
+
+        function chosen() {
+            return rows.filter(({ box }) => box.checked && !box.disabled).map(({ neutral }) => neutral);
+        }
+        function updateCount() {
+            const count = chosen().length;
+            action.textContent = `Copy ${plural(count, "form")}`;
+            action.disabled = count === 0;
+        }
+        updateCount();
+
+        action.addEventListener("click", async () => {
+            const kept = chosen();
+            await writeFormClipboard({ vaultId, vaultName: vaultName(), copiedAt: Date.now(), forms: kept });
+            card.hidden = true;
+            status.textContent = `Copied ${plural(kept.length, "form")} from ${vaultName() || "this vault"}. Press Paste here to duplicate them, or on Protocol Forms in another vault.`;
+        });
     });
 
     /* ----- paste: the preview ----- */
@@ -102,96 +158,101 @@ export function buildBar() {
         status.textContent = "";
         const entry = await readFormClipboard();
         if (!entry) return;
-        if (String(entry.vaultId) === String(vaultId)) {
-            status.textContent = "This is the vault the forms were copied from. Paste them in the other vault.";
-        }
+        let forms;
+        let map;
         try {
-            const [forms, map] = await Promise.all([listForms(vaultId), requestFieldMap()]);
+            [forms, map] = await Promise.all([listForms(vaultId), requestFieldMap()]);
             if (!map) throw new Error("could not read the field names behind this page");
-            const plan = planForms(entry.forms, forms.map((form) => form.name), map);
-            renderCard(entry, plan, map);
         } catch (error) {
             status.textContent = `Paste failed — ${error.message}.`;
+            return;
         }
+
+        const targetNames = forms.map((form) => String(form.name ?? "").trim());
+        const plan = planForms(entry.forms, targetNames, map);
+        const sameVault = String(entry.vaultId) === String(vaultId);
+        const { list, action, cancel } = openCard("Paste protocol forms",
+            `${plural(entry.forms.length, "form")} from ${entry.vaultName || "vault " + entry.vaultId}, copied ${when(entry.copiedAt)}`
+            + (sameVault ? " — the same vault, so each copy needs its own name" : ""));
+
+        const rows = plan.map((item) => {
+            const line = el("div", "cdd-fc-row");
+            const blocked = item.status === PLAN_MISSING_FIELDS;
+            const box = checkbox(item.status === PLAN_ADD, blocked);
+            const name = document.createElement("input");
+            name.type = "text";
+            name.className = "cdd-fc-rename";
+            // A clash gets a free name proposed; a plain add keeps its own.
+            name.value = item.status === PLAN_SAME_NAME ? suggestName(item.form.name, targetNames) : item.form.name;
+            name.disabled = blocked;
+            name.title = `Copied as "${item.form.name}"`;
+            const why = el("span", blocked ? "cdd-fc-why" : "cdd-fc-detail", blocked ? item.note : "");
+            if (blocked) line.classList.add("cdd-fc-row--skip");
+            line.append(box, name, el("span", "cdd-fc-type", plural(formFieldNames(item.form).length, "field")), why);
+            list.append(line);
+            box.addEventListener("change", judge);
+            name.addEventListener("input", judge);
+            return { item, line, box, name, why, blocked };
+        });
+
+        // A row is addable when its name is free — on the page and among the
+        // other checked rows. Judged on every keystroke, so the count on the
+        // button is always the number of forms that will appear.
+        function judge() {
+            const taken = new Set(targetNames);
+            for (const row of rows) {
+                if (row.blocked) continue;
+                const value = row.name.value.trim();
+                const clash = !value || taken.has(value);
+                row.why.textContent = !value ? "needs a name" : (clash ? "same name here" : "");
+                row.why.className = clash ? "cdd-fc-why" : "cdd-fc-detail";
+                row.line.classList.toggle("cdd-fc-row--skip", clash);
+                if (clash) row.box.checked = false;
+                row.box.disabled = clash;
+                if (!clash && row.box.checked) taken.add(value);
+            }
+            const count = chosen().length;
+            action.textContent = `Create ${plural(count, "form")}`;
+            action.disabled = count === 0;
+        }
+        function chosen() {
+            return rows.filter((row) => !row.blocked && row.box.checked && !row.box.disabled);
+        }
+        judge();
+
+        action.addEventListener("click", () => runPaste(chosen(), map, action, cancel, rows));
     });
 
-    function renderCard(entry, plan, map) {
-        card.textContent = "";
-        card.hidden = false;
-
-        const head = el("div", "cdd-fc-head");
-        head.append(el("span", "cdd-fc-title", "Paste protocol forms"));
-        head.append(el("span", "cdd-fc-note",
-            `${plural(entry.forms.length, "form")} from ${entry.vaultName || "vault " + entry.vaultId}, copied ${when(entry.copiedAt)}`));
-        card.append(head);
-
-        const list = el("div", "cdd-fc-list");
-        const rows = plan.map((item) => {
-            const line = el("label", "cdd-fc-row");
-            const box = document.createElement("input");
-            box.type = "checkbox";
-            box.checked = item.status === PLAN_ADD;
-            box.disabled = item.status !== PLAN_ADD;
-            if (item.status !== PLAN_ADD) line.classList.add("cdd-fc-row--skip");
-            line.append(box);
-            line.append(el("span", "cdd-fc-name", item.form.name));
-            const fields = formFieldNames(item.form);
-            line.append(el("span", "cdd-fc-type", plural(fields.length, "field")));
-            line.append(el("span", item.status === PLAN_ADD ? "cdd-fc-detail" : "cdd-fc-why", item.note));
-            list.append(line);
-            box.addEventListener("change", updateCount);
-            return { item, line, box };
-        });
-        card.append(list);
-
-        const foot = el("div", "cdd-fc-foot");
-        const createButton = el("button", "cdd-fc-add", "");
-        createButton.type = "button";
-        const cancel = el("button", "cdd-fc-cancel", "Cancel");
-        cancel.type = "button";
-        cancel.addEventListener("click", () => { card.hidden = true; });
-        foot.append(createButton, cancel);
-        card.append(foot);
-
-        function chosen() {
-            return rows.filter(({ item, box }) => item.status === PLAN_ADD && box.checked);
-        }
-        function updateCount() {
-            const count = chosen().length;
-            createButton.textContent = `Create ${plural(count, "form")}`;
-            createButton.disabled = count === 0;
-        }
-        updateCount();
-
-        createButton.addEventListener("click", () => runPaste(chosen(), map, createButton, cancel, rows));
-    }
-
     /* ----- paste: the run ----- */
-    async function runPaste(todo, map, createButton, cancel, rows) {
-        createButton.disabled = true;
+    async function runPaste(todo, map, action, cancel, rows) {
+        action.disabled = true;
         cancel.disabled = true;
-        for (const { box } of rows) box.disabled = true;
+        for (const row of rows) {
+            row.box.disabled = true;
+            row.name.disabled = true;
+        }
         status.textContent = "";
 
         let made = 0;
         try {
-            for (const { item, line } of todo) {
-                const { form, missing } = resolve(item.form, map);
+            for (const row of todo) {
+                const { form, missing } = resolve(row.item.form, map);
                 if (missing.length) {
                     throw new Error(`fields not found here: ${[...new Set(missing.map((entry) => entry.name))].join(", ")}`);
                 }
+                form.name = row.name.value.trim();
                 if (JSON.stringify(form).includes('"$field"')) {
                     throw new Error("a placeholder survived translation; nothing was sent");
                 }
                 await createForm(vaultId, form);
-                line.classList.add("cdd-fc-row--done");
+                row.line.classList.add("cdd-fc-row--done");
                 made += 1;
             }
             status.textContent = `Created ${plural(made, "form")}. Reloading…`;
             setTimeout(() => location.reload(), 1200);
         } catch (error) {
             cancel.disabled = false;
-            status.textContent = `Created ${made} of ${todo.length}. Stopped at "${todo[made]?.item.form.name}" — ${error.message}.`
+            status.textContent = `Created ${made} of ${todo.length}. Stopped at "${todo[made]?.name.value}" — ${error.message}.`
                 + (made ? " Reload the page to see the ones that were made." : "");
         }
     }

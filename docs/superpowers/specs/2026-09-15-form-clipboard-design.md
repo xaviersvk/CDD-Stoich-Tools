@@ -54,7 +54,10 @@ nothing, or something else, in another vault.
   own `fieldDefinitionsMap`, exact name match. A form with any name the
   target lacks is **skipped** and the preview lists the missing fields — the
   order of work is *copy the fields first, then the forms*.
-- **Skip on an exact form-name match**, like the fields.
+- **A form-name clash is not a skip but a rename.** Paste proposes *X
+  (copy)* for a name already on the page and the name is editable per row;
+  a row whose name is still taken stays unticked. This is also how a form
+  is duplicated inside one vault. Copy lets the user tick which forms go.
 - **Any other numeric id found in a document stops the copy of that form**
   with a note naming the key — the shape above is what was measured; a key
   that carries an id we do not know how to translate must not be shipped.

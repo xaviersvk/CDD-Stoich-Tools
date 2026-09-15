@@ -25,9 +25,15 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 - **Protocol forms can be copied from one vault and pasted into another.**
   *Settings → Vault → Protocol Forms* grows **Copy N forms** and **Paste**
   above the table, beside CDD's own *Create a new form* and therefore only
-  for administrators. Paste previews every copied form with a checkbox —
-  add, *same name here*, or *missing fields: Lab, SOP* — and **Create N
-  forms** makes the checked ones.
+  for administrators. Copy opens a list with a checkbox per form, so one
+  form can travel alone. Paste previews every copied form with a checkbox
+  and an **editable name** — add, *same name here*, or *missing fields:
+  Lab, SOP* — and **Create N forms** makes the checked ones.
+- **A form can be duplicated inside one vault**: Copy, Paste on the same
+  page, and the clash gets a free name proposed — *X (copy)*, *X (copy 2)*
+  — which can be changed before pressing Create. A name still taken, on
+  the page or by another checked row, keeps its row unticked; the count on
+  the button is always the number of forms that will appear.
 - **Nothing that identifies the source vault is ever sent to the target.**
   A form's cells refer to protocol and run field definitions by id, and an
   id means nothing — or something else — in another vault. So the clipboard

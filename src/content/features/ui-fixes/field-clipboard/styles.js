@@ -35,6 +35,20 @@ export function injectFieldClipboardStyles() {
     .cdd-fc-button:hover { text-decoration: underline; }
     .cdd-fc-button[disabled] { color: rgba(0, 0, 0, 0.38); cursor: default; text-decoration: none; }
     .cdd-fc-status { color: #b3261e; }
+    /* The form table's Duplicate link, in a cell of its own. The cells around
+       it are MUI's, padded 16px; ours has to match or the link sits glued to
+       the date beside it. */
+    .cdd-form-duplicate-cell {
+        padding: 16px;
+        text-align: right;
+        white-space: nowrap;
+        width: 1%;
+        font-size: 13px;
+        border-bottom: 1px solid rgba(224, 224, 224, 1);
+    }
+    thead .cdd-form-duplicate-cell { padding: 16px; }
+    .cdd-form-duplicate.is-busy { color: rgba(0, 0, 0, 0.5); cursor: default; }
+    .cdd-form-duplicate.is-failed { color: #b3261e; }
 
     /* ===== THE CARD ===== */
     .cdd-fc-card {
@@ -74,6 +88,20 @@ export function injectFieldClipboardStyles() {
     }
     .cdd-fc-row:last-child { border-bottom: 0; }
     .cdd-fc-name { flex: 1 1 auto; font-weight: 600; }
+    /* The form clipboard's editable name: a copy beside its original needs
+       one of its own, and this is where it is typed. */
+    .cdd-fc-rename {
+        flex: 1 1 auto;
+        min-width: 160px;
+        font: inherit;
+        font-weight: 600;
+        padding: 3px 6px;
+        border: 1px solid rgba(0, 0, 0, 0.25);
+        border-radius: 3px;
+        background: #fff;
+    }
+    .cdd-fc-rename:disabled { color: rgba(0, 0, 0, 0.5); background: #f5f5f5; }
+    .cdd-fc-row--skip .cdd-fc-rename { text-decoration: line-through; font-weight: 400; }
     .cdd-fc-type { min-width: 70px; color: rgba(0, 0, 0, 0.6); }
     .cdd-fc-detail { color: rgba(0, 0, 0, 0.6); }
     .cdd-fc-why { color: #b3261e; }

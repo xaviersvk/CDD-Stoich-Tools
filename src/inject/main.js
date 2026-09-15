@@ -14,6 +14,7 @@ import { installEntryPayloadFallback } from "./hooks/entry-payload-fallback.js";
 import { installSelectBoxBridge } from "./hooks/selectbox-bridge.js";
 import { installLocationTreeBridge } from "./hooks/location-tree-bridge.js";
 import { installFieldRowsBridge } from "./hooks/field-rows-bridge.js";
+import { installFormStoreBridge } from "./hooks/form-store-bridge.js";
 import { installPrintDispatcher } from "./print/dispatcher.js";
 
 
@@ -145,6 +146,7 @@ const tryParseText = createTextParser(processJsonPayload);
   installSelectBoxBridge();
   installLocationTreeBridge();
   installFieldRowsBridge();
+  installFormStoreBridge();
 
   // Snapshot outgoing create-sample requests (read-only) so the content side has
   // a faithful payload template, AND tap their responses so the batch

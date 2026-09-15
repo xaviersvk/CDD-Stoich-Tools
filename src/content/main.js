@@ -33,6 +33,7 @@ import {initInventoryLocationTree} from "./features/ui-fixes/inventory-location-
 import {initInventoryLocationScan} from "./features/ui-fixes/inventory-location-scan/init";
 import {initCreateLocationLink} from "./features/ui-fixes/create-location-link/init";
 import {initFieldClipboard} from "./features/ui-fixes/field-clipboard/init";
+import {initFormClipboard} from "./features/ui-fixes/form-clipboard/init";
 import {injectMoleculeLinksStyles} from "./features/ui-fixes/molecule-links-fixes";
 import {initElnShiftLeft} from "./features/ui-fixes/eln-shift-left";
 import {watchConsumedBatches} from "./features/ui-fixes/consumed-batches-collapse";
@@ -160,6 +161,7 @@ function init() {
   initInventoryLocationScan();
   initCreateLocationLink();
   initFieldClipboard();
+  initFormClipboard();
 
   injectMoleculeLinksStyles();
   initElnShiftLeft();

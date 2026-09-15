@@ -17,6 +17,19 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 15.15.0 — 2026-09-15
+
+**Protocol forms can now be copied between vaults.** On *Settings → Vault →
+Protocol Forms* press **Copy**, open the same page in the other vault and
+press **Paste**.
+
+- Copy the fields first: a form that uses a field the other vault does not
+  have is skipped, and the list says which fields are missing.
+- A form whose name is already there is skipped. You see the list, tick
+  what you want, and press *Create*.
+
+---
+
 ## 15.14.0 — 2026-09-15
 
 **Field definitions can now be copied between vaults.** On any *… Fields*

@@ -97,6 +97,15 @@ the page does not offer — and a field that was "or X is required" arrives
 as optional. *Add N fields* fills the rows, pick-list values included; you
 press CDD's own *Update … fields* to save, or *cancel* to discard.
 
+### Copy protocol forms between vaults
+
+On *Settings → Vault → Protocol Forms* the extension adds **Copy N forms**
+and **Paste**. Copy in one vault, Paste in the other: the list shows each
+form as add, *same name here*, or *missing fields: …* — copy the fields
+first, then the forms. Tick what you want and press *Create N forms*. Forms
+travel by field **name**, never by id, so nothing from the source vault is
+sent to the target.
+
 ### Location tree (Edit Locations)
 
 *Settings → Sample/Inventory Fields → Add/Edit Inventory Fields → Edit

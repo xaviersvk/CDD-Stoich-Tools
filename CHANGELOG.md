@@ -19,6 +19,59 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [15.15.0] — 2026-09-15
+
+### Added
+- **Protocol forms can be copied from one vault and pasted into another.**
+  *Settings → Vault → Protocol Forms* grows **Copy N forms** and **Paste**
+  above the table, beside CDD's own *Create a new form* and therefore only
+  for administrators. Paste previews every copied form with a checkbox —
+  add, *same name here*, or *missing fields: Lab, SOP* — and **Create N
+  forms** makes the checked ones.
+- **Nothing that identifies the source vault is ever sent to the target.**
+  A form's cells refer to protocol and run field definitions by id, and an
+  id means nothing — or something else — in another vault. So the clipboard
+  holds **names**: at copy time every numeric `fieldID` becomes
+  `{ $field: "Lab", $component: "run" }` and the form's own `id`,
+  `data_set_id` and timestamps are dropped; at paste time the names are
+  looked up in the target vault's own definitions, exact match. A form that
+  names a field the target lacks is skipped and the preview says which —
+  copy the fields first, then the forms. A form carrying a numeric value
+  under any key this extension does not know how to translate is left out
+  of the copy and named, rather than shipped half-translated; and the run
+  refuses to send a document in which a placeholder survived.
+- Creation goes through the internal API the page itself uses — one `POST`
+  per form, the same headers and `{ form_definition: … }` wrapper as the
+  page's Save — because the builder is a drag-and-drop canvas that could
+  not be driven honestly through the DOM. This is the extension's first
+  write through an internal CDD endpoint rather than a CDD button. It is
+  undocumented; every answer is checked and a failure stops the run with
+  the status and the server's words. After a successful run the page
+  reloads so the table shows the new forms.
+
+### Technical notes
+- New `src/content/features/ui-fixes/form-clipboard/`: `form-model.js`
+  (`neutralize`, `resolve`, `planForms` — DOM-free), `api.js`
+  (`listForms`, `createForm`, CSRF from the page's meta tag),
+  `clipboard.js` (`chrome.storage.local` key `cddFormClipboard`),
+  `panel.js`, `init.js`; the field clipboard's stylesheet is shared.
+- New `inject/hooks/form-store-bridge.js` (`FORM_FIELD_MAP_REQUEST` →
+  `FORM_FIELD_MAP`): no internal endpoint serves the protocol and run field
+  definitions (`404`), but the page keeps `store.fieldDefinitionsMap` in
+  React props a few levels above the forms table, dialog closed or not.
+- Measured: `GET /api/internal/v1/vaults/<id>/protocol_form_definitions`
+  lists the forms; `POST` with `{ form_definition: { name, form_type,
+  components } }` answers `200` and the form, without the wrapper `400`;
+  `DELETE …/<id>` answers `204`. A document is `components.{protocol,run,
+  readout}.sections[].contents[].contents[].contents[]` of cells with
+  `label` or `fieldID`, where `fieldID` is a built-in string
+  (`protocol_name`, `run_date`) or a numeric definition id. A copy → names
+  → ids → `POST` round trip in the sandbox produced a form whose cells
+  matched the source exactly; it was then deleted.
+- Ontology template references are not translated: a form with one is
+  reported as carrying an unknown id and left out of the copy.
+
+---
 ## [15.14.0] — 2026-09-15
 
 ### Added

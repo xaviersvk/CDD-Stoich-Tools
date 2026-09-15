@@ -517,6 +517,23 @@ affect the others. These are the **safest** files to touch.
 - **Regression risk:** **low** — admin-only settings pages, preview first,
   every step checked, Update never pressed.
 
+### 6.9c Copy Protocol Forms Between Vaults
+- **User value:** *Copy N forms* / *Paste* above the Protocol Forms table.
+  The clipboard holds field **names**, never ids; Paste resolves them
+  against the target vault, previews add/skip per form (same name, missing
+  fields), and creates the checked forms through the internal API the page
+  uses. A form with an id the extension cannot translate is never shipped.
+- **Entry point:** `ui-fixes/form-clipboard/init.js`; `form-model.js` is
+  DOM-free, `api.js` talks to `/api/internal/v1/vaults/<id>/protocol_form_definitions`.
+- **Data source:** that endpoint for the forms; `inject/hooks/form-store-bridge.js`
+  for the field names (`store.fieldDefinitionsMap` in React props);
+  `chrome.storage.local` key `cddFormClipboard`.
+- **Maintenance difficulty:** **medium-high** — the only feature that writes
+  through an internal CDD endpoint; the body wrapper, headers and document
+  shape are measured, not documented.
+- **Regression risk:** **low** — admin-only page, preview first, one POST per
+  form, every answer checked, first failure stops the run.
+
 ### 6.10 Scan Racks into a Location
 - **User value:** A shelf of SBS racks goes into the inventory location tree in
   one pass. A `Scan racks` button in the `Edit Locations` footer opens a panel

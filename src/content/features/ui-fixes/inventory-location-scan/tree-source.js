@@ -67,14 +67,19 @@ export async function readTreeState(dialog) {
         return { nodes: buildNodes(domRows), expanded: [] };
     }
 
-    const canTakeBox = new Map(domRows.map((row) => [String(row.id), row.canTakeBox]));
-    const nodes = buildNodes(bridged.nodes.map((node) => ({
-        id: node.id,
-        parentId: node.parentId,
-        name: node.name,
-        isBox: node.isBox,
-        canTakeBox: canTakeBox.get(String(node.id)) === true,
-    })));
+    const rendered = new Map(domRows.map((row) => [String(row.id), row]));
+    const nodes = buildNodes(bridged.nodes.map((node) => {
+        const row = rendered.get(String(node.id));
+        return {
+            id: node.id,
+            parentId: node.parentId,
+            name: node.name,
+            isBox: node.isBox,
+            rendered: Boolean(row),
+            canTakeBox: row?.canTakeBox === true,
+            canTakeLocation: row?.canTakeLocation === true,
+        };
+    }));
     return { nodes, expanded: bridged.expanded };
 }
 

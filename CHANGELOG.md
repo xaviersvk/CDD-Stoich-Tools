@@ -30,12 +30,18 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   makes the path absolute, so a whole vault can be pasted from one Excel
   column. The button says what it will do: *Create 3 boxes, 2 locations*,
   the shelf counted once however many racks go on it.
-- Two refusals a run can stop on, each named in the status line: a segment
-  that is a box (`"AAA" is a box, not a location`) and a location that
-  already holds boxes, under which CDD allows no sub-location
-  (`"room" already holds boxes and cannot hold a location`). Measured: a
-  location with a box shows only the add-box button; a location with
-  locations, or nothing, shows both.
+- **A row that cannot be built is refused as it is typed**, struck out with
+  the reason, and left out of the count — like a duplicate. Three reasons:
+  `"Racks" already holds boxes` (CDD allows no sub-location under a location
+  that holds a box — measured: such a row shows only the add-box button,
+  while a location with locations, or nothing, shows both), `"AAA" is a
+  box, not a location`, and `"Locations" cannot hold a box`. The verdict is
+  judged again whenever *Into* moves or the tree is clicked, so pointing the
+  panel at an empty shelf un-refuses the rows. A folded location has not
+  shown its buttons and is not judged; the run says if it must.
+- The practical consequence for a vault whose every location already holds
+  racks: a new shelf goes in from the top, `Locations > Cold room > R-9`,
+  or under a location that holds only locations. Under *Racks* it cannot.
 - **A filter box above the location tree.** Type part of a name; rows that
   match stay, with the path above them, and everything else is hidden.
   Branches that hold a match unfold. Clearing the box, or Escape, puts the

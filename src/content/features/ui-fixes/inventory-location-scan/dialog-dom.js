@@ -92,12 +92,18 @@ export function treeItems(dialog) {
     return [...dialog.querySelectorAll('li[role="treeitem"]')];
 }
 
+// Both "can take" answers are style questions on a RENDERED row: CDD hides
+// the button that does not apply. A location that holds a box shows no
+// add-location button — a level is shelves or racks, not both — and the
+// root shows no add-box button.
 export function readTreeRows(dialog) {
     return treeItems(dialog).map((item) => ({
         id: item.dataset.nodeid,
         parentId: item.dataset.parentid,
         name: labelOf(item),
+        rendered: true,
         canTakeBox: isShown(addBoxButton(item)),
+        canTakeLocation: isShown(rowButton(item, ADD_LOCATION_LABEL)),
     }));
 }
 

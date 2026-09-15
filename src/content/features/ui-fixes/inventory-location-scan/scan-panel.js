@@ -43,6 +43,7 @@ import {
     treeItems,
 } from "./dialog-dom.js";
 import {
+    SCAN_BLOCKED,
     SCAN_IN_LIST,
     SCAN_IN_TREE,
     acceptedScans,
@@ -185,7 +186,7 @@ export async function openScanPanel(dialog) {
     const head = el("div", "cdd-scan-head");
     head.append(el("span", "cdd-scan-title", "Scan racks"));
     head.append(el("span", "cdd-scan-note",
-        "Enter adds a row. Paste a list to add many. Nothing is saved until you press Save."));
+        "Enter adds a row. Paste a list to add many. Shelf A > R-1 makes the shelf on the way. Nothing is saved until you press Save."));
     panel.append(head);
 
     /* ----- controls ----- */
@@ -196,13 +197,13 @@ export async function openScanPanel(dialog) {
     const intoSelect = document.createElement("select");
     intoSelect.addEventListener("change", () => {
         state.targetId = intoSelect.value;
+        reclassify();
         paintTargetRow();
         render();
     });
     intoLabel.append(intoSelect);
     controls.append(intoLabel);
-    controls.append(el("span", "cdd-scan-hint",
-        "or click a location on the left. A path like Shelf A > R-1 makes the shelf on the way."));
+    controls.append(el("span", "cdd-scan-hint", "or click a location on the left"));
 
     const sizeLabel = el("label", null);
     sizeLabel.append(el("span", null, "New rows"));
@@ -301,6 +302,7 @@ export async function openScanPanel(dialog) {
         const picked = nearestTarget(nodes, selectedNodeId(dialog));
         if (picked) state.targetId = picked;
 
+        reclassify();
         paintTargets();
         render();
         scanInput.focus();
@@ -310,6 +312,7 @@ export async function openScanPanel(dialog) {
     function addScan(raw, size) {
         const scan = classifyScan(raw, nodes, state.scans, { targetId: state.targetId });
         if (!scan) return false;
+        scan.raw = raw;
         scan.columns = size ? size.columns : state.gridColumns;
         scan.rows = size ? size.rows : state.gridRows;
         // A size that came in with the row counts as set by hand: the boxes at
@@ -317,6 +320,26 @@ export async function openScanPanel(dialog) {
         scan.sized = Boolean(size);
         state.scans.push(scan);
         return true;
+    }
+
+    // A row's verdict depends on where it points: "Racks already holds boxes"
+    // stops being true the moment Into is moved to an empty shelf, and a
+    // duplicate against the tree can appear when a click adds a location. So
+    // every row that is not yet created is judged again, in order, against
+    // the current tree and target — keeping its size and who set it.
+    function reclassify() {
+        const kept = [];
+        for (const scan of state.scans) {
+            if (scan.status === SCAN_CREATED) {
+                kept.push(scan);
+                continue;
+            }
+            const fresh = classifyScan(scan.raw, nodes, kept, { targetId: state.targetId });
+            if (!fresh) continue;
+            Object.assign(scan, fresh);
+            kept.push(scan);
+        }
+        state.scans = kept;
     }
 
     function applyDefaultSize() {
@@ -387,7 +410,7 @@ export async function openScanPanel(dialog) {
 
         state.scans.forEach((scan, index) => {
             const row = el("div", "cdd-scan-row");
-            if (scan.status === SCAN_IN_TREE || scan.status === SCAN_IN_LIST) {
+            if (scan.status === SCAN_IN_TREE || scan.status === SCAN_IN_LIST || scan.status === SCAN_BLOCKED) {
                 row.classList.add("cdd-scan-row--refused");
             }
             if (scan.status === SCAN_CREATED) row.classList.add("cdd-scan-row--created");
@@ -404,6 +427,8 @@ export async function openScanPanel(dialog) {
                 row.append(el("span", "cdd-scan-why", `already in ${scan.where}`));
             } else if (scan.status === SCAN_IN_LIST) {
                 row.append(el("span", "cdd-scan-why", "already in the list"));
+            } else if (scan.status === SCAN_BLOCKED) {
+                row.append(el("span", "cdd-scan-why", scan.where));
             } else if (scan.status === SCAN_CREATED) {
                 row.append(el("span", "cdd-scan-why", "created"));
             } else if (!scan.box) {

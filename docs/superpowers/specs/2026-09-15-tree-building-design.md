@@ -41,7 +41,10 @@ reads the whole tree from React props. One release, 15.12.0.
   only. Racks are the common case and get no marker.
 - **Existing segments are reused, missing ones created.** A segment that
   names a box, or a location that holds boxes and so cannot take a
-  sub-location, stops the run with a sentence that says which.
+  sub-location, or a box aimed at the root, is refused **when the row is
+  added** — struck out with the reason, left out of the count — and judged
+  again whenever *Into* moves. A folded location has not shown its buttons
+  and is not judged; the run stops there with the same sentence if it must.
 - **The filter hides what does not match** and shows every match with the
   path above it. Clearing it restores the expansion the user had before
   typing. Always on, no switch.

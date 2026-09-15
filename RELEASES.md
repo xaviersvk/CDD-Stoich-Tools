@@ -24,6 +24,8 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 - End a line with `>` to make locations only. Start it with *Locations* to
   build from the top of the vault.
+- A shelf cannot go under a location that already holds racks — CDD's rule.
+  The row says so before you press Create.
 - A filter box above the tree shows only the names that match. Escape clears it.
 - Pick a rack size from the dropdown — SBS 96, SBS 384, 9 × 9, 10 × 10.
 

@@ -9,6 +9,10 @@
 export const SCAN_OK = "ok";
 export const SCAN_IN_TREE = "in-tree";
 export const SCAN_IN_LIST = "in-list";
+// The path cannot be built where the row points: a segment is a box, the
+// location holds boxes and so takes no shelf, or the box would land on the
+// root. Known before Create is pressed, so the row says so at once.
+export const SCAN_BLOCKED = "blocked";
 
 // CDD gives the ROOT a parent of the literal string "undefined". Everything
 // else carries a real id.
@@ -41,7 +45,11 @@ export function buildNodes(rows) {
         id: String(row.id),
         parentId: parentOf(row.parentId),
         name: String(row.name ?? "").trim(),
+        // Unrendered nodes (folded away) answer neither question; `rendered`
+        // is what tells "no" from "unknown".
+        rendered: row.rendered === true,
         canTakeBox: row.canTakeBox === true,
+        canTakeLocation: row.canTakeLocation === true,
         isBox: row.isBox === true,
         path: "",
         depth: 0,
@@ -158,6 +166,21 @@ function anchorFor(parsed, nodes, context) {
     return context?.targetId == null ? null : String(context.targetId);
 }
 
+// Why this row cannot be built, or null. Judged only on rendered nodes: a
+// folded location has not shown its buttons, and the run will say.
+function blockedReason(nodes, anchorId, segments, wantsBox) {
+    if (anchorId == null) return null;
+    const resolved = resolvePath(nodes, anchorId, segments);
+    if (resolved.error) return resolved.error;
+    const node = (nodes || []).find((candidate) => candidate.id === resolved.nodeId);
+    if (!node || !node.rendered) return null;
+    if (resolved.missing.length) {
+        return node.canTakeLocation ? null : `"${node.name}" already holds boxes`;
+    }
+    if (wantsBox && !node.canTakeBox) return `"${node.name}" cannot hold a box`;
+    return null;
+}
+
 // The whole tree, not just the target location. A rack barcode belongs to one
 // rack; the same code twice means a double scan or a rack already shelved
 // somewhere else, and neither should quietly become a second box.
@@ -168,7 +191,9 @@ export function classifyScan(raw, nodes, scans, context = {}) {
 
     const { segments, box, absolute } = parsed;
     const anchorId = anchorFor(parsed, nodes, context);
-    const base = { segments, box, absolute, pathLabel: segments.join(" > "), where: null };
+    // The label is the path ABOVE the thing the row names.
+    const above = box ? segments : segments.slice(0, -1);
+    const base = { segments, box, absolute, pathLabel: above.join(" > "), where: null };
 
     if (box) {
         const k = key(box);
@@ -177,6 +202,8 @@ export function classifyScan(raw, nodes, scans, context = {}) {
         if ((scans || []).some((scan) => scan.box && key(scan.box) === k)) {
             return { ...base, name: box, status: SCAN_IN_LIST };
         }
+        const blocked = blockedReason(nodes, anchorId, segments, true);
+        if (blocked) return { ...base, name: box, status: SCAN_BLOCKED, where: blocked };
         return { ...base, name: box, status: SCAN_OK };
     }
 
@@ -192,6 +219,8 @@ export function classifyScan(raw, nodes, scans, context = {}) {
     if ((scans || []).some((scan) => !scan.box && scan.pathKey === pathKey)) {
         return { ...base, name, status: SCAN_IN_LIST };
     }
+    const blocked = blockedReason(nodes, anchorId, segments, false);
+    if (blocked) return { ...base, name, status: SCAN_BLOCKED, where: blocked };
     return { ...base, name, status: SCAN_OK, pathKey };
 }
 

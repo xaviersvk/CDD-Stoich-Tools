@@ -1,7 +1,8 @@
 // content/features/ui-fixes/create-location-link/menu-item.js
 //
 // The entry itself: a plain <li><a> appended to CDD's own "Create a new…"
-// list, so the menu's styling and Turbo's link handling apply for free. The
+// list, so the menu's styling applies for free. It opens in a NEW tab: the
+// search being built on this page must not be lost to a navigation. The
 // hash is what tells the settings page to open the dialog on arrival.
 
 import { settingsPath } from "./permission.js";
@@ -26,6 +27,8 @@ export function ensureMenuItem(vaultId) {
         const link = document.createElement("a");
         link.href = settingsPath(vaultId) + EDIT_LOCATIONS_HASH;
         link.textContent = "Location";
+        link.target = "_blank";
+        link.rel = "noopener";
 
         item.appendChild(link);
         menu.appendChild(item);

@@ -23,7 +23,7 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 a *Location* entry that opens the dialog straight away.
 
 - Shown to vault administrators and inventory administrators only.
-- Back returns you to the search.
+- Opens in a new tab; your search stays put.
 
 ---
 

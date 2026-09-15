@@ -26,7 +26,8 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   Protocol, Molecule, Project and ELN Entry. It lands on the vault's
   inventory-field settings with *Edit Locations* already open — the same
   dialog, with Scan racks, the filter and the orange names — instead of
-  four clicks through Settings. Same tab; Back returns to the search.
+  four clicks through Settings. Opens in a new tab, so the search being
+  built stays where it is.
 - **Shown only to people who may edit locations.** Two gates, the cheap one
   first: the header's user dropdown names the user's role as a link to the
   help topic `user_roles`, and *Vault Administrator* is enough with no

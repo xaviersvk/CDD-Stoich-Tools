@@ -36,9 +36,10 @@ locations: vault administrators and inventory administrators.
 
 ## Decisions
 
-- **Same tab.** The entry is a plain link to
-  `/vaults/<id>/inventory_field_definitions#edit-locations`; Back returns to
-  the search. (New tab was offered and declined.)
+- **New tab.** The entry is a plain link to
+  `/vaults/<id>/inventory_field_definitions#edit-locations` with
+  `target="_blank"`, so the search being built stays where it is. (Same
+  tab was chosen first and reversed on review.)
 - **Two gates, header first.** *Vault Administrator* in the header shows the
   entry with no request. Otherwise one probe: GET the settings page; `200`
   at the requested path means allowed, a redirect or any other status means

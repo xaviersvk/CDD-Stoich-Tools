@@ -60,9 +60,32 @@ export async function waitFor(predicate, tries = 60) {
 
 /* ----- finding things ----- */
 
-function visibleWithText(text) {
+// A vault can rename any of the nouns ("Molecule" → "Entity"), and the links
+// follow, so they are found by shape, not by word. Two tables share the
+// Sample/Inventory page: a link belongs to the table in its nearest ancestor
+// that holds a table, which is always exactly one. The Add/Edit link may
+// carry a trailing "⚠", hence no end anchor.
+const EDIT_LINK = /^Add\/Edit .+ Fields\b/;
+const ADD_LINK = /^Add (?:an? )?.+ field\b/i;
+const UPDATE_BUTTON = /^Update .+ fields\b/i;
+
+function ownTable(el) {
+    let node = el.parentElement;
+    while (node && !node.querySelector("table")) node = node.parentElement;
+    const tables = node ? node.querySelectorAll("table") : [];
+    return tables.length === 1 ? tables[0] : null;
+}
+
+function visibleLink(kind, pattern) {
+    const table = findTable(kind);
+    if (!table) return null;
     return [...document.querySelectorAll("a, button")]
-        .find((el) => el.textContent.trim() === text && el.offsetParent !== null) || null;
+        .find((el) => pattern.test(el.textContent.trim()) && el.offsetParent !== null && ownTable(el) === table) || null;
+}
+
+// The Update button as this vault words it, for the status line.
+export function updateButtonText(kind) {
+    return visibleLink(kind, UPDATE_BUTTON)?.textContent.trim() || "Update";
 }
 
 export function findTable(kind) {
@@ -71,8 +94,7 @@ export function findTable(kind) {
 }
 
 export function findEditLink(kind) {
-    const config = kindConfig(kind);
-    return config ? visibleWithText(config.editLinkText) : null;
+    return visibleLink(kind, EDIT_LINK);
 }
 
 function editableRows(table) {
@@ -80,8 +102,10 @@ function editableRows(table) {
         .filter((tr) => tr.querySelector('input[name="name"]'));
 }
 
+// A vault with only the built-in rows (Name, Synonyms, Structure) has no
+// editable row even in edit mode, so the Add link counts as well.
 export function isEditing(kind) {
-    return editableRows(findTable(kind)).length > 0;
+    return editableRows(findTable(kind)).length > 0 || visibleLink(kind, ADD_LINK) !== null;
 }
 
 // Names already on the page, from either mode: the first cell in read mode,
@@ -166,10 +190,9 @@ export async function enterEditMode(kind) {
 }
 
 export async function addRow(kind) {
-    const config = kindConfig(kind);
     const before = editableRows(findTable(kind)).length;
-    const link = visibleWithText(config.addLinkText);
-    if (!link) throw new Error(`"${config.addLinkText}" is not on the page`);
+    const link = visibleLink(kind, ADD_LINK);
+    if (!link) throw new Error("the Add field link is not on the page");
     link.click();
     const rows = await waitFor(() => {
         const now = editableRows(findTable(kind));

@@ -13,7 +13,11 @@ export function injectFieldClipboardStyles() {
     const style = document.createElement("style");
     style.id = "cdd-field-clipboard-style";
     style.textContent = `
+    /* Edit mode puts an invisible error box (opacity 0, 42px) over the top
+       of the table; without a stacking context it swallows the clicks. */
     .cdd-fc-bar {
+        position: relative;
+        z-index: 1;
         display: flex;
         flex-wrap: wrap;
         align-items: center;

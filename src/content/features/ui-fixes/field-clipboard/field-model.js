@@ -11,15 +11,16 @@ export const PLAN_TYPE_MISSING = "type-missing";
 
 // One entry per settings page — two for the Sample/Inventory page, which
 // draws two tables. `tableIndex` is the table's position on the page, which
-// is also what the bridge is asked for.
+// is also what the bridge is asked for. The link texts are not here: a vault
+// can rename the nouns, so page-dom.js finds them by shape.
 export const KINDS = [
-    { kind: "molecule", path: /\/vaults\/\d+\/vault_molecule_field_definitions$/, tableIndex: 0, editLinkText: "Add/Edit Molecule Fields", addLinkText: "Add a molecule field", updateText: "Update molecule fields", label: "molecule fields" },
-    { kind: "batch", path: /\/vaults\/\d+\/vault_batch_field_definitions$/, tableIndex: 0, editLinkText: "Add/Edit Batch Fields", addLinkText: "Add a batch field", updateText: "Update batch fields", label: "batch fields" },
-    { kind: "sample", path: /\/vaults\/\d+\/inventory_field_definitions$/, tableIndex: 0, editLinkText: "Add/Edit Sample Fields", addLinkText: "Add a sample field", updateText: "Update sample fields", label: "sample fields" },
-    { kind: "inventory", path: /\/vaults\/\d+\/inventory_field_definitions$/, tableIndex: 1, editLinkText: "Add/Edit Inventory Fields", addLinkText: "Add a inventory field", updateText: "Update inventory fields", label: "inventory fields" },
-    { kind: "protocol", path: /\/vaults\/\d+\/vault_protocol_field_definitions$/, tableIndex: 0, editLinkText: "Add/Edit Protocol Fields", addLinkText: "Add a protocol field", updateText: "Update protocol fields", label: "protocol fields" },
-    { kind: "run", path: /\/vaults\/\d+\/vault_run_field_definitions$/, tableIndex: 0, editLinkText: "Add/Edit Run Fields", addLinkText: "Add a run field", updateText: "Update run fields", label: "run fields" },
-    { kind: "eln", path: /\/vaults\/\d+\/vault_eln_field_definitions$/, tableIndex: 0, editLinkText: "Add/Edit ELN Fields", addLinkText: "Add ELN Field", updateText: "Update ELN fields", label: "ELN fields" },
+    { kind: "molecule", path: /\/vaults\/\d+\/vault_molecule_field_definitions$/, tableIndex: 0, label: "molecule fields" },
+    { kind: "batch", path: /\/vaults\/\d+\/vault_batch_field_definitions$/, tableIndex: 0, label: "batch fields" },
+    { kind: "sample", path: /\/vaults\/\d+\/inventory_field_definitions$/, tableIndex: 0, label: "sample fields" },
+    { kind: "inventory", path: /\/vaults\/\d+\/inventory_field_definitions$/, tableIndex: 1, label: "inventory fields" },
+    { kind: "protocol", path: /\/vaults\/\d+\/vault_protocol_field_definitions$/, tableIndex: 0, label: "protocol fields" },
+    { kind: "run", path: /\/vaults\/\d+\/vault_run_field_definitions$/, tableIndex: 0, label: "run fields" },
+    { kind: "eln", path: /\/vaults\/\d+\/vault_eln_field_definitions$/, tableIndex: 0, label: "ELN fields" },
 ];
 
 export function kindsForPath(pathname) {

@@ -28,6 +28,7 @@ import {
     requestFieldRows,
     setPickList,
     typeOptions,
+    updateButtonText,
     vaultInfo,
 } from "./page-dom.js";
 
@@ -191,11 +192,21 @@ export function buildBar(kind) {
         cancel.disabled = true;
         status.textContent = "";
 
+        // Entering edit mode can redraw the page and take this bar with it;
+        // init mounts a fresh one, and the run reports there.
+        const say = (text) => {
+            status.textContent = text;
+            if (bar.isConnected) return;
+            const live = document.querySelector(`.${BAR_CLASS}[data-kind="${kind}"] .cdd-fc-status`);
+            if (live) live.textContent = text;
+        };
+
         let made = 0;
         try {
             await enterEditMode(kind);
             for (const { item, line } of todo) {
                 const field = item.field;
+                say(`Adding ${made + 1} of ${todo.length}: ${field.name}…`);
                 const tr = await addRow(kind);
                 await fillRow(tr, field, requiredChoice(field));
                 if (field.type === "PickList") await setPickList(tr, field.pickList);
@@ -203,12 +214,12 @@ export function buildBar(kind) {
                 made += 1;
             }
             card.hidden = true;
-            status.textContent = `Added ${plural(made, "field")}. Check them, then press "${config.updateText}" — or cancel to discard.`;
+            say(`Added ${plural(made, "field")}. Check them, then press "${updateButtonText(kind)}" — or cancel to discard.`);
         } catch (error) {
             // Whatever was added stays as pending rows: visible, removable,
             // and discarded by the page's own cancel.
             cancel.disabled = false;
-            status.textContent = `Added ${made} of ${todo.length}. Stopped at "${todo[made]?.item.field.name}" — ${error.message}.`;
+            say(`Added ${made} of ${todo.length}. Stopped at "${todo[made]?.item.field.name}" — ${error.message}.`);
         }
     }
 

@@ -17,6 +17,20 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 15.16.0 — 2026-09-17
+
+**Copy registration forms between vaults.** Press **Copy** on
+*Settings → Registration*, then **Paste** there in the other vault. Each form
+gets the registration system with the matching prefix; change it in CDD if it
+should be another.
+
+- **Create multiple systems** beside *Create a new System*: one prefix per
+  line, each starts at 1.
+- Copy/Paste of fields now works in vaults that call molecules something else
+  (e.g. *Entity*).
+
+---
+
 ## 15.15.0 — 2026-09-15
 
 **Copy fields and protocol forms between vaults.** Press **Copy** on a

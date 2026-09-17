@@ -19,6 +19,45 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [15.16.0] — 2026-09-17
+
+### Added
+- **Registration forms can be copied from one vault and pasted into another.**
+  *Settings → Vault → Registration* grows **Copy N forms** and **Paste** above
+  the Registration Forms table, for administrators. It is the protocol form
+  clipboard with a registration adapter: fields travel by name under
+  molecule / batch / sample / inventory, a Pick List default travels by its
+  value text (and is left off, with a note, when the target list lacks it),
+  and the registration system is chosen by prefix, then by what follows the
+  first dash (*I25-SM* finds *AHL-SM*), then the vault's first system. The
+  preview says which system each form gets.
+- **Create multiple systems** beside CDD's *Create a new System*: a card with
+  one prefix per line; prefixes already in the vault or listed twice are
+  struck through. Each system is made through CDD's own dialog and starts
+  at 1 (current value 0).
+
+### Fixed
+- **Field Copy/Paste in a vault that renamed Molecule** (e.g. *Entity*): the
+  bar never appeared, because the *Add/Edit … Fields*, *Add a … field* and
+  *Update … fields* texts were matched word for word. They are now matched
+  by shape, and each link to its own table on the Sample/Inventory page.
+- **Paste into a vault with only the built-in rows** stopped silently: edit
+  mode was recognised only by an editable row. The *Add a … field* link
+  counts too, and the run reports into the bar CDD repaints.
+- **Copy and Paste could not be clicked in edit mode**: CDD's invisible error
+  box sat over the bar. The bar now stacks above it.
+
+### Technical notes
+- `form-clipboard/form-bar.js` is the shared Copy/Paste bar, driven by an
+  adapter; `form-clipboard/panel.js` is now the protocol adapter.
+- Registration forms are created with
+  `POST /api/internal/v1/vaults/{id}/registration_form_definitions` and
+  `{ form_definition: { name, form_type, components, registration_type,
+  structureless_image_name, allow_new_molecules, registration_system_id } }`,
+  the body CDD's own bundle sends. Field definitions and systems come from
+  the page's `RegistrationFormDefinitionsPage` react_props.
+
+---
 ## [15.15.0] — 2026-09-15
 
 ### Added

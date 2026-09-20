@@ -32,8 +32,9 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   close with *NMR · COA · MS*, *MSDS File · Vendor QC/COA*, *Documentation*,
   and the files should stay last — or at the end when it does not end in
   files. Only a closing run of file-only rows counts; a row that mixes a file
-  with another field is left where it is. Three label/field pairs to a row, built exactly as CDD builds its own
-  (a row is always 6 wide: *L1 F1 ×3*, *L1 F2 ×2* or *L1 F5*). A form that has
+  with another field is left where it is. Three label/field pairs to a row,
+  built exactly as CDD builds its own (a row is always 6 wide: *L1 F1 ×3*,
+  *L1 F2 ×2* or *L1 F5*). A form that has
   some of the fields gets only the ones it lacks; a form that has them all is
   left alone, so a second run does nothing.
   The choice is remembered by name and default value text, so the next vault
@@ -92,6 +93,17 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 - `registration-form-rows/row-model.js` is pure (`resolveChosen`, `planForm`,
   `buildRows`, `withRows`, `putBody`, `verifySaved`); `selection.js` keeps
   `cddRegistrationFormRowSelection` in `chrome.storage.local`.
+- Learned while the feature was used across 56 vaults and 268 laid-out
+  forms (2026-09-20): the server stores the `PUT` document exactly as sent, so
+  the strict comparison after each save holds. A form that lacks a **required**
+  batch field (or every member of an *or … is required* group) is refused
+  with `422 { errors: { batch_form: ["is missing required fields: …"] } }` —
+  for anyone, CDD's own editor included; the run stops there with the
+  server's words. Saving a *… Fields* page makes CDD renumber
+  `required_group_number` to close gaps, so required fields are compared as a
+  partition, never by number. Once a form uses a Pick List value as a default,
+  CDD reports that value as `deletable: false`. Details in
+  `docs/cdd-integration-notes.md`.
 - `field-forms/` reads the forms through `listRegistrationForms` once per
   page visit and the field ids through the field-rows bridge, which already
   carries `id`. Its ⓘ sits in the name cell, so `page-dom.js` grew

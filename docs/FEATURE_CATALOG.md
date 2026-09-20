@@ -500,8 +500,9 @@ affect the others. These are the **safest** files to touch.
 
 ### 6.9b Copy Field Definitions Between Vaults
 - **User value:** *Copy N fields* / *Paste* above every *… Fields* settings
-  table (Molecule, Batch, Sample, Inventory, Protocol, Run, ELN). Copy keeps
-  the definitions per kind in extension storage; Paste on the same page in
+  table (Molecule, Batch, Sample, Inventory, Protocol, Run, ELN). Copy opens a
+  card with a checkbox per field (filter, All / None) and keeps the ticked
+  definitions per kind in extension storage; Paste on the same page in
   another vault previews add/skip per field (exact-name match skipped, type
   not offered skipped, group requirement pasted as optional), then drives
   CDD's edit mode — rows, types, flags, pick-list values — and stops before
@@ -533,6 +534,64 @@ affect the others. These are the **safest** files to touch.
   shape are measured, not documented.
 - **Regression risk:** **low** — admin-only page, preview first, one POST per
   form, every answer checked, first failure stops the run.
+
+### 6.9d Copy Registration Forms Between Vaults · Create Multiple Systems
+- **User value:** *Copy N forms* / *Paste* above the Registration Forms table
+  — the protocol form clipboard with a registration adapter: fields travel by
+  name under molecule / batch / sample / inventory, a Pick List default by its
+  value text, the registration system by prefix (then by what follows the
+  first dash, then the vault's first). *Create multiple systems* beside CDD's
+  own link: one prefix per line.
+- **Entry point:** `ui-fixes/registration-form-clipboard/init.js` (adapter in
+  `panel.js`, DOM-free `form-model.js`, `api.js`);
+  `ui-fixes/registration-systems/init.js`.
+- **Data source:** `/api/internal/v1/vaults/<id>/registration_form_definitions`
+  (GET, POST); field definitions and systems from the page's
+  `RegistrationFormDefinitionsPage` react_props; `chrome.storage.local` key
+  `cddRegistrationFormClipboard`.
+- **Maintenance difficulty:** **medium-high** — measured, undocumented API.
+- **Regression risk:** **low** — admin-only, preview first, first failure
+  stops the run.
+
+### 6.9e Add Batch Fields to Existing Registration Forms
+- **User value:** *Add fields to forms* above the Registration Forms table.
+  Tick batch fields in row order, give a Pick List its default, read the
+  preview per form, apply. The row goes above the file-only rows a form ends
+  in (else at the end); a row left below the files is moved up; a Pick List
+  cell with no default gets the chosen one; a form that has everything, or
+  has no layout of its own, is left alone. The choice is remembered by name,
+  so the next vault opens with the same fields ticked.
+- **Entry point:** `ui-fixes/registration-form-rows/init.js`; `row-model.js`
+  is DOM-free (`planForm`, `withRows`, `verifySaved`), `panel.js` the card,
+  `selection.js` the remembered choice.
+- **Data source:** the same endpoint, plus **PUT** `…/{form_id}` — the whole
+  document goes back, dead `fieldID`s included; batch definitions from the
+  page's react_props; `chrome.storage.local` key
+  `cddRegistrationFormRowSelection`.
+- **Safeguards:** a JSON backup is downloaded before the first write; each
+  form is re-listed right before its PUT (changed since the preview → stop)
+  and right after (anything but the agreed document → stop); the first
+  failure stops the run with the server's words.
+- **Maintenance difficulty:** **high** — the one feature that rewrites
+  documents other people work with; the layout grammar (6-wide rows, spans,
+  `isLocked`/`defaultValue`) is measured, not documented.
+- **Regression risk:** **medium** — admin-only and preview-first, but it
+  changes forms in use. `row-model.js` has the cases; run them with `node`
+  before touching it.
+
+### 6.9f Which Registration Forms Show a Field
+- **User value:** on the Molecule / Batch / Sample / Inventory *Fields*
+  settings pages, a small ⓘ after each field's name; hover or focus lists the
+  registration forms that show it (*In 3 of 11 registration forms*). Red when
+  none does. A form with no layout for that kind counts, and says so.
+- **Entry point:** `ui-fixes/field-forms/init.js`; `forms-model.js` is
+  DOM-free.
+- **Data source:** `listRegistrationForms` once per page visit; field ids
+  through the field-rows bridge.
+- **Maintenance difficulty:** **low**. The ⓘ lives in the name cell, so names
+  are read through `page-dom.js readModeName()` — keep that if the markup
+  changes, or Field Paste stops recognising existing names.
+- **Regression risk:** **low** — read-only; taken out in edit mode.
 
 ### 6.10 Scan Racks into a Location
 - **User value:** A shelf of SBS racks goes into the inventory location tree in

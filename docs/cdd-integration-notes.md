@@ -201,6 +201,54 @@ against https://app.collaborativedrug.com/vaults/6884/eln/entries/2504170.
   `RegistrationFormRenderer` blocks DO carry batch fields — that is what
   `batch-field-enrichment.js` scrapes.)
 
+## Registration forms (`/vaults/<id>/vault_registration_form_definitions`)
+
+Measured on 56 vaults and 340 forms while three batch fields were rolled out
+into every laid-out form (2026-09-20).
+
+- **API** (session cookie + `X-CSRF-Token`, the page's own calls):
+  `GET /api/internal/v1/vaults/<id>/registration_form_definitions` lists the
+  forms with their whole documents and works from any page of that vault;
+  `POST` creates; `PUT …/<form_id>` replaces. Body for both writes:
+  `{ form_definition: { name, components, registration_type,
+  structureless_image_name, allow_new_molecules, registration_system_id } }`
+  (+ `form_type` on POST). The server stores the document **exactly as sent**
+  — key order aside — so "list again and compare" is a sound check.
+- **Field definitions and systems** are in the page's
+  `[component_class="RegistrationFormDefinitionsPage"]` `react_props`
+  (`batch_field_definitions` with `pick_list_values`, `registration_systems`).
+  The *Create a new form* link is drawn by React, so it is NOT in the fetched
+  HTML — do not use it to detect an administrator from a `fetch`.
+- **`components.<kind>` is `null`** when the form has no layout of its own
+  for that kind: CDD then shows every field of the kind. Never give such a
+  form a layout to add one row — it would hide all the others.
+- **Layout grammar:** `{ sections: [ { name, contents: [ { layoutType:
+  "table", context, contents: [rows] } ] } ], expanded_aligned_fields }`. A
+  row is `{ layoutType: "row", contents: [cells] }` and is always **6 wide**:
+  label cell `{ span: 1, label, isRequired, layoutType: "cell" }` + field cell
+  `{ span, fieldID, layoutType: "cell" }`, as L1 F5, L1 F2 ×2, L1 F1 ×3 or
+  L1 F0.5 ×4. A Pick List default is the **id of the pick list value** on the
+  field cell: `{ span, fieldID, isLocked, layoutType, defaultValue }`.
+  `isRequired` on the label is the form's own flag, not the vault's.
+- **Dead `fieldID`s** stay in a form after a field is deleted from the vault.
+  Send them back untouched.
+- **Required fields are enforced on save:** a form that lacks a required batch
+  field — or every member of an *or … is required* group
+  (`required_group_number`) — is refused with `422 { errors: { batch_form:
+  ["is missing required fields: X"] } }`, in CDD's own editor too. Such a form
+  cannot be changed by anyone until the field is on it or made optional.
+- **`required_group_number` is a label, not an identity:** saving a *… Fields*
+  page renumbers the groups to close gaps (6..12 became 5..11 in one vault).
+  Compare which fields are required and which share a group, never the
+  numbers.
+- A pick list value used as a form default comes back `deletable: false`.
+- **Vault ids:** the header switcher links are
+  `…/switch_vault?vault_membership_id=…`; following one redirects to
+  `/vaults/<vaultId>/…`. The first navigation into a vault that is not the
+  current one may land on that vault's last settings page — check
+  `location.pathname` before acting. A vault can rename *Batch* (the page is
+  then titled e.g. *Animal Fields*; the URL does not change).
+
 ## The protocol page (`/vaults/<id>/protocols/<id>`)
 
 - Carries **two** `.protocolAnnotator`s: one with `resourceType === "protocol"`
@@ -241,6 +289,23 @@ against https://app.collaborativedrug.com/vaults/6884/eln/entries/2504170.
   (a ~5 s baseline window after load registers pre-existing rows; URL
   change resets it). Existing rows go through the card buttons or the
   panel's "Fill all" button — a conscious click.
+
+## Driving the extension through browser automation
+
+- **A hidden tab throttles chained timers to about one a minute.** A watcher
+  left running in the page (`await sleep(500)` in a loop) clicked CDD's
+  *Update* minutes late. Keep every step a separate, immediate call, do the
+  waiting outside the page, and wake in-page waits with a `MutationObserver`.
+  Refuse to write when `document.hidden`.
+- **Chrome silently drops a site's repeated automatic downloads** until the
+  user allows them; the page cannot tell. Confirm a backup file exists on disk
+  before relying on it.
+- CDD's CSP (`connect-src 'self' …`) blocks a page from posting to
+  `127.0.0.1`.
+- CDD's *Update … fields* answers a JS `.click()`. Click CDD's own links by
+  reference, not by remembered coordinates — the window size changes.
+- Never save an edit-mode *… Fields* page that was opened before someone else
+  changed the fields: reload and start again.
 
 ## Debugging techniques that paid off
 

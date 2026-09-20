@@ -19,6 +19,28 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [15.17.0] — 2026-09-20
+
+### Changed
+- **A form that cannot be copied now says why in the user's terms.** A field
+  deleted from a vault leaves its cell behind on any form that showed it, and
+  CDD keeps the dead `fieldID` in the form document. The form clipboards
+  rightly refuse such a form — there is no name to carry — but the reason read
+  *carries an id this extension cannot translate: batch.sections[0]…: id
+  1000008839*, which sounds like a fault in the extension and names nothing the
+  user can find. It now reads *points at a field this vault no longer has:
+  "Vault of Origin" in batch. Remove that row from the form in CDD, then copy
+  again.* The label is the label cell before the dead cell in its row; without
+  one the message falls back to the id and path. An id under a key the model
+  does not know keeps the old wording. Applies to registration forms, protocol
+  forms and the protocol form **Duplicate** link.
+
+### Technical notes
+- `walk()` in both form models hands `onCell` the preceding label cell's text;
+  `lostField()` and `explainProblems()` in `form-clipboard/form-model.js` hold
+  the wording for `form-bar.js` and `row-actions.js`.
+
+---
 ## [15.16.0] — 2026-09-17
 
 ### Added

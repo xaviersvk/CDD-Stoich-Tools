@@ -47,15 +47,38 @@ function byName(list) {
     return map;
 }
 
+// A cell whose field the source vault no longer has, in words the user can
+// find on the form: the label cell that sits before it in the same row.
+export function lostField(component, path, fieldID, label) {
+    return label ? `"${label}" in ${component}` : `id ${fieldID} at ${component}${path}`;
+}
+
+// Why a form cannot be copied, and what to do about it. A field deleted from
+// the vault leaves its cell behind on the form; that is the user's to fix, so
+// it is said apart from an id this extension simply does not know.
+export function explainProblems(unknownIds, missingNames) {
+    const parts = [];
+    if (missingNames?.length) {
+        parts.push(`points at a field this vault no longer has: ${missingNames.join("; ")}. Remove that row from the form in CDD, then copy again.`);
+    }
+    if (unknownIds?.length) parts.push(`carries an id this extension cannot translate: ${unknownIds.join("; ")}`);
+    return parts.join(" ");
+}
+
 // Walk a component's tree once, calling `onCell` for every object that has a
 // fieldID, and `onNumber` for every other numeric value keyed like an id.
-function walk(node, onCell, onNumber, path = "") {
+// `onCell` also gets the label of the label cell before it in its row, if any.
+function walk(node, onCell, onNumber, path = "", label = null) {
     if (Array.isArray(node)) {
-        node.forEach((child, index) => walk(child, onCell, onNumber, `${path}[${index}]`));
+        let lastLabel = null;
+        node.forEach((child, index) => {
+            if (child && typeof child.label === "string" && !("fieldID" in child)) lastLabel = cleanName(child.label);
+            walk(child, onCell, onNumber, `${path}[${index}]`, lastLabel);
+        });
         return;
     }
     if (!node || typeof node !== "object") return;
-    if ("fieldID" in node || "$field" in node) onCell(node, path);
+    if ("fieldID" in node || "$field" in node) onCell(node, path, label);
     for (const [key, value] of Object.entries(node)) {
         if (key === "fieldID" || key === "$field" || key === "$component") continue;
         if (typeof value === "number" && !LAYOUT_NUMBERS.has(key) && looksLikeId(key)) {
@@ -76,11 +99,11 @@ export function neutralize(form, sourceMap) {
 
     for (const component of Object.keys(components)) {
         const lookup = names[component];
-        walk(components[component], (cell, path) => {
+        walk(components[component], (cell, path, label) => {
             if (typeof cell.fieldID !== "number") return; // built-ins stay as they are
             const name = lookup?.get(String(cell.fieldID));
             if (!name) {
-                missingNames.push(`${component}${path}: id ${cell.fieldID}`);
+                missingNames.push(lostField(component, path, cell.fieldID, label));
                 return;
             }
             delete cell.fieldID;

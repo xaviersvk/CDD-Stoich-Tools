@@ -12,7 +12,7 @@
 // with a tooltip rather than guessing.
 
 import { createForm, listForms, requestFieldMap, vaultIdFromPath } from "./api.js";
-import { neutralize, resolve, suggestName } from "./form-model.js";
+import { explainProblems, neutralize, resolve, suggestName } from "./form-model.js";
 
 const LINK_CLASS = "cdd-form-duplicate";
 
@@ -32,8 +32,7 @@ async function duplicate(tr, link) {
         if (matches.length !== 1) throw new Error(`${matches.length} forms are named "${name}"`);
 
         const { form: neutral, unknownIds, missingNames } = neutralize(matches[0], map);
-        const problems = [...unknownIds, ...missingNames];
-        if (problems.length) throw new Error(`carries an id this extension cannot translate: ${problems.join("; ")}`);
+        if (unknownIds.length || missingNames.length) throw new Error(explainProblems(unknownIds, missingNames));
 
         const { form, missing } = resolve(neutral, map);
         if (missing.length) throw new Error(`fields not found: ${missing.map((entry) => entry.name).join(", ")}`);

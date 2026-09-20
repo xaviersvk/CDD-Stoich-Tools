@@ -17,6 +17,12 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 15.17.0 — 2026-09-20
+
+- A form that can't be copied because one of its fields was deleted from the
+  vault now names the row. Remove that row from the form in CDD, then copy
+  again.
+
 ## 15.16.0 — 2026-09-17
 
 **Copy registration forms between vaults.** Press **Copy** on

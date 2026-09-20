@@ -18,7 +18,9 @@
 // dash ("I25-SM" finds "AHL-SM"), then the target's first system — the one
 // thing a user may well want different, so the preview says which it chose.
 //
-// No DOM, no storage, no imports.
+// No DOM, no storage; the one import is the protocol model's wording.
+
+import { lostField } from "../form-clipboard/form-model.js";
 
 export const PLAN_ADD = "add";
 export const PLAN_SAME_NAME = "same-name";
@@ -38,13 +40,18 @@ function cleanName(name) {
     return String(name ?? "").trim();
 }
 
-function walk(node, onCell, onNumber, path = "") {
+// `onCell` also gets the label of the label cell before it in its row, if any.
+function walk(node, onCell, onNumber, path = "", label = null) {
     if (Array.isArray(node)) {
-        node.forEach((child, index) => walk(child, onCell, onNumber, `${path}[${index}]`));
+        let lastLabel = null;
+        node.forEach((child, index) => {
+            if (child && typeof child.label === "string" && !("fieldID" in child)) lastLabel = cleanName(child.label);
+            walk(child, onCell, onNumber, `${path}[${index}]`, lastLabel);
+        });
         return;
     }
     if (!node || typeof node !== "object") return;
-    if ("fieldID" in node || "$field" in node) onCell(node, path);
+    if ("fieldID" in node || "$field" in node) onCell(node, path, label);
     for (const [key, value] of Object.entries(node)) {
         if (key === "fieldID" || key === "$field" || key === "$component" || key === "defaultValue" || key === "$default") continue;
         if (typeof value === "number" && !LAYOUT_NUMBERS.has(key) && looksLikeId(key)) {
@@ -82,11 +89,11 @@ export function neutralize(form, source) {
 
     for (const component of Object.keys(components)) {
         const lookup = defs[component];
-        walk(components[component], (cell, path) => {
+        walk(components[component], (cell, path, label) => {
             if (typeof cell.fieldID !== "number") return;
             const def = lookup?.get(String(cell.fieldID));
             if (!def) {
-                missingNames.push(`${component}${path}: id ${cell.fieldID}`);
+                missingNames.push(lostField(component, path, cell.fieldID, label));
                 return;
             }
             if (cell.defaultValue != null && def.data_type_name === "PickList") {

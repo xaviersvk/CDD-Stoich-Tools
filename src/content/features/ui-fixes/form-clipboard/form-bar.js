@@ -7,8 +7,9 @@
 //
 // Copy opens a card listing the page's forms with a checkbox each; the
 // chosen ones are neutralized — names, never ids — and go to the clipboard.
-// A form that carries an id this extension cannot translate is shown
-// disabled with the reason, never shipped half-translated.
+// A form that carries an id this extension cannot translate — or points at a
+// field the vault no longer has — is shown disabled with the reason, never
+// shipped half-translated.
 //
 // Paste opens a card with a checkbox and an editable name per form. The
 // name matters twice: a form whose name is already on the page is skipped
@@ -30,7 +31,7 @@
 //   clipboard: { read(), write(entry), onChanged(callback) }
 
 import { vaultIdFromPath, vaultName } from "./api.js";
-import { PLAN_ADD, PLAN_MISSING_FIELDS, PLAN_SAME_NAME, suggestName } from "./form-model.js";
+import { PLAN_ADD, PLAN_MISSING_FIELDS, PLAN_SAME_NAME, explainProblems, suggestName } from "./form-model.js";
 
 function el(tag, className, text) {
     const node = document.createElement(tag);
@@ -136,7 +137,7 @@ export function buildFormBar(adapter) {
             line.append(box, el("span", "cdd-fc-name", form.name));
             line.append(el("span", "cdd-fc-type", plural(adapter.formFieldNames(neutral).length, "field")));
             line.append(el("span", problems.length ? "cdd-fc-why" : "cdd-fc-detail",
-                problems.length ? `carries an id this extension cannot translate: ${problems.join("; ")}` : ""));
+                explainProblems(unknownIds, missingNames)));
             list.append(line);
             box.addEventListener("change", updateCount);
             return { neutral, box };

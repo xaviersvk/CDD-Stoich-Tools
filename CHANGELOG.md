@@ -51,11 +51,12 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   three components — goes back as it came. The first failure stops everything,
   with the server's words.
 - **Field settings pages say which registration forms show each field.** On
-  *Molecule / Batch / Sample / Inventory Fields*, under each field's name:
-  *Forms: Molecule, Protein*, or *In 9 of 11 forms* with the list in the
-  tooltip, or *In no registration form* in red. A form with no layout for
-  that kind counts — it shows every field — and the tooltip says so. Read
-  mode only; the line is taken out in edit mode.
+  *Molecule / Batch / Sample / Inventory Fields* every field gets a small
+  **ⓘ** after its name; hovering it (or tabbing to it) opens a bubble —
+  *In 3 of 11 registration forms* and the forms, one per line. The ⓘ is red
+  when the field is in no registration form. A form with no layout for that
+  kind counts — it shows every field — and its line says so. Read mode only;
+  the ⓘ is taken out in edit mode.
 
 ### Technical notes
 - New CDD endpoint, hence the major bump: `PUT
@@ -69,9 +70,11 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   `cddRegistrationFormRowSelection` in `chrome.storage.local`.
 - `field-forms/` reads the forms through `listRegistrationForms` once per
   page visit and the field ids through the field-rows bridge, which already
-  carries `id`. Its line sits in the name cell, so `page-dom.js` grew
-  `readModeName()` and `namesFromDom()` reads around the line — otherwise
-  Field Paste would stop recognising names already on the page.
+  carries `id`. Its ⓘ sits in the name cell, so `page-dom.js` grew
+  `readModeName()` and `namesFromDom()` reads around it — otherwise Field
+  Paste would stop recognising names already on the page. The bubble is one
+  `position: fixed` element on `<body>`, so a scrolling table wrapper cannot
+  clip it.
 
 ---
 ## [15.17.0] — 2026-09-20

@@ -29,7 +29,7 @@ import { kindConfig } from "./field-model.js";
 const PICK_DIALOG = ".pickListDefinitionDialog";
 const PICK_BUTTON = ".editPickListButton";
 const BRIDGE_TIMEOUT_MS = 500;
-// field-forms prints a line into the name cell; names are read around it.
+// field-forms puts its (i) into the name cell; names are read around it.
 export const FIELD_FORMS_CLASS = "cdd-field-forms";
 
 /* ----- waiting ----- */
@@ -122,8 +122,7 @@ export function namesFromDom(kind) {
     }).filter(Boolean);
 }
 
-// A read-mode row's name: its first cell, without the line field-forms
-// prints under it.
+// A read-mode row's name: its first cell, without field-forms' (i).
 export function readModeName(tr) {
     const cell = tr.querySelector("td");
     if (!cell) return "";

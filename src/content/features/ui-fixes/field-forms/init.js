@@ -1,8 +1,8 @@
 // content/features/ui-fixes/field-forms/init.js
 //
 // Discovery + wiring: on the Molecule / Batch / Sample / Inventory "…
-// Fields" settings pages, print under each field's name which registration
-// forms show it — protocol/run/eln have no registration-form component, so
+// Fields" settings pages, put a small (i) after each field's name; hovering
+// it (or focusing it) lists the registration forms that show the field — protocol/run/eln have no registration-form component, so
 // those three kinds of field-clipboard/field-model.js's KINDS are skipped.
 //
 // Registration forms are read once per vault per page visit (the promise is
@@ -26,8 +26,8 @@
 // a line left over from read mode is taken out. Nothing here replaces or
 // moves a CDD node — one `.cdd-field-forms` span per row is appended, once,
 // so re-running the pass (Turbo body swap, MutationObserver noise) is safe.
-// The line sits in the name cell, so names are read through
-// page-dom.js's readModeName(), which reads around it.
+// The (i) sits in the name cell, so names are read through page-dom.js's
+// readModeName(), which reads around it.
 
 import { listRegistrationForms, vaultIdFromPath } from "../registration-form-clipboard/api.js";
 import { kindsForPath } from "../field-clipboard/field-model.js";
@@ -87,13 +87,52 @@ function idQueuesByName(rawRows) {
     return queues;
 }
 
+// One bubble for the whole page, on <body>; filled by whichever (i) is
+// under the mouse.
+let bubble = null;
+
+function showBubble(anchor, described) {
+    if (!bubble || !bubble.isConnected) {
+        bubble = el("div", `${ANNOTATION_CLASS}-bubble`);
+        document.body.appendChild(bubble);
+    }
+    bubble.textContent = "";
+    const heading = el("div", `${ANNOTATION_CLASS}-heading`, described.heading);
+    if (described.warn) heading.classList.add(`${ANNOTATION_CLASS}-heading--warn`);
+    bubble.appendChild(heading);
+    for (const line of described.lines) {
+        const row = el("div", null, line.name);
+        if (line.note) row.appendChild(el("span", `${ANNOTATION_CLASS}-note`, ` — ${line.note}`));
+        bubble.appendChild(row);
+    }
+    bubble.hidden = false;
+    // Right of the (i), level with it; flipped or lifted to stay on screen.
+    const at = anchor.getBoundingClientRect();
+    const size = bubble.getBoundingClientRect();
+    let left = at.right + 8;
+    if (left + size.width > window.innerWidth - 8) left = Math.max(8, at.left - size.width - 8);
+    const top = Math.max(8, Math.min(at.top - 4, window.innerHeight - size.height - 8));
+    bubble.style.left = `${left}px`;
+    bubble.style.top = `${top}px`;
+}
+
+function hideBubble() {
+    if (bubble) bubble.hidden = true;
+}
+
 function annotate(tr, described) {
     const cell = tr.querySelector("td");
     if (!cell || cell.querySelector(`.${ANNOTATION_CLASS}`)) return;
-    const span = el("span", ANNOTATION_CLASS, described.text);
-    if (described.warn) span.classList.add(`${ANNOTATION_CLASS}--warn`);
-    if (described.title) span.title = described.title;
-    cell.appendChild(span);
+    const mark = el("span", ANNOTATION_CLASS, "i");
+    if (described.warn) mark.classList.add(`${ANNOTATION_CLASS}--warn`);
+    mark.tabIndex = 0;
+    mark.setAttribute("role", "note");
+    mark.setAttribute("aria-label", [described.heading, ...described.lines.map((line) => line.name)].join(", "));
+    mark.addEventListener("mouseenter", () => showBubble(mark, described));
+    mark.addEventListener("focus", () => showBubble(mark, described));
+    mark.addEventListener("mouseleave", hideBubble);
+    mark.addEventListener("blur", hideBubble);
+    cell.appendChild(mark);
 }
 
 async function annotateKind(kind, vaultId) {
@@ -101,6 +140,7 @@ async function annotateKind(kind, vaultId) {
     if (!table) return;
     if (isEditing(kind)) {
         table.querySelectorAll(`.${ANNOTATION_CLASS}`).forEach((node) => node.remove());
+        hideBubble();
         return;
     }
     const rows = readModeRows(table);

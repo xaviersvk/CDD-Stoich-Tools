@@ -27,8 +27,8 @@ the order you want them, pick a Pick List's default, and check the preview.
   have the fields, and forms with no layout of their own, are left alone.
 - A backup of the forms is downloaded first. The next vault opens with the
   same fields ticked.
-- The *Fields* settings pages now say under each field which registration
-  forms show it.
+- On the *Fields* settings pages, hover the **ⓘ** after a field's name to see
+  which registration forms show it. Red means none.
 
 ## 15.17.0 — 2026-09-20
 

@@ -136,6 +136,7 @@ export function injectFieldClipboardStyles() {
         background: #fff;
     }
     .cdd-fc-filter { font-weight: 400; width: 180px; }
+    .cdd-fc-pick { display: flex; gap: 14px; font-weight: 400; }
     .cdd-fc-order { min-width: 14px; color: rgba(0, 0, 0, 0.6); text-align: right; }
     .cdd-fc-row[hidden] { display: none; }
 

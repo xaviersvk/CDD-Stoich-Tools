@@ -1,9 +1,13 @@
 // content/features/ui-fixes/field-clipboard/panel.js
 //
-// The two buttons beside a "… Fields" table and the card that Paste opens.
+// The two buttons beside a "… Fields" table and the cards they open.
 //
 // Copy reads the definitions through the bridge — no edit mode, no clicks —
-// and puts them in the clipboard under this page's kind. Paste shows what it
+// and opens a card with a checkbox per field, all ticked, a filter and
+// All / None: the ticked ones go to the clipboard under this page's kind.
+// Three fields out of sixty is a real case — Paste adds everything the
+// clipboard holds that the target lacks, so what is copied is what decides.
+// Paste shows what it
 // would do BEFORE touching the page: every clipboard field with add / skip
 // and the reason, and a count on the button that is always the number of
 // rows that will appear. The run then drives CDD's own edit mode and stops
@@ -122,17 +126,90 @@ export function buildBar(kind) {
             status.textContent = "Could not read the fields on this page.";
             return;
         }
-        const fields = normalizeRows(rows);
-        const vault = vaultInfo();
-        await writeClipboardEntry(kind, {
-            vaultId: vault.id,
-            vaultName: vault.name,
-            copiedAt: Date.now(),
-            fields,
-        });
-        status.textContent = `Copied ${plural(fields.length, "field")} from ${vault.name || "this vault"}. Open the same page in the other vault and press Paste.`;
-        card.hidden = true;
+        status.textContent = "";
+        renderCopyCard(normalizeRows(rows));
     });
+
+    function renderCopyCard(fields) {
+        const vault = vaultInfo();
+        card.textContent = "";
+        card.hidden = false;
+
+        const head = el("div", "cdd-fc-head");
+        head.append(el("span", "cdd-fc-title", `Copy ${config.label}`));
+        head.append(el("span", "cdd-fc-note", `${plural(fields.length, "field")} in ${vault.name || "this vault"}`));
+        card.append(head);
+
+        const tools = el("div", "cdd-fc-section");
+        const pick = el("span", "cdd-fc-pick");
+        const all = el("button", "cdd-fc-button", "All");
+        all.type = "button";
+        const none = el("button", "cdd-fc-button", "None");
+        none.type = "button";
+        pick.append(all, none);
+        const filter = document.createElement("input");
+        filter.type = "search";
+        filter.className = "cdd-fc-filter";
+        filter.placeholder = "Filter";
+        tools.append(pick, filter);
+        card.append(tools);
+
+        const list = el("div", "cdd-fc-list");
+        const rows = fields.map((field) => {
+            const line = el("label", "cdd-fc-row");
+            const box = document.createElement("input");
+            box.type = "checkbox";
+            box.checked = true;
+            line.append(box, el("span", "cdd-fc-name", field.name), el("span", "cdd-fc-type", typeLabel(field.type)));
+            if (field.type === "PickList") line.append(el("span", "cdd-fc-detail", plural(field.pickList.length, "value")));
+            list.append(line);
+            box.addEventListener("change", count);
+            return { field, line, box };
+        });
+        card.append(list);
+
+        const foot = el("div", "cdd-fc-foot");
+        const action = el("button", "cdd-fc-add", "");
+        action.type = "button";
+        const cancel = el("button", "cdd-fc-cancel", "Cancel");
+        cancel.type = "button";
+        cancel.addEventListener("click", () => { card.hidden = true; });
+        foot.append(action, cancel);
+        card.append(foot);
+
+        function chosen() {
+            return rows.filter((row) => row.box.checked).map((row) => row.field);
+        }
+        function count() {
+            const n = chosen().length;
+            action.textContent = `Copy ${plural(n, "field")}`;
+            action.disabled = n === 0;
+        }
+        // All / None act on what the filter leaves in view.
+        const setAll = (checked) => {
+            for (const row of rows) if (!row.line.hidden) row.box.checked = checked;
+            count();
+        };
+        all.addEventListener("click", () => setAll(true));
+        none.addEventListener("click", () => setAll(false));
+        filter.addEventListener("input", () => {
+            const needle = filter.value.trim().toLowerCase();
+            for (const row of rows) row.line.hidden = !!needle && !row.field.name.toLowerCase().includes(needle);
+        });
+        count();
+
+        action.addEventListener("click", async () => {
+            const kept = chosen();
+            await writeClipboardEntry(kind, {
+                vaultId: vault.id,
+                vaultName: vault.name,
+                copiedAt: Date.now(),
+                fields: kept,
+            });
+            card.hidden = true;
+            status.textContent = `Copied ${plural(kept.length, "field")} from ${vault.name || "this vault"}. Open the same page in the other vault and press Paste.`;
+        });
+    }
 
     /* ----- paste: the preview ----- */
     pasteButton.addEventListener("click", async () => {

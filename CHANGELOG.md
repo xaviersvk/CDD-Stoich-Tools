@@ -50,6 +50,13 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   rest of the document — dead `fieldID`s, `expanded_aligned_fields`, the other
   three components — goes back as it came. The first failure stops everything,
   with the server's words.
+- **Field Copy asks which fields.** *Copy N fields* on a *… Fields* settings
+  page used to take every field on the page, and Paste adds everything the
+  clipboard holds that the target vault lacks — so carrying three fields out
+  of sixty into another vault meant deleting the other rows by hand before
+  *Update*. Copy now opens a card with a checkbox per field (all ticked), a
+  filter, and **All** / **None**, which act on what the filter leaves in
+  view. Paste is unchanged.
 - **Field settings pages say which registration forms show each field.** On
   *Molecule / Batch / Sample / Inventory Fields* every field gets a small
   **ⓘ** after its name; hovering it (or tabbing to it) opens a bubble —

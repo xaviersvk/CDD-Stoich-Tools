@@ -23,9 +23,9 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 *Settings → Registration* press **Add fields to forms**, tick the fields in
 the order you want them, pick a Pick List's default, and check the preview.
 
-- The row goes at the end of each form's batch table; forms that have the
-  fields, or no layout of their own, are left alone. A backup is downloaded
-  first.
+- The row goes above the file fields a form ends in, otherwise at the end.
+  Forms that have the fields, or no layout of their own, are left alone. A
+  backup is downloaded first.
 - **Copy fields** now asks which fields to take.
 - On the *Fields* settings pages, hover the **ⓘ** after a field's name to see
   which registration forms show it. Red means none.

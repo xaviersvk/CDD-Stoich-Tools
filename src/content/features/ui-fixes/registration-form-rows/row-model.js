@@ -15,12 +15,19 @@
 //     three to a row, so a row of one or two widens its field cells.
 //   - a Pick List default is the id of one of the field's pick list values,
 //     on the field cell, beside isLocked.
+//   - forms made from the vault template end in rows of File fields only
+//     (NMR · COA · MS, MSDS File · Vendor QC/COA, Documentation). New rows go
+//     above that closing block, so the files stay last; a form that does not
+//     end in files gets them at the end. A row this feature put below the
+//     files before it knew better is moved up — and only such a row: one made
+//     of nothing but the chosen fields, sitting under the closing file rows.
 //
 // The rest of the document goes back as it came, dead fieldIDs included.
 //
 // No DOM, no storage, no imports — checkable with `node`.
 
 export const PLAN_ADD = "add";
+export const PLAN_MOVE = "move";
 export const PLAN_HAS_ALL = "has-all";
 export const PLAN_NO_LAYOUT = "no-layout";
 export const PLAN_ODD_LAYOUT = "odd-layout";
@@ -71,6 +78,44 @@ function rowWidth(row) {
     return (row?.contents || []).reduce((sum, cell) => sum + (typeof cell?.span === "number" ? cell.span : 1), 0);
 }
 
+function rowFieldIds(row) {
+    return (row?.contents || []).filter((cell) => typeof cell?.fieldID === "number").map((cell) => cell.fieldID);
+}
+
+// The ids of this vault's File fields; a dead id is in no set, so a row that
+// carries one is never taken for a file row.
+export function fileFieldIds(batchDefs) {
+    return new Set((batchDefs || []).filter((def) => def?.data_type_name === "File").map((def) => def.id));
+}
+
+// Where new rows go: above the closing run of rows that hold File fields only.
+function insertionIndex(rows, fileIds) {
+    let index = rows.length;
+    while (index > 0) {
+        const ids = rowFieldIds(rows[index - 1]);
+        if (!ids.length || !ids.every((id) => fileIds.has(id))) break;
+        index -= 1;
+    }
+    return index;
+}
+
+// Rows of nothing but the chosen fields that sit below the closing file rows,
+// and the table as it should be instead — or null when there is nothing to move.
+function misplaced(rows, cells, fileIds) {
+    const chosen = new Set((cells || []).map((cell) => cell.fieldID));
+    const own = rows.filter((row) => {
+        const ids = rowFieldIds(row);
+        return ids.length > 0 && ids.every((id) => chosen.has(id));
+    });
+    if (!own.length) return null;
+    const others = rows.filter((row) => !own.includes(row));
+    const at = insertionIndex(others, fileIds);
+    if (at === others.length) return null; // no closing file rows to be above
+    const firstFileRow = others[at];
+    if (!own.every((row) => rows.indexOf(row) > rows.indexOf(firstFileRow))) return null;
+    return [...others.slice(0, at), ...own, ...others.slice(at)];
+}
+
 // The user's choice — [{ name, default }] , names and value texts, never ids —
 // against this vault's batch field definitions.
 export function resolveChosen(chosen, batchDefs) {
@@ -98,8 +143,8 @@ export function resolveChosen(chosen, batchDefs) {
     return { cells, missing, droppedDefaults };
 }
 
-// What adding `cells` would do to one form.
-export function planForm(form, cells) {
+// What adding `cells` would do to one form. `fileIds`: fileFieldIds().
+export function planForm(form, cells, fileIds = new Set()) {
     const batch = form?.components?.batch;
     if (batch == null) {
         return { status: PLAN_NO_LAYOUT, add: [], note: "no layout of its own — it shows every batch field already" };
@@ -111,8 +156,18 @@ export function planForm(form, cells) {
 
     const present = fieldIds(batch);
     const add = (cells || []).filter((cell) => !present.has(cell.fieldID));
-    if (!add.length) return { status: PLAN_HAS_ALL, add: [], note: "has them already" };
-    return { status: PLAN_ADD, add, note: `adds ${add.map((cell) => cell.name).join(", ")}` };
+    if (!add.length) {
+        if (misplaced(table.contents, cells, fileIds)) {
+            return { status: PLAN_MOVE, add: [], note: "has them below the file rows — moves them above" };
+        }
+        return { status: PLAN_HAS_ALL, add: [], note: "has them already" };
+    }
+    const aboveFiles = insertionIndex(table.contents, fileIds) < table.contents.length;
+    return {
+        status: PLAN_ADD,
+        add,
+        note: `adds ${add.map((cell) => cell.name).join(", ")}${aboveFiles ? " — above the file rows" : ""}`,
+    };
 }
 
 // Cells in, rows out — three label/field pairs to a row, keys in CDD's order.
@@ -135,11 +190,13 @@ export function buildRows(cells) {
 
 // The form as it should be afterwards. Throws rather than returning a form
 // the plan did not promise.
-export function withRows(form, cells) {
-    const plan = planForm(form, cells);
-    if (plan.status !== PLAN_ADD) throw new Error(plan.note);
+export function withRows(form, cells, fileIds = new Set()) {
+    const plan = planForm(form, cells, fileIds);
+    if (plan.status !== PLAN_ADD && plan.status !== PLAN_MOVE) throw new Error(plan.note);
     const next = clone(form);
-    lastTable(next.components.batch).contents.push(...buildRows(plan.add));
+    const table = lastTable(next.components.batch);
+    if (plan.status === PLAN_MOVE) table.contents = misplaced(table.contents, cells, fileIds);
+    else table.contents.splice(insertionIndex(table.contents, fileIds), 0, ...buildRows(plan.add));
     return next;
 }
 

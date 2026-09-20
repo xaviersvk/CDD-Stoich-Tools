@@ -27,8 +27,12 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   Registration Forms table, for administrators. The card lists the vault's
   batch fields — tick the ones to add, in the order they should stand in the
   row, and give a Pick List its default — and then the vault's forms with what
-  would happen to each. The new row goes at the end of the form's batch table,
-  three label/field pairs to a row, built exactly as CDD builds its own
+  would happen to each. The new row goes into the form's batch table above
+  the rows of File fields it ends in — forms made from the vault template
+  close with *NMR · COA · MS*, *MSDS File · Vendor QC/COA*, *Documentation*,
+  and the files should stay last — or at the end when it does not end in
+  files. Only a closing run of file-only rows counts; a row that mixes a file
+  with another field is left where it is. Three label/field pairs to a row, built exactly as CDD builds its own
   (a row is always 6 wide: *L1 F1 ×3*, *L1 F2 ×2* or *L1 F5*). A form that has
   some of the fields gets only the ones it lacks; a form that has them all is
   left alone, so a second run does nothing.
@@ -36,6 +40,12 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   opens with the same fields ticked. A remembered field the vault does not
   have blocks the run until it is pasted on *Batch Fields* or unticked — the
   point is the same row everywhere.
+- **A row that stands below the file rows is moved above them.** The first
+  vaults were done with the row at the very end, under the files. A form that
+  has all the fields, in rows of nothing but those fields, below its closing
+  file rows, is offered as *moves them above*; the row travels as it is. A row
+  that shares its place with other fields, or is followed by anything but
+  files, is nobody's to move.
 - **Forms with no layout of their own are never touched.** A registration
   form whose `components.batch` is `null` shows every batch field by itself;
   giving it a layout with one row would hide all the others. Such forms are

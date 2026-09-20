@@ -46,6 +46,13 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   file rows, is offered as *moves them above*; the row travels as it is. A row
   that shares its place with other fields, or is followed by anything but
   files, is nobody's to move.
+- **A Pick List cell with no default gets the chosen one.** Forms laid out by
+  hand often show the field without a default. Where a default was chosen in
+  the card and the form's own cell has none, the preview says *sets the
+  default "No" on Consumed* and the cell is written as CDD writes it
+  (`isLocked`, then `defaultValue`) — alone, or in the same save as a row
+  added or moved. A cell that already has a default, any default, is
+  somebody's decision and is left alone.
 - **Forms with no layout of their own are never touched.** A registration
   form whose `components.batch` is `null` shows every batch field by itself;
   giving it a layout with one row would hide all the others. Such forms are

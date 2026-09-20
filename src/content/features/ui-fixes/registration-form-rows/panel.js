@@ -9,8 +9,9 @@
 // with the same fields ticked — and says which of them it does not have yet.
 // The second list is the vault's forms with what would happen to each: a row
 // added to its batch table — above the file rows it ends in, if it does —
-// a row moved up from below them, nothing (it has them), or never (it has no
-// layout of its own, or one this extension does not recognise).
+// a row moved up from below them, a missing Pick List default set, nothing
+// (it has them), or never (it has no layout of its own, or one this extension
+// does not recognise).
 //
 // The run is written for forms that are in use:
 //   - a JSON file of the forms as they were is downloaded before anything is
@@ -23,7 +24,7 @@
 
 import { vaultIdFromPath, vaultName } from "../form-clipboard/api.js";
 import { listRegistrationForms, readRegistrationMap, updateRegistrationForm } from "../registration-form-clipboard/api.js";
-import { PLAN_ADD, PLAN_MOVE, fileFieldIds, planForm, putBody, resolveChosen, sameDocument, verifySaved, withRows } from "./row-model.js";
+import { PLAN_ADD, PLAN_DEFAULT, PLAN_MOVE, fileFieldIds, planForm, putBody, resolveChosen, sameDocument, verifySaved, withRows } from "./row-model.js";
 import { readRowSelection, writeRowSelection } from "./selection.js";
 
 export const BAR_CLASS = "cdd-regform-rows-bar";
@@ -218,7 +219,7 @@ export function buildBar() {
             ({ cells } = resolveChosen(picks(), defs));
             for (const row of formRows) {
                 const plan = cells.length ? planForm(row.form, cells, fileIds) : { status: null, note: "" };
-                const can = plan.status === PLAN_ADD || plan.status === PLAN_MOVE;
+                const can = plan.status === PLAN_ADD || plan.status === PLAN_MOVE || plan.status === PLAN_DEFAULT;
                 row.plan = plan;
                 row.box.disabled = !can;
                 if (!can) row.box.checked = false;
@@ -276,7 +277,7 @@ export function buildBar() {
                     const problems = verifySaved(expected, saved);
                     if (problems.length) throw new Error(`it was saved, but ${problems.join("; ")} — compare it with the backup`);
                     row.line.classList.add("cdd-fc-row--done");
-                    row.why.textContent = row.plan.status === PLAN_MOVE ? "moved" : "added";
+                    row.why.textContent = { [PLAN_MOVE]: "moved", [PLAN_DEFAULT]: "default set" }[row.plan.status] || "added";
                     made += 1;
                 }
                 status.textContent = `Changed ${plural(made, "form")}. Reloading…`;

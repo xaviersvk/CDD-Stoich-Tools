@@ -25,6 +25,7 @@ the order you want them, pick a Pick List's default, and check the preview.
 
 - The row goes above the file fields a form ends in, otherwise at the end.
   Forms that have the fields, or no layout of their own, are left alone. A
+  Pick List already on a form without a default gets the one you picked. A
   backup is downloaded first.
 - **Copy fields** now asks which fields to take.
 - On the *Fields* settings pages, hover the **ⓘ** after a field's name to see

@@ -21,6 +21,10 @@
 //     end in files gets them at the end. A row this feature put below the
 //     files before it knew better is moved up — and only such a row: one made
 //     of nothing but the chosen fields, sitting under the closing file rows.
+//   - forms laid out by hand often carry the Pick List cell without a default.
+//     Where the user chose a default and the form's cell has NONE, it is set —
+//     in the same save as a row added or moved. A cell that has a default,
+//     any default, is somebody's decision and is left alone.
 //
 // The rest of the document goes back as it came, dead fieldIDs included.
 //
@@ -28,6 +32,7 @@
 
 export const PLAN_ADD = "add";
 export const PLAN_MOVE = "move";
+export const PLAN_DEFAULT = "default";
 export const PLAN_HAS_ALL = "has-all";
 export const PLAN_NO_LAYOUT = "no-layout";
 export const PLAN_ODD_LAYOUT = "odd-layout";
@@ -130,17 +135,43 @@ export function resolveChosen(chosen, batchDefs) {
             missing.push(name);
             continue;
         }
-        const cell = { name, fieldID: def.id, defaultValue: null };
+        const cell = { name, fieldID: def.id, defaultValue: null, defaultText: null };
         const wanted = cleanName(pick.default);
         if (wanted && def.data_type_name === "PickList") {
             const value = (def.pick_list_values || []).find((entry) => !entry.hidden && cleanName(entry.value) === wanted);
             // A default the pick list lacks is left off, not guessed.
-            if (value) cell.defaultValue = value.id;
-            else droppedDefaults.push(`${name} = ${wanted}`);
+            if (value) {
+                cell.defaultValue = value.id;
+                cell.defaultText = wanted;
+            } else droppedDefaults.push(`${name} = ${wanted}`);
         }
         cells.push(cell);
     }
     return { cells, missing, droppedDefaults };
+}
+
+// The form's own cells of chosen fields that have no default, where one was chosen.
+function cellsWithoutDefault(batch, cells) {
+    const wanted = new Map((cells || []).filter((cell) => cell.defaultValue != null).map((cell) => [cell.fieldID, cell]));
+    const out = [];
+    (function walk(node) {
+        if (Array.isArray(node)) node.forEach(walk);
+        else if (node && typeof node === "object") {
+            if (wanted.has(node.fieldID) && node.defaultValue == null) out.push({ node, cell: wanted.get(node.fieldID) });
+            for (const value of Object.values(node)) if (value && typeof value === "object") walk(value);
+        }
+    })(batch);
+    return out;
+}
+
+// Keys in the order CDD writes a field cell with a default.
+function setDefault(node, value) {
+    const copy = { ...node };
+    for (const key of Object.keys(node)) delete node[key];
+    for (const key of ["span", "fieldID"]) if (key in copy) node[key] = copy[key];
+    node.isLocked = copy.isLocked ?? false;
+    for (const [key, kept] of Object.entries(copy)) if (!(key in node) && key !== "defaultValue") node[key] = kept;
+    node.defaultValue = value;
 }
 
 // What adding `cells` would do to one form. `fileIds`: fileFieldIds().
@@ -156,17 +187,28 @@ export function planForm(form, cells, fileIds = new Set()) {
 
     const present = fieldIds(batch);
     const add = (cells || []).filter((cell) => !present.has(cell.fieldID));
+    const defaults = [...new Set(cellsWithoutDefault(batch, cells).map(({ cell }) => cell))];
+    const defaultsNote = defaults.length
+        ? `sets the default ${defaults.map((cell) => `"${cell.defaultText}" on ${cell.name}`).join(", ")}`
+        : "";
     if (!add.length) {
         if (misplaced(table.contents, cells, fileIds)) {
-            return { status: PLAN_MOVE, add: [], note: "has them below the file rows — moves them above" };
+            return {
+                status: PLAN_MOVE,
+                add: [],
+                defaults,
+                note: `has them below the file rows — moves them above${defaultsNote ? ` · ${defaultsNote}` : ""}`,
+            };
         }
-        return { status: PLAN_HAS_ALL, add: [], note: "has them already" };
+        if (defaults.length) return { status: PLAN_DEFAULT, add: [], defaults, note: `has them — ${defaultsNote}` };
+        return { status: PLAN_HAS_ALL, add: [], defaults, note: "has them already" };
     }
     const aboveFiles = insertionIndex(table.contents, fileIds) < table.contents.length;
     return {
         status: PLAN_ADD,
         add,
-        note: `adds ${add.map((cell) => cell.name).join(", ")}${aboveFiles ? " — above the file rows" : ""}`,
+        defaults,
+        note: `adds ${add.map((cell) => cell.name).join(", ")}${aboveFiles ? " — above the file rows" : ""}${defaultsNote ? ` · ${defaultsNote}` : ""}`,
     };
 }
 
@@ -192,11 +234,13 @@ export function buildRows(cells) {
 // the plan did not promise.
 export function withRows(form, cells, fileIds = new Set()) {
     const plan = planForm(form, cells, fileIds);
-    if (plan.status !== PLAN_ADD && plan.status !== PLAN_MOVE) throw new Error(plan.note);
+    if (plan.status !== PLAN_ADD && plan.status !== PLAN_MOVE && plan.status !== PLAN_DEFAULT) throw new Error(plan.note);
     const next = clone(form);
     const table = lastTable(next.components.batch);
+    // Defaults first, on the form's own cells; the rows built below carry theirs already.
+    for (const { node, cell } of cellsWithoutDefault(next.components.batch, cells)) setDefault(node, cell.defaultValue);
     if (plan.status === PLAN_MOVE) table.contents = misplaced(table.contents, cells, fileIds);
-    else table.contents.splice(insertionIndex(table.contents, fileIds), 0, ...buildRows(plan.add));
+    else if (plan.status === PLAN_ADD) table.contents.splice(insertionIndex(table.contents, fileIds), 0, ...buildRows(plan.add));
     return next;
 }
 

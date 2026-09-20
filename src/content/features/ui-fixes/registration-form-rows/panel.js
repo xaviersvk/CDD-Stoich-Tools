@@ -144,7 +144,14 @@ export function buildBar() {
                     return;
                 }
                 const index = chosen.indexOf(entry);
-                if (box.checked && index < 0) chosen.push(entry);
+                if (box.checked && index < 0) {
+                    chosen.push(entry);
+                    // Up under the fields ticked before it: a vault's newest
+                    // fields are at the bottom of a long list, and the row
+                    // order should be readable at a glance.
+                    const firstFree = [...fieldList.children].find((other) => other !== line && !other.querySelector("input").checked);
+                    if (firstFree) fieldList.insertBefore(line, firstFree);
+                }
                 if (!box.checked && index >= 0) chosen.splice(index, 1);
                 judge();
             });

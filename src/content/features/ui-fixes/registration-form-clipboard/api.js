@@ -63,6 +63,22 @@ export async function createRegistrationForm(vaultId, form) {
     return created;
 }
 
+// Measured in the same bundle: updateFormDefinition sends
+// PUT …/registration_form_definitions/{form_id} with { form_definition: {
+// name, components, registration_type, structureless_image_name,
+// allow_new_molecules, registration_system_id } } — the whole document, so
+// the caller sends back everything it was given. What comes back is not
+// relied on; the caller lists the forms again and compares.
+export async function updateRegistrationForm(vaultId, formId, form) {
+    const response = await fetch(`${base(vaultId)}/${formId}`, {
+        method: "PUT",
+        credentials: "same-origin",
+        headers: headers(true),
+        body: JSON.stringify({ form_definition: form }),
+    });
+    if (!response.ok) throw await failure(response);
+}
+
 // { defs: { molecule, batch, sample, inventory }, systems } or null.
 export async function readRegistrationMap() {
     try {

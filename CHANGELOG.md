@@ -19,6 +19,61 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [16.0.0] — 2026-09-20
+
+### Added
+- **Batch fields can be added to registration forms that already exist.**
+  *Settings → Vault → Registration* grows **Add fields to forms** above the
+  Registration Forms table, for administrators. The card lists the vault's
+  batch fields — tick the ones to add, in the order they should stand in the
+  row, and give a Pick List its default — and then the vault's forms with what
+  would happen to each. The new row goes at the end of the form's batch table,
+  three label/field pairs to a row, built exactly as CDD builds its own
+  (a row is always 6 wide: *L1 F1 ×3*, *L1 F2 ×2* or *L1 F5*). A form that has
+  some of the fields gets only the ones it lacks; a form that has them all is
+  left alone, so a second run does nothing.
+  The choice is remembered by name and default value text, so the next vault
+  opens with the same fields ticked. A remembered field the vault does not
+  have blocks the run until it is pasted on *Batch Fields* or unticked — the
+  point is the same row everywhere.
+- **Forms with no layout of their own are never touched.** A registration
+  form whose `components.batch` is `null` shows every batch field by itself;
+  giving it a layout with one row would hide all the others. Such forms are
+  listed, struck through, with that reason. So is a form whose batch section
+  has no table or whose rows are not 6 wide — measured over 329 forms in 56
+  vaults, none is.
+- **The run is written for forms that are in use.** A JSON file of the forms
+  as they were is downloaded before anything is sent. Each form is listed
+  again right before its `PUT` and the run stops if it is no longer the form
+  that was previewed; it is listed again right after and the run stops unless
+  the server holds exactly the document that was sent (key order aside). The
+  rest of the document — dead `fieldID`s, `expanded_aligned_fields`, the other
+  three components — goes back as it came. The first failure stops everything,
+  with the server's words.
+- **Field settings pages say which registration forms show each field.** On
+  *Molecule / Batch / Sample / Inventory Fields*, under each field's name:
+  *Forms: Molecule, Protein*, or *In 9 of 11 forms* with the list in the
+  tooltip, or *In no registration form* in red. A form with no layout for
+  that kind counts — it shows every field — and the tooltip says so. Read
+  mode only; the line is taken out in edit mode.
+
+### Technical notes
+- New CDD endpoint, hence the major bump: `PUT
+  /api/internal/v1/vaults/{id}/registration_form_definitions/{form_id}` with
+  `{ form_definition: { name, components, registration_type,
+  structureless_image_name, allow_new_molecules, registration_system_id } }`,
+  the body `updateFormDefinition` sends in CDD's own bundle. The answer is
+  not relied on.
+- `registration-form-rows/row-model.js` is pure (`resolveChosen`, `planForm`,
+  `buildRows`, `withRows`, `putBody`, `verifySaved`); `selection.js` keeps
+  `cddRegistrationFormRowSelection` in `chrome.storage.local`.
+- `field-forms/` reads the forms through `listRegistrationForms` once per
+  page visit and the field ids through the field-rows bridge, which already
+  carries `id`. Its line sits in the name cell, so `page-dom.js` grew
+  `readModeName()` and `namesFromDom()` reads around the line — otherwise
+  Field Paste would stop recognising names already on the page.
+
+---
 ## [15.17.0] — 2026-09-20
 
 ### Changed

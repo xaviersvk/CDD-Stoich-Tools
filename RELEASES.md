@@ -17,6 +17,19 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 16.0.0 — 2026-09-20
+
+**Add batch fields to the registration forms you already have.** On
+*Settings → Registration* press **Add fields to forms**, tick the fields in
+the order you want them, pick a Pick List's default, and check the preview.
+
+- The row goes at the end of each form's batch table. Forms that already
+  have the fields, and forms with no layout of their own, are left alone.
+- A backup of the forms is downloaded first. The next vault opens with the
+  same fields ticked.
+- The *Fields* settings pages now say under each field which registration
+  forms show it.
+
 ## 15.17.0 — 2026-09-20
 
 - A form that can't be copied because one of its fields was deleted from the

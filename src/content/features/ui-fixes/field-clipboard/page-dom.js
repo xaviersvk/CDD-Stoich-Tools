@@ -29,6 +29,8 @@ import { kindConfig } from "./field-model.js";
 const PICK_DIALOG = ".pickListDefinitionDialog";
 const PICK_BUTTON = ".editPickListButton";
 const BRIDGE_TIMEOUT_MS = 500;
+// field-forms prints a line into the name cell; names are read around it.
+export const FIELD_FORMS_CLASS = "cdd-field-forms";
 
 /* ----- waiting ----- */
 
@@ -116,8 +118,19 @@ export function namesFromDom(kind) {
     return [...table.querySelectorAll("tbody tr")].map((tr) => {
         const input = tr.querySelector('input[name="name"]');
         if (input) return input.value.trim();
-        return tr.querySelector("td")?.textContent.trim() || "";
+        return readModeName(tr);
     }).filter(Boolean);
+}
+
+// A read-mode row's name: its first cell, without the line field-forms
+// prints under it.
+export function readModeName(tr) {
+    const cell = tr.querySelector("td");
+    if (!cell) return "";
+    if (!cell.querySelector(`.${FIELD_FORMS_CLASS}`)) return cell.textContent.trim();
+    const copy = cell.cloneNode(true);
+    copy.querySelectorAll(`.${FIELD_FORMS_CLASS}`).forEach((node) => node.remove());
+    return copy.textContent.trim();
 }
 
 export function vaultInfo() {

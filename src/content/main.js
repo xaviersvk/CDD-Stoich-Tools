@@ -33,9 +33,11 @@ import {initInventoryLocationTree} from "./features/ui-fixes/inventory-location-
 import {initInventoryLocationScan} from "./features/ui-fixes/inventory-location-scan/init";
 import {initCreateLocationLink} from "./features/ui-fixes/create-location-link/init";
 import {initFieldClipboard} from "./features/ui-fixes/field-clipboard/init";
+import {initFieldForms} from "./features/ui-fixes/field-forms/init";
 import {initFormClipboard} from "./features/ui-fixes/form-clipboard/init";
 import {initRegistrationSystems} from "./features/ui-fixes/registration-systems/init";
 import {initRegistrationFormClipboard} from "./features/ui-fixes/registration-form-clipboard/init";
+import {initRegistrationFormRows} from "./features/ui-fixes/registration-form-rows/init";
 import {injectMoleculeLinksStyles} from "./features/ui-fixes/molecule-links-fixes";
 import {initElnShiftLeft} from "./features/ui-fixes/eln-shift-left";
 import {watchConsumedBatches} from "./features/ui-fixes/consumed-batches-collapse";
@@ -163,9 +165,11 @@ function init() {
   initInventoryLocationScan();
   initCreateLocationLink();
   initFieldClipboard();
+  initFieldForms();
   initFormClipboard();
   initRegistrationSystems();
   initRegistrationFormClipboard();
+  initRegistrationFormRows();
 
   injectMoleculeLinksStyles();
   initElnShiftLeft();

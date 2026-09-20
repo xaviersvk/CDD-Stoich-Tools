@@ -118,6 +118,27 @@ export function injectFieldClipboardStyles() {
     .cdd-fc-row--done .cdd-fc-detail,
     .cdd-fc-row--done .cdd-fc-why { color: #2e7d32; }
 
+    /* "Add fields to forms": two lists in one card, a filter over the first,
+       the row order beside each ticked field, a Pick List's default. */
+    .cdd-fc-section {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        font-weight: 600;
+    }
+    .cdd-fc-filter,
+    .cdd-fc-select {
+        font: inherit;
+        padding: 3px 6px;
+        border: 1px solid rgba(0, 0, 0, 0.25);
+        border-radius: 3px;
+        background: #fff;
+    }
+    .cdd-fc-filter { font-weight: 400; width: 180px; }
+    .cdd-fc-order { min-width: 14px; color: rgba(0, 0, 0, 0.6); text-align: right; }
+    .cdd-fc-row[hidden] { display: none; }
+
     .cdd-fc-foot { display: flex; align-items: center; gap: 14px; }
     .cdd-fc-add {
         appearance: none;

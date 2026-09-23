@@ -18,14 +18,12 @@ import { mapLimit } from "../../utils/concurrency.js";
 import {
     addDrift,
     describe,
-    getAssayWindowCollapsed,
     initAssayWindow,
     isAssayWindowEnabled,
     METRIC_KEYS,
     onAssayWindowChanged,
     plateMetrics,
     runMetrics,
-    saveAssayWindowCollapsed,
 } from "../../../shared/assay-window.js";
 
 const LOG_PREFIX = "[CDD plate plugin]";
@@ -417,15 +415,12 @@ function buildPanel(vaultId, runId) {
     };
 
     toggle.addEventListener("click", () => {
-        const collapsed = !root.classList.contains("is-collapsed");
-        setCollapsed(collapsed);
-        saveAssayWindowCollapsed(collapsed);
+        setCollapsed(!root.classList.contains("is-collapsed"));
     });
 
-    // Folded until the stored state is known, so a folded panel never
-    // flashes open or starts a fetch.
-    root.classList.add("is-collapsed");
-    getAssayWindowCollapsed().then(setCollapsed);
+    // Every run starts folded: the table is there for whoever opens it, and
+    // nobody else pays for the heat map fetches.
+    setCollapsed(true);
 
     return root;
 }

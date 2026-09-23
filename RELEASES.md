@@ -24,8 +24,7 @@ Summary* for each plate's assay window, signal window and Z′.
 
 - Hover a header for what it means, a value for how it was calculated.
 - **Copy** pastes the table into Excel or PowerPoint.
-- It stays open or folded the way you left it; *Settings → Plate QC* turns
-  it off.
+- *Settings → Plate QC* hides it entirely.
 
 ---
 

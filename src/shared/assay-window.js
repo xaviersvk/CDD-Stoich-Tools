@@ -74,23 +74,40 @@ export async function initAssayWindow() {
  * Arithmetic
  * ------------------------------------------------------------------ */
 
-// { n, mean, sd } of the finite numbers in `values`; sd is NaN below n = 2.
+// MAD × 1.4826 estimates the SD of normally distributed data, so robust Z′
+// reads on the same scale as Z′ — until an outlier drags the SD away.
+export const MAD_TO_SD = 1.4826;
+
+function median(sorted) {
+    const n = sorted.length;
+    if (!n) return NaN;
+    const mid = Math.floor(n / 2);
+    return n % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+// { n, mean, sd, median, mad } of the finite numbers in `values`; sd is NaN
+// below n = 2. `mad` is the raw median absolute deviation (not scaled).
 export function describe(values) {
     const xs = values.filter(Number.isFinite);
     const n = xs.length;
-    if (!n) return { n: 0, mean: NaN, sd: NaN };
+    if (!n) return { n: 0, mean: NaN, sd: NaN, median: NaN, mad: NaN };
     const mean = xs.reduce((a, b) => a + b, 0) / n;
     const sd = n > 1
         ? Math.sqrt(xs.reduce((a, b) => a + (b - mean) ** 2, 0) / (n - 1))
         : NaN;
-    return { n, mean, sd };
+    const med = median([...xs].sort((a, b) => a - b));
+    const mad = median(xs.map((x) => Math.abs(x - med)).sort((a, b) => a - b));
+    return { n, mean, sd, median: med, mad };
 }
 
-// Metrics from the two control groups' descriptive stats. Besides the three
-// above: each control's CV (%), and S/N = |mean(pos) − mean(neg)| / SD(neg).
+// Metrics from the two control groups' descriptive stats. Besides AW, SW and
+// Z′: each control's CV (%), S/N = |Δmean| / SD(neg), and robust Z′ — Z′ with
+// median for mean and 1.4826·MAD for SD, which one stray well cannot move.
 export function plateMetrics(pos, neg) {
     const delta = Math.abs(pos.mean - neg.mean);
     const spread = pos.sd + neg.sd;
+    const robustDelta = Math.abs(pos.median - neg.median);
+    const robustSpread = MAD_TO_SD * (pos.mad + neg.mad);
     return {
         cvPos: (100 * pos.sd) / Math.abs(pos.mean),
         cvNeg: (100 * neg.sd) / Math.abs(neg.mean),
@@ -98,10 +115,27 @@ export function plateMetrics(pos, neg) {
         sn: delta / neg.sd,
         sw: delta / spread,
         zPrime: 1 - (3 * spread) / delta,
+        zRobust: 1 - (3 * robustSpread) / robustDelta,
     };
 }
 
-export const METRIC_KEYS = ["cvPos", "cvNeg", "aw", "sn", "sw", "zPrime"];
+// Plate drift: how far each plate's control means sit from the run's average
+// plate (the mean of the plates' means), in %. Written onto each row as
+// `metrics.driftPos` / `metrics.driftNeg`; returns the two run averages.
+export function addDrift(plates) {
+    const scored = plates.filter((p) => p.metrics);
+    const avgPos = describe(scored.map((p) => p.pos.mean)).mean;
+    const avgNeg = describe(scored.map((p) => p.neg.mean)).mean;
+    for (const p of scored) {
+        p.metrics.driftPos = (100 * (p.pos.mean - avgPos)) / Math.abs(avgPos);
+        p.metrics.driftNeg = (100 * (p.neg.mean - avgNeg)) / Math.abs(avgNeg);
+    }
+    return { avgPos, avgNeg };
+}
+
+export const METRIC_KEYS = [
+    "cvPos", "cvNeg", "driftPos", "driftNeg", "aw", "sn", "sw", "zPrime", "zRobust",
+];
 
 // Mean ± SD of each metric over the plates that have one.
 export function runMetrics(plates) {

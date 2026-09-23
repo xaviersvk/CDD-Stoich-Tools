@@ -9,11 +9,14 @@
 //
 // Formulas and the switch: shared/assay-window.js. The readout defaults to
 // the heat map viewer's own default; the choice lasts for the page. Also
-// shown: each control's CV % and S/N (see shared/assay-window.js).
+// shown: each control's CV %, plate drift, S/N and robust Z′. Every header
+// says what the column is and every cell how its value was calculated, as a
+// tooltip (METRICS below).
 
 import { fetchPlateControls, fetchRunHeatMapIndex } from "../../api/run-heat-maps.js";
 import { mapLimit } from "../../utils/concurrency.js";
 import {
+    addDrift,
     describe,
     initAssayWindow,
     isAssayWindowEnabled,
@@ -31,14 +34,9 @@ const RUN_PATH_RE = /^\/vaults\/(\d+)\/runs\/(\d+)\/?$/;
 const ANCHOR_SELECTOR = "#run-summary > #run-summary-links";
 const FETCH_CONCURRENCY = 3;
 
-const METRIC_LABELS = {
-    cvPos: "CV pos %",
-    cvNeg: "CV neg %",
-    aw: "AW",
-    sn: "S/N",
-    sw: "SW",
-    zPrime: "Z′",
-};
+// Values past these are shown in red.
+const Z_LOW = 0.5;
+const DRIFT_HIGH = 20; // % from the run's average plate
 
 let started = false;
 
@@ -67,6 +65,79 @@ const copyFormat = new Intl.NumberFormat(undefined, {
 const fmtNum = (x) => (Number.isFinite(x) ? numberFormat.format(x) : "–");
 const fmtRatio = (x) => (Number.isFinite(x) ? ratioFormat.format(x) : "–");
 const fmtStat = (s, fmt) => (s.n ? `${fmt(s.mean)} ± ${fmt(s.sd)}` : "–");
+
+const driftFormat = new Intl.NumberFormat(undefined, {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+    signDisplay: "exceptZero",
+});
+const fmtDrift = (x) => (Number.isFinite(x) ? driftFormat.format(x) : "–");
+
+/* ------------------------------------------------------------------ *
+ * Columns — what each one is (header tooltip) and how this plate's value
+ * came out (cell tooltip, the formula with the plate's own numbers).
+ * `ctx` carries the run averages the drift columns compare against.
+ * ------------------------------------------------------------------ */
+
+const MAD = "1.4826·MAD";
+
+const METRICS = {
+    cvPos: {
+        label: "CV pos %",
+        help: "Coefficient of variation of the positive control wells — how noisy that control is.\nCV = SD / mean × 100",
+        explain: (r) => `${fmtNum(r.pos.sd)} / ${fmtNum(r.pos.mean)} × 100`,
+    },
+    cvNeg: {
+        label: "CV neg %",
+        help: "Coefficient of variation of the negative control wells — how noisy that control is.\nCV = SD / mean × 100",
+        explain: (r) => `${fmtNum(r.neg.sd)} / ${fmtNum(r.neg.mean)} × 100`,
+    },
+    driftPos: {
+        label: "Drift pos %",
+        help: `Plate drift of the positive control: how far this plate's mean sits from the run's average plate (mean of all plates' positive means).\nDrift = (mean − run average) / run average × 100\nRed beyond ±${DRIFT_HIGH} %.`,
+        explain: (r, ctx) => `(${fmtNum(r.pos.mean)} − ${fmtNum(ctx.avgPos)}) / ${fmtNum(ctx.avgPos)} × 100`,
+        format: fmtDrift,
+        warn: (x) => Math.abs(x) > DRIFT_HIGH,
+        noRunStat: true,
+    },
+    driftNeg: {
+        label: "Drift neg %",
+        help: `Plate drift of the negative control: how far this plate's mean sits from the run's average plate (mean of all plates' negative means).\nDrift = (mean − run average) / run average × 100\nRed beyond ±${DRIFT_HIGH} %.`,
+        explain: (r, ctx) => `(${fmtNum(r.neg.mean)} − ${fmtNum(ctx.avgNeg)}) / ${fmtNum(ctx.avgNeg)} × 100`,
+        format: fmtDrift,
+        warn: (x) => Math.abs(x) > DRIFT_HIGH,
+        noRunStat: true,
+    },
+    aw: {
+        label: "AW",
+        help: "Assay window: how many times the positive control signal exceeds the negative.\nAW = mean(pos) / mean(neg)",
+        explain: (r) => `${fmtNum(r.pos.mean)} / ${fmtNum(r.neg.mean)}`,
+    },
+    sn: {
+        label: "S/N",
+        help: "Signal to noise: the control separation in units of the negative control's SD.\nS/N = |mean(pos) − mean(neg)| / SD(neg)",
+        explain: (r) => `|${fmtNum(r.pos.mean)} − ${fmtNum(r.neg.mean)}| / ${fmtNum(r.neg.sd)}`,
+    },
+    sw: {
+        label: "SW",
+        help: "Signal window: the control separation in units of the two controls' summed SD.\nSW = |mean(pos) − mean(neg)| / (SD(pos) + SD(neg))\n(= 3 / (1 − Z′))",
+        explain: (r) => `|${fmtNum(r.pos.mean)} − ${fmtNum(r.neg.mean)}| / (${fmtNum(r.pos.sd)} + ${fmtNum(r.neg.sd)})`,
+    },
+    zPrime: {
+        label: "Z′",
+        help: `Z′-factor: plate quality from the controls alone, as CDD calculates it (sample SD, flagged outliers left out). ≥ 0.5 is an excellent assay; red below ${Z_LOW}.\nZ′ = 1 − 3·(SD(pos) + SD(neg)) / |mean(pos) − mean(neg)|`,
+        explain: (r) => `1 − 3·(${fmtNum(r.pos.sd)} + ${fmtNum(r.neg.sd)}) / |${fmtNum(r.pos.mean)} − ${fmtNum(r.neg.mean)}|`,
+        warn: (x) => x < Z_LOW,
+    },
+    zRobust: {
+        label: "Robust Z′",
+        help: `Z′ with median in place of mean and ${MAD} (median absolute deviation, scaled to match SD) in place of SD. A single stray well barely moves it — well below Z′ means the controls are broadly noisy; well above means a few outlier wells are pulling Z′ down. Red below ${Z_LOW}.\nRobust Z′ = 1 − 3·(${MAD}(pos) + ${MAD}(neg)) / |median(pos) − median(neg)|`,
+        explain: (r) => `1 − 3·1.4826·(${fmtNum(r.pos.mad)} + ${fmtNum(r.neg.mad)}) / |${fmtNum(r.pos.median)} − ${fmtNum(r.neg.median)}|`,
+        warn: (x) => x < Z_LOW,
+    },
+};
+
+const RUN_HELP = "Mean ± SD of each metric over the run's plates.";
 
 /* ------------------------------------------------------------------ *
  * DOM
@@ -106,7 +177,14 @@ function injectStyles() {
         }
         .${ROOT_CLASS}-bar button:hover { background: #f0f4f8; }
         .${ROOT_CLASS}-bar button:disabled { opacity: .5; cursor: default; }
+        .${ROOT_CLASS}-body { overflow-x: auto; }
         .${ROOT_CLASS} table { border-collapse: collapse; }
+        .${ROOT_CLASS} th[title] {
+            cursor: help;
+            text-decoration: underline dotted #aaa;
+            text-underline-offset: 3px;
+        }
+        .${ROOT_CLASS} td[title] { cursor: help; }
         .${ROOT_CLASS} th,
         .${ROOT_CLASS} td {
             padding: 3px 12px 3px 0;
@@ -144,11 +222,11 @@ function buildPanel(vaultId, runId) {
     const copy = el("button", { type: "button", textContent: "Copy", disabled: true });
     copy.title = "Copy the table (tab-separated) for Excel or PowerPoint";
     const status = el("span", { className: `${ROOT_CLASS}-status` });
-    const body = el("div");
+    const body = el("div", { className: `${ROOT_CLASS}-body` });
 
     root.append(
         el("div", { className: `${ROOT_CLASS}-bar` }, [
-            el("span", { className: `${ROOT_CLASS}-title`, textContent: "Assay window" }),
+            el("span", { className: `${ROOT_CLASS}-title`, textContent: "Plate QC" }),
             select,
             copy,
             status,
@@ -157,6 +235,7 @@ function buildPanel(vaultId, runId) {
     );
 
     let rows = [];
+    let driftCtx = null;
     let generation = 0;
 
     const setStatus = (text, isError = false) => {
@@ -190,6 +269,7 @@ function buildPanel(vaultId, runId) {
         }, () => gen !== generation);
         if (gen !== generation) return;
 
+        driftCtx = addDrift(rows);
         render();
         const failed = rows.filter((r) => r.error).length;
         const flagged = rows.reduce((a, r) => a + (r.flagged || 0), 0);
@@ -205,28 +285,42 @@ function buildPanel(vaultId, runId) {
         for (const r of rows) {
             const m = r.metrics;
             const cells = [
-                r.plate.name,
-                r.error ? "error" : `${r.pos.n} / ${r.neg.n}`,
-                r.error ? "" : fmtStat(r.pos, fmtNum),
-                r.error ? "" : fmtStat(r.neg, fmtNum),
-                ...METRIC_KEYS.map((key) => fmtRatio(m?.[key])),
-            ].map((text) => el("td", { textContent: text }));
-            if (m && m.zPrime < 0.5) cells[cells.length - 1].className = "is-low";
+                el("td", { textContent: r.plate.name }),
+                el("td", { textContent: r.error ? "error" : `${r.pos.n} / ${r.neg.n}` }),
+                el("td", { textContent: r.error ? "" : fmtStat(r.pos, fmtNum) }),
+                el("td", { textContent: r.error ? "" : fmtStat(r.neg, fmtNum) }),
+            ];
+            for (const key of METRIC_KEYS) {
+                const spec = METRICS[key];
+                const value = m?.[key];
+                const td = el("td", { textContent: (spec.format || fmtRatio)(value) });
+                if (Number.isFinite(value)) {
+                    td.title = `${spec.label} = ${spec.explain(r, driftCtx)} = ${(spec.format || fmtRatio)(value)}`;
+                    if (spec.warn?.(value)) td.className = "is-low";
+                }
+                cells.push(td);
+            }
             tbody.append(el("tr", {}, cells));
         }
 
         const run = runMetrics(rows);
         const tfoot = el("tfoot", {}, [el("tr", {}, [
-            el("td", { textContent: `Run mean ± SD (n = ${run.zPrime.n})`, colSpan: 4 }),
-            ...METRIC_KEYS.map((key) => el("td", { textContent: fmtStat(run[key], fmtRatio) })),
+            el("td", { textContent: `Run mean ± SD (n = ${run.zPrime.n})`, colSpan: 4, title: RUN_HELP }),
+            ...METRIC_KEYS.map((key) => el("td", {
+                textContent: METRICS[key].noRunStat ? "" : fmtStat(run[key], fmtRatio),
+                title: RUN_HELP,
+            })),
         ])]);
 
         const head = [
-            "Plate", "n pos / neg", "Pos mean ± SD", "Neg mean ± SD",
-            ...METRIC_KEYS.map((key) => METRIC_LABELS[key]),
+            ["Plate", "Plate name in CDD."],
+            ["n pos / neg", "Positive / negative control wells counted (outliers flagged in CDD are left out)."],
+            ["Pos mean ± SD", "Mean ± sample SD (n − 1) of the positive control wells."],
+            ["Neg mean ± SD", "Mean ± sample SD (n − 1) of the negative control wells."],
+            ...METRIC_KEYS.map((key) => [METRICS[key].label, METRICS[key].help]),
         ];
         body.replaceChildren(el("table", {}, [
-            el("thead", {}, [el("tr", {}, head.map((h) => el("th", { textContent: h })))]),
+            el("thead", {}, [el("tr", {}, head.map(([text, title]) => el("th", { textContent: text, title })))]),
             tbody,
             tfoot,
         ]));
@@ -237,7 +331,7 @@ function buildPanel(vaultId, runId) {
         const raw = (x) => (Number.isFinite(x) ? copyFormat.format(x) : "");
         const lines = [[
             "Plate", "n pos", "n neg", "Pos mean", "Pos SD", "Neg mean", "Neg SD",
-            ...METRIC_KEYS.map((key) => METRIC_LABELS[key]),
+            ...METRIC_KEYS.map((key) => METRICS[key].label.replace("′", "'")),
         ]];
         for (const r of rows) {
             if (r.error) continue;
@@ -249,8 +343,9 @@ function buildPanel(vaultId, runId) {
         }
         const run = runMetrics(rows);
         const blank = Array(6).fill("");
-        lines.push(["Run mean", ...blank, ...METRIC_KEYS.map((key) => plain(run[key].mean))]);
-        lines.push(["Run SD", ...blank, ...METRIC_KEYS.map((key) => plain(run[key].sd))]);
+        const runCell = (key, stat) => (METRICS[key].noRunStat ? "" : plain(run[key][stat]));
+        lines.push(["Run mean", ...blank, ...METRIC_KEYS.map((key) => runCell(key, "mean"))]);
+        lines.push(["Run SD", ...blank, ...METRIC_KEYS.map((key) => runCell(key, "sd"))]);
         return lines.map((l) => l.join("\t")).join("\n");
     }
 

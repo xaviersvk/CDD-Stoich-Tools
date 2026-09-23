@@ -19,13 +19,14 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ## 17.0.0 — 2026-09-23
 
-**Assay window per plate.** A run's *Data Summary* now opens with a table
-of each plate's control means ± SD, assay window, signal window and Z′, plus
-the run's mean ± SD.
+**Plate QC on every run.** A run's *Data Summary* now opens with each
+plate's assay window, signal window, Z′ and robust Z′, plus the run's
+mean ± SD.
 
-- Also CV % of each control and S/N. Pick the readout above the table;
-  **Copy** pastes it into Excel or PowerPoint.
-- Switch it off under *Settings → Heat map tooltip*.
+- Also CV % and plate drift of each control, and S/N. Hover a header for
+  what it is, a value for how it was calculated.
+- Pick the readout above the table; **Copy** pastes it into Excel or
+  PowerPoint. Switch it off under *Settings → Plate QC*.
 
 ---
 

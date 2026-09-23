@@ -92,6 +92,14 @@
                 <span class="rail__label">Heat map tooltip</span>
                 <span class="rail__chip" data-chip="heatmap" hidden></span>
             </button>
+            <button type="button" class="rail__item" data-pane="col-plateqc-heading">
+                <span class="tile" aria-hidden="true">
+                    <span class="tile__no"></span>
+                    <span class="tile__sym">Z′</span>
+                </span>
+                <span class="rail__label">Plate QC</span>
+                <span class="rail__chip" data-chip="plateqc" hidden></span>
+            </button>
             <p class="rail__group">Registering a compound</p>
             <button type="button" class="rail__item" data-pane="col-regform-heading">
                 <span class="tile" aria-hidden="true">
@@ -316,12 +324,34 @@
                     No batch fields discovered yet. Hover a well on any run's heat
                     map once and your vault's fields will appear here.
                 </p>
+            </div>
+        </section>
+        <section class="card" aria-labelledby="col-plateqc-heading">
+            <header class="card__head">
+                <span class="tile" aria-hidden="true">
+                    <span class="tile__no"></span>
+                    <span class="tile__sym">Z′</span>
+                </span>
+                <div class="card__titles">
+                    <h3 class="card__name" id="col-plateqc-heading">Plate QC</h3>
+                </div>
+            </header>
+
+            <div class="card__body">
+                <p class="note">
+                    A table above a run's <em>Data Summary</em> with each plate's
+                    control statistics, calculated from its positive and
+                    negative control wells (outliers flagged in CDD are left out).
+                </p>
+                <p class="note">
+                    Assay window, signal window, S/N, Z′ and robust Z′; CV % and
+                    plate drift of each control; the run's mean ± SD. Hover a
+                    column header for what it is, or a value for how it was
+                    calculated.
+                </p>
                 <label class="field-item show-products-toggle">
                     <input type="checkbox" id="assayWindow" />
-                    <span>On a run's <strong>Data Summary</strong>, show the
-                    <strong>assay window, signal window and Z′</strong> of each
-                    plate, calculated from its positive and negative control
-                    wells</span>
+                    <span>Show <strong>Plate QC</strong> on run pages</span>
                 </label>
             </div>
         </section>

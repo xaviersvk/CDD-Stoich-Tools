@@ -1143,6 +1143,8 @@ assayWindowCheckbox.addEventListener("change", () => {
 
 async function initAssayWindowUI() {
     assayWindowCheckbox.checked = await getAssayWindowEnabled();
+    // A property write fires no mutation, so the rail chip needs telling.
+    refreshRailChips();
 }
 
 const elnIdToBatchCheckbox = document.getElementById("elnIdToBatch");
@@ -1469,6 +1471,9 @@ function refreshRailChips() {
 
     const hplcOn = document.getElementById("hplcBlockEnabled");
     if (hplcOn) setChip("hplc", hplcOn.checked ? "on" : "off");
+
+    const qcOn = document.getElementById("assayWindow");
+    if (qcOn) setChip("plateqc", qcOn.checked ? "on" : "off");
 
     const scanOn = document.getElementById("inventoryScanEnabled");
     if (scanOn) setChip("inventoryscan", scanOn.checked ? "on" : "off");

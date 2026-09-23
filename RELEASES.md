@@ -15,8 +15,7 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ## 18.0.0 — 2026-09-23
 
-**Everything new since 15.6, the last version in the stores.** Each step
-has its own section below.
+**Everything new since 15.6, the last version in the stores.**
 
 **Samples and inventory**
 
@@ -40,146 +39,14 @@ has its own section below.
   vaults.
 - *Settings → Registration → Add fields to forms* puts batch fields on the
   forms you already have.
+- *Create multiple systems* next to *Create a new System*: one prefix per
+  line.
 
 **Internal IDs**
 
 - Two products of one reaction now get two IDs, `MDX-113` and `MDX-113-B`.
   Reagent rows are no longer filled.
 - To keep `MDX-113B`, pick **Letters** in *Settings → Product suffix*.
-
----
-
-## 17.1.0 — 2026-09-23
-
-**Picking a sample in the stoichiometry table.** Depleted samples are
-crossed out the moment the picker shows them, and the most used sample is
-in bold.
-
-- Hover a sample to see how often it was debited and how much is left.
-- CDD pages load a little lighter, and dragging the location tree wider is
-  smoother.
-
----
-
-## 17.0.0 — 2026-09-23
-
-**Plate QC on every run.** Click **▸ Plate QC** above a run's *Data
-Summary* for each plate's assay window, signal window and Z′.
-
-- Hover a header for what it means, a value for how it was calculated.
-- **Copy** pastes the table into Excel or PowerPoint.
-- *Settings → Plate QC* hides it entirely.
-
----
-
-## 16.0.0 — 2026-09-20
-
-**Add batch fields to the registration forms you already have.** On
-*Settings → Registration* press **Add fields to forms**, tick the fields in
-the order you want them, pick a Pick List's default, and check the preview.
-
-- The row goes above the file fields a form ends in, otherwise at the end.
-  Forms that have the fields, or no layout of their own, are left alone. A
-  Pick List already on a form without a default gets the one you picked. A
-  backup is downloaded first.
-- **Copy fields** now asks which fields to take.
-- On the *Fields* settings pages, hover the **ⓘ** after a field's name to see
-  which registration forms show it. Red means none.
-
-## 15.17.0 — 2026-09-20
-
-- A form that can't be copied because one of its fields was deleted from the
-  vault now names the row. Remove that row from the form in CDD, then copy
-  again.
-
-## 15.16.0 — 2026-09-17
-
-**Copy registration forms between vaults.** Press **Copy** on
-*Settings → Registration*, then **Paste** there in the other vault. Each form
-gets the registration system with the matching prefix; change it in CDD if it
-should be another.
-
-- **Create multiple systems** beside *Create a new System*: one prefix per
-  line, each starts at 1.
-- Copy/Paste of fields now works in vaults that call molecules something else
-  (e.g. *Entity*).
-
----
-
-## 15.15.0 — 2026-09-15
-
-**Copy fields and protocol forms between vaults.** Press **Copy** on a
-*… Fields* or *Protocol Forms* settings page, then **Paste** on the same page
-in the other vault. Names already there are skipped; you see the list first.
-
-- *Duplicate* in a form's row copies it inside the vault.
-- *Create a new… → Location* on Explore Data opens Edit Locations (admins).
-- Scan racks: `Shelf A > R-1` builds the shelf too; size presets; capacity for
-  unorganized boxes; ⓘ explains the panel.
-- Location tree: a filter box, and boxes with the same name turn orange.
-
----
-
-## 15.10.0 — 2026-09-09
-
-**Ctrl+click a column header on Inventory search and the whole column is
-copied** — the same copy Explore search results already had.
-
-- Ctrl+click a single cell to copy just that value.
-- Expanded event rows are copied under their sample; collapsed ones are left
-  out.
-
----
-
-## 15.9.0 — 2026-09-07
-
-**A barcode scanner can now add racks without the dialog saving on every
-scan.** *Edit Locations* has a new **Scan racks** button next to *Print
-Labels*.
-
-- Scan the whole shelf into the list, then press **Create N boxes** under the
-  location you picked — and you press **Save**.
-- Pick the location by clicking it in the tree on the left, or from **Into**.
-- Rows start at 12 × 8 and each one can be changed on the row. Paste a list
-  from Excel instead, with two more columns for the size if they differ.
-- A code you already have is struck out and not counted.
-
-**Internal IDs now mark the second product `-B` instead of `B`.**
-`MDX-113`, `MDX-113-B`, `MDX-113-C` — the dash keeps the mark from reading as
-part of the compound number.
-
-- Only people who never picked a style are moved. If you chose one, you keep
-  it.
-- To keep the old shape, pick **Letters** in Settings → **Product suffix**.
-
-**The settings page now fills the window** instead of scrolling as one long
-page, and the *Not a CDD product* notice runs the full width.
-
----
-
-## 15.8.0 — 2026-09-06
-
-**Inventory Location now opens as a folder tree instead of 425 full paths.**
-Start at the top and unfold one step at a time.
-
-- Type to search — a match shows the location first, its path underneath.
-- Arrow keys walk the tree: → unfolds, ← folds, Enter picks.
-
----
-
-## 15.7.0 — 2026-08-28
-
-**A reaction with two products now registers them under two different IDs.**
-The suffix used to count reactions, so both products of one reaction were
-handed the same Internal ID. It now counts products — `MDX-113`, `MDX-113B`,
-`MDX-113C` — in the order the entry shows them.
-
-- One product per reaction reads exactly as before. Nothing to switch.
-- **Reagent rows are no longer filled.** Register from a reagent row and the
-  Internal ID stays empty — a starting material is not a product of the entry.
-- Parallel reactions keep their pair letters, `MDX-113-1A`.
-- *Mark the first table too* is now **Mark the first product too**, Settings →
-  **Product suffix**. Your choice of style is kept.
 
 ---
 

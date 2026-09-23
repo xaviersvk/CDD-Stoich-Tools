@@ -1,4 +1,6 @@
 // inject/hooks/xhr-hook.js
+import { isSurelyNotJson } from "./content-type.js";
+
 export function installXhrHook(tryParseText) {
     const origOpen = XMLHttpRequest.prototype.open;
     const origSend = XMLHttpRequest.prototype.send;
@@ -18,6 +20,8 @@ export function installXhrHook(tryParseText) {
                 ) {
                     return;
                 }
+
+                if (isSurelyNotJson(this.getResponseHeader("content-type"))) return;
 
                 tryParseText(this.responseText, this.__cdd_url);
             } catch (err) {

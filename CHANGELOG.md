@@ -19,6 +19,27 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [17.1.0] — 2026-09-23
+
+### Performance
+Three fixes ported from the old `dev` branch (`6212a99`, 2026-06-30, never
+merged; the branch is deleted).
+- **fetch / XHR hooks skip bodies that cannot hold JSON.** Both hooks read
+  every response to spot CDD payloads — including the full HTML of each
+  Turbo navigation and ~400 kB of `text/javascript` per heat map plate.
+  Responses typed HTML, CSS, JavaScript, turbo-stream, image, font, audio or
+  video are now left alone (`inject/hooks/content-type.js`). Unlike `dev`,
+  which read only `application/json`, anything else — `text/plain`, no type —
+  is still read, so JSON served under a loose type keeps working. Checked on
+  an ELN entry: all its data requests are `application/json`.
+- **Location tree resize** writes its width to `localStorage` once on
+  mouseup, not on every mousemove of the drag.
+- **Depleted-sample marker** reads `textContent`, not `innerText`, which
+  forced a layout for every radio button in the sample selector.
+- Not ported from `dev`: the 40-prefix cap on prefix colours (it pruned
+  saved — even coloured — prefixes on load) and the ELN tab-title TreeWalker
+  (the code it changed has since been rewritten).
+
 ## [17.0.0] — 2026-09-23
 
 ### Added

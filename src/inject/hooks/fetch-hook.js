@@ -5,11 +5,18 @@
 // shape — but the reagent search is only recognisable by where it came from,
 // and it is the one answer that carries a molecule's synonyms before the entry
 // has been saved.
+import { isSurelyNotJson } from "./content-type.js";
+
 export function installFetchHook(processJsonPayload, tryParseText) {
     const origFetch = window.fetch;
 
     window.fetch = async function (...args) {
         const res = await origFetch.apply(this, args);
+
+        // HTML pages, scripts, images…: no payload in there, and cloning and
+        // reading them costs a whole body per request.
+        if (isSurelyNotJson(res.headers.get("content-type"))) return res;
+
         const url = res.url || (typeof args[0] === "string" ? args[0] : args[0]?.url) || "";
 
         let clone;

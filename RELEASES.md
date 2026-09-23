@@ -17,6 +17,14 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 17.1.0 — 2026-09-23
+
+- CDD pages load a little lighter: the extension no longer reads through
+  every HTML page and script CDD loads, and dragging the location tree
+  wider is smoother.
+
+---
+
 ## 17.0.0 — 2026-09-23
 
 **Plate QC on every run.** Click **▸ Plate QC** above a run's *Data

@@ -37,7 +37,8 @@ export function ensureDepletedStyle() {
 }
 
 function wrapperMatchesDepleted(wrapper, depleted) {
-    const text = normalizeValue(wrapper?.innerText || wrapper?.textContent || "");
+    // textContent, not innerText: innerText forces a layout on every radio.
+    const text = normalizeValue(wrapper?.textContent || "");
     if (!text) return false;
 
     for (const id of depleted) {

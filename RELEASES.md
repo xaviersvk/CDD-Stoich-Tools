@@ -19,12 +19,12 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ## 17.0.0 — 2026-09-23
 
-**Plate QC on every run.** A run's *Data Summary* now opens with each
-plate's assay window, signal window and Z′.
+**Plate QC on every run.** Click **▸ Plate QC** above a run's *Data
+Summary* for each plate's assay window, signal window and Z′.
 
 - Hover a header for what it means, a value for how it was calculated.
 - **Copy** pastes the table into Excel or PowerPoint.
-- Click **▸ Plate QC** to fold it to one line; *Settings → Plate QC* turns
+- It stays open or folded the way you left it; *Settings → Plate QC* turns
   it off.
 
 ---

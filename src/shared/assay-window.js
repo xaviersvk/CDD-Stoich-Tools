@@ -72,14 +72,15 @@ export async function initAssayWindow() {
 
 // Folded to its title line: remembered across runs, so someone who does not
 // want the table sees one line and no plate is fetched until it is opened.
+// Folded by default; opening it once stores an explicit `false`.
 export const ASSAY_WINDOW_COLLAPSED_KEY = "cddAssayWindowCollapsed";
 
 export async function getAssayWindowCollapsed() {
     try {
         const result = await chrome.storage.local.get(ASSAY_WINDOW_COLLAPSED_KEY);
-        return result?.[ASSAY_WINDOW_COLLAPSED_KEY] === true;
+        return result?.[ASSAY_WINDOW_COLLAPSED_KEY] !== false;
     } catch {
-        return false;
+        return true;
     }
 }
 

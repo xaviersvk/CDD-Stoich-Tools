@@ -18,12 +18,14 @@ import { mapLimit } from "../../utils/concurrency.js";
 import {
     addDrift,
     describe,
+    getAssayWindowCollapsed,
     initAssayWindow,
     isAssayWindowEnabled,
     METRIC_KEYS,
     onAssayWindowChanged,
     plateMetrics,
     runMetrics,
+    saveAssayWindowCollapsed,
 } from "../../../shared/assay-window.js";
 
 const LOG_PREFIX = "[CDD plate plugin]";
@@ -164,7 +166,29 @@ function injectStyles() {
             gap: 8px;
             margin-bottom: 8px;
         }
-        .${ROOT_CLASS}-title { font-weight: bold; }
+        .${ROOT_CLASS}[hidden] { display: none; }
+        .${ROOT_CLASS}.is-collapsed { padding-top: 5px; padding-bottom: 5px; }
+        .${ROOT_CLASS}.is-collapsed .${ROOT_CLASS}-bar { margin-bottom: 0; }
+        .${ROOT_CLASS}.is-collapsed .${ROOT_CLASS}-bar > :not(.${ROOT_CLASS}-toggle),
+        .${ROOT_CLASS}.is-collapsed .${ROOT_CLASS}-body { display: none; }
+        .${ROOT_CLASS} .${ROOT_CLASS}-bar .${ROOT_CLASS}-toggle {
+            padding: 0;
+            border: 0;
+            background: none;
+            font-weight: bold;
+            color: #333;
+        }
+        .${ROOT_CLASS} .${ROOT_CLASS}-bar .${ROOT_CLASS}-toggle:hover {
+            background: none;
+            color: #1a6fc9;
+        }
+        .${ROOT_CLASS}-toggle::before {
+            content: "▾";
+            display: inline-block;
+            width: 1em;
+            color: #888;
+        }
+        .${ROOT_CLASS}.is-collapsed .${ROOT_CLASS}-toggle::before { content: "▸"; }
         .${ROOT_CLASS}-status { color: #777; }
         .${ROOT_CLASS}-status.is-error { color: #b0302a; }
         .${ROOT_CLASS}-bar button {
@@ -223,14 +247,14 @@ function buildPanel(vaultId, runId) {
     copy.title = "Copy the table (tab-separated) for Excel or PowerPoint";
     const status = el("span", { className: `${ROOT_CLASS}-status` });
     const body = el("div", { className: `${ROOT_CLASS}-body` });
+    const toggle = el("button", {
+        type: "button",
+        className: `${ROOT_CLASS}-toggle`,
+        textContent: "Plate QC",
+    });
 
     root.append(
-        el("div", { className: `${ROOT_CLASS}-bar` }, [
-            el("span", { className: `${ROOT_CLASS}-title`, textContent: "Plate QC" }),
-            select,
-            copy,
-            status,
-        ]),
+        el("div", { className: `${ROOT_CLASS}-bar` }, [toggle, select, copy, status]),
         body
     );
 
@@ -359,7 +383,9 @@ function buildPanel(vaultId, runId) {
         }
     });
 
-    (async () => {
+    // Nothing is fetched until the panel is first shown open.
+    let loading = null;
+    const load = () => (loading ||= (async () => {
         setStatus("Reading the run's plates…");
         let index;
         try {
@@ -367,10 +393,13 @@ function buildPanel(vaultId, runId) {
         } catch (error) {
             console.warn(LOG_PREFIX, "assay window: heat map index", error);
             setStatus("Could not read the run's heat maps.", true);
+            loading = null; // opening it again retries
             return;
         }
         if (!index.plates.length || !index.readouts.length) {
-            root.remove(); // a run without plates or readouts: nothing to say
+            // A run without plates or readouts: nothing to say. Hidden, not
+            // removed — a removed panel would be rebuilt by the observer.
+            root.hidden = true;
             return;
         }
         for (const r of index.readouts) {
@@ -378,7 +407,25 @@ function buildPanel(vaultId, runId) {
         }
         select.addEventListener("change", () => calculate(index.plates));
         calculate(index.plates);
-    })();
+    })());
+
+    const setCollapsed = (collapsed) => {
+        root.classList.toggle("is-collapsed", collapsed);
+        toggle.setAttribute("aria-expanded", String(!collapsed));
+        toggle.title = collapsed ? "Show plate QC" : "Fold to one line";
+        if (!collapsed) load();
+    };
+
+    toggle.addEventListener("click", () => {
+        const collapsed = !root.classList.contains("is-collapsed");
+        setCollapsed(collapsed);
+        saveAssayWindowCollapsed(collapsed);
+    });
+
+    // Folded until the stored state is known, so a folded panel never
+    // flashes open or starts a fetch.
+    root.classList.add("is-collapsed");
+    getAssayWindowCollapsed().then(setCollapsed);
 
     return root;
 }

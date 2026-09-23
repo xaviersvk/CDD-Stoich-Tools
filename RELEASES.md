@@ -19,9 +19,13 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ## 17.1.0 — 2026-09-23
 
-- CDD pages load a little lighter: the extension no longer reads through
-  every HTML page and script CDD loads, and dragging the location tree
-  wider is smoother.
+**Picking a sample in the stoichiometry table.** Depleted samples are
+crossed out the moment the picker shows them, and the most used sample is
+in bold.
+
+- Hover a sample to see how often it was debited and how much is left.
+- CDD pages load a little lighter, and dragging the location tree wider is
+  smoother.
 
 ---
 

@@ -21,6 +21,30 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 ---
 ## [17.1.0] — 2026-09-23
 
+### Added
+- **Sample picker hints** (`features/sample-picker-hints.js`). In a
+  stoichiometry row's batch / sample picker — editing a row (Entity select)
+  or a row added with *+ Reagent* (Name field) — the molecule's samples are
+  loaded as soon as the entity is known, with depleted ones
+  (`inventory_samples.json?include_depleted=true`, `api/molecule-samples.js`):
+  - **Depleted samples crossed out at once.** The depleted list used to come
+    only from the entry payload after CDD's save; measured on *+ Reagent*,
+    the save came ~3 s after the entity was picked and took 2.5–7 s, so
+    samples showed plain first and were crossed out seconds later. Now they
+    are fed into the existing marker's set before a batch is picked — on the
+    demo entry, SM003152 was crossed out 1 ms after it appeared.
+  - **Most used sample in bold**: the most debits (`inventory_events`
+    with `Debit > 0`) among the batch's samples, ties to the most recent
+    debit; never a depleted or never-debited one. The batch holding the
+    molecule's most used sample is bold too when there is a choice. Every
+    live sample's tooltip gives its debits, last debit and amount left.
+  - Name → id comes from CDD's own `molecules/<id>.json` lookups (new page
+    event `MOLECULE_LOADED`); CDD's own `inventory_samples` answers with
+    `include_depleted=true` are reused (`MOLECULE_SAMPLES`), its post-save
+    ones leave depleted samples out and are not. A Name field holding a
+    synonym falls back to the molecule CDD looked up last, and hints are
+    only applied when the picker's samples/batches belong to that molecule.
+
 ### Performance
 Three fixes ported from the old `dev` branch (`6212a99`, 2026-06-30, never
 merged; the branch is deleted).

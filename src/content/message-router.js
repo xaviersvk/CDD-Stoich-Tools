@@ -9,6 +9,7 @@ import { enrichRowNameSynonyms } from "./features/name-enrichment.js";
 import { onSamplePayload } from "./features/auto-fill.js";
 import { ensurePrintButtons } from "./features/print-buttons.js";
 import { markDepletedSamplesInSelector } from "./features/depleted-marker.js";
+import { noteMoleculeSamples, notePickedMolecule } from "./features/sample-picker-hints.js";
 import { prefetchMolecules } from "./api/molecule-image.js";
 import { updateBoxData } from "./features/ui-fixes/inventory-grid-colors.js";
 import { setCapturedCreate } from "./features/multi-position-sample-create/capture-store.js";
@@ -86,6 +87,16 @@ export function handleMessage(event) {
 
         case EVENTS.MOLECULE_SEARCH: {
             learnFromSearchResponse(data.payload?.body);
+            break;
+        }
+
+        case EVENTS.MOLECULE_LOADED: {
+            notePickedMolecule(data.payload);
+            break;
+        }
+
+        case EVENTS.MOLECULE_SAMPLES: {
+            noteMoleculeSamples(data.payload);
             break;
         }
 

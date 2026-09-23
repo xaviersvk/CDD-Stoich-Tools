@@ -18,6 +18,16 @@ export const EVENTS = {
   // molecule.s synonyms while the user is still choosing a batch. It is the
   // only moment that information exists before the entry is saved.
   MOLECULE_SEARCH: "MOLECULE_SEARCH",
+  // Page world -> content: CDD loaded /vaults/<v>/molecules/<id>.json — it
+  // does so for every entity a stoichiometry row's picker could offer, when
+  // the picker opens. Carries { vaultId, moleculeId, name }: the name the
+  // picker shows is how the sample picker's hints find the molecule.
+  MOLECULE_LOADED: "MOLECULE_LOADED",
+  // Page world -> content: CDD's own answer to
+  // /vaults/<v>/molecules/<id>/inventory_samples.json?include_depleted=true
+  // (the picker's samples, with depleted flags and inventory events), so the
+  // hints need no request of their own. { vaultId, moleculeId, samples }.
+  MOLECULE_SAMPLES: "MOLECULE_SAMPLES",
   // Page world -> content: a snapshot of an outgoing create-sample request body,
   // used as a faithful payload template when FormData(form) cannot reproduce it.
   CREATE_SAMPLE_CAPTURED: "CREATE_SAMPLE_CAPTURED",

@@ -96,6 +96,24 @@ function processJsonPayload(data, url) {
     post(EVENTS.MOLECULE_SEARCH, { body: data });
   }
 
+  const samplesUrl = (url || "").match(/\/vaults\/(\d+)\/molecules\/(\d+)\/inventory_samples\.json/);
+  if (samplesUrl && Array.isArray(data.inventory_samples) && /include_depleted=true/.test(url)) {
+    post(EVENTS.MOLECULE_SAMPLES, {
+      vaultId: samplesUrl[1],
+      moleculeId: samplesUrl[2],
+      samples: data.inventory_samples,
+    });
+  }
+
+  const moleculeUrl = (url || "").match(/\/vaults\/(\d+)\/molecules\/(\d+)\.json(?:[?#]|$)/);
+  if (moleculeUrl && data.id != null && data.name) {
+    post(EVENTS.MOLECULE_LOADED, {
+      vaultId: moleculeUrl[1],
+      moleculeId: moleculeUrl[2],
+      name: String(data.name),
+    });
+  }
+
   maybePostInventoryMolecules(data);
 
   if (!isElnPayload(data)) return;

@@ -17,6 +17,18 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 17.0.0 — 2026-09-23
+
+**Assay window per plate.** A run's *Data Summary* now opens with a table
+of each plate's control means ± SD, assay window, signal window and Z′, plus
+the run's mean ± SD.
+
+- Also CV % of each control and S/N. Pick the readout above the table;
+  **Copy** pastes it into Excel or PowerPoint.
+- Switch it off under *Settings → Heat map tooltip*.
+
+---
+
 ## 16.0.0 — 2026-09-20
 
 **Add batch fields to the registration forms you already have.** On

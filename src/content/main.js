@@ -50,6 +50,7 @@ import {initPlateListExport} from "./features/ui-fixes/plate-list-export";
 import {initPlateMapStructureTooltip} from "./features/ui-fixes/plate-map-structure-tooltip";
 import {initPlateMapExport} from "./features/ui-fixes/plate-map-export";
 import {initHeatMapWellFields} from "./features/ui-fixes/heat-map-well-fields";
+import {initRunAssayWindow} from "./features/ui-fixes/run-assay-window";
 import {initControlLayoutTools} from "./features/control-layout/init";
 import {initRunFormTemplates} from "./features/run-form-templates/init";
 import {initRegistrationProjectMirror} from "./features/ui-fixes/registration-project-mirror";
@@ -183,6 +184,10 @@ function init() {
   initPlateMapStructureTooltip();
   initPlateMapExport();
   initHeatMapWellFields();
+
+  // Assay window, signal window and Z′ per plate above a run's Data Summary,
+  // from the control wells of the run's heat maps.
+  initRunAssayWindow();
 
   // Control-layout editor: arm a control type, then drag a rectangle over the
   // wells (or click a row/column header) to set them all at once, plus named

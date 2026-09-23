@@ -19,6 +19,32 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [17.0.0] — 2026-09-23
+
+### Added
+- **Plate QC above a run's Data Summary** (`/vaults/<v>/runs/<r>`). Per
+  plate: n of positive / negative control wells, their mean ± SD, CV % of
+  each, assay window AW = mean(pos)/mean(neg), S/N = |Δmean|/SD(neg), signal
+  window SW = |Δmean|/(SD(pos) + SD(neg)) and
+  Z′ = 1 − 3·(SD(pos) + SD(neg))/|Δmean|; a footer row gives the run's
+  mean ± SD of each metric. Z′ below 0.5 is shown in red. A readout picker
+  (default: the heat map viewer's default readout) and **Copy** (TSV, the
+  browser's decimal separator, no grouping) sit above the table.
+- Why not from the Data Summary itself: CDD lists Z′ and the *negative*
+  control mean per plate but no positive control mean, so the assay window
+  cannot be derived from it (reported to CDD). The values come from the
+  control wells instead — a new CDD endpoint for the extension:
+  `GET …/runs/<r>/heat_maps` (readouts, plates) and
+  `GET …/runs/<r>/heat_maps/<plate>.js?readout_definition_id=<id>` per plate
+  (`td.heat-map-well.positive/.negative` + `CDD.HeatMap.wellDetails`).
+  Outliers flagged in CDD (`span.flaggable.flagged`) are left out, as CDD
+  does. Sample SD (n − 1); verified against CDD's own Z′ on run 2221879
+  (0.720 / 0.610 / 0.695 vs CDD 0.72 / 0.61 / 0.70).
+- A plate response is ~400 kB, so plates load three at a time and are cached
+  per plate + readout while the panel is open.
+- On by default; *Settings → Heat map tooltip → show the assay window…*
+  (`cddAssayWindow`, `shared/assay-window.js`).
+
 ## [16.0.0] — 2026-09-20
 
 ### Added

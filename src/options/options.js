@@ -73,6 +73,10 @@ import {
     saveElnShiftEnabled,
 } from "../shared/eln-shift-flag.js";
 import {
+    getAssayWindowEnabled,
+    saveAssayWindowEnabled,
+} from "../shared/assay-window.js";
+import {
     getElnIdToBatchEnabled,
     saveElnIdToBatchEnabled,
 } from "../shared/eln-id-to-batch.js";
@@ -1131,6 +1135,16 @@ async function initElnShiftLeftUI() {
     elnShiftLeftCheckbox.checked = await getElnShiftEnabled();
 }
 
+const assayWindowCheckbox = document.getElementById("assayWindow");
+
+assayWindowCheckbox.addEventListener("change", () => {
+    saveAssayWindowEnabled(assayWindowCheckbox.checked);
+});
+
+async function initAssayWindowUI() {
+    assayWindowCheckbox.checked = await getAssayWindowEnabled();
+}
+
 const elnIdToBatchCheckbox = document.getElementById("elnIdToBatch");
 
 elnIdToBatchCheckbox.addEventListener("change", () => {
@@ -1501,6 +1515,7 @@ initElnShiftLeftUI();
 initElnIdToBatchUI();
 initPanelSourcesUI();
 initHeatMapFieldsUI();
+initAssayWindowUI();
 initHplcInjectionUI();
 initInventoryScanUI();
 initRegistrationDefaultsUI();

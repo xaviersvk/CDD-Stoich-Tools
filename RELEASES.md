@@ -17,6 +17,15 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 18.0.0 — 2026-09-23
+
+**Duplicate a sample.** A new copy icon next to each sample's edit pencil
+(molecule → *Samples*) opens *Create a New Sample* already filled in like
+that sample — batch, current amount, units and fields. Pick a location and
+Save.
+
+---
+
 ## 17.1.0 — 2026-09-23
 
 **Picking a sample in the stoichiometry table.** Depleted samples are

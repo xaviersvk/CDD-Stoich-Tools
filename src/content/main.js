@@ -11,6 +11,7 @@ import { initNamePicker } from "./features/name-picker.js";
 import { initNameWatch } from "./features/name-watch.js";
 import { initPhraseCapture } from "./features/phrases/capture.js";
 import { initSamplePickerHints } from "./features/sample-picker-hints.js";
+import { initSampleDuplicate } from "./features/sample-duplicate.js";
 import {
   ensureDepletedStyle,
   markDepletedSamplesInSelector,
@@ -126,6 +127,9 @@ function init() {
   // Batch/sample picker: depleted crossed out and the most used sample
   // starred as soon as an entity is chosen, not after the entry saves.
   initSamplePickerHints();
+  // Molecule → Samples: "Duplicate sample" opens CDD's create dialog filled
+  // in like that sample; the user only picks a location.
+  initSampleDuplicate();
 
   renderFromState();
   ensurePrintButtons();

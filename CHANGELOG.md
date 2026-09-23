@@ -49,6 +49,11 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   per plate + readout while the panel is open.
 - On by default; its own *Settings → Plate QC* card and rail item with an
   on/off chip (`cddAssayWindow`, `shared/assay-window.js`).
+- The panel folds to its title line (▸ / ▾), remembered across runs
+  (`cddAssayWindowCollapsed`). Folded, it fetches nothing — the heat maps
+  are read the first time it is shown open. A run without plates or
+  readouts hides the panel rather than removing it, which would have had
+  the page observer rebuild it and fetch again.
 
 ## [16.0.0] — 2026-09-20
 

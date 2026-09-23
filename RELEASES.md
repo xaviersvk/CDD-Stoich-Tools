@@ -23,8 +23,9 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 plate's assay window, signal window and Z′.
 
 - Hover a header for what it means, a value for how it was calculated.
-- **Copy** pastes the table into Excel or PowerPoint; *Settings → Plate QC*
-  turns it off.
+- **Copy** pastes the table into Excel or PowerPoint.
+- Click **▸ Plate QC** to fold it to one line; *Settings → Plate QC* turns
+  it off.
 
 ---
 

@@ -13,16 +13,39 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
-# What's new in 15.10.0
-
----
-
 ## 18.0.0 — 2026-09-23
 
-**Duplicate a sample.** A new copy icon next to each sample's edit pencil
-(molecule → *Samples*) opens *Create a New Sample* already filled in like
-that sample — batch, current amount, units and fields. Pick a location and
-Save.
+**Everything new since 15.6, the last version in the stores.** Each step
+has its own section below.
+
+**Samples and inventory**
+
+- **Duplicate a sample:** the new copy icon next to a sample's edit pencil
+  (molecule → *Samples*) opens *Create a New Sample* filled in like that
+  sample. Pick a location and Save.
+- Sample picker in the stoichiometry table: depleted samples crossed out at
+  once, the most used one in bold.
+- Inventory Location opens as a folder tree you can search.
+- *Edit Locations → Scan racks* takes a whole shelf from a barcode scanner.
+- Ctrl+click a column header on Inventory search to copy the column.
+
+**Runs**
+
+- **▸ Plate QC** above a run's *Data Summary*: assay window, signal window
+  and Z′ per plate.
+
+**Settings (admins)**
+
+- **Copy** / **Paste** fields, protocol forms and registration forms between
+  vaults.
+- *Settings → Registration → Add fields to forms* puts batch fields on the
+  forms you already have.
+
+**Internal IDs**
+
+- Two products of one reaction now get two IDs, `MDX-113` and `MDX-113-B`.
+  Reagent rows are no longer filled.
+- To keep `MDX-113B`, pick **Letters** in *Settings → Product suffix*.
 
 ---
 

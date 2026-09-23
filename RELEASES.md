@@ -20,13 +20,11 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 ## 17.0.0 — 2026-09-23
 
 **Plate QC on every run.** A run's *Data Summary* now opens with each
-plate's assay window, signal window, Z′ and robust Z′, plus the run's
-mean ± SD.
+plate's assay window, signal window and Z′.
 
-- Also CV % and plate drift of each control, and S/N. Hover a header for
-  what it is, a value for how it was calculated.
-- Pick the readout above the table; **Copy** pastes it into Excel or
-  PowerPoint. Switch it off under *Settings → Plate QC*.
+- Hover a header for what it means, a value for how it was calculated.
+- **Copy** pastes the table into Excel or PowerPoint; *Settings → Plate QC*
+  turns it off.
 
 ---
 

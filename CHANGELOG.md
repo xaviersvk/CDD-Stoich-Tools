@@ -19,6 +19,19 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [18.0.1] — 2026-09-24
+
+### Fixed
+- **Browser froze when renaming an ELN entry** (`features/eln-title.js`).
+  Deleting a word in the middle of the title left two spaces in a row.
+  `document.title` reads back with whitespace collapsed, so the tab title we
+  wrote (`ID - foo  bar`) never equalled what came back (`ID - foo bar`);
+  every write replaced the `<title>` text node, which re-fired our own
+  `MutationObserver` on `<html>`, which wrote again — an endless microtask
+  loop that locked the tab. The entry title is now collapsed the same way
+  before it is compared and written. Present since the tab-title feature
+  (7.6.1); only a double space inside the title triggered it.
+
 ## [18.0.0] — 2026-09-23
 
 ### Added

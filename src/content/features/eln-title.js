@@ -91,7 +91,11 @@ function updateElnTabTitle() {
     const titleElement = document.querySelector('[data-autotest-id="title"]');
     if (!titleElement) return;
 
-    const elnTitle = titleElement.value?.trim();
+    // Collapsed the way document.title reads back ("strip and collapse ASCII
+    // whitespace"). Uncollapsed, "foo  bar" — a middle word deleted — never
+    // equals what we wrote, so every write re-fires the observer below and
+    // the tab locks up in a microtask loop.
+    const elnTitle = titleElement.value?.replace(/[\t\n\f\r ]+/g, " ").trim();
     if (!elnTitle) return;
 
     const entryId = readElnEntryId();

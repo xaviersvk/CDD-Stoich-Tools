@@ -13,6 +13,10 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 18.0.1 — 2026-09-24
+
+- Fixed: renaming a word in the middle of an ELN entry title no longer freezes the browser.
+
 ## 18.0.0 — 2026-09-23
 
 **Everything new since 15.6, the last version in the stores.**

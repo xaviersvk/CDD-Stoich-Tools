@@ -15,15 +15,10 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ## 18.1.0 — 2026-09-25
 
-Start the next step from a finished reaction: its products become the reactants of a new one.
-
-- Hover a reaction and click **⤳** (next to the print button), then press Ctrl+V below any reaction, in this entry or another.
-- The products keep their batch, sample and mass; the right side of the arrow is left empty for the new product.
-
-## 18.0.2 — 2026-09-25
+Start the next step from a finished reaction: hover it, click **⤳** and paste with Ctrl+V below any reaction — its products become the new reactants, with batch, sample and mass.
 
 - Fixed: the side panel shows sample location, batch and sample fields again after CDD's September update.
-- Fixed: panel row numbers and card order follow the table after you move a row.
+- Fixed: panel row numbers follow the table after you move a row.
 
 ## 18.0.1 — 2026-09-24
 

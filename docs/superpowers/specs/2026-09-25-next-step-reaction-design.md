@@ -1,7 +1,7 @@
 # Next step: a reaction whose products are the reactants — design
 
 Date: 2026-09-25
-Status: designed, feasibility check pending (see "Open risks")
+Status: designed, feasibility verified live (see "Verified on a test paste")
 
 Two icons beside CDD's own *Copy reaction* in a reaction's toolbar:
 
@@ -64,10 +64,10 @@ drawing keeps the arrow with an empty right side, ready for the next product.
   confirmed against the existing rows during implementation).
   `currentRowUid` = number of rows + 1. The lookup maps keep only the
   entries the remaining rows reference.
-- **Identity.** `key`, `data.nodeKey`, `data.id`, `data.attachedStructureId`
-  and `attachedStructureVersion` are handled the way the feasibility check
-  finds CDD needs (see below): either kept for CDD to replace on paste or
-  cleared.
+- **Identity.** `key` gets a fresh value; everything else is left for CDD.
+  Pasting gives the reaction a new feature id, a new `nodeKey` and a new
+  server-side attached structure (verified), so the copy is independent of
+  the original without the plugin clearing anything.
 - A reaction without a product (nothing drawn right of the arrow, no
   product row) gets both icons disabled, with the tooltip
   *No product to carry over*.
@@ -83,13 +83,15 @@ in the icon's tooltip.
 
 ### Insert next step below
 
-Same reaction, handed to CDD's own paste handling: the editor selection is
-placed on the empty paragraph after the reaction (one is created by
-CDD's normal Enter behaviour if needed — decided during the check) and a
-synthetic `paste` event carrying the same `text/plain` is dispatched on the
-editor. This writes into the entry, so it runs only on an explicit click,
-never automatically; the entry must be editable (the icon is hidden when
-CDD shows the entry read-only).
+Same reaction, handed to CDD's own paste handling. The caret goes to the
+start of the block right after the reaction (pasting ABOVE a reaction does
+nothing — measured by hand), and a synthetic `beforeinput` with
+`inputType: "insertFromPaste"` and a `DataTransfer` carrying the same
+`text/plain` is dispatched there. Slate takes pastes from `beforeinput`,
+not from the `paste` event (a synthetic `paste` alone is swallowed and
+inserts nothing). Works without window focus. This writes into the entry,
+so it runs only on an explicit click, never automatically; the icon is
+hidden when CDD shows the entry read-only.
 
 ## Units
 
@@ -104,17 +106,26 @@ CDD shows the entry read-only).
   clicked. (If it has to be switchable, it goes under *Settings → ELN*,
   off by default, per the panel-feature rule.)
 
-## Open risks — checked on a test entry before implementation
+## Verified on a test paste (entry 1000000814, 2026-09-25)
 
-1. **Pasting the unmodified CDD fragment** — what requests does CDD make
-   (a new attached structure? a new feature id?) and does the pasted copy
-   stay independent of the original? This decides the identity handling.
-2. **A rebuilt fragment** (products as reactants) — does CDD accept it,
-   render the drawing, and keep the table rows (not recalculate them away
-   on load)?
-3. **The synthetic paste** for *Insert below* — does CDD's handler accept an
-   untrusted `paste` event? If not, *Insert below* falls back to copying and
-   telling the user to press Ctrl+V.
+1. **Native paste of CDD's copy** below the reaction: new feature (65), new
+   `nodeKey`, new `attachedStructureId`; the original is untouched.
+   Pasting above the reaction inserts nothing.
+2. **A rebuilt fragment** (product moved left of the arrow, one reactant
+   row, lookup maps trimmed, image re-deflated from the new MRV): CDD
+   accepted it as feature 66 with its own new structure, rendered the
+   drawing with an empty product side and kept the row as saved —
+   1.2 g, 3.58 mmol, limiting reagent.
+3. **Synthetic `beforeinput insertFromPaste`** inserts it; a synthetic
+   `paste` event does not.
+
+Also seen: the body's reaction node carries `manualRowOrder: [uid…]` —
+the dragged row order. The new reaction's body node gets none (one row, or
+payload order).
+
+Molecule counting: a superatom (e.g. Boc) is a `<molecule>` NESTED in the
+product's molecule; the coordinate shift walks every `<atom>` under the
+moved molecule, nested ones included.
 
 ## Out of scope
 

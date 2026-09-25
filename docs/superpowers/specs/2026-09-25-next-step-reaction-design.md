@@ -3,12 +3,11 @@
 Date: 2026-09-25
 Status: designed, feasibility verified live (see "Verified on a test paste")
 
-Two icons beside CDD's own *Copy reaction* in a reaction's toolbar:
-
-- **Copy as next step** — puts a new reaction on the clipboard. Ctrl+V pastes
-  it into this entry or any other one.
-- **Insert next step below** — puts the same reaction straight under this
-  one in the current entry.
+One icon beside CDD's own *Copy reaction* in a reaction's toolbar:
+**Copy as next step** puts a new reaction on the clipboard; Ctrl+V pastes it
+below any reaction or paragraph, in this entry or another one. (An
+*Insert below* variant was considered and dropped by the user: pasting
+where it is wanted is enough.)
 
 The new reaction takes the products of this one as its reactants. The
 drawing keeps the arrow with an empty right side, ready for the next product.
@@ -69,7 +68,7 @@ drawing keeps the arrow with an empty right side, ready for the next product.
   server-side attached structure (verified), so the copy is independent of
   the original without the plugin clearing anything.
 - A reaction without a product (nothing drawn right of the arrow, no
-  product row) gets both icons disabled, with the tooltip
+  product row) gets the icon disabled, with the tooltip
   *No product to carry over*.
 
 ### Copy as next step
@@ -81,28 +80,16 @@ tick for a moment, the same as CDD's own copy. Clipboard failure (no
 permission, no focus) shows *Copy failed — click the page and try again*
 in the icon's tooltip.
 
-### Insert next step below
-
-Same reaction, handed to CDD's own paste handling. The caret goes to the
-start of the block right after the reaction (pasting ABOVE a reaction does
-nothing — measured by hand), and a synthetic `beforeinput` with
-`inputType: "insertFromPaste"` and a `DataTransfer` carrying the same
-`text/plain` is dispatched there. Slate takes pastes from `beforeinput`,
-not from the `paste` event (a synthetic `paste` alone is swallowed and
-inserts nothing). Works without window focus. This writes into the entry,
-so it runs only on an explicit click, never automatically; the icon is
-hidden when CDD shows the entry read-only.
-
 ## Units
 
 - `src/shared/next-step-reaction.js` — pure: `(reactionData) → nextData`,
   plus the MRV rewrite. No DOM, no fetch. Tested in Node against the live
   fragment captured from entry 1000000814.
-- `src/content/features/next-step-reaction.js` — the two icons in each
+- `src/content/features/next-step-reaction.js` — the icon in each
   reaction toolbar (placed after `copy-table`, same markup and tooltip
   style), the fetch of the fresh entry, the fragment encode/decode, the
-  image rebuild, clipboard write and the paste dispatch.
-- A setting? No: the icons sit in CDD's toolbar and do nothing until
+  image rebuild and the clipboard write.
+- A setting? No: the icon sits in CDD's toolbar and do nothing until
   clicked. (If it has to be switchable, it goes under *Settings → ELN*,
   off by default, per the panel-feature rule.)
 
@@ -117,7 +104,7 @@ hidden when CDD shows the entry read-only.
    drawing with an empty product side and kept the row as saved —
    1.2 g, 3.58 mmol, limiting reagent.
 3. **Synthetic `beforeinput insertFromPaste`** inserts it; a synthetic
-   `paste` event does not.
+   `paste` event does not. (Not needed now that there is no Insert below.)
 
 Also seen: the body's reaction node carries `manualRowOrder: [uid…]` —
 the dragged row order. The new reaction's body node gets none (one row, or
@@ -131,4 +118,5 @@ moved molecule, nested ones included.
 
 - Choosing which rows to carry (decided: products only).
 - Carrying reagents, solvents or reaction conditions.
-- Parallel (bulk) reactions: icons disabled there in v1.
+- Parallel (bulk) reactions: icon disabled there in v1.
+- Inserting into the entry directly (the user pastes).

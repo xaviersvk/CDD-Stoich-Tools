@@ -13,6 +13,13 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 18.1.0 — 2026-09-25
+
+Start the next step from a finished reaction: its products become the reactants of a new one.
+
+- Hover a reaction and click **⤳** (next to the print button), then press Ctrl+V below any reaction, in this entry or another.
+- The products keep their batch, sample and mass; the right side of the arrow is left empty for the new product.
+
 ## 18.0.2 — 2026-09-25
 
 - Fixed: the side panel shows sample location, batch and sample fields again after CDD's September update.

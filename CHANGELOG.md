@@ -19,6 +19,32 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [18.1.0] — 2026-09-25
+
+### Added
+- **Copy as next step** (`features/next-step-reaction.js`,
+  `shared/next-step-reaction.js`). A ⤳ button on every ELN reaction (on
+  hover, beside the print button) puts a new reaction on the clipboard whose
+  reactants are this reaction's products; Ctrl+V pastes it below a reaction
+  or into a paragraph, in any entry. Built from the saved entry: the drawing
+  (MRV) moves the product molecules — superatoms included — left of the
+  arrow and empties the product side; "+" signs on the product side move
+  with them, reactant-side signs and text boxes are dropped. The table keeps
+  only the old product rows, now reactants with their batch, sample and
+  mass; the first is the limiting reagent, moles are recomputed from mass,
+  purity and formula weight. The preview image is re-deflated from the new
+  MRV. The clipboard text is exactly CDD's own *Copy reaction* format
+  (`application/x-slate-fragment:` + base64); CDD assigns a new feature,
+  node key and structure on paste. A reaction without a product, or a
+  parallel one, copies nothing and says why.
+
+### Fixed
+- **Molecule pages the user may not open** (`api/molecule-page.js`): a
+  403/404 (e.g. a molecule from a vault without access) is logged as a debug
+  line instead of a warning — Chrome listed it among the extension's errors —
+  and is remembered for the page session instead of being fetched again on
+  every payload.
+
 ## [18.0.2] — 2026-09-25
 
 ### Fixed

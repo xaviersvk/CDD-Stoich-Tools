@@ -38,11 +38,22 @@ async function requestMoleculePage(vaultId, moleculeId) {
         // One line, not an object: the console reporters people paste from
         // print `[object Object]` and the status — the only thing that says
         // WHY — never makes it into the report.
-        console.warn(
+        //
+        // A molecule the user may not open (a vault they have no access to —
+        // entry 1000015157 links I32-SM-0001398 from vault 1000000089, 404 in
+        // both vaults) is an ordinary state, not a fault: debug, not warn,
+        // which Chrome would list among the extension's errors.
+        const line =
             `${LOG_PREFIX} molecule page failed: HTTP ${res.status} for molecule ` +
-            `${moleculeId} in vault ${vaultId} (${res.url || "no url"})`
-        );
-        throw new Error(`HTTP ${res.status}`);
+            `${moleculeId} in vault ${vaultId} (${res.url || "no url"})`;
+        const error = new Error(`HTTP ${res.status}`);
+        error.status = res.status;
+        if (isNoAccess(error)) {
+            console.debug(line);
+        } else {
+            console.warn(line);
+        }
+        throw error;
     }
 
     return {
@@ -56,10 +67,17 @@ async function requestMoleculePage(vaultId, moleculeId) {
     };
 }
 
+// 403 / 404: the page is not there for this user, and will not be for the
+// rest of the page session.
+function isNoAccess(err) {
+    return err?.status === 403 || err?.status === 404;
+}
+
 async function fetchMoleculePage(vaultId, moleculeId) {
     try {
         return await requestMoleculePage(vaultId, moleculeId);
     } catch (err) {
+        if (isNoAccess(err)) throw err;
         console.warn(`${LOG_PREFIX} failed to load molecule page`, {
             vaultId,
             moleculeId,
@@ -84,12 +102,15 @@ export function getMoleculePageInfo(vaultId, moleculeId) {
 
     const promise = fetchMoleculePage(vaultId, moleculeId);
 
-    // A failed page must not poison the cache for the rest of the session.
+    // A failed page must not poison the cache for the rest of the session —
+    // except a page the user may not open: asking again on every payload
+    // (CDD sends the entry on load and after each save) changes nothing.
     promise.then(
         (info) => {
             if (pageCache.get(cacheKey) === promise) settled.set(cacheKey, info);
         },
-        () => {
+        (err) => {
+            if (isNoAccess(err)) return;
             if (pageCache.get(cacheKey) === promise) pageCache.delete(cacheKey);
         }
     );

@@ -13,6 +13,11 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 18.0.2 — 2026-09-25
+
+- Fixed: the side panel shows sample location, batch and sample fields again after CDD's September update.
+- Fixed: panel row numbers and card order follow the table after you move a row.
+
 ## 18.0.1 — 2026-09-24
 
 - Fixed: renaming a word in the middle of an ELN entry title no longer freezes the browser.

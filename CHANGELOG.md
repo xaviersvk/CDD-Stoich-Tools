@@ -19,6 +19,32 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [18.0.2] — 2026-09-25
+
+### Fixed
+- **Panel cards showed only names after CDD's September update**
+  (new `features/inventory-sample-enrichment.js`). CDD now puts only a
+  stripped copy of each inventory sample into the entry payload: on entry
+  1000000814 older rows arrive with `batch_fields: {}`, a null location and
+  sample fields holding only "Sample ID". The panel no longer relies on that
+  copy: it fetches `/vaults/<v>/molecules/<m>/inventory_samples.json` itself
+  (one request per molecule, cached and shared with the sample picker hints,
+  in the sample's own vault) and resolves location, batch fields and sample
+  fields from the full sample.
+- **Row numbers wrong after moving a row in the stoichiometry table**
+  (`inject/parsers/sample-data.js`). CDD rows can now be dragged; the new
+  position lives in `row.displayIndex` (0-based within the role group) while
+  the payload order and `row.order` stay the same. Row numbers — which the
+  fill buttons use to find their row — and the card order now follow
+  `displayIndex`, so a fill can no longer land in the wrong row. Product
+  letters for ELN IDs follow the displayed order too.
+- **Cards flickered: full, bare, full** (`message-router.js`). A reaction
+  payload used to be drawn before its samples were fetched. It is now held
+  (the panel keeps what it shows) until the samples and batch fields are in,
+  at most 1.5 s, and drawn once. Samples and molecule pages already loaded are
+  applied synchronously (`peekRawMoleculeSamples`, `peekMoleculePageInfo`),
+  so the payloads CDD sends after every save redraw without a wait.
+
 ## [18.0.1] — 2026-09-24
 
 ### Fixed

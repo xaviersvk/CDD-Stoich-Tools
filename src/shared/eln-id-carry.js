@@ -256,10 +256,10 @@ export function productSuffix({ parallel, productIndex, style, markFirst }) {
 // letter (-1A, -1B) and take nothing from this sequence. A seven-pair block
 // must not push the entry's other product to H.
 //
-// Order is by reaction, then by payload order within the reaction -- CDD
-// displays a table's products last, as a group, in payload order, so this is
-// the order the entry shows. `sort` is stable, so the second key needs no
-// tie-breaker.
+// Order is by reaction, then by the order the samples arrive in within the
+// reaction -- the parser hands them over in the order the table prints them
+// (displayIndex, since rows can be dragged), so this is the order the entry
+// shows. `sort` is stable, so the second key needs no tie-breaker.
 export function productOrdinalOf(samples, sample) {
     if (!Array.isArray(samples) || !sample) return -1;
 

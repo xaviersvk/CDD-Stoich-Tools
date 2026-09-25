@@ -22,6 +22,9 @@ const LOG_PREFIX = "[CDD stoich plugin]";
 // cacheKey (`${vaultId}:${moleculeId}`) -> Promise<Document|null>
 const pageCache = new Map();
 
+// cacheKey -> { doc, vaultId }, once the page has arrived.
+const settled = new Map();
+
 // Split from fetchMoleculePage so the HTTP-status throw is raised OUTSIDE the
 // try that reports it: same two warnings, same rejection, but the throw is no
 // longer caught by its own catch.
@@ -82,12 +85,23 @@ export function getMoleculePageInfo(vaultId, moleculeId) {
     const promise = fetchMoleculePage(vaultId, moleculeId);
 
     // A failed page must not poison the cache for the rest of the session.
-    promise.catch(() => {
-        if (pageCache.get(cacheKey) === promise) pageCache.delete(cacheKey);
-    });
+    promise.then(
+        (info) => {
+            if (pageCache.get(cacheKey) === promise) settled.set(cacheKey, info);
+        },
+        () => {
+            if (pageCache.get(cacheKey) === promise) pageCache.delete(cacheKey);
+        }
+    );
 
     pageCache.set(cacheKey, promise);
     return promise;
+}
+
+// The page if it has already arrived, else null — for callers that must
+// decide before the next render and cannot wait on a promise.
+export function peekMoleculePageInfo(vaultId, moleculeId) {
+    return settled.get(`${vaultId}:${moleculeId}`) || null;
 }
 
 // Cached Promise<Document>, for the callers that only ever wanted the page.
@@ -111,5 +125,8 @@ export function forgetMoleculePage(moleculeId) {
     const suffix = `:${moleculeId}`;
     for (const key of [...pageCache.keys()]) {
         if (key.endsWith(suffix)) pageCache.delete(key);
+    }
+    for (const key of [...settled.keys()]) {
+        if (key.endsWith(suffix)) settled.delete(key);
     }
 }

@@ -19,14 +19,13 @@
 // vault 6885) and fetch() follows it transparently.
 
 import { STATE } from "../state.js";
-import { renderFromState } from "./sample-panel.js";
 import {
     resolveBatchFields,
     getFieldValueCaseInsensitive,
     collectCustomFields,
 } from "../../inject/parsers/field-resolvers.js";
 import { readBatchProps } from "../api/batch-registration-props.js";
-import { getMoleculePageInfo } from "../api/molecule-page.js";
+import { getMoleculePageInfo, peekMoleculePageInfo } from "../api/molecule-page.js";
 
 function getVaultId() {
     return location.pathname.match(/\/vaults\/(\d+)/)?.[1] || null;
@@ -62,10 +61,31 @@ function applyBatchFields(sample, fieldMap, vaultId) {
     sample.batchFieldsEnriched = true;
 }
 
-// Called after every SAMPLE_DATA payload lands in STATE. Safe to call often:
+function applyPage(sample, page) {
+    const props = readBatchProps(page.doc, sample.batchId);
+
+    if (props) {
+        applyBatchFields(sample, props.fieldMap, page.vaultId);
+    } else {
+        // The molecule page loaded but carries no renderer for this batch —
+        // enrichment is still COMPLETE: we now know the batch has no
+        // density, which density-memory's capture gate needs to trust
+        // user-typed values.
+        sample.batchFieldMap = {};
+        sample.batchVaultId = page.vaultId;
+        sample.batchFieldsEnriched = true;
+    }
+}
+
+// Called when a SAMPLE_DATA payload lands in STATE, BEFORE it is rendered:
+// molecules whose page has already arrived are applied synchronously, so a
+// repeated payload (CDD sends the entry on load and on every save) does not
+// draw cards without their batch fields first. Safe to call often:
 // already-enriched samples and cached molecules cost nothing.
-export function enrichBatchOnlySamples() {
-    const samples = STATE.lastPayload?.samples;
+//
+// → null when nothing is left to load, else Promise<boolean> (did any card
+// change). The caller renders.
+export function enrichBatchOnlySamples(samples = STATE.lastPayload?.samples) {
     if (!Array.isArray(samples) || !samples.length) return;
 
     const vaultId = getVaultId();
@@ -82,16 +102,20 @@ export function enrichBatchOnlySamples() {
         if (sample.batchFieldsEnriched) continue;
         if (!sample.batchId || !sample.moleculeId) continue;
 
+        const loaded = peekMoleculePageInfo(vaultId, sample.moleculeId);
+        if (loaded) {
+            applyPage(sample, loaded);
+            continue;
+        }
+
         const list = targetsByMolecule.get(sample.moleculeId) || [];
         list.push(sample);
         targetsByMolecule.set(sample.moleculeId, list);
     }
 
-    if (!targetsByMolecule.size) return;
+    if (!targetsByMolecule.size) return null;
 
-    const payloadAtStart = STATE.lastPayload;
-
-    Promise.all(
+    return Promise.all(
         Array.from(targetsByMolecule, async ([moleculeId, targets]) => {
             let page;
             try {
@@ -100,29 +124,8 @@ export function enrichBatchOnlySamples() {
                 return false;
             }
 
-            let changed = false;
-            for (const sample of targets) {
-                const props = readBatchProps(page.doc, sample.batchId);
-
-                if (props) {
-                    applyBatchFields(sample, props.fieldMap, page.vaultId);
-                } else {
-                    // The molecule page loaded but carries no renderer for
-                    // this batch — enrichment is still COMPLETE: we now know
-                    // the batch has no density, which density-memory's capture
-                    // gate needs to trust user-typed values.
-                    sample.batchFieldMap = {};
-                    sample.batchVaultId = page.vaultId;
-                    sample.batchFieldsEnriched = true;
-                }
-                changed = true;
-            }
-            return changed;
+            for (const sample of targets) applyPage(sample, page);
+            return targets.length > 0;
         })
-    ).then((results) => {
-        // Re-render only if the enriched payload is still the one on screen.
-        if (results.some(Boolean) && STATE.lastPayload === payloadAtStart) {
-            renderFromState();
-        }
-    });
+    ).then((results) => results.some(Boolean));
 }

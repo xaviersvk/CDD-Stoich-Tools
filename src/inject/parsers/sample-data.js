@@ -20,9 +20,16 @@ import {
 // The 1-based number the table PRINTS in each row's first cell. The table
 // does not render rows in payload order — it groups them by role:
 // reactants first, then agents (incl. solvents and solutions), then
-// products, each group in payload order. Parallel rows sit in the
-// lettered A/B/C block and get no number. Verified against the live
-// tables of entry 2504170 (all three reaction variants).
+// products. Parallel rows sit in the lettered A/B/C block and get no
+// number. Verified against the live tables of entry 2504170 (all three
+// reaction variants).
+//
+// Within a group the order is the row's `displayIndex` since CDD let rows
+// be dragged (2026-09): a moved row keeps its place in the payload and only
+// its displayIndex changes — entry 1000000814 lists Pd(PPh3)4 before Na2CO3
+// with displayIndex 1 and 0, and the table prints Na2CO3 first. The index
+// counts from 0 within the group. Rows without one keep their payload
+// position.
 function computeDisplayRowNumbers(rows) {
     const groupOf = (row) => {
         const role = String(row?.role || "").toLowerCase();
@@ -35,14 +42,41 @@ function computeDisplayRowNumbers(rows) {
     const numbers = new Array(rows.length).fill(null);
     let n = 0;
     for (let group = 0; group <= 2; group += 1) {
+        const members = [];
         rows.forEach((row, i) => {
-            if (groupOf(row) === group) {
+            if (groupOf(row) === group) members.push(i);
+        });
+
+        const rank = (i, position) => {
+            const index = Number(rows[i]?.displayIndex);
+            return Number.isFinite(index) ? index : position;
+        };
+        members
+            .map((i, position) => ({ i, position, rank: rank(i, position) }))
+            .sort((a, b) => a.rank - b.rank || a.position - b.position)
+            .forEach(({ i }) => {
                 n += 1;
                 numbers[i] = n;
-            }
-        });
+            });
     }
     return numbers;
+}
+
+// Cards in the order the table prints them. Numbered cards are sorted by
+// number among the slots numbered cards already hold; lettered parallel
+// cards stay where they are.
+function sortByRowNumber(output) {
+    const slots = [];
+    output.forEach((sample, i) => {
+        if (sample.rowNumber != null) slots.push(i);
+    });
+    const numbered = slots
+        .map((i) => output[i])
+        .sort((a, b) => a.rowNumber - b.rowNumber);
+    slots.forEach((slot, k) => {
+        output[slot] = numbered[k];
+    });
+    return output;
 }
 
 // The letter CDD prints beside each reagent/product pair of a parallel
@@ -247,10 +281,17 @@ export function extractRowsFromReactionFeature(feature, reactionIndex, parallelO
             // render (and the popup can discover) any of them dynamically.
             customBatchFields: collectCustomFields(getBatchFields(row)),
             customSampleFields: collectCustomFields(getSampleFields(row)),
+
+            // The vault the inventory sample lives in, for the content side
+            // to fetch the whole sample: the entry carries only a stripped
+            // copy of it (see content/features/inventory-sample-enrichment.js).
+            // A sample can sit in another vault than the entry.
+            sampleVaultId:
+                String(row?.sample?.url || "").match(/\/vaults\/(\d+)\//)?.[1] ?? null,
         });
     }
 
-    return output;
+    return sortByRowNumber(output);
 }
 
 export function extractAllReactionRows(payload) {

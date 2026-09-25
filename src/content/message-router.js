@@ -2,11 +2,12 @@
 import { STATE } from "./state.js";
 import { renderFromState } from "./features/sample-panel.js";
 import { enrichBatchOnlySamples } from "./features/batch-field-enrichment.js";
+import { enrichInventorySamples } from "./features/inventory-sample-enrichment.js";
 import { enrichSampleSynonyms } from "./features/synonym-enrichment.js";
 import { captureRowNames } from "./features/name-capture.js";
 import { learnFromSearchResponse } from "./features/search-learning.js";
 import { enrichRowNameSynonyms } from "./features/name-enrichment.js";
-import { onSamplePayload } from "./features/auto-fill.js";
+import { onSamplePayload, scheduleAutoFill } from "./features/auto-fill.js";
 import { ensurePrintButtons } from "./features/print-buttons.js";
 import { markDepletedSamplesInSelector } from "./features/depleted-marker.js";
 import { noteMoleculeSamples, notePickedMolecule } from "./features/sample-picker-hints.js";
@@ -17,6 +18,62 @@ import { notifyCreateResponse } from "./features/multi-position-sample-create/re
 import {EVENT_SOURCE, EVENTS} from "../shared/event-types";
 
 
+// How long a new payload may wait for its samples before it is drawn anyway.
+const HOLD_MS = 1500;
+
+// The payload waiting for its samples, so a newer one can supersede it.
+let incoming = null;
+
+// A reaction payload is drawn once, full — not bare first.
+//
+// The entry carries only a stripped copy of each sample; the rest is fetched
+// (inventory-sample-enrichment, batch-field-enrichment). Drawing the payload
+// before that fetch lands showed, on entry 1000000814: full "mentioned in
+// text" cards, then bare reaction cards, then full ones. So the payload is
+// held — the panel keeps what it shows — until its samples are in, and is
+// committed to STATE only then, so no other render can draw it bare either.
+// Anything already loaded is applied synchronously and costs no wait.
+function acceptSamplePayload(payload) {
+    incoming = payload;
+    const samples = payload?.samples;
+    const pending = [enrichInventorySamples(samples), enrichBatchOnlySamples(samples)]
+        .filter(Boolean);
+
+    if (!pending.length) {
+        commitSamplePayload(payload);
+        return;
+    }
+
+    let committed = false;
+    const commit = () => {
+        if (committed || incoming !== payload) return;
+        committed = true;
+        commitSamplePayload(payload);
+    };
+
+    Promise.all(pending).then((changed) => {
+        if (!committed) {
+            commit();
+            return;
+        }
+        // Drawn by the timeout before the samples arrived: draw again.
+        if (changed.some(Boolean) && STATE.lastPayload === payload) {
+            renderFromState();
+            scheduleAutoFill();
+        }
+    }, commit);
+
+    setTimeout(commit, HOLD_MS);
+}
+
+function commitSamplePayload(payload) {
+    STATE.lastPayload = payload;
+    renderFromState();
+    captureRowNames(STATE.lastPayload?.samples);
+    enrichSampleSynonyms();
+    enrichRowNameSynonyms();
+    onSamplePayload();
+}
 
 export function handleMessage(event) {
     if (event.source !== window) return;
@@ -37,13 +94,7 @@ export function handleMessage(event) {
         }
 
         case EVENTS.SAMPLE_DATA: {
-            STATE.lastPayload = data.payload || null;
-            renderFromState();
-            captureRowNames(STATE.lastPayload?.samples);
-            enrichBatchOnlySamples();
-            enrichSampleSynonyms();
-            enrichRowNameSynonyms();
-            onSamplePayload();
+            acceptSamplePayload(data.payload || null);
             break;
         }
 

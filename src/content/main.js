@@ -5,6 +5,7 @@ import { watchUrlChanges } from "./url-watcher.js";
 import { watchKetcherDialog } from "./overlay-watcher.js";
 import { ensurePanel, renderFromState, initSamplePanelFields, clearElnIdToBatchWrites } from "./features/sample-panel.js";
 import { ensurePrintButtons } from "./features/print-buttons.js";
+import { ensureNextStepButtons } from "./features/next-step-reaction.js";
 import { initSynonymEnrichment } from "./features/synonym-enrichment.js";
 import { initRowNameEnrichment } from "./features/name-enrichment.js";
 import { initNamePicker } from "./features/name-picker.js";
@@ -133,6 +134,7 @@ function init() {
 
   renderFromState();
   ensurePrintButtons();
+  ensureNextStepButtons();
   markDepletedSamplesInSelector();
   applyFileDialogFixes();
   injectAssociateFileBarStyles();
@@ -152,6 +154,7 @@ function init() {
     renderFromState();
 
     ensurePrintButtons();
+    ensureNextStepButtons();
     markDepletedSamplesInSelector();
   });
 

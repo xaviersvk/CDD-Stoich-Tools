@@ -13,6 +13,13 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 18.2.0 — 2026-09-29
+
+Take fields off a registration form faster: in the form editor (*Settings → Registration*), click **×** beside a field's pencil.
+
+- To remove several, Ctrl+click or Shift+click them, then **Remove N fields** at the top right.
+- Nothing is saved until you click **Save**; **Cancel** brings the fields back.
+
 ## 18.1.0 — 2026-09-25
 
 Start the next step from a finished reaction: hover it, click **⤳** and paste with Ctrl+V below any reaction — its products become the new reactants, with batch, sample and mass.

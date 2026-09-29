@@ -41,6 +41,7 @@ import {initFormClipboard} from "./features/ui-fixes/form-clipboard/init";
 import {initRegistrationSystems} from "./features/ui-fixes/registration-systems/init";
 import {initRegistrationFormClipboard} from "./features/ui-fixes/registration-form-clipboard/init";
 import {initRegistrationFormRows} from "./features/ui-fixes/registration-form-rows/init";
+import {initRegistrationFieldDelete} from "./features/ui-fixes/registration-field-delete";
 import {injectMoleculeLinksStyles} from "./features/ui-fixes/molecule-links-fixes";
 import {initElnShiftLeft} from "./features/ui-fixes/eln-shift-left";
 import {watchConsumedBatches} from "./features/ui-fixes/consumed-batches-collapse";
@@ -182,6 +183,7 @@ function init() {
   initRegistrationSystems();
   initRegistrationFormClipboard();
   initRegistrationFormRows();
+  initRegistrationFieldDelete();
 
   injectMoleculeLinksStyles();
   initElnShiftLeft();

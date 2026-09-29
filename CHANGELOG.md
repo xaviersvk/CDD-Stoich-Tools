@@ -19,6 +19,32 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [18.2.0] — 2026-09-29
+
+### Added
+- **Remove fields from a registration form in one click**
+  (`ui-fixes/registration-field-delete.js`). In the form editor on
+  Settings → Registration (Entity / Batch / Sample / Inventory event tabs),
+  every field gets a × beside its pencil. CDD draws the pencil as the
+  label's `::after`, which would land after anything put into the label, and
+  the label is a full-width block, so a sibling would wrap; the label
+  therefore gets its own pencil (CDD's glyph and font, read off the
+  `::after`) followed by the ×, and CDD's `::after` is hidden. A click on
+  that pencil still reaches CDD's Edit Field.
+- **Bulk removal**: Ctrl+click marks fields, Shift+click marks the range
+  from the last marked one, Esc clears the marks (with none marked, Esc
+  still closes the editor). A bar at the top right of the editor removes
+  the marked fields top to bottom. Marks are kept by layout id
+  (`data-draggable`), since React re-renders the fields after each removal;
+  marks on another tab are dropped.
+- Every removal does what the user would: it double-clicks the field and
+  presses Delete in CDD's Edit Field dialog (hidden while up). That only
+  calls `store.deleteField` on the layout being edited — the field returns
+  to the sidebar and nothing is sent until the form's own Save; Cancel
+  discards it. So neither the × nor the bar asks for confirmation. A field
+  whose Edit Field has no Delete keeps its dialog open, and a bulk run stops
+  there and says how many were removed.
+
 ## [18.1.0] — 2026-09-25
 
 ### Added

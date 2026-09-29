@@ -19,6 +19,21 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [18.3.0] — 2026-09-29
+
+### Added
+- **Plate names over a run's Plates count**
+  (`ui-fixes/run-plates-tooltip.js`). On a protocol page the runs table's
+  Plates cell is only a count linking to `/vaults/<v>/runs/<r>/heat_maps`;
+  hovering it now shows the run's plate names in a bubble. The names come
+  from that heat map viewer (`fetchRunHeatMapIndex` in
+  `api/run-heat-maps.js`: one `div#heat_map_plate_<id>` per plate, name in
+  its `<h4>`), fetched once per run and cached for the page; a failed fetch
+  is not cached. Same bubble behaviour as the plate location tooltip — one
+  delegated listener, one reused bubble, a late answer dropped unless the
+  pointer is still on that run. Any link to a run's heat maps gets the
+  bubble, not only the protocol table.
+
 ## [18.2.0] — 2026-09-29
 
 ### Added

@@ -29,7 +29,7 @@ import {
     refreshToolbarState,
 } from "./toolbar.js";
 import { ANNOTATOR_SELECTOR, isRunDefinition, readProps } from "./form-model.js";
-import { scanProtocolRunTables } from "./protocol-runs.js";
+import { attachRunPageDuplicate, resumeDuplicateFromHash, scanProtocolRunTables } from "./protocol-runs.js";
 import { ROOT_CLASS } from "./styles.js";
 
 let started = false;
@@ -87,6 +87,15 @@ export function initRunFormTemplates() {
             scanProtocolRunTables();
         } catch (err) {
             console.warn("[CDD Stoich Tools] protocol run table scan failed", err);
+        }
+
+        // The run page's "Duplicate this run", and the protocol page picking
+        // it up after the link lands there.
+        try {
+            attachRunPageDuplicate();
+            resumeDuplicateFromHash();
+        } catch (err) {
+            console.warn("[CDD Stoich Tools] duplicate run failed", err);
         }
     }
 

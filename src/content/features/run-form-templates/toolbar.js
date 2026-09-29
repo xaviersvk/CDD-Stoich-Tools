@@ -172,6 +172,8 @@ function buildToolbar(root, annotator) {
     );
     const pasteBtn = button("⎘ Paste into form");
     pasteBtn.dataset.needsEdit = "1";
+    // The Run Data table's "duplicate" presses it in the new-run form.
+    pasteBtn.dataset.cddRftPaste = "1";
     pasteBtn.dataset.titleReady = "Writes what Copy last put down into this run's definition. Unlike a template fill, this OVERWRITES fields that already have a value. CDD's own Save is still never pressed.";
 
     // A second way IN to pasting — for lines that went out to a spreadsheet

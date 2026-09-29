@@ -19,6 +19,27 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [18.4.0] — 2026-09-29
+
+### Added
+- **Duplicate a run** (`run-form-templates/protocol-runs.js`). A
+  `duplicate` button beside `copy` on every row of a protocol's Run Data
+  table, and **Duplicate this run** in a run page's left menu. Both read the
+  run's fields from its own page (the annotator's `react_props`, via
+  `readFilledFields` — every field, exact, unlike the table's columns), leave
+  out Run Date and Person as Copy does, put the lines on the clipboard and in
+  the paste stash, open the protocol page's "Create a new run"
+  (`#protocol-newRun-edit`) and press the bar's own Paste into form there, so
+  the report is Paste's. CDD's Create Run is never pressed.
+- The run page has no new-run form, so its menu item links to the protocol
+  with `#cdd-duplicate-run=<runId>`; the protocol page's scan picks that up
+  once the new-run form's bar exists, drops the hash (a reload does not
+  duplicate again) and reports progress and failures in the bar's status.
+  The icon carries CDD's `icon-16` class so it hangs in the list margin like
+  CDD's own.
+- The Paste into form button carries `data-cdd-rft-paste` so the duplicate
+  can find it without matching its label.
+
 ## [18.3.0] — 2026-09-29
 
 ### Added

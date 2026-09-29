@@ -13,6 +13,10 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 18.3.0 — 2026-09-29
+
+See which plates a run used: on a protocol page, hover the number in the **Plates** column.
+
 ## 18.2.0 — 2026-09-29
 
 Take fields off a registration form faster: in the form editor (*Settings → Registration*), click **×** beside a field's pencil.

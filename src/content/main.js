@@ -48,6 +48,7 @@ import {watchConsumedBatches} from "./features/ui-fixes/consumed-batches-collaps
 import {watchInventoryWellStructure} from "./features/ui-fixes/inventory-well-structure";
 import {initInventoryGridColors} from "./features/ui-fixes/inventory-grid-colors";
 import {initPlateLocationTooltip} from "./features/ui-fixes/plate-location-tooltip";
+import {initRunPlatesTooltip} from "./features/ui-fixes/run-plates-tooltip";
 import {initPlateLocationExport} from "./features/ui-fixes/plate-location-export";
 import {initPlateListLocations} from "./features/ui-fixes/plate-list-locations";
 import {initPlateListExport} from "./features/ui-fixes/plate-list-export";
@@ -191,6 +192,7 @@ function init() {
   watchInventoryWellStructure();
   initInventoryGridColors();
   initPlateLocationTooltip();
+  initRunPlatesTooltip();
   initPlateLocationExport();
   initPlateListLocations();
   initPlateListExport();

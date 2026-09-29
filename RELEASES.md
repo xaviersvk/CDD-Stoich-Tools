@@ -13,16 +13,12 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
-## 18.3.0 — 2026-09-29
+## 18.4.0 — 2026-09-29
 
-See which plates a run used: on a protocol page, hover the number in the **Plates** column.
+Start a new run from an old one: click **duplicate** beside a run in the protocol's Run Data table, or **Duplicate this run** in the run's left menu. The new-run form opens filled with its parameters (not date or person) — check it and press **Create Run**.
 
-## 18.2.0 — 2026-09-29
-
-Take fields off a registration form faster: in the form editor (*Settings → Registration*), click **×** beside a field's pencil.
-
-- To remove several, Ctrl+click or Shift+click them, then **Remove N fields** at the top right.
-- Nothing is saved until you click **Save**; **Cancel** brings the fields back.
+- Registration forms: remove a field with **×** beside its pencil; Ctrl+click or Shift+click to remove several. Nothing is saved until **Save**.
+- Protocol page: hover the **Plates** count to see the run's plate names.
 
 ## 18.1.0 — 2026-09-25
 

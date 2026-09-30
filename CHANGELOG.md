@@ -19,6 +19,34 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [18.5.1] — 2026-09-30
+
+### Changed
+- **Duplicated code merged into shared helpers** (no behaviour change;
+  reviewed line by line, browser-checked on the Plates list, plate-map and
+  run-plates bubbles and the three settings clipboards). Qodana reported 14
+  duplicated fragments; it now reports none.
+  - `content/utils/dom.js`: `watchDocument` (the rAF-coalesced
+    MutationObserver on `<html>`, now used by 21 features), `floatingBubble`
+    (three hover tooltips), `setNativeValue` (was copied five times).
+  - `content/utils/settings-page.js`, `settings-card.js`,
+    `form-definitions-api.js`, `form-walk.js`, `wait.js`: shared by the
+    field-, form- and registration-form clipboards, registration-form rows
+    and registration systems.
+  - Options page: `delete-button.js` (six ✕ buttons) and `disclaimer.css`,
+    which the public release page now appends to its `style.css`.
+  - `shared/phrases.js` `plainTextOf`, used by the selection reader too.
+- Fire-and-forget async calls say so with `void`; the dead import of the
+  disabled stoichiometry-table copy (off since 15.4.3) is gone.
+- `qodana.yaml`: `ExceptionCaughtLocallyJS` excluded (guard-throws inside a
+  try are house style); MODERATE ratchet 84 → 79. The check had been red
+  since 2026-08-25.
+
+### Fixed
+- **Scan racks tree filter** (`inventory-location-scan/tree-filter.js`):
+  `apply` had no `catch`, so a failed pass was an unhandled rejection. It now
+  warns and carries on, like the duplicate-name pass.
+
 ## [18.5.0] — 2026-09-30
 
 ### Added

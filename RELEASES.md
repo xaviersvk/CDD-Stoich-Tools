@@ -13,6 +13,11 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 18.5.1 — 2026-09-30
+
+- Under the hood: shared code tidied up; nothing changes in how you use it.
+- Fixed: a failed filter pass in **Scan racks** no longer leaves an error behind.
+
 ## 18.5.0 — 2026-09-30
 
 The Plates list now shows a plate's **Location** field (e.g. *Used: 2*) next to its **Inventory Location**. The plate hover bubble in search results and the plate-location CSV show it too.

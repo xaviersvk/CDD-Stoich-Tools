@@ -27,7 +27,8 @@ exclude:
 #
 # moderate: a RATCHET, not a target. The agreed ceiling is 20.
 #
-# 93 on 2026-09-30, up from 84. The check had been red since 2026-08-25 (at
+# 79 on 2026-09-30 (CI run 36721809997: 76 ignored promises, 3 deprecated,
+# 0 clones), after 93 earlier the same day, up from 84. The check had been red since 2026-08-25 (at
 # 112) and nobody was reading it, so a month of releases went in unchecked.
 # Walking the 28 new MODERATE findings one at a time:
 #
@@ -95,4 +96,4 @@ failureConditions:
   severityThresholds:
     critical: 0
     high: 0
-    moderate: 93
+    moderate: 79

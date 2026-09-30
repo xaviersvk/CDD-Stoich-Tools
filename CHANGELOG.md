@@ -19,6 +19,32 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [18.6.0] — 2026-09-30
+
+### Added
+- **Protocols column on a molecule's Plates tab**
+  (`table#molecule-plates-table`, new
+  `content/features/ui-fixes/molecule-plate-protocols.js`). Right after
+  *Name*: each protocol the plate was run in, linked, with its run dates
+  (linked to the runs); `—` for a plate never assayed, `?` when the plate page
+  could not be read.
+  - Source: the plate page's `div#plate-runs` table, read by
+    `api/plate-info.js`, which now returns `runs` beside the two locations —
+    same fetch and session cache as the Plates list columns and the plate hover
+    bubble, so no new request type.
+  - Lazy: a row is fetched only when it comes within 400 px of the viewport
+    (IntersectionObserver), 4 in flight. A molecule can sit on ~200 plates and
+    the tab is usually closed; rows of a hidden tab never intersect, so opening
+    a molecule costs nothing until the tab is viewed.
+  - A plate with two batches spans two rows (`rowspan="2"` on its Name `th`);
+    the Protocols cell copies the rowspan and the continuation row gets none.
+  - Checked in the browser on a molecule with 193 plates: 23 fetched on
+    opening the tab, the rest as they scrolled in; rowspan rows aligned.
+
+### Changed
+- The plate-page semaphore of the Plates list columns moved to
+  `content/utils/concurrency.js` as `createLimiter(limit)`, shared by both.
+
 ## [18.5.1] — 2026-09-30
 
 ### Changed

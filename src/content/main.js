@@ -51,6 +51,7 @@ import {initPlateLocationTooltip} from "./features/ui-fixes/plate-location-toolt
 import {initRunPlatesTooltip} from "./features/ui-fixes/run-plates-tooltip";
 import {initPlateLocationExport} from "./features/ui-fixes/plate-location-export";
 import {initPlateListLocations} from "./features/ui-fixes/plate-list-locations";
+import {initMoleculePlateProtocols} from "./features/ui-fixes/molecule-plate-protocols";
 import {initPlateListExport} from "./features/ui-fixes/plate-list-export";
 import {initPlateMapStructureTooltip} from "./features/ui-fixes/plate-map-structure-tooltip";
 import {initPlateMapExport} from "./features/ui-fixes/plate-map-export";
@@ -192,6 +193,7 @@ function init() {
   initRunPlatesTooltip();
   initPlateLocationExport();
   initPlateListLocations();
+  initMoleculePlateProtocols();
   initPlateListExport();
   initPlateMapStructureTooltip();
   initPlateMapExport();

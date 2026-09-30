@@ -12,6 +12,7 @@
 // Turbo body swaps, per-page changes, sort reloads -- stay idempotent.
 
 import { getPlateInfo } from "../../api/plate-info.js";
+import { createLimiter } from "../../utils/concurrency.js";
 import { watchDocument } from "../../utils/dom.js";
 
 const LOG_PREFIX = "[CDD plate plugin]";
@@ -60,24 +61,10 @@ function injectStyles() {
     document.head.appendChild(style);
 }
 
-// Tiny semaphore so at most CONCURRENCY plate pages load at once, however many
-// rows the observer enqueues (a 500-per-page list would otherwise fire 500
-// parallel fetches on first paint).
-let active = 0;
-const waiters = [];
-
-async function withSlot(task) {
-    if (active >= CONCURRENCY) {
-        await new Promise((resolve) => waiters.push(resolve));
-    }
-    active += 1;
-    try {
-        return await task();
-    } finally {
-        active -= 1;
-        waiters.shift()?.();
-    }
-}
+// At most CONCURRENCY plate pages load at once, however many rows the observer
+// enqueues (a 500-per-page list would otherwise fire 500 parallel fetches on
+// first paint).
+const withSlot = createLimiter(CONCURRENCY);
 
 function renderValue(cell, value, emptyTitle) {
     cell.replaceChildren();

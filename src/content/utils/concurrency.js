@@ -24,3 +24,23 @@ export async function mapLimit(items, limit, task, shouldStop) {
 
     return results;
 }
+
+// A semaphore for work that trickles in (observer callbacks, scroll): returns
+// `run(task)`, which waits until fewer than `limit` tasks are in flight.
+export function createLimiter(limit) {
+    let active = 0;
+    const waiters = [];
+
+    return async function run(task) {
+        if (active >= limit) {
+            await new Promise((resolve) => waiters.push(resolve));
+        }
+        active += 1;
+        try {
+            return await task();
+        } finally {
+            active -= 1;
+            waiters.shift()?.();
+        }
+    };
+}

@@ -13,6 +13,10 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 18.6.0 — 2026-09-30
+
+A molecule's **Plates** tab now shows which protocols each plate was run in, with the run dates. Click a protocol or a date to open it.
+
 ## 18.5.1 — 2026-09-30
 
 - Under the hood: shared code tidied up; nothing changes in how you use it.

@@ -19,6 +19,14 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [18.6.1] — 2026-09-30
+
+### Fixed
+- Molecule Plates tab, Protocols column: `white-space: nowrap` moved from the
+  whole dates span to each date link. A protocol with many runs on one plate
+  now wraps between dates instead of stretching the column past its
+  `max-width`.
+
 ## [18.6.0] — 2026-09-30
 
 ### Added

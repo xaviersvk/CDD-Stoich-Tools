@@ -13,6 +13,10 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 18.6.1 — 2026-09-30
+
+- Fixed: a plate with many runs no longer stretches the **Protocols** column; the dates wrap instead.
+
 ## 18.6.0 — 2026-09-30
 
 A molecule's **Plates** tab now shows which protocols each plate was run in, with the run dates. Click a protocol or a date to open it.

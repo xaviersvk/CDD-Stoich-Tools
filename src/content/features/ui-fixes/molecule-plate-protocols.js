@@ -51,7 +51,9 @@ function injectStyles() {
             display: block;
         }
 
-        ${TABLE_SELECTOR} td.${CELL_CLASS} .cdd-plate-protocols-dates {
+        /* Each date stays whole; a long list of runs wraps between dates
+           instead of widening the column. */
+        ${TABLE_SELECTOR} td.${CELL_CLASS} .cdd-plate-protocols-dates a {
             white-space: nowrap;
         }
 

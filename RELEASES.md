@@ -13,6 +13,10 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 18.5.0 — 2026-09-30
+
+The Plates list now shows a plate's **Location** field (e.g. *Used: 2*) next to its **Inventory Location**. The plate hover bubble in search results and the plate-location CSV show it too.
+
 ## 18.4.0 — 2026-09-29
 
 Start a new run from an old one: click **duplicate** beside a run in the protocol's Run Data table, or **Duplicate this run** in the run's left menu. The new-run form opens filled with its parameters (not date or person) — check it and press **Create Run**.

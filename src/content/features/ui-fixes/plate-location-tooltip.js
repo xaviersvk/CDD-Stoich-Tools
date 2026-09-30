@@ -1,6 +1,6 @@
 // content/features/ui-fixes/plate-location-tooltip.js
 //
-// Shows the plate's Inventory Location in a small hover bubble when the mouse is
+// Shows the plate's Inventory Location and Location field in a small hover bubble when the mouse is
 // over a plate link in the search results (the "Plate Fields -> Name" column,
 // e.g. <a href="/vaults/<v>/plates/<p>">platenew123</a>).
 //
@@ -92,19 +92,25 @@ function showMuted(text) {
     el.hidden = false;
 }
 
-function showLocation(location) {
+// One "Label: value" line per location the plate has set.
+function showLocations(lines) {
     const el = ensureBubble();
     el.classList.remove("cdd-plate-tooltip-muted");
-    el.replaceChildren();
+    el.replaceChildren(
+        ...lines.map(([labelText, valueText]) => {
+            const line = document.createElement("div");
 
-    const label = document.createElement("span");
-    label.className = "cdd-plate-tooltip-label";
-    label.textContent = "Inventory Location:";
+            const label = document.createElement("span");
+            label.className = "cdd-plate-tooltip-label";
+            label.textContent = labelText;
 
-    const value = document.createElement("span");
-    value.textContent = location;
+            const value = document.createElement("span");
+            value.textContent = valueText;
 
-    el.append(label, value);
+            line.append(label, value);
+            return line;
+        })
+    );
     el.hidden = false;
 }
 
@@ -122,15 +128,20 @@ async function onEnter(link, event) {
     positionBubble(event);
 
     const requestedPath = path;
-    const { inventoryLocation } = await getPlateInfo(path);
+    const { inventoryLocation, location } = await getPlateInfo(path);
 
     // Race guard: only paint if the pointer is still on the same plate link.
     if (activePath !== requestedPath) return;
 
-    if (inventoryLocation) {
-        showLocation(inventoryLocation);
+    const lines = [
+        ["Inventory Location:", inventoryLocation],
+        ["Location:", location],
+    ].filter(([, value]) => value);
+
+    if (lines.length) {
+        showLocations(lines);
     } else {
-        showMuted("No inventory location set");
+        showMuted("No location set");
     }
     positionBubble(event);
 }

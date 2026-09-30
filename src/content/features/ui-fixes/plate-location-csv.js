@@ -1,7 +1,8 @@
 // content/features/ui-fixes/plate-location-csv.js
 //
 // The tail both plate-location exports share: given a list of { name, href }
-// plates, look up each one's Inventory Location and download the CSV.
+// plates, look up each one's Inventory Location and Location field and
+// download the CSV.
 //
 // The two callers reach that list very differently — plate-list-export.js pages
 // through the Plates list, plate-location-export.js scans compound search
@@ -25,7 +26,7 @@ const CONCURRENCY = 4;
  *
  * Fetches each plate's page (api/plate-info.js — cached and shared with the
  * Location column and the hover bubble), writes progress into `status`, and
- * downloads a name + location CSV sorted by name for an easy walk of the lab.
+ * downloads a name + inventory location + location CSV sorted by name for an easy walk of the lab.
  *
  * `stop()` is polled by mapLimit between plates and again before the download,
  * so cancelling never leaves a half-resolved file on disk.
@@ -39,10 +40,10 @@ export async function resolveAndDownloadPlateLocations({ plates, status, stop })
         plates,
         CONCURRENCY,
         async (plate) => {
-            const { inventoryLocation } = await getPlateInfo(plate.href);
+            const { inventoryLocation, location } = await getPlateInfo(plate.href);
             done += 1;
             status.textContent = `Resolving locations… ${done}/${plates.length}`;
-            return [plate.name, inventoryLocation || ""];
+            return [plate.name, inventoryLocation || "", location || ""];
         },
         stop
     );
@@ -59,7 +60,7 @@ export async function resolveAndDownloadPlateLocations({ plates, status, stop })
 
     downloadCsv(
         "cdd-plate-locations.csv",
-        buildCsv(["Plate Name", "Inventory Location"], resolved)
+        buildCsv(["Plate Name", "Inventory Location", "Location"], resolved)
     );
     status.textContent = `Exported ${resolved.length} plate(s)`;
     return resolved.length;

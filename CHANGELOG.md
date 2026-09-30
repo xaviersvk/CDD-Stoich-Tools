@@ -19,6 +19,24 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [18.5.0] — 2026-09-30
+
+### Added
+- **The plate's Location field beside its Inventory Location.** A plate page
+  shows two values: the plate definition's free-text **Location**
+  (`#plate_data_table_location`, e.g. `Used: 2`) and the **Inventory
+  Location** (`#plate_data_table_inventory_location`). `api/plate-info.js`
+  now reads both from the same fetched plate page, so no extra request.
+  - Plates list (`plate-list-locations.js`): the column that showed the
+    inventory location is renamed **Inventory Location** (it used to be
+    headed "Location", which clashed with CDD's own field name) and a
+    **Location** column follows it.
+  - Search-results hover bubble (`plate-location-tooltip.js`): one line per
+    value that is set; "No location set" when neither is.
+  - Plate-location CSV (`plate-location-csv.js`, both exports): a third
+    column, **Location**.
+
+---
 ## [18.4.0] — 2026-09-29
 
 ### Added

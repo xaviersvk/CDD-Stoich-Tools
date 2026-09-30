@@ -1,9 +1,10 @@
 // content/features/ui-fixes/plate-list-locations.js
 //
-// Adds a "Location" column to the Plates list table (Explore Data -> Plates,
-// `table#plateList`). CDD shows the Inventory Location only on each plate's own
-// page, so every row starts with a small spinner and the value streams in as it
-// resolves -- same per-plate fetch + session cache as the hover bubble
+// Adds "Inventory Location" and "Location" columns to the Plates list table
+// (Explore Data -> Plates, `table#plateList`). CDD shows both -- the inventory
+// position and the plate definition's free-text Location field -- only on each
+// plate's own page, so every row starts with small spinners and the values
+// stream in as they resolve -- same per-plate fetch + session cache as the hover bubble
 // (api/plate-info.js), so a plate already hovered or exported fills instantly.
 //
 // Fetches are limited to a few in flight (the plate pages are full HTML), and
@@ -18,7 +19,14 @@ const STYLE_ID = "cdd-plate-list-locations-style";
 const TABLE_SELECTOR = "table#plateList";
 const CELL_CLASS = "cdd-plate-location-cell";
 const HEADER_CLASS = "cdd-plate-location-header";
-// Marks a row whose location cell is already inserted (loading or done).
+// The two columns, in display order right after "Name". `key` is the field of
+// getPlateInfo()'s result each one shows.
+const COLUMNS = [
+    { key: "inventoryLocation", label: "Inventory Location", empty: "No inventory location set" },
+    { key: "location", label: "Location", empty: "No location set" },
+];
+
+// Marks a row whose location cells are already inserted (loading or done).
 const ROW_ATTR = "data-cdd-location";
 
 // Concurrent plate-page fetches: enough to be quick, polite to CDD. Matches
@@ -70,33 +78,33 @@ async function withSlot(task) {
     }
 }
 
-function renderLocation(cell, inventoryLocation) {
+function renderValue(cell, value, emptyTitle) {
     cell.replaceChildren();
 
-    if (inventoryLocation) {
-        cell.textContent = inventoryLocation;
+    if (value) {
+        cell.textContent = value;
         return;
     }
 
     const empty = document.createElement("span");
     empty.className = "cdd-plate-location-empty";
     empty.textContent = "—";
-    empty.title = "No inventory location set";
+    empty.title = emptyTitle;
     cell.appendChild(empty);
 }
 
-async function fillCell(cell, platePath) {
-    const { inventoryLocation } = await withSlot(() => getPlateInfo(platePath));
+async function fillCells(cells, platePath) {
+    const info = await withSlot(() => getPlateInfo(platePath));
 
     // The row can be torn out mid-fetch (Turbo navigation, re-sort). The result
     // is cached, so the replacement row fills instantly on the next pass.
-    if (!cell.isConnected) return;
-
-    renderLocation(cell, inventoryLocation);
+    COLUMNS.forEach((column, i) => {
+        if (cells[i].isConnected) renderValue(cells[i], info[column.key], column.empty);
+    });
 }
 
-// Insert the "Location" header right after "Name" (the search box already says
-// "Search plates by name and location", so the pairing reads naturally).
+// Insert the headers right after "Name" (the search box already says "Search
+// plates by name and location", so the pairing reads naturally).
 function ensureHeader(table) {
     const headerRow = table.tHead?.rows?.[0];
     if (!headerRow || headerRow.querySelector(`.${HEADER_CLASS}`)) return;
@@ -104,10 +112,14 @@ function ensureHeader(table) {
     const nameHeader = headerRow.cells[0];
     if (!nameHeader) return;
 
-    const th = document.createElement("th");
-    th.className = HEADER_CLASS;
-    th.textContent = "Location";
-    nameHeader.after(th);
+    nameHeader.after(
+        ...COLUMNS.map(({ label }) => {
+            const th = document.createElement("th");
+            th.className = HEADER_CLASS;
+            th.textContent = label;
+            return th;
+        })
+    );
 }
 
 function ensureRow(row) {
@@ -118,27 +130,32 @@ function ensureRow(row) {
     const link = nameCell?.querySelector('a[href*="/plates/"]');
     const platePath = link?.getAttribute("href");
 
-    const cell = document.createElement("td");
-    cell.className = `${CELL_CLASS} text__wrap`;
+    const cells = COLUMNS.map(() => {
+        const cell = document.createElement("td");
+        cell.className = `${CELL_CLASS} text__wrap`;
+        return cell;
+    });
 
     if (!platePath) {
-        // Row without a plate link (defensive): keep the column aligned, empty.
-        nameCell?.after(cell);
+        // Row without a plate link (defensive): keep the columns aligned, empty.
+        nameCell?.after(...cells);
         return;
     }
 
-    const loading = document.createElement("span");
-    loading.className = "cdd-plate-location-loading";
-    loading.innerHTML = '<span class="fa fa-spin fa-circle-o-notch"></span>';
-    cell.appendChild(loading);
-    nameCell.after(cell);
+    for (const cell of cells) {
+        const loading = document.createElement("span");
+        loading.className = "cdd-plate-location-loading";
+        loading.innerHTML = '<span class="fa fa-spin fa-circle-o-notch"></span>';
+        cell.appendChild(loading);
+    }
+    nameCell.after(...cells);
 
-    fillCell(cell, platePath).catch((err) =>
+    fillCells(cells, platePath).catch((err) =>
         console.warn(`${LOG_PREFIX} plate list location failed`, { platePath, err })
     );
 }
 
-function ensureLocationColumn() {
+function ensureLocationColumns() {
     const table = document.querySelector(TABLE_SELECTOR);
     if (!table) return;
 
@@ -161,7 +178,7 @@ export function initPlateListLocations() {
         scheduled = true;
         requestAnimationFrame(() => {
             scheduled = false;
-            ensureLocationColumn();
+            ensureLocationColumns();
         });
     };
 

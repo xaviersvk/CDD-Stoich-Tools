@@ -12,35 +12,23 @@
 //     first identifier is one past it). Buttons: Cancel and Save.
 //   - Save is the only thing that reaches the server.
 
+import { setNativeValue } from "../../../utils/dom.js";
+import { findVisibleControl } from "../../../utils/settings-page.js";
+import { nextBeat, waitForBeats } from "../../../utils/wait.js";
+
 const ROOT = ".registrationSystemsPage";
 const CREATE_TEXT = /Create a new System/;
 
 /* ----- waiting ----- */
 
-// One beat: the next DOM mutation, or a short timer, whichever is first.
-// Timers alone are throttled in a hidden tab; mutations are not.
-function tick(ms = 50) {
-    return new Promise((resolve) => {
-        let done = false;
-        const finish = () => {
-            if (done) return;
-            done = true;
-            observer.disconnect();
-            resolve();
-        };
-        const observer = new MutationObserver(() => setTimeout(finish, 0));
-        observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true });
-        setTimeout(finish, ms);
-    });
+const BEAT_MS = 50;
+
+function tick() {
+    return nextBeat(BEAT_MS);
 }
 
-async function waitFor(predicate, tries = 100) {
-    for (let attempt = 0; attempt < tries; attempt += 1) {
-        const value = predicate();
-        if (value) return value;
-        await tick();
-    }
-    return null;
+function waitFor(predicate, tries = 100) {
+    return waitForBeats(predicate, tries, BEAT_MS);
 }
 
 /* ----- finding things ----- */
@@ -52,8 +40,7 @@ export function findRoot() {
 export function findCreateLink() {
     const root = findRoot();
     if (!root) return null;
-    return [...root.querySelectorAll("a, button")]
-        .find((el) => CREATE_TEXT.test(el.textContent) && el.offsetParent !== null) || null;
+    return findVisibleControl(root, CREATE_TEXT);
 }
 
 export function existingPrefixes() {
@@ -70,16 +57,6 @@ function openDialog() {
 }
 
 /* ----- writing ----- */
-
-// React tracks an input's value on the node; the prototype setter plus
-// input+change is what a keystroke looks like to it.
-function setNativeValue(input, value) {
-    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set;
-    if (setter) setter.call(input, value);
-    else input.value = value;
-    input.dispatchEvent(new Event("input", { bubbles: true }));
-    input.dispatchEvent(new Event("change", { bubbles: true }));
-}
 
 export async function createSystem(prefix, currentValue) {
     if (openDialog()) throw new Error("a Create dialog is already open");

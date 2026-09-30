@@ -19,6 +19,7 @@
 
 import { collectAllPlates, readResultTotal } from "../../api/search-plates.js";
 import { resolveAndDownloadPlateLocations } from "./plate-location-csv.js";
+import { watchDocument } from "../../utils/dom.js";
 
 const LOG_PREFIX = "[CDD plate plugin]";
 
@@ -212,23 +213,8 @@ export function initPlateLocationExport() {
 
     injectStyles();
 
-    let scheduled = false;
-    const run = () => {
-        if (scheduled) return;
-        scheduled = true;
-        requestAnimationFrame(() => {
-            scheduled = false;
-            ensureBlock();
-        });
-    };
-
-    // Observe <html>: Turbo swaps <body>, and the export dialog is re-rendered
-    // when results update, so we re-add our block on any relevant change.
-    const observer = new MutationObserver(run);
-    observer.observe(document.documentElement, {
-        childList: true,
-        subtree: true,
-    });
-
+    // The export dialog is re-rendered when results update, so we re-add our
+    // block on any relevant change.
+    const run = watchDocument(ensureBlock);
     run();
 }

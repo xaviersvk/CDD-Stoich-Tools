@@ -1067,6 +1067,21 @@ function reactionMark(group) {
     return number ? `R${number[0]}` : null;
 }
 
+// A sample card in its reaction's colour, carrying the R-number watermark.
+function reactionCard(group, color) {
+    const card = document.createElement("div");
+    card.className = "cdd-stoich-card";
+    card.style.borderLeftColor = color.border;
+    card.style.boxShadow = `0 0 0 1px ${color.glow} inset`;
+
+    const mark = reactionMark(group);
+    if (mark) {
+        card.dataset.cddReaction = mark;
+        card.style.setProperty("--cdd-reaction-color", color.border);
+    }
+    return card;
+}
+
 function buildFillButton(sample, offer) {
     const withUnits = offer.units ? `${offer.value} ${offer.units}` : offer.value;
     // A concentration fill makes the solution and picks its solvent in one
@@ -1533,16 +1548,7 @@ export function renderSamples(payload) {
         if (hplcBlock) groupBody.appendChild(hplcBlock);
 
         for (const sample of regulars) {
-            const card = document.createElement("div");
-            card.className = "cdd-stoich-card";
-            card.style.borderLeftColor = color.border;
-            card.style.boxShadow = `0 0 0 1px ${color.glow} inset`;
-
-            const mark = reactionMark(group);
-            if (mark) {
-                card.dataset.cddReaction = mark;
-                card.style.setProperty("--cdd-reaction-color", color.border);
-            }
+            const card = reactionCard(group, color);
 
             const purityValue = parsePurity(sample.purity);
             const lowPurity = !isNaN(purityValue) && purityValue <= getPurityWarnThreshold();
@@ -1613,16 +1619,7 @@ export function renderSamples(payload) {
             groupBody.appendChild(divider);
 
             for (const sample of products) {
-                const card = document.createElement("div");
-                card.className = "cdd-stoich-card";
-                card.style.borderLeftColor = color.border;
-                card.style.boxShadow = `0 0 0 1px ${color.glow} inset`;
-
-                const mark = reactionMark(group);
-                if (mark) {
-                    card.dataset.cddReaction = mark;
-                    card.style.setProperty("--cdd-reaction-color", color.border);
-                }
+                const card = reactionCard(group, color);
 
                 const cardTop = document.createElement("div");
                 cardTop.className = "cdd-stoich-card-top";

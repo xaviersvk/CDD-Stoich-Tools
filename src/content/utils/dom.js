@@ -57,3 +57,72 @@ export function positionAtCursor(el, event) {
     el.style.left = `${left}px`;
     el.style.top = `${top}px`;
 }
+
+// The one reused floating <div> behind each hover tooltip (plate location, plate
+// map structure, run plates). Created on first use and again whenever a Turbo
+// body swap has torn it out; hidden until the caller fills it.
+export function floatingBubble(id) {
+    let el = null;
+
+    const ensure = () => {
+        if (el && el.isConnected) return el;
+        el = document.createElement("div");
+        el.id = id;
+        el.hidden = true;
+        document.body.appendChild(el);
+        return el;
+    };
+
+    return {
+        ensure,
+        hide() {
+            if (el) el.hidden = true;
+        },
+        hidden: () => Boolean(el?.hidden),
+        position: (event) => positionAtCursor(ensure(), event),
+    };
+}
+
+// React tracks an input's value on the DOM node itself; assigning `.value`
+// hides the change from it. Go through the element's own prototype setter and
+// fire input + change, which is what a keystroke looks like to React.
+export function setNativeValue(element, value) {
+    const prototype = element instanceof HTMLTextAreaElement
+        ? window.HTMLTextAreaElement.prototype
+        : element instanceof HTMLSelectElement
+            ? window.HTMLSelectElement.prototype
+            : window.HTMLInputElement.prototype;
+    const setter = Object.getOwnPropertyDescriptor(prototype, "value")?.set;
+    if (setter) setter.call(element, value);
+    else element.value = value;
+    element.dispatchEvent(new Event("input", { bubbles: true }));
+    element.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
+// Run `callback` at most once per animation frame while the page changes.
+// Watches <html>, not <body>: Turbo swaps <body> on in-app navigation. `extra`
+// adds observer options (attributes, characterData) for the features that need
+// them.
+//
+// Returns the scheduler, so other triggers (the first pass, a settings change,
+// a Turbo event) share the same frame instead of running twice. Callers stay
+// responsible for calling it once to get the first pass.
+export function watchDocument(callback, extra = {}) {
+    let scheduled = false;
+    const schedule = () => {
+        if (scheduled) return;
+        scheduled = true;
+        requestAnimationFrame(() => {
+            scheduled = false;
+            callback();
+        });
+    };
+
+    new MutationObserver(schedule).observe(document.documentElement, {
+        childList: true,
+        subtree: true,
+        ...extra,
+    });
+
+    return schedule;
+}

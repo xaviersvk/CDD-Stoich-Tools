@@ -42,6 +42,7 @@ import {
 } from "../../../shared/cdd-form-data.js";
 import { createInventorySample } from "../../api/inventory-samples.js";
 import { createResultsPanel } from "./results-panel.js";
+import { watchDocument } from "../../utils/dom.js";
 
 const LOG = "[CDD multi-position]";
 const DEBUG = true; // verbose tracing ON for testing; flip off for production
@@ -261,10 +262,7 @@ function watchPickerGrids() {
 /* ---------------- lifecycle B: create dialog -> action bar ---------------- */
 
 function watchCreateDialog() {
-    let scheduled = false;
-
     function scan() {
-        scheduled = false;
         if (!isCreateSampleDialogOpen()) return;
 
         const dialog = findCreateDialogRoot();
@@ -275,14 +273,7 @@ function watchCreateDialog() {
         insertActionBar(dialog);
     }
 
-    function schedule() {
-        if (scheduled) return;
-        scheduled = true;
-        requestAnimationFrame(scan);
-    }
-
-    const observer = new MutationObserver(schedule);
-    observer.observe(document.documentElement, { childList: true, subtree: true });
+    const schedule = watchDocument(scan);
     schedule();
 }
 

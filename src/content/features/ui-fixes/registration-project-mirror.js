@@ -13,6 +13,8 @@
 // Both controls are the same underlying field: only CDD's original select
 // carries the `name`, so the POST body is unchanged.
 
+import { watchDocument } from "../../utils/dom.js";
+
 const STYLE_ID = "cdd-registration-project-mirror-style";
 const WRAP_CLASS = "cdd-project-mirror";
 const MIRROR_CLASS = "cdd-project-mirror-select";
@@ -269,23 +271,6 @@ export function initRegistrationProjectMirror() {
         true
     );
 
-    let scheduled = false;
-
-    const run = () => {
-        if (scheduled) return;
-        scheduled = true;
-
-        requestAnimationFrame(() => {
-            scheduled = false;
-            sync();
-        });
-    };
-
-    // <html>, not <body>: Turbo swaps <body> on in-app navigation.
-    new MutationObserver(run).observe(document.documentElement, {
-        childList: true,
-        subtree: true,
-    });
-
+    const run = watchDocument(sync);
     run();
 }

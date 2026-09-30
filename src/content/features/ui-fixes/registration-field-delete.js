@@ -28,6 +28,8 @@
 // Marks are kept by layout id (the field's data-draggable), not by element:
 // React re-renders the fields after every removal.
 
+import { watchDocument } from "../../utils/dom.js";
+
 const PAGE = /\/vaults\/\d+\/vault_registration_form_definitions$/;
 const FIELD = ".EditFormDialog .form-contents-container .FormField";
 const PAPER = ".EditFormDialog .MuiDialog-paper";
@@ -342,20 +344,12 @@ export function initRegistrationFieldDelete() {
         clearMarks();
     }, true);
 
-    let scheduled = false;
-    const schedule = () => {
-        if (scheduled) return;
-        scheduled = true;
-        requestAnimationFrame(() => {
-            scheduled = false;
-            try {
-                decorate();
-            } catch (error) {
-                console.warn("[CDD registration-field-delete] decorate failed", error);
-            }
-        });
-    };
-
-    new MutationObserver(schedule).observe(document.documentElement, { childList: true, subtree: true });
+    const schedule = watchDocument(() => {
+        try {
+            decorate();
+        } catch (error) {
+            console.warn("[CDD registration-field-delete] decorate failed", error);
+        }
+    });
     schedule();
 }

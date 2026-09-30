@@ -119,25 +119,11 @@ const BLOCK_LEVEL = new Set([
     "ul", "ol", "li", "blockquote", "pre", "table", "tr", "div",
 ]);
 
-// The plain-text twin of an HTML body: blocks on their own lines, table cells
-// tab-separated, list items bulleted. `textContent` runs blocks together,
-// which is why it is not used. Same rules as the capture side reads off a
-// selection, so a phrase edited in Settings comes out looking like one saved
-// from the ELN.
-//
-// Called on every save of an edited body, so `text` and `html` can never
-// drift apart — the clipboard carries both and a pasted phrase would
-// otherwise differ depending on where it landed.
-export function phraseTextFromHtml(html) {
-    const source = String(html ?? "");
-    if (!source.trim()) return "";
-    if (typeof DOMParser === "undefined") return "";
-
-    const doc = new DOMParser().parseFromString(
-        `<body>${source.slice(0, PHRASE_HTML_MAX * 2)}</body>`,
-        "text/html"
-    );
-
+// The walk behind both plain-text readings of a phrase: this module's
+// phraseTextFromHtml (an edited body) and the capture side's selection reader
+// (content/features/phrases/selection-html.js). One walk, so the two can never
+// disagree. Returns the raw text; each caller tidies whitespace its own way.
+export function plainTextOf(root) {
     let out = "";
     const walk = (node) => {
         for (const child of node.childNodes) {
@@ -176,9 +162,30 @@ export function phraseTextFromHtml(html) {
             walk(child);
         }
     };
-    walk(doc.body);
+    walk(root);
+    return out;
+}
 
-    return out
+// The plain-text twin of an HTML body: blocks on their own lines, table cells
+// tab-separated, list items bulleted. `textContent` runs blocks together,
+// which is why it is not used. Same rules as the capture side reads off a
+// selection, so a phrase edited in Settings comes out looking like one saved
+// from the ELN.
+//
+// Called on every save of an edited body, so `text` and `html` can never
+// drift apart — the clipboard carries both and a pasted phrase would
+// otherwise differ depending on where it landed.
+export function phraseTextFromHtml(html) {
+    const source = String(html ?? "");
+    if (!source.trim()) return "";
+    if (typeof DOMParser === "undefined") return "";
+
+    const doc = new DOMParser().parseFromString(
+        `<body>${source.slice(0, PHRASE_HTML_MAX * 2)}</body>`,
+        "text/html"
+    );
+
+    return plainTextOf(doc.body)
         .replace(INVISIBLE_RE, "")
         .replace(/[ \t]+\n/g, "\n")
         .replace(/\n{3,}/g, "\n\n")

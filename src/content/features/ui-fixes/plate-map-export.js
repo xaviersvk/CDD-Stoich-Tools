@@ -17,6 +17,7 @@
 // off those pages.
 
 import { buildCsv, downloadCsv } from "../../utils/csv.js";
+import { watchDocument } from "../../utils/dom.js";
 import { splitBatchAndSample } from "../../../shared/prefix-colors.js";
 
 const LOG_PREFIX = "[CDD plate plugin]";
@@ -148,23 +149,8 @@ export function initPlateMapExport() {
 
     injectStyles();
 
-    let scheduled = false;
-    const run = () => {
-        if (scheduled) return;
-        scheduled = true;
-        requestAnimationFrame(() => {
-            scheduled = false;
-            ensureLink();
-        });
-    };
-
-    // Observe <html>: Turbo swaps <body> on navigation and the plate map React
-    // component mounts after us; ensureLink() is idempotent per render.
-    const observer = new MutationObserver(run);
-    observer.observe(document.documentElement, {
-        childList: true,
-        subtree: true,
-    });
-
+    // The plate map React component mounts after us; ensureLink() is
+    // idempotent per render.
+    const run = watchDocument(ensureLink);
     run();
 }

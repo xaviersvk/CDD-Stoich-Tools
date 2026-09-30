@@ -23,6 +23,7 @@ on:
       - RELEASES.md
       - manifest.json
       - scripts/**
+      - src/options/disclaimer.css   # appended to the page's style.css
       - .github/workflows/pages.yml
   workflow_dispatch:
 

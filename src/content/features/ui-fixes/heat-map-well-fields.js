@@ -20,6 +20,7 @@ import {
     isSynonymLabel,
     normalizeFieldLabel,
 } from "../../../shared/heat-map-fields.js";
+import { watchDocument } from "../../utils/dom.js";
 
 const LOG_PREFIX = "[CDD plate plugin]";
 
@@ -273,17 +274,5 @@ export function initHeatMapWellFields() {
 
     // CDD builds the popup ~500 ms after hover; watch for it appearing. The
     // rAF debounce coalesces the balloon library's DOM churn.
-    let scheduled = false;
-    const observer = new MutationObserver(() => {
-        if (scheduled) return;
-        scheduled = true;
-        requestAnimationFrame(() => {
-            scheduled = false;
-            maybeAugment();
-        });
-    });
-    observer.observe(document.documentElement, {
-        childList: true,
-        subtree: true,
-    });
+    watchDocument(maybeAugment);
 }

@@ -9,6 +9,7 @@
 // administrator. Once mounted the bar stays through edit mode, where that
 // link is gone; it dies with the page.
 
+import { watchPageSettled } from "../../../utils/settings-page.js";
 import { kindsForPath } from "./field-model.js";
 import { findEditLink, findTable, isEditing } from "./page-dom.js";
 import { BAR_CLASS, buildBar } from "./panel.js";
@@ -30,22 +31,5 @@ export function initFieldClipboard() {
     injectFieldClipboardStyles();
     if (started) return;
     started = true;
-
-    let scheduled = false;
-    const schedule = () => {
-        if (scheduled) return;
-        scheduled = true;
-        setTimeout(() => {
-            scheduled = false;
-            try {
-                mount();
-            } catch (error) {
-                // A missing button must never cost the user the page.
-                console.warn("[CDD field-clipboard] mount failed", error);
-            }
-        }, 48);
-    };
-
-    new MutationObserver(schedule).observe(document.documentElement, { childList: true, subtree: true });
-    schedule();
+    watchPageSettled("field-clipboard", mount);
 }

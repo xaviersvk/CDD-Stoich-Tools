@@ -39,10 +39,13 @@ exclude:
 #     failed pass was an unhandled rejection; it now warns like markPass.
 #   - 9 clones: the field-, form- and registration-form clipboards were built
 #     as siblings (bar, card, API wrapper, mount), plus one value setter, one
-#     tree walk and one CSS block. Kept, and counted here: merging the three
-#     clipboards is a real refactor of UI that writes into a live vault, with no
-#     test suite. Same rule as the rAF/MutationObserver note in BACKLOG — do it
-#     because the code deserves it, on its own change, not to move a number.
+#     tree walk and one CSS block. Counted here at first, then merged in the
+#     follow-up commit on the same branch, together with all 14 clones Qodana
+#     listed: shared helpers in content/utils (watchDocument, floatingBubble,
+#     setNativeValue, settings-card, settings-page, form-definitions-api,
+#     form-walk, wait), options/delete-button.js and options/disclaimer.css.
+#     Reviewed line by line for unchanged behaviour; the ceiling below is the
+#     number CI measured after it.
 #
 # The HIGH side went 14 → 0: one dead import removed (stoich-table-copy, off
 # since 15.4.3) and ExceptionCaughtLocallyJS excluded above, with its reason.

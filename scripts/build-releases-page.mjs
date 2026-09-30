@@ -306,11 +306,18 @@ const version =
 const outDir = resolve(root, "site");
 mkdirSync(outDir, { recursive: true });
 
-const cssSource = resolve(here, "releases-page.css");
+// The page's own stylesheet plus the disclaimer band it shares with the
+// options page, written out as the one style.css the page links.
+const cssTarget = resolve(outDir, "style.css");
+writeFileSync(
+    cssTarget,
+    [resolve(here, "releases-page.css"), resolve(root, "src/options/disclaimer.css")]
+        .map((path) => readFileSync(path, "utf8"))
+        .join("\n")
+);
 // The extension's own icon, serving as both the hero logo and the favicon.
 const iconSource = resolve(root, "icons/icon128.png");
 
-copyFileSync(cssSource, resolve(outDir, "style.css"));
 copyFileSync(iconSource, resolve(outDir, "icon.png"));
 
 // GitHub Pages serves assets with `Cache-Control: max-age=600`, so a restyle is
@@ -319,7 +326,7 @@ copyFileSync(iconSource, resolve(outDir, "icon.png"));
 const fingerprint = (path) =>
     createHash("sha256").update(readFileSync(path)).digest("hex").slice(0, 8);
 
-const assets = { style: fingerprint(cssSource), icon: fingerprint(iconSource) };
+const assets = { style: fingerprint(cssTarget), icon: fingerprint(iconSource) };
 
 writeFileSync(resolve(outDir, "index.html"), renderPage(releases, version, tags, assets));
 

@@ -18,8 +18,10 @@
 // dash ("I25-SM" finds "AHL-SM"), then the target's first system — the one
 // thing a user may well want different, so the preview says which it chose.
 //
-// No DOM, no storage; the one import is the protocol model's wording.
+// No DOM, no storage; the imports are the protocol model's wording and the
+// tree walk the two models share.
 
+import { formWalker } from "../../../utils/form-walk.js";
 import { lostField } from "../form-clipboard/form-model.js";
 
 export const PLAN_ADD = "add";
@@ -27,40 +29,16 @@ export const PLAN_SAME_NAME = "same-name";
 export const PLAN_MISSING_FIELDS = "missing-fields";
 
 export const COMPONENTS = ["molecule", "batch", "sample", "inventory"];
-// Keys whose numeric values are layout, not references.
-const LAYOUT_NUMBERS = new Set(["context", "span"]);
 // The form keys CDD itself sends when it saves a registration form.
 const CARRIED = ["registration_type", "structureless_image_name", "allow_new_molecules"];
-
-function looksLikeId(key) {
-    return /(^|_)id$|ID$|_ids?$|template/i.test(key);
-}
 
 function cleanName(name) {
     return String(name ?? "").trim();
 }
 
-// `onCell` also gets the label of the label cell before it in its row, if any.
-function walk(node, onCell, onNumber, path = "", label = null) {
-    if (Array.isArray(node)) {
-        let lastLabel = null;
-        node.forEach((child, index) => {
-            if (child && typeof child.label === "string" && !("fieldID" in child)) lastLabel = cleanName(child.label);
-            walk(child, onCell, onNumber, `${path}[${index}]`, lastLabel);
-        });
-        return;
-    }
-    if (!node || typeof node !== "object") return;
-    if ("fieldID" in node || "$field" in node) onCell(node, path, label);
-    for (const [key, value] of Object.entries(node)) {
-        if (key === "fieldID" || key === "$field" || key === "$component" || key === "defaultValue" || key === "$default") continue;
-        if (typeof value === "number" && !LAYOUT_NUMBERS.has(key) && looksLikeId(key)) {
-            onNumber(key, value, `${path}.${key}`);
-        } else if (value && typeof value === "object") {
-            walk(value, onCell, onNumber, `${path}.${key}`);
-        }
-    }
-}
+// A Pick List default is a cell's own reference, translated in the cell
+// callbacks below, so the walk does not report it as a stray id.
+const walk = formWalker(["defaultValue", "$default"]);
 
 // { molecule: [def], batch: [def], … } → component → id → def
 function indexById(defs) {

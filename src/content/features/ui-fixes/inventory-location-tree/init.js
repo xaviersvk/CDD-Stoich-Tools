@@ -24,6 +24,7 @@
 
 import { injectLocationTreeStyles } from "./styles.js";
 import { createLocationTreeView } from "./tree-view.js";
+import { watchDocument } from "../../../utils/dom.js";
 
 // Folding fewer than this many options buys less than the extra click costs.
 const MIN_OPTIONS = 12;
@@ -67,11 +68,8 @@ export function initInventoryLocationTree() {
     started = true;
 
     const seen = new WeakSet();
-    let scheduled = false;
 
     function scan() {
-        scheduled = false;
-
         for (const listbox of document.querySelectorAll(LISTBOX_SELECTOR)) {
             if (seen.has(listbox)) continue;
             if (!isLocationListbox(listbox)) continue;
@@ -88,17 +86,6 @@ export function initInventoryLocationTree() {
         }
     }
 
-    function schedule() {
-        if (scheduled) return;
-        scheduled = true;
-        requestAnimationFrame(scan);
-    }
-
-    const observer = new MutationObserver(schedule);
-    observer.observe(document.documentElement, {
-        childList: true,
-        subtree: true,
-    });
-
+    const schedule = watchDocument(scan);
     schedule(); // a popup could already be open when we start
 }

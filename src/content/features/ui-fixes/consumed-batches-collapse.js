@@ -1,3 +1,5 @@
+import { watchDocument } from "../../utils/dom.js";
+
 let stylesInjected = false;
 let observerStarted = false;
 
@@ -211,25 +213,8 @@ export function watchConsumedBatches() {
     if (observerStarted) return;
     observerStarted = true;
 
-    let scheduled = false;
-
-    const run = () => {
-        if (scheduled) return;
-
-        scheduled = true;
-
-        requestAnimationFrame(() => {
-            scheduled = false;
-            collapseConsumedBatches();
-        });
-    };
-
-    const observer = new MutationObserver(run);
-
     // <html>, not <body>: Turbo swaps <body> on in-app navigation.
-    observer.observe(document.documentElement, {
-        childList: true,
-        subtree: true,
+    const run = watchDocument(collapseConsumedBatches, {
         characterData: true,
         attributes: true,
         attributeFilter: ["class"],

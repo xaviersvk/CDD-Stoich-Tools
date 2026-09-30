@@ -31,6 +31,7 @@
 import { STATE } from "../state.js";
 import { getMoleculeSamples, seedMoleculeSamples } from "../api/molecule-samples.js";
 import { markDepletedSamplesInSelector } from "./depleted-marker.js";
+import { watchDocument } from "../utils/dom.js";
 
 const LOG_PREFIX = "[CDD stoich plugin]";
 const STYLE_ID = "cdd-sample-picker-hints-style";
@@ -257,22 +258,11 @@ export function initSamplePickerHints() {
     if (started) return;
     started = true;
 
-    let scheduled = false;
-    schedule = () => {
-        if (scheduled) return;
-        scheduled = true;
-        requestAnimationFrame(() => {
-            scheduled = false;
-            try {
-                sync();
-            } catch (error) {
-                console.warn(LOG_PREFIX, "picker hints", error);
-            }
-        });
-    };
-
-    new MutationObserver(schedule).observe(document.documentElement, {
-        childList: true,
-        subtree: true,
+    schedule = watchDocument(() => {
+        try {
+            sync();
+        } catch (error) {
+            console.warn(LOG_PREFIX, "picker hints", error);
+        }
     });
 }

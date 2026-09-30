@@ -110,8 +110,12 @@ is not.
 **2026-09-30.** Red since 2026-08-25 (HIGH 14, MODERATE 112). Brought back to
 HIGH 0 and a ratchet of 93: the per-finding walk is in `qodana.yaml`.
 `ExceptionCaughtLocallyJS` is excluded there: guard-throws inside a try are
-house style. The 9 new clones (the three sibling clipboards) are counted, not
-merged.
+house style. All 14 clones were then merged into shared helpers, including
+the rAF + MutationObserver boilerplate below (`watchDocument` in
+`content/utils/dom.js`, 21 callers; the timer-based and observer-keeping
+sites stay hand-written on purpose). `doc.write` still stays: `srcdoc` would
+switch the doctype-less print sheet from quirks to standards mode and change
+its layout.
 
 **Where it stands.** `main` reports **94** (63 ignored promises, 24 deprecated,
 7 clones) against a ratchet of 80, so the check has been **red**. Branch

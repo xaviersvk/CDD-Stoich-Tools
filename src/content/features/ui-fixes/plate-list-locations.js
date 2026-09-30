@@ -12,6 +12,7 @@
 // Turbo body swaps, per-page changes, sort reloads -- stay idempotent.
 
 import { getPlateInfo } from "../../api/plate-info.js";
+import { watchDocument } from "../../utils/dom.js";
 
 const LOG_PREFIX = "[CDD plate plugin]";
 
@@ -172,23 +173,8 @@ export function initPlateListLocations() {
 
     injectStyles();
 
-    let scheduled = false;
-    const run = () => {
-        if (scheduled) return;
-        scheduled = true;
-        requestAnimationFrame(() => {
-            scheduled = false;
-            ensureLocationColumns();
-        });
-    };
-
-    // Observe <html>: Turbo swaps <body> on navigation and the table re-renders
-    // on sort/per-page changes; row/header attrs keep re-runs idempotent.
-    const observer = new MutationObserver(run);
-    observer.observe(document.documentElement, {
-        childList: true,
-        subtree: true,
-    });
-
+    // The table re-renders on sort/per-page changes; row/header attrs keep
+    // re-runs idempotent.
+    const run = watchDocument(ensureLocationColumns);
     run();
 }

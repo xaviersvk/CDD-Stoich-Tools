@@ -81,6 +81,7 @@ import {
     productSuffix,
 } from "../../../shared/eln-id-carry.js";
 import { readElnEntryId } from "../../utils/eln-entry-id.js";
+import { watchDocument } from "../../utils/dom.js";
 
 const STYLE_ID = "cdd-eln-id-carry-style";
 const FLASH_CLASS = "cdd-eln-id-filled";
@@ -368,24 +369,8 @@ export async function initElnIdToRegistration() {
 
     if (!onRegistration) return;
 
-    let scheduled = false;
-
-    const run = () => {
-        if (scheduled) return;
-        scheduled = true;
-
-        requestAnimationFrame(() => {
-            scheduled = false;
-            fillTargetField();
-        });
-    };
-
     // The form is rebuilt whenever the project or the registration form changes,
     // so this is not a one-shot. <html>, not <body>: Turbo swaps <body>.
-    new MutationObserver(run).observe(document.documentElement, {
-        childList: true,
-        subtree: true,
-    });
-
+    const run = watchDocument(fillTargetField);
     run();
 }

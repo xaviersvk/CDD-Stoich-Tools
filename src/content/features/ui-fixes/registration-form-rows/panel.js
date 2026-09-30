@@ -22,23 +22,13 @@
 //     server holds exactly the document that was sent;
 //   - the first failure stops everything, with the server's words.
 
+import { buildButtonBar, cardFoot, checkbox, el, filterInput, openCard, plural } from "../../../utils/settings-card.js";
 import { vaultIdFromPath, vaultName } from "../form-clipboard/api.js";
 import { listRegistrationForms, readRegistrationMap, updateRegistrationForm } from "../registration-form-clipboard/api.js";
 import { PLAN_ADD, PLAN_DEFAULT, PLAN_MOVE, fileFieldIds, planForm, putBody, resolveChosen, sameDocument, verifySaved, withRows } from "./row-model.js";
 import { readRowSelection, writeRowSelection } from "./selection.js";
 
 export const BAR_CLASS = "cdd-regform-rows-bar";
-
-function el(tag, className, text) {
-    const node = document.createElement(tag);
-    if (className) node.className = className;
-    if (text != null) node.textContent = text;
-    return node;
-}
-
-function plural(count, noun) {
-    return `${count} ${noun}${count === 1 ? "" : "s"}`;
-}
 
 function cleanName(name) {
     return String(name ?? "").trim();
@@ -61,13 +51,7 @@ function downloadBackup(vaultId, forms) {
 export function buildBar() {
     const vaultId = vaultIdFromPath(location.pathname);
     // The second class is the field clipboard's: same buttons, same card.
-    const bar = el("span", `${BAR_CLASS} cdd-fc-bar`);
-    const openButton = el("button", "cdd-fc-button", "Add fields to forms");
-    openButton.type = "button";
-    const status = el("span", "cdd-fc-status");
-    const card = el("div", "cdd-fc-card");
-    card.hidden = true;
-    bar.append(openButton, status, card);
+    const { bar, buttons: [openButton], status, card } = buildButtonBar(`${BAR_CLASS} cdd-fc-bar`, ["Add fields to forms"]);
 
     openButton.addEventListener("click", async () => {
         status.textContent = "";
@@ -83,24 +67,16 @@ export function buildBar() {
             return;
         }
         // A disabled File field still makes its row a file row.
-        openCard(forms, map.defs.batch.filter((def) => def && !def.disabled), remembered, fileFieldIds(map.defs.batch));
+        openFieldsCard(forms, map.defs.batch.filter((def) => def && !def.disabled), remembered, fileFieldIds(map.defs.batch));
     });
 
-    function openCard(forms, defs, remembered, fileIds) {
-        card.textContent = "";
-        card.hidden = false;
-        const head = el("div", "cdd-fc-head");
-        head.append(el("span", "cdd-fc-title", "Add batch fields to forms"));
-        head.append(el("span", "cdd-fc-note", `${plural(forms.length, "form")} in ${vaultName() || "this vault"}`));
-        card.append(head);
+    function openFieldsCard(forms, defs, remembered, fileIds) {
+        openCard(card, "Add batch fields to forms", `${plural(forms.length, "form")} in ${vaultName() || "this vault"}`);
 
         /* ----- the fields ----- */
         const fieldsHead = el("div", "cdd-fc-section");
         fieldsHead.append(el("span", null, "Fields, in the order they go into the row"));
-        const filter = document.createElement("input");
-        filter.type = "search";
-        filter.className = "cdd-fc-filter";
-        filter.placeholder = "Filter";
+        const filter = filterInput();
         fieldsHead.append(filter);
         const fieldList = el("div", "cdd-fc-list");
         card.append(fieldsHead, fieldList);
@@ -111,9 +87,7 @@ export function buildBar() {
 
         function addFieldRow(name, def, rememberedDefault, checked) {
             const line = el("label", "cdd-fc-row");
-            const box = document.createElement("input");
-            box.type = "checkbox";
-            box.checked = checked;
+            const box = checkbox(checked);
             const order = el("span", "cdd-fc-order");
             line.append(box, order, el("span", "cdd-fc-name", name));
             let select = null;
@@ -186,8 +160,7 @@ export function buildBar() {
         card.append(formList);
         const formRows = forms.map((form) => {
             const line = el("label", "cdd-fc-row");
-            const box = document.createElement("input");
-            box.type = "checkbox";
+            const box = checkbox(false);
             const why = el("span", "cdd-fc-detail");
             line.append(box, el("span", "cdd-fc-name", form.name), el("span", "cdd-fc-type", form.registration_system?.prefix || ""), why);
             formList.append(line);
@@ -197,15 +170,8 @@ export function buildBar() {
         });
         for (const row of formRows) row.box.addEventListener("change", () => { row.touched = true; });
 
-        const foot = el("div", "cdd-fc-foot");
-        const action = el("button", "cdd-fc-add", "");
-        action.type = "button";
-        const cancel = el("button", "cdd-fc-cancel", "Cancel");
-        cancel.type = "button";
-        cancel.addEventListener("click", () => { card.hidden = true; });
         const footNote = el("span", "cdd-fc-note", "A backup of the forms is downloaded first.");
-        foot.append(action, cancel, footNote);
-        card.append(foot);
+        const { action, cancel } = cardFoot(card, { extra: [footNote] });
 
         let cells = [];
 

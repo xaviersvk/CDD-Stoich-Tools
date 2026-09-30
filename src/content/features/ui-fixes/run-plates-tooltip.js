@@ -13,7 +13,7 @@
 // the pointer is still on the run it was asked for.
 
 import { fetchRunHeatMapIndex } from "../../api/run-heat-maps.js";
-import { positionAtCursor } from "../../utils/dom.js";
+import { floatingBubble } from "../../utils/dom.js";
 
 const LOG_PREFIX = "[CDD run plates]";
 
@@ -24,7 +24,7 @@ const LINK_SELECTOR = 'a[href$="/heat_maps"]';
 const PATH_RE = /^\/vaults\/(\d+)\/runs\/(\d+)\/heat_maps$/;
 
 let started = false;
-let bubble = null;
+const bubble = floatingBubble(BUBBLE_ID);
 // The heat map path the bubble is showing or loading: the race guard.
 let activePath = null;
 // path → Promise<string[]>
@@ -66,25 +66,15 @@ function injectStyles() {
     document.head.appendChild(style);
 }
 
-function ensureBubble() {
-    if (bubble && bubble.isConnected) return bubble;
-
-    bubble = document.createElement("div");
-    bubble.id = BUBBLE_ID;
-    bubble.hidden = true;
-    document.body.appendChild(bubble);
-    return bubble;
-}
-
 function showMuted(text) {
-    const el = ensureBubble();
+    const el = bubble.ensure();
     el.classList.add("cdd-run-plates-muted");
     el.textContent = text;
     el.hidden = false;
 }
 
 function showNames(names) {
-    const el = ensureBubble();
+    const el = bubble.ensure();
     el.classList.remove("cdd-run-plates-muted");
     el.replaceChildren();
 
@@ -103,7 +93,7 @@ function showNames(names) {
 
 function hideBubble() {
     activePath = null;
-    if (bubble) bubble.hidden = true;
+    bubble.hide();
 }
 
 function plateNames(path) {
@@ -126,7 +116,7 @@ async function onEnter(link, event) {
     const path = link.getAttribute("href");
     activePath = path;
     showMuted("Loading plates…");
-    positionAtCursor(ensureBubble(), event);
+    bubble.position(event);
 
     let names;
     try {
@@ -140,7 +130,7 @@ async function onEnter(link, event) {
 
     if (names.length) showNames(names);
     else showMuted("No plates");
-    positionAtCursor(ensureBubble(), event);
+    bubble.position(event);
 }
 
 export function initRunPlatesTooltip() {
@@ -168,9 +158,9 @@ export function initRunPlatesTooltip() {
 
     // Keep the bubble next to the cursor while hovering the link.
     document.addEventListener("mousemove", (event) => {
-        if (activePath === null || bubble?.hidden) return;
+        if (activePath === null || bubble.hidden()) return;
         if (!runLink(event.target)) return;
-        positionAtCursor(ensureBubble(), event);
+        bubble.position(event);
     });
 
     // A Turbo navigation can tear out the body (and our bubble) mid-hover.

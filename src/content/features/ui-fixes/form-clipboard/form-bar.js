@@ -30,45 +30,23 @@
 //   describe(neutral, map)            → a note for a form that will be made
 //   clipboard: { read(), write(entry), onChanged(callback) }
 
+import {
+    buildButtonBar,
+    cardFoot,
+    checkbox,
+    el,
+    openCard,
+    plural,
+    when,
+} from "../../../utils/settings-card.js";
 import { vaultIdFromPath, vaultName } from "./api.js";
 import { PLAN_ADD, PLAN_MISSING_FIELDS, PLAN_SAME_NAME, explainProblems, suggestName } from "./form-model.js";
-
-function el(tag, className, text) {
-    const node = document.createElement(tag);
-    if (className) node.className = className;
-    if (text != null) node.textContent = text;
-    return node;
-}
-
-function plural(count, noun) {
-    return `${count} ${noun}${count === 1 ? "" : "s"}`;
-}
-
-function when(timestamp) {
-    return new Date(timestamp).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
-}
-
-function checkbox(checked, disabled) {
-    const box = document.createElement("input");
-    box.type = "checkbox";
-    box.checked = checked;
-    box.disabled = disabled;
-    return box;
-}
 
 export function buildFormBar(adapter) {
     const vaultId = vaultIdFromPath(location.pathname);
     // The second class is the field clipboard's: same buttons, same card.
-    const bar = el("span", `${adapter.barClass} cdd-fc-bar`);
-
-    const copyButton = el("button", "cdd-fc-button", "Copy forms");
-    copyButton.type = "button";
-    const pasteButton = el("button", "cdd-fc-button", "Paste");
-    pasteButton.type = "button";
-    const status = el("span", "cdd-fc-status");
-    const card = el("div", "cdd-fc-card");
-    card.hidden = true;
-    bar.append(copyButton, pasteButton, status, card);
+    const { bar, buttons: [copyButton, pasteButton], status, card } =
+        buildButtonBar(`${adapter.barClass} cdd-fc-bar`, ["Copy forms", "Paste"]);
 
     async function refresh() {
         try {
@@ -88,23 +66,11 @@ export function buildFormBar(adapter) {
         }
     }
 
-    function openCard(title, note) {
-        card.textContent = "";
-        card.hidden = false;
-        const head = el("div", "cdd-fc-head");
-        head.append(el("span", "cdd-fc-title", title));
-        head.append(el("span", "cdd-fc-note", note));
-        card.append(head);
+    function openListCard(title, note) {
+        openCard(card, title, note);
         const list = el("div", "cdd-fc-list");
         card.append(list);
-        const foot = el("div", "cdd-fc-foot");
-        const action = el("button", "cdd-fc-add", "");
-        action.type = "button";
-        const cancel = el("button", "cdd-fc-cancel", "Cancel");
-        cancel.type = "button";
-        cancel.addEventListener("click", () => { card.hidden = true; });
-        foot.append(action, cancel);
-        card.append(foot);
+        const { action, cancel } = cardFoot(card);
         return { list, action, cancel };
     }
 
@@ -127,7 +93,7 @@ export function buildFormBar(adapter) {
             return;
         }
 
-        const { list, action } = openCard(adapter.copyTitle, `${plural(forms.length, "form")} in ${vaultName() || "this vault"}`);
+        const { list, action } = openListCard(adapter.copyTitle, `${plural(forms.length, "form")} in ${vaultName() || "this vault"}`);
         const rows = forms.map((form) => {
             const { form: neutral, unknownIds, missingNames } = adapter.neutralize(form, map);
             const problems = [...unknownIds, ...missingNames];
@@ -178,7 +144,7 @@ export function buildFormBar(adapter) {
         const targetNames = forms.map((form) => String(form.name ?? "").trim());
         const plan = adapter.planForms(entry.forms, targetNames, map);
         const sameVault = String(entry.vaultId) === String(vaultId);
-        const { list, action, cancel } = openCard(adapter.pasteTitle,
+        const { list, action, cancel } = openListCard(adapter.pasteTitle,
             `${plural(entry.forms.length, "form")} from ${entry.vaultName || "vault " + entry.vaultId}, copied ${when(entry.copiedAt)}`
             + (sameVault ? " — the same vault, so each copy needs its own name" : ""));
 

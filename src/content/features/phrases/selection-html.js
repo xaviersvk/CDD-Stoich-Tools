@@ -14,6 +14,8 @@
 // Slate-specific blocks that cannot round-trip through HTML — the reaction
 // table, attachments, timestamps, structures — keep their visible text only.
 
+import { plainTextOf } from "../../../shared/phrases.js";
+
 const BLOCK_TAGS = {
     p: "p",
     h1: "h1", h2: "h2", h3: "h3", h4: "h4", h5: "h5", h6: "h6",
@@ -110,51 +112,12 @@ function convert(node, out) {
     }
 }
 
-const BLOCK_LEVEL = new Set(["p", "h1", "h2", "h3", "h4", "h5", "h6", "ul", "ol", "li", "blockquote", "pre", "table", "tr", "div"]);
-
 // Plain text from the semantic tree — blocks on their own lines, table
 // cells tab-separated, list items bulleted. Range.toString() runs blocks
-// together, which is why it is not used.
+// together, which is why it is not used. The walk is shared with Settings'
+// phrase editor (shared/phrases.js), so both read a body the same way.
 function toPlainText(root) {
-    let out = "";
-    const walk = (node) => {
-        for (const child of node.childNodes) {
-            if (child.nodeType === Node.TEXT_NODE) {
-                out += child.nodeValue;
-                continue;
-            }
-            if (child.nodeType !== Node.ELEMENT_NODE) continue;
-            const tag = child.tagName.toLowerCase();
-            if (tag === "br") {
-                out += "\n";
-                continue;
-            }
-            if (tag === "hr") {
-                out += "\n---\n";
-                continue;
-            }
-            if (tag === "td" || tag === "th") {
-                if (out && !out.endsWith("\n") && !out.endsWith("\t")) out += "\t";
-                walk(child);
-                continue;
-            }
-            if (tag === "li") {
-                if (out && !out.endsWith("\n")) out += "\n";
-                out += "- ";
-                walk(child);
-                continue;
-            }
-            if (BLOCK_LEVEL.has(tag)) {
-                if (out && !out.endsWith("\n")) out += "\n";
-                walk(child);
-                if (!out.endsWith("\n")) out += "\n";
-                continue;
-            }
-            walk(child);
-        }
-    };
-    walk(root);
-    return out.replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+    return plainTextOf(root).replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
 }
 
 // Is this selection one we offer to save? Non-empty, inside an ELN editor,

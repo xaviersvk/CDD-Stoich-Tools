@@ -11,21 +11,22 @@
 // a numeric id under a key this file does not know is not even copied,
 // because shipping an unknown id is exactly the mistake this exists to stop.
 //
-// No DOM, no storage, no imports.
+// No DOM, no storage; the one import is the tree walk shared with the
+// registration form model.
+
+import { formWalker } from "../../../utils/form-walk.js";
 
 export const PLAN_ADD = "add";
 export const PLAN_SAME_NAME = "same-name";
 export const PLAN_MISSING_FIELDS = "missing-fields";
 
 const COMPONENTS = ["protocol", "run", "readout"];
-// Keys whose numeric values are layout, not references.
-const LAYOUT_NUMBERS = new Set(["context", "span"]);
 // Keys carried on a form that belong to the source vault alone.
 const SOURCE_ONLY = new Set(["id", "data_set_id", "created_at", "updated_at"]);
 
-function looksLikeId(key) {
-    return /(^|_)id$|ID$|_ids?$|template/i.test(key);
-}
+// Walk a component's tree once, calling `onCell` for every object that has a
+// fieldID, and `onNumber` for every other numeric value keyed like an id.
+const walk = formWalker();
 
 function cleanName(name) {
     return String(name ?? "").trim();
@@ -63,30 +64,6 @@ export function explainProblems(unknownIds, missingNames) {
     }
     if (unknownIds?.length) parts.push(`carries an id this extension cannot translate: ${unknownIds.join("; ")}`);
     return parts.join(" ");
-}
-
-// Walk a component's tree once, calling `onCell` for every object that has a
-// fieldID, and `onNumber` for every other numeric value keyed like an id.
-// `onCell` also gets the label of the label cell before it in its row, if any.
-function walk(node, onCell, onNumber, path = "", label = null) {
-    if (Array.isArray(node)) {
-        let lastLabel = null;
-        node.forEach((child, index) => {
-            if (child && typeof child.label === "string" && !("fieldID" in child)) lastLabel = cleanName(child.label);
-            walk(child, onCell, onNumber, `${path}[${index}]`, lastLabel);
-        });
-        return;
-    }
-    if (!node || typeof node !== "object") return;
-    if ("fieldID" in node || "$field" in node) onCell(node, path, label);
-    for (const [key, value] of Object.entries(node)) {
-        if (key === "fieldID" || key === "$field" || key === "$component") continue;
-        if (typeof value === "number" && !LAYOUT_NUMBERS.has(key) && looksLikeId(key)) {
-            onNumber(key, value, `${path}.${key}`);
-        } else if (value && typeof value === "object") {
-            walk(value, onCell, onNumber, `${path}.${key}`);
-        }
-    }
 }
 
 // Source form + the source vault's { protocol: [{id,name}], run: [...] } →

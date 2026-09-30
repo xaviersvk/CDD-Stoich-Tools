@@ -8,9 +8,10 @@
 // This is the extension's first write through an internal CDD endpoint
 // rather than a CDD button. It is undocumented, so every answer is checked
 // and every failure is reported with the status and whatever the server
-// said, never swallowed.
+// said, never swallowed (utils/form-definitions-api.js).
 
 import { EVENTS, EVENT_SOURCE } from "../../../../shared/event-types.js";
+import { createFormDefinition, listFormDefinitions } from "../../../utils/form-definitions-api.js";
 
 const BRIDGE_TIMEOUT_MS = 500;
 
@@ -18,49 +19,12 @@ function base(vaultId) {
     return `/api/internal/v1/vaults/${vaultId}/protocol_form_definitions`;
 }
 
-function csrfToken() {
-    return document.querySelector('meta[name="csrf-token"]')?.content || "";
+export function listForms(vaultId) {
+    return listFormDefinitions(base(vaultId));
 }
 
-function headers(withBody) {
-    const out = {
-        Accept: "application/json",
-        "X-CSRF-Token": csrfToken(),
-        "X-Requested-With": "XMLHttpRequest",
-    };
-    if (withBody) out["Content-Type"] = "application/json";
-    return out;
-}
-
-async function failure(response) {
-    let text = "";
-    try {
-        text = (await response.text()).slice(0, 200).replace(/\s+/g, " ").trim();
-    } catch {
-        // nothing to add
-    }
-    return new Error(`HTTP ${response.status}${text ? `: ${text}` : ""}`);
-}
-
-export async function listForms(vaultId) {
-    const response = await fetch(base(vaultId), { credentials: "same-origin", headers: headers(false) });
-    if (!response.ok) throw await failure(response);
-    const forms = await response.json();
-    if (!Array.isArray(forms)) throw new Error("the form list did not come back as a list");
-    return forms;
-}
-
-export async function createForm(vaultId, form) {
-    const response = await fetch(base(vaultId), {
-        method: "POST",
-        credentials: "same-origin",
-        headers: headers(true),
-        body: JSON.stringify({ form_definition: form }),
-    });
-    if (!response.ok) throw await failure(response);
-    const created = await response.json();
-    if (!created || created.id == null) throw new Error("the server answered without a form");
-    return created;
+export function createForm(vaultId, form) {
+    return createFormDefinition(base(vaultId), form);
 }
 
 export function vaultIdFromPath(pathname) {

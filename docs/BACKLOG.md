@@ -107,6 +107,12 @@ is not.
 
 ### Qodana findings — triaged 2026-08-19, items 1–4 done and measured 2026-08-21
 
+**2026-09-30.** Red since 2026-08-25 (HIGH 14, MODERATE 112). Brought back to
+HIGH 0 and a ratchet of 93: the per-finding walk is in `qodana.yaml`.
+`ExceptionCaughtLocallyJS` is excluded there: guard-throws inside a try are
+house style. The 9 new clones (the three sibling clipboards) are counted, not
+merged.
+
 **Where it stands.** `main` reports **94** (63 ignored promises, 24 deprecated,
 7 clones) against a ratchet of 80, so the check has been **red**. Branch
 `qodana-chrome-types` brought it to **74** in CI, and 14.11.0 took it to

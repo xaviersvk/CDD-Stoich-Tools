@@ -63,9 +63,6 @@ import {initRegistrationFormDefault} from "./features/ui-fixes/registration-form
 import {initElnIdToRegistration} from "./features/ui-fixes/eln-id-to-registration";
 import {initRegistrationDefaults} from "./features/ui-fixes/registration-defaults";
 import {initStoichAmountEditing} from "./features/ui-fixes/stoich-amount-editing";
-// Disabled in init() since 15.4.3 — see the note there. Import kept so the
-// module stays type-checked and one line brings it back.
-import {initStoichTableCopy} from "./features/ui-fixes/stoich-table-copy";
 import {initSlurpTypeDefault} from "./features/ui-fixes/slurp-type-default";
 import {initOptionsMenuLink} from "./features/ui-fixes/options-menu-link";
 import {initSavedSearchCopyLinks} from "./features/savedSearchCopyLinks/savedSearchCopyLinks";
@@ -241,7 +238,9 @@ function init() {
   // cancelled `dragstart` did NOT fix it, so the cause is elsewhere in the
   // file. Notes and the full measurement trail: docs/BACKLOG.md.
   //
-  // initStoichTableCopy();
+  // To bring it back, re-add
+  //   import {initStoichTableCopy} from "./features/ui-fixes/stoich-table-copy";
+  // and call initStoichTableCopy() here.
 
   initSlurpTypeDefault();
   initOptionsMenuLink();
@@ -334,7 +333,7 @@ function init() {
   // the dialog watcher (initInventoryLocationScan) asks the cache each time a
   // dialog appears, and the cache's own subscription adds or removes the
   // button if the switch is flipped while one is open.
-  initInventoryScan();
+  void initInventoryScan();
 }
 
 init();

@@ -88,18 +88,22 @@ async function apply(dialog) {
         visible = show;
         if (unfolds) expandTree([...toExpand]);
         paintTreeFilter(dialog);
+    } catch (error) {
+        // Callers fire and forget; a failed filter pass must never cost the
+        // user the dialog (same rule as markPass in init.js).
+        console.warn("[CDD scan-racks] tree filter pass failed", error);
     } finally {
         applying = false;
         if (applyAgain) {
             applyAgain = false;
-            if (dialog.isConnected) apply(dialog);
+            if (dialog.isConnected) void apply(dialog);
         }
     }
 }
 
 function schedule(dialog) {
     nextFrame().then(() => {
-        if (mounted?.dialog === dialog) apply(dialog);
+        if (mounted?.dialog === dialog) void apply(dialog);
     });
 }
 

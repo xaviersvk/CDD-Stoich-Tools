@@ -300,7 +300,7 @@ export function buildBar(kind) {
         }
     }
 
-    refresh();
+    void refresh();
     onClipboardChanged(refresh);
     return bar;
 }

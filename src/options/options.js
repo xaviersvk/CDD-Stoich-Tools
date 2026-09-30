@@ -756,14 +756,14 @@ const elnTableSuffixStyleRadios = [
 
 for (const radio of elnTableSuffixStyleRadios) {
     radio.addEventListener("change", () => {
-        if (radio.checked) saveElnTableSuffixStyle(radio.value);
+        if (radio.checked) void saveElnTableSuffixStyle(radio.value);
     });
 }
 
 const elnTableSuffixFirstCheckbox = document.getElementById("elnTableSuffixFirst");
 
 elnTableSuffixFirstCheckbox.addEventListener("change", () => {
-    saveElnTableSuffixFirst(elnTableSuffixFirstCheckbox.checked);
+    void saveElnTableSuffixFirst(elnTableSuffixFirstCheckbox.checked);
 });
 
 async function initElnIdCarryUI() {
@@ -1072,7 +1072,7 @@ const inventoryScanRowsInput = document.getElementById("inventoryScanRows");
 const inventoryScanOrganizedCheckbox = document.getElementById("inventoryScanOrganized");
 
 inventoryScanEnabledCheckbox.addEventListener("change", () => {
-    saveInventoryScanEnabled(inventoryScanEnabledCheckbox.checked);
+    void saveInventoryScanEnabled(inventoryScanEnabledCheckbox.checked);
 });
 
 // Written back sanitized, then echoed into the box: typing 0 and tabbing away
@@ -1090,7 +1090,7 @@ inventoryScanRowsInput.addEventListener("change", async () => {
 });
 
 inventoryScanOrganizedCheckbox.addEventListener("change", () => {
-    saveInventoryScanOrganized(inventoryScanOrganizedCheckbox.checked);
+    void saveInventoryScanOrganized(inventoryScanOrganizedCheckbox.checked);
 });
 
 // The manual under "How it works": the same lines the panel's ⓘ shows,
@@ -1138,7 +1138,7 @@ async function initElnShiftLeftUI() {
 const assayWindowCheckbox = document.getElementById("assayWindow");
 
 assayWindowCheckbox.addEventListener("change", () => {
-    saveAssayWindowEnabled(assayWindowCheckbox.checked);
+    void saveAssayWindowEnabled(assayWindowCheckbox.checked);
 });
 
 async function initAssayWindowUI() {
@@ -1520,9 +1520,9 @@ initElnShiftLeftUI();
 initElnIdToBatchUI();
 initPanelSourcesUI();
 initHeatMapFieldsUI();
-initAssayWindowUI();
+void initAssayWindowUI();
 initHplcInjectionUI();
-initInventoryScanUI();
+void initInventoryScanUI();
 initRegistrationDefaultsUI();
 initPhrasesUI();
 initRailUI();

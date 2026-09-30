@@ -265,7 +265,7 @@ export function buildFormBar(adapter) {
         }
     }
 
-    refresh();
+    void refresh();
     adapter.clipboard.onChanged(refresh);
     return bar;
 }

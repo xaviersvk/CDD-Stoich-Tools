@@ -295,7 +295,7 @@ function addButtons() {
         button.addEventListener("click", (event) => {
             event.preventDefault();
             event.stopPropagation();
-            duplicate(header, button);
+            void duplicate(header, button);
         });
         icons.insertBefore(button, edit.nextSibling);
     }

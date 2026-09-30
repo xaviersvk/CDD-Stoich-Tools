@@ -13,6 +13,16 @@
 // rows that will appear. The run then drives CDD's own edit mode and stops
 // short of Update, which stays a human's click.
 
+import {
+    buildButtonBar,
+    cardFoot,
+    checkbox,
+    el,
+    filterInput,
+    openCard,
+    plural,
+    when,
+} from "../../../utils/settings-card.js";
 import { onClipboardChanged, readClipboardEntry, writeClipboardEntry } from "./clipboard.js";
 import {
     PLAN_ADD,
@@ -52,22 +62,6 @@ const KNOWN_TYPES = {
 
 const TYPE_LABELS = { PickList: "Pick List", LongText: "Long Text", BatchLink: "Batch Link" };
 
-function el(tag, className, text) {
-    const node = document.createElement(tag);
-    if (className) node.className = className;
-    if (text != null) node.textContent = text;
-    return node;
-}
-
-function plural(count, noun) {
-    return `${count} ${noun}${count === 1 ? "" : "s"}`;
-}
-
-function when(timestamp) {
-    const date = new Date(timestamp);
-    return date.toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
-}
-
 function typeLabel(type) {
     return TYPE_LABELS[type] || type;
 }
@@ -89,18 +83,8 @@ async function currentNames(kind) {
 
 export function buildBar(kind) {
     const config = kindConfig(kind);
-    const bar = el("span", BAR_CLASS);
+    const { bar, buttons: [copyButton, pasteButton], status, card } = buildButtonBar(BAR_CLASS, ["Copy fields", "Paste"]);
     bar.dataset.kind = kind;
-
-    const copyButton = el("button", "cdd-fc-button", "Copy fields");
-    copyButton.type = "button";
-    const pasteButton = el("button", "cdd-fc-button", "Paste");
-    pasteButton.type = "button";
-    const status = el("span", "cdd-fc-status");
-    const card = el("div", "cdd-fc-card");
-    card.hidden = true;
-
-    bar.append(copyButton, pasteButton, status, card);
 
     /* ----- the buttons reflect what is there ----- */
     async function refresh() {
@@ -132,13 +116,7 @@ export function buildBar(kind) {
 
     function renderCopyCard(fields) {
         const vault = vaultInfo();
-        card.textContent = "";
-        card.hidden = false;
-
-        const head = el("div", "cdd-fc-head");
-        head.append(el("span", "cdd-fc-title", `Copy ${config.label}`));
-        head.append(el("span", "cdd-fc-note", `${plural(fields.length, "field")} in ${vault.name || "this vault"}`));
-        card.append(head);
+        openCard(card, `Copy ${config.label}`, `${plural(fields.length, "field")} in ${vault.name || "this vault"}`);
 
         const tools = el("div", "cdd-fc-section");
         const pick = el("span", "cdd-fc-pick");
@@ -147,19 +125,14 @@ export function buildBar(kind) {
         const none = el("button", "cdd-fc-button", "None");
         none.type = "button";
         pick.append(all, none);
-        const filter = document.createElement("input");
-        filter.type = "search";
-        filter.className = "cdd-fc-filter";
-        filter.placeholder = "Filter";
+        const filter = filterInput();
         tools.append(pick, filter);
         card.append(tools);
 
         const list = el("div", "cdd-fc-list");
         const rows = fields.map((field) => {
             const line = el("label", "cdd-fc-row");
-            const box = document.createElement("input");
-            box.type = "checkbox";
-            box.checked = true;
+            const box = checkbox(true);
             line.append(box, el("span", "cdd-fc-name", field.name), el("span", "cdd-fc-type", typeLabel(field.type)));
             if (field.type === "PickList") line.append(el("span", "cdd-fc-detail", plural(field.pickList.length, "value")));
             list.append(line);
@@ -168,14 +141,7 @@ export function buildBar(kind) {
         });
         card.append(list);
 
-        const foot = el("div", "cdd-fc-foot");
-        const action = el("button", "cdd-fc-add", "");
-        action.type = "button";
-        const cancel = el("button", "cdd-fc-cancel", "Cancel");
-        cancel.type = "button";
-        cancel.addEventListener("click", () => { card.hidden = true; });
-        foot.append(action, cancel);
-        card.append(foot);
+        const { action } = cardFoot(card);
 
         function chosen() {
             return rows.filter((row) => row.box.checked).map((row) => row.field);
@@ -224,14 +190,8 @@ export function buildBar(kind) {
     });
 
     function renderCard(entry, plan) {
-        card.textContent = "";
-        card.hidden = false;
-
-        const head = el("div", "cdd-fc-head");
-        head.append(el("span", "cdd-fc-title", `Paste ${config.label}`));
-        head.append(el("span", "cdd-fc-note",
-            `${plural(entry.fields.length, "field")} from ${entry.vaultName || "vault " + entry.vaultId}, copied ${when(entry.copiedAt)}`));
-        card.append(head);
+        openCard(card, `Paste ${config.label}`,
+            `${plural(entry.fields.length, "field")} from ${entry.vaultName || "vault " + entry.vaultId}, copied ${when(entry.copiedAt)}`);
 
         const list = el("div", "cdd-fc-list");
         const lines = plan.map((item) => {
@@ -248,16 +208,9 @@ export function buildBar(kind) {
         });
         card.append(list);
 
-        const foot = el("div", "cdd-fc-foot");
         const { add } = countPlan(plan);
-        const addButton = el("button", "cdd-fc-add", `Add ${plural(add, "field")}`);
-        addButton.type = "button";
+        const { action: addButton, cancel } = cardFoot(card, { action: `Add ${plural(add, "field")}` });
         addButton.disabled = add === 0;
-        const cancel = el("button", "cdd-fc-cancel", "Cancel");
-        cancel.type = "button";
-        cancel.addEventListener("click", () => { card.hidden = true; });
-        foot.append(addButton, cancel);
-        card.append(foot);
 
         addButton.addEventListener("click", () => runPaste(plan, lines, addButton, cancel));
     }
@@ -300,7 +253,7 @@ export function buildBar(kind) {
         }
     }
 
-    refresh();
+    void refresh();
     onClipboardChanged(refresh);
     return bar;
 }

@@ -35,6 +35,7 @@ import {
 } from "./toolbar.js";
 import { LAYOUT_TABLE_SELECTOR, isControlLayoutEditTable } from "./layout-grid.js";
 import { ROOT_CLASS } from "./styles.js";
+import { watchDocument } from "../../utils/dom.js";
 
 // Replacing a toolbar we did not build is normal exactly once per grid: it is
 // how a re-parsed clone gets swapped for a working one. Doing it over and over
@@ -50,11 +51,7 @@ export function initControlLayoutTools() {
     if (started) return;
     started = true;
 
-    let scheduled = false;
-
     function scan() {
-        scheduled = false;
-
         for (const root of document.querySelectorAll(`.${ROOT_CLASS}`)) {
             if (!isStaleToolbar(root)) continue;
 
@@ -84,18 +81,8 @@ export function initControlLayoutTools() {
         }
     }
 
-    function schedule() {
-        if (scheduled) return;
-        scheduled = true;
-        requestAnimationFrame(scan);
-    }
-
     // <html>, not <body>: Turbo swaps <body> on in-app navigation, which would
     // silently kill an observer attached to the old body.
-    new MutationObserver(schedule).observe(document.documentElement, {
-        childList: true,
-        subtree: true,
-    });
-
+    const schedule = watchDocument(scan);
     schedule(); // a grid already in the DOM at load time
 }

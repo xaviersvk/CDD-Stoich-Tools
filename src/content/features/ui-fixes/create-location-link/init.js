@@ -23,7 +23,7 @@ async function mountIfAllowed() {
 }
 
 function pass() {
-    autoOpenIfAsked();
+    void autoOpenIfAsked();
     mountIfAllowed().catch((error) => {
         // A missing menu entry must never cost the user the page.
         console.warn("[CDD create-location] mount failed", error);

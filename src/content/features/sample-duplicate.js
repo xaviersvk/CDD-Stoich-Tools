@@ -30,7 +30,7 @@
 //           [name="sample.fields.<id>"]            text/number input, or a
 //                                                  MUI Select (div[role=combobox] with that id)
 
-import { mouseClick } from "../utils/dom.js";
+import { mouseClick, setNativeValue, watchDocument } from "../utils/dom.js";
 
 const LOG_PREFIX = "[CDD stoich plugin]";
 const STYLE_ID = "cdd-sample-duplicate-style";
@@ -46,7 +46,6 @@ const POLL_ATTEMPTS = 50;
 
 let started = false;
 let running = false;
-let scheduled = false;
 
 function wait(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -61,18 +60,6 @@ async function waitFor(probe, attempts = POLL_ATTEMPTS) {
     return null;
 }
 
-// React tracks an input's value on the node itself; go through the prototype
-// setter so it sees a real edit.
-function setNativeValue(element, value) {
-    const prototype = element instanceof HTMLTextAreaElement
-        ? window.HTMLTextAreaElement.prototype
-        : window.HTMLInputElement.prototype;
-    const setter = Object.getOwnPropertyDescriptor(prototype, "value")?.set;
-    if (setter) setter.call(element, value);
-    else element.value = value;
-    element.dispatchEvent(new Event("input", { bubbles: true }));
-    element.dispatchEvent(new Event("change", { bubbles: true }));
-}
 
 // "*Concentration Unit *" (label, with MUI's required mark) and
 // "*Concentration Unit" (JSON key) are the same field.
@@ -278,7 +265,6 @@ const ICON = '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"
     + "</svg>";
 
 function addButtons() {
-    scheduled = false;
     if (!MOLECULE_PATH.test(location.pathname)) return;
 
     for (const header of document.querySelectorAll(".sticky-header-container .sticky-header")) {
@@ -295,16 +281,10 @@ function addButtons() {
         button.addEventListener("click", (event) => {
             event.preventDefault();
             event.stopPropagation();
-            duplicate(header, button);
+            void duplicate(header, button);
         });
         icons.insertBefore(button, edit.nextSibling);
     }
-}
-
-function schedule() {
-    if (scheduled) return;
-    scheduled = true;
-    requestAnimationFrame(addButtons);
 }
 
 function ensureStyle() {
@@ -329,6 +309,6 @@ export function initSampleDuplicate() {
     if (started) return;
     started = true;
     ensureStyle();
-    new MutationObserver(schedule).observe(document.documentElement, { childList: true, subtree: true });
+    const schedule = watchDocument(addButtons);
     schedule();
 }

@@ -15,7 +15,7 @@
 // bubble.
 
 import { getPlateInfo } from "../../api/plate-info.js";
-import { positionAtCursor } from "../../utils/dom.js";
+import { floatingBubble } from "../../utils/dom.js";
 
 const LOG_PREFIX = "[CDD plate plugin]";
 
@@ -30,7 +30,7 @@ const BUBBLE_ID = "cdd-plate-location-tooltip";
 export const PLATE_LINK_SELECTOR = '.plate_name a[href*="/plates/"]';
 
 let started = false;
-let bubble = null;
+const bubble = floatingBubble(BUBBLE_ID);
 // The plate path the bubble is currently showing/loading, used as a race guard.
 let activePath = null;
 
@@ -69,24 +69,8 @@ function injectStyles() {
     document.head.appendChild(style);
 }
 
-function ensureBubble() {
-    if (bubble && bubble.isConnected) return bubble;
-
-    bubble = document.createElement("div");
-    bubble.id = BUBBLE_ID;
-    bubble.hidden = true;
-    document.body.appendChild(bubble);
-    return bubble;
-}
-
-// Position the bubble just below-right of the cursor, nudged back on-screen if
-// it would overflow the viewport edge.
-function positionBubble(event) {
-    positionAtCursor(ensureBubble(), event);
-}
-
 function showMuted(text) {
-    const el = ensureBubble();
+    const el = bubble.ensure();
     el.classList.add("cdd-plate-tooltip-muted");
     el.textContent = text;
     el.hidden = false;
@@ -94,7 +78,7 @@ function showMuted(text) {
 
 // One "Label: value" line per location the plate has set.
 function showLocations(lines) {
-    const el = ensureBubble();
+    const el = bubble.ensure();
     el.classList.remove("cdd-plate-tooltip-muted");
     el.replaceChildren(
         ...lines.map(([labelText, valueText]) => {
@@ -116,7 +100,7 @@ function showLocations(lines) {
 
 function hideBubble() {
     activePath = null;
-    if (bubble) bubble.hidden = true;
+    bubble.hide();
 }
 
 async function onEnter(link, event) {
@@ -125,7 +109,7 @@ async function onEnter(link, event) {
 
     activePath = path;
     showMuted("Loading location…");
-    positionBubble(event);
+    bubble.position(event);
 
     const requestedPath = path;
     const { inventoryLocation, location } = await getPlateInfo(path);
@@ -143,7 +127,7 @@ async function onEnter(link, event) {
     } else {
         showMuted("No location set");
     }
-    positionBubble(event);
+    bubble.position(event);
 }
 
 export function initPlateLocationTooltip() {
@@ -173,9 +157,9 @@ export function initPlateLocationTooltip() {
 
     // Keep the bubble next to the cursor while hovering the link.
     document.addEventListener("mousemove", (event) => {
-        if (activePath === null || bubble?.hidden) return;
+        if (activePath === null || bubble.hidden()) return;
         if (!event.target.closest?.(PLATE_LINK_SELECTOR)) return;
-        positionBubble(event);
+        bubble.position(event);
     });
 
     // A Turbo navigation can tear out the body (and our bubble) mid-hover.

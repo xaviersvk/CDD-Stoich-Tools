@@ -24,6 +24,8 @@
 //   - Nothing reaches the server before the page's own "Update … fields".
 
 import { EVENTS, EVENT_SOURCE } from "../../../../shared/event-types.js";
+import { setNativeValue } from "../../../utils/dom.js";
+import { nextBeat, waitForBeats } from "../../../utils/wait.js";
 import { kindConfig } from "./field-model.js";
 
 const PICK_DIALOG = ".pickListDefinitionDialog";
@@ -34,30 +36,14 @@ export const FIELD_FORMS_CLASS = "cdd-field-forms";
 
 /* ----- waiting ----- */
 
-// One beat: the next DOM mutation, or a short timer, whichever is first.
-// Timers alone are throttled in a hidden tab; mutations are not.
-export function tick(ms = 40) {
-    return new Promise((resolve) => {
-        let done = false;
-        const finish = () => {
-            if (done) return;
-            done = true;
-            observer.disconnect();
-            resolve();
-        };
-        const observer = new MutationObserver(() => setTimeout(finish, 0));
-        observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true });
-        setTimeout(finish, ms);
-    });
+const BEAT_MS = 40;
+
+function tick() {
+    return nextBeat(BEAT_MS);
 }
 
-export async function waitFor(predicate, tries = 60) {
-    for (let attempt = 0; attempt < tries; attempt += 1) {
-        const value = predicate();
-        if (value) return value;
-        await tick();
-    }
-    return null;
+function waitFor(predicate) {
+    return waitForBeats(predicate, 60, BEAT_MS);
 }
 
 /* ----- finding things ----- */
@@ -171,20 +157,6 @@ export function requestFieldRows(kind) {
 }
 
 /* ----- writing ----- */
-
-// React tracks an input's value on the node; assigning `.value` hides the
-// change from it. The prototype setter plus input+change is what a keystroke
-// looks like to React — the same trick every write in this extension uses.
-function setNativeValue(element, value) {
-    const prototype = element instanceof HTMLSelectElement
-        ? window.HTMLSelectElement.prototype
-        : window.HTMLInputElement.prototype;
-    const setter = Object.getOwnPropertyDescriptor(prototype, "value")?.set;
-    if (setter) setter.call(element, value);
-    else element.value = value;
-    element.dispatchEvent(new Event("input", { bubbles: true }));
-    element.dispatchEvent(new Event("change", { bubbles: true }));
-}
 
 function setCheckbox(tr, name, wanted) {
     const box = tr.querySelector(`input[type="checkbox"][name="${name}"]`);

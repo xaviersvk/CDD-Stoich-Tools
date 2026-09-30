@@ -81,7 +81,7 @@ export function ensureDuplicateLinks(table) {
         link.addEventListener("click", (event) => {
             event.preventDefault();
             event.stopPropagation();
-            if (!link.classList.contains("is-busy")) duplicate(tr, link);
+            if (!link.classList.contains("is-busy")) void duplicate(tr, link);
         });
         cell.append(link);
         tr.append(cell);

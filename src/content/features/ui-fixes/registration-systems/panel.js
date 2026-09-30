@@ -9,22 +9,12 @@
 // repainted. The card does not: it hangs off <body>, placed under the link,
 // so the re-render after every Save cannot take a run in progress with it.
 
+import { cardFoot, cardHead, el, plural } from "../../../utils/settings-card.js";
 import { CURRENT_VALUE, PLAN_ADD, parsePrefixes, planSystems } from "./system-model.js";
 import { createSystem, existingPrefixes } from "./page-dom.js";
 
 export const LINK_CLASS = "cdd-regsys-link";
 export const CARD_CLASS = "cdd-regsys-card";
-
-function el(tag, className, text) {
-    const node = document.createElement(tag);
-    if (className) node.className = className;
-    if (text != null) node.textContent = text;
-    return node;
-}
-
-function plural(count, noun) {
-    return `${count} ${noun}${count === 1 ? "" : "s"}`;
-}
 
 // The link copies CDD's own: same class, same "add" icon.
 export function buildLink(createLink, onOpen) {
@@ -44,24 +34,16 @@ export function buildCard() {
     const card = el("div", `cdd-fc-card ${CARD_CLASS}`);
     card.hidden = true;
 
-    const head = el("div", "cdd-fc-head");
-    head.append(el("span", "cdd-fc-title", "Create registration systems"));
-    head.append(el("span", "cdd-fc-note", "One prefix per line. Each starts at 1."));
+    const head = cardHead("Create registration systems", "One prefix per line. Each starts at 1.");
 
     const text = el("textarea", "cdd-regsys-text");
     text.rows = 8;
     text.placeholder = "PRJ-SM\nPRJ-AB\n…";
 
     const list = el("div", "cdd-fc-list");
-    const foot = el("div", "cdd-fc-foot");
-    const run = el("button", "cdd-fc-add", "Create");
-    run.type = "button";
-    const cancel = el("button", "cdd-fc-cancel", "Close");
-    cancel.type = "button";
     const status = el("span", "cdd-fc-status");
-    foot.append(run, cancel, status);
-
-    card.append(head, text, list, foot);
+    card.append(head, text, list);
+    const { action: run, cancel } = cardFoot(card, { action: "Create", cancel: "Close", extra: [status] });
 
     let plan = [];
     let lines = [];
@@ -94,7 +76,6 @@ export function buildCard() {
     }
 
     text.addEventListener("input", () => { if (!running) render(); });
-    cancel.addEventListener("click", () => { card.hidden = true; });
     window.addEventListener("resize", () => { if (!card.hidden) place(); });
 
     run.addEventListener("click", async () => {

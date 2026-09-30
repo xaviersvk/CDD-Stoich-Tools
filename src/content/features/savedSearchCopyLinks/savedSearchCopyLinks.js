@@ -1,4 +1,5 @@
 import { copyText } from "../../utils/clipboard.js";
+import { watchDocument } from "../../utils/dom.js";
 
 let savedSearchCopyLinksInitialized = false;
 
@@ -15,25 +16,10 @@ export function initSavedSearchCopyLinks() {
     }
     savedSearchCopyLinksInitialized = true;
 
-    let scheduled = false;
-    const run = () => {
-        if (scheduled) return;
-        scheduled = true;
-        requestAnimationFrame(() => {
-            scheduled = false;
-            addCopyLinksToSavedSearches();
-        });
-    };
-
     // Observe <html>, not <body>: Turbo Drive replaces the whole <body> element
     // on in-app navigation, which would detach a body-scoped observer (the page
     // then only worked on a full refresh). documentElement survives the swap.
-    const observer = new MutationObserver(run);
-    observer.observe(document.documentElement, {
-        childList: true,
-        subtree: true,
-    });
-
+    const run = watchDocument(addCopyLinksToSavedSearches);
     run();
 }
 

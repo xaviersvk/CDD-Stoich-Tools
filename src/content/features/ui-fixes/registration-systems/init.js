@@ -8,11 +8,11 @@
 // beside it. The card is built once per <body> and hangs off it. It borrows
 // the field clipboard's stylesheet: same buttons, same card.
 
+import { REGISTRATION_PAGE, watchPageSettled } from "../../../utils/settings-page.js";
 import { injectFieldClipboardStyles } from "../field-clipboard/styles.js";
 import { findCreateLink } from "./page-dom.js";
 import { LINK_CLASS, buildCard, buildLink } from "./panel.js";
 
-const PAGE = /\/vaults\/\d+\/vault_registration_form_definitions$/;
 const ACTIONS_CLASS = "cdd-regsys-actions";
 
 let started = false;
@@ -47,7 +47,7 @@ function injectStyles() {
 }
 
 function mount() {
-    if (!PAGE.test(location.pathname)) return;
+    if (!REGISTRATION_PAGE.test(location.pathname)) return;
     const create = findCreateLink();
     if (!create) return;
 
@@ -71,22 +71,5 @@ export function initRegistrationSystems() {
     injectStyles();
     if (started) return;
     started = true;
-
-    let scheduled = false;
-    const schedule = () => {
-        if (scheduled) return;
-        scheduled = true;
-        setTimeout(() => {
-            scheduled = false;
-            try {
-                mount();
-            } catch (error) {
-                // A missing button must never cost the user the page.
-                console.warn("[CDD registration-systems] mount failed", error);
-            }
-        }, 48);
-    };
-
-    new MutationObserver(schedule).observe(document.documentElement, { childList: true, subtree: true });
-    schedule();
+    watchPageSettled("registration-systems", mount);
 }

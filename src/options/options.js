@@ -9,6 +9,7 @@
 // content script, which is why those modules never touch the DOM.
 
 import { initPhrasesUI } from "./phrases-ui.js";
+import { deleteButton } from "./delete-button.js";
 import { renderLocationTreeGuide } from "../shared/location-tree-guide.js";
 import { initSetupWizard } from "./setup-wizard.js";
 import {
@@ -295,15 +296,14 @@ function createPrefixRow(row) {
         savePrefixRows();
     });
 
-    const deleteBtn = document.createElement("button");
-    deleteBtn.type = "button";
-    deleteBtn.className = "prefix-color-delete";
-    deleteBtn.setAttribute("aria-label", `Delete prefix ${row.prefix || "(blank)"}`);
-    deleteBtn.textContent = "✕";
-    deleteBtn.addEventListener("click", () => {
-        prefixRows = prefixRows.filter((r) => r.id !== row.id);
-        renderPrefixRows();
-        savePrefixRows();
+    const deleteBtn = deleteButton({
+        className: "prefix-color-delete",
+        label: `Delete prefix ${row.prefix || "(blank)"}`,
+        onClick: () => {
+            prefixRows = prefixRows.filter((r) => r.id !== row.id);
+            renderPrefixRows();
+            savePrefixRows();
+        },
     });
 
     wrapper.append(prefixInput, colorInput, deleteBtn);
@@ -382,15 +382,14 @@ function createRegDefaultFieldRow(vault, field) {
         saveRegDefaults();
     });
 
-    const deleteBtn = document.createElement("button");
-    deleteBtn.type = "button";
-    deleteBtn.className = "prefix-color-delete";
-    deleteBtn.textContent = "✕";
-    deleteBtn.setAttribute("aria-label", `Delete default for ${field.label || "(blank)"}`);
-    deleteBtn.addEventListener("click", () => {
-        vault.fields = vault.fields.filter((f) => f.id !== field.id);
-        renderRegDefaults();
-        saveRegDefaults();
+    const deleteBtn = deleteButton({
+        className: "prefix-color-delete",
+        label: `Delete default for ${field.label || "(blank)"}`,
+        onClick: () => {
+            vault.fields = vault.fields.filter((f) => f.id !== field.id);
+            renderRegDefaults();
+            saveRegDefaults();
+        },
     });
 
     wrapper.append(labelInput, valueInput, deleteBtn);
@@ -426,15 +425,14 @@ function createRegDefaultVault(vault) {
         saveRegDefaults();
     });
 
-    const deleteBtn = document.createElement("button");
-    deleteBtn.type = "button";
-    deleteBtn.className = "prefix-color-delete";
-    deleteBtn.textContent = "✕";
-    deleteBtn.setAttribute("aria-label", `Delete vault ${vault.vaultId || "(blank)"}`);
-    deleteBtn.addEventListener("click", () => {
-        regDefaultVaults = regDefaultVaults.filter((v) => v.id !== vault.id);
-        renderRegDefaults();
-        saveRegDefaults();
+    const deleteBtn = deleteButton({
+        className: "prefix-color-delete",
+        label: `Delete vault ${vault.vaultId || "(blank)"}`,
+        onClick: () => {
+            regDefaultVaults = regDefaultVaults.filter((v) => v.id !== vault.id);
+            renderRegDefaults();
+            saveRegDefaults();
+        },
     });
 
     head.append(vaultInput, labelInput, deleteBtn);
@@ -756,14 +754,14 @@ const elnTableSuffixStyleRadios = [
 
 for (const radio of elnTableSuffixStyleRadios) {
     radio.addEventListener("change", () => {
-        if (radio.checked) saveElnTableSuffixStyle(radio.value);
+        if (radio.checked) void saveElnTableSuffixStyle(radio.value);
     });
 }
 
 const elnTableSuffixFirstCheckbox = document.getElementById("elnTableSuffixFirst");
 
 elnTableSuffixFirstCheckbox.addEventListener("change", () => {
-    saveElnTableSuffixFirst(elnTableSuffixFirstCheckbox.checked);
+    void saveElnTableSuffixFirst(elnTableSuffixFirstCheckbox.checked);
 });
 
 async function initElnIdCarryUI() {
@@ -789,6 +787,14 @@ const densityListEl = document.getElementById("densityMemoryList");
 const densityCountEl = document.getElementById("densityMemoryCount");
 const densityEmptyEl = document.getElementById("densityMemoryEmpty");
 const densityClearBtn = document.getElementById("densityMemoryClear");
+
+// When a remembered entry was saved — shared by the density and name lists.
+function savedDateSpan(savedAt) {
+    const saved = document.createElement("span");
+    saved.className = "density-memory-date";
+    saved.textContent = savedAt ? new Date(savedAt).toLocaleDateString() : "";
+    return saved;
+}
 
 function createDensityRow(batchId, entry) {
     const wrapper = document.createElement("div");
@@ -821,22 +827,17 @@ function createDensityRow(batchId, entry) {
     solvent.textContent = entry.solvent || "—";
     solvent.title = "Solvent";
 
-    const saved = document.createElement("span");
-    saved.className = "density-memory-date";
-    saved.textContent = entry.savedAt
-        ? new Date(entry.savedAt).toLocaleDateString()
-        : "";
+    const saved = savedDateSpan(entry.savedAt);
 
-    const deleteBtn = document.createElement("button");
-    deleteBtn.type = "button";
-    deleteBtn.className = "density-memory-delete";
-    deleteBtn.setAttribute("aria-label", `Forget density for ${name.textContent}`);
-    deleteBtn.textContent = "✕";
-    deleteBtn.addEventListener("click", async () => {
-        const map = await loadDensityMemory();
-        delete map[batchId];
-        await saveDensityMemory(map);
-        renderDensityMemory(map);
+    const deleteBtn = deleteButton({
+        className: "density-memory-delete",
+        label: `Forget density for ${name.textContent}`,
+        onClick: async () => {
+            const map = await loadDensityMemory();
+            delete map[batchId];
+            await saveDensityMemory(map);
+            renderDensityMemory(map);
+        },
     });
 
     wrapper.append(name, density, purity, conc, solvent, saved, deleteBtn);
@@ -891,22 +892,17 @@ function createNameRow(moleculeId, entry) {
     value.textContent = entry.name;
     value.title = "Row name";
 
-    const saved = document.createElement("span");
-    saved.className = "density-memory-date";
-    saved.textContent = entry.savedAt
-        ? new Date(entry.savedAt).toLocaleDateString()
-        : "";
+    const saved = savedDateSpan(entry.savedAt);
 
-    const deleteBtn = document.createElement("button");
-    deleteBtn.type = "button";
-    deleteBtn.className = "density-memory-delete";
-    deleteBtn.setAttribute("aria-label", `Forget the name for ${molecule.textContent}`);
-    deleteBtn.textContent = "✕";
-    deleteBtn.addEventListener("click", async () => {
-        const map = await loadNameMemory();
-        delete map[moleculeId];
-        await saveNameMemory(map);
-        renderNameMemory(map);
+    const deleteBtn = deleteButton({
+        className: "density-memory-delete",
+        label: `Forget the name for ${molecule.textContent}`,
+        onClick: async () => {
+            const map = await loadNameMemory();
+            delete map[moleculeId];
+            await saveNameMemory(map);
+            renderNameMemory(map);
+        },
     });
 
     wrapper.append(molecule, value, saved, deleteBtn);
@@ -1072,7 +1068,7 @@ const inventoryScanRowsInput = document.getElementById("inventoryScanRows");
 const inventoryScanOrganizedCheckbox = document.getElementById("inventoryScanOrganized");
 
 inventoryScanEnabledCheckbox.addEventListener("change", () => {
-    saveInventoryScanEnabled(inventoryScanEnabledCheckbox.checked);
+    void saveInventoryScanEnabled(inventoryScanEnabledCheckbox.checked);
 });
 
 // Written back sanitized, then echoed into the box: typing 0 and tabbing away
@@ -1090,7 +1086,7 @@ inventoryScanRowsInput.addEventListener("change", async () => {
 });
 
 inventoryScanOrganizedCheckbox.addEventListener("change", () => {
-    saveInventoryScanOrganized(inventoryScanOrganizedCheckbox.checked);
+    void saveInventoryScanOrganized(inventoryScanOrganizedCheckbox.checked);
 });
 
 // The manual under "How it works": the same lines the panel's ⓘ shows,
@@ -1138,7 +1134,7 @@ async function initElnShiftLeftUI() {
 const assayWindowCheckbox = document.getElementById("assayWindow");
 
 assayWindowCheckbox.addEventListener("change", () => {
-    saveAssayWindowEnabled(assayWindowCheckbox.checked);
+    void saveAssayWindowEnabled(assayWindowCheckbox.checked);
 });
 
 async function initAssayWindowUI() {
@@ -1520,9 +1516,9 @@ initElnShiftLeftUI();
 initElnIdToBatchUI();
 initPanelSourcesUI();
 initHeatMapFieldsUI();
-initAssayWindowUI();
+void initAssayWindowUI();
 initHplcInjectionUI();
-initInventoryScanUI();
+void initInventoryScanUI();
 initRegistrationDefaultsUI();
 initPhrasesUI();
 initRailUI();

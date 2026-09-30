@@ -15,6 +15,7 @@
 
 import { fetchPlateControls, fetchRunHeatMapIndex } from "../../api/run-heat-maps.js";
 import { mapLimit } from "../../utils/concurrency.js";
+import { watchDocument } from "../../utils/dom.js";
 import {
     addDrift,
     describe,
@@ -404,14 +405,14 @@ function buildPanel(vaultId, runId) {
             select.append(el("option", { value: r.id, textContent: r.name, selected: r.selected }));
         }
         select.addEventListener("change", () => calculate(index.plates));
-        calculate(index.plates);
+        void calculate(index.plates);
     })());
 
     const setCollapsed = (collapsed) => {
         root.classList.toggle("is-collapsed", collapsed);
         toggle.setAttribute("aria-expanded", String(!collapsed));
         toggle.title = collapsed ? "Show plate QC" : "Fold to one line";
-        if (!collapsed) load();
+        if (!collapsed) void load();
     };
 
     toggle.addEventListener("click", () => {
@@ -456,24 +457,14 @@ export function initRunAssayWindow() {
     if (started) return;
     started = true;
 
-    let scheduled = false;
-    const schedule = () => {
-        if (scheduled) return;
-        scheduled = true;
-        requestAnimationFrame(() => {
-            scheduled = false;
-            try {
-                sync();
-            } catch (error) {
-                console.warn(LOG_PREFIX, "assay window", error);
-            }
-        });
-    };
+    const schedule = watchDocument(() => {
+        try {
+            sync();
+        } catch (error) {
+            console.warn(LOG_PREFIX, "assay window", error);
+        }
+    });
 
     initAssayWindow().then(schedule);
     onAssayWindowChanged(schedule);
-    new MutationObserver(schedule).observe(document.documentElement, {
-        childList: true,
-        subtree: true,
-    });
 }

@@ -39,6 +39,7 @@ import {
     isRegistrationPage,
     setControlValue,
 } from "./registration-fill.js";
+import { watchDocument } from "../../utils/dom.js";
 
 const REGISTER_LINK_SELECTOR = 'a[href*="/molecules/new"]';
 
@@ -243,23 +244,8 @@ export async function initRegistrationDefaults() {
         if (event.target?.matches?.(CREATE_SAMPLE_SELECTOR)) fillSampleAmount();
     }, true);
 
-    let scheduled = false;
-    const run = () => {
-        if (scheduled) return;
-        scheduled = true;
-        requestAnimationFrame(() => {
-            scheduled = false;
-            fillEverything();
-        });
-    };
-
     // The form is rebuilt whenever the project or the registration form
-    // changes, so this is not a one-shot. <html>, not <body>: Turbo swaps
-    // <body>.
-    new MutationObserver(run).observe(document.documentElement, {
-        childList: true,
-        subtree: true,
-    });
-
+    // changes, so this is not a one-shot.
+    const run = watchDocument(fillEverything);
     run();
 }

@@ -11,6 +11,7 @@
 // that is already open instead of piling up new ones.
 
 import { OPEN_OPTIONS_MESSAGE } from "../../../shared/event-types.js";
+import { watchDocument } from "../../utils/dom.js";
 
 const ITEM_CLASS = "cdd-plugin-options-item";
 const MENU_SELECTOR = ".user-dropdown ul";
@@ -48,23 +49,6 @@ export function initOptionsMenuLink() {
     if (started) return;
     started = true;
 
-    let scheduled = false;
-
-    const run = () => {
-        if (scheduled) return;
-        scheduled = true;
-
-        requestAnimationFrame(() => {
-            scheduled = false;
-            ensureItem();
-        });
-    };
-
-    // <html>, not <body>: Turbo swaps <body> on in-app navigation.
-    new MutationObserver(run).observe(document.documentElement, {
-        childList: true,
-        subtree: true,
-    });
-
+    const run = watchDocument(ensureItem);
     run();
 }

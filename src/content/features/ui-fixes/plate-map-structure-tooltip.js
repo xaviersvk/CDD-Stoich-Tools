@@ -15,7 +15,7 @@
 // was requested for.
 
 import { getMoleculeData, prefetchMolecules } from "../../api/molecule-image.js";
-import { positionAtCursor } from "../../utils/dom.js";
+import { floatingBubble } from "../../utils/dom.js";
 
 const LOG_PREFIX = "[CDD plate plugin]";
 
@@ -31,7 +31,7 @@ const WELL_LINK_SELECTOR = '.plateLayout td.well a[href*="/molecules/"]';
 const PREFETCH_RADIUS = 2;
 
 let started = false;
-let bubble = null;
+const bubble = floatingBubble(BUBBLE_ID);
 // The molecule href the bubble is currently showing/loading, used as a race guard.
 let activeHref = null;
 
@@ -83,25 +83,8 @@ function injectStyles() {
     document.head.appendChild(style);
 }
 
-function ensureBubble() {
-    if (bubble && bubble.isConnected) return bubble;
-
-    bubble = document.createElement("div");
-    bubble.id = BUBBLE_ID;
-    bubble.hidden = true;
-    document.body.appendChild(bubble);
-    return bubble;
-}
-
-// Position the bubble just below-right of the cursor, nudged back on-screen if
-// it would overflow the viewport edge. Same approach as plate-location-tooltip,
-// just with a taller bubble (the structure image) flipping above the cursor.
-function positionBubble(event) {
-    positionAtCursor(ensureBubble(), event);
-}
-
 function showState(text) {
-    const el = ensureBubble();
+    const el = bubble.ensure();
     const state = document.createElement("div");
     state.className = "cdd-plate-well-tooltip-state";
     state.textContent = text;
@@ -112,7 +95,7 @@ function showState(text) {
 // `svg` is a detached SVGElement (or null) from structure-render. We clone it so
 // the cached element is never moved into the DOM.
 function showMoleculeData({ svg, synonym }) {
-    const el = ensureBubble();
+    const el = bubble.ensure();
     el.replaceChildren();
 
     if (synonym) {
@@ -139,7 +122,7 @@ function showMoleculeData({ svg, synonym }) {
 
 function hideBubble() {
     activeHref = null;
-    if (bubble) bubble.hidden = true;
+    bubble.hide();
 }
 
 // Warm the cache for the wells around the hovered one (a (2r+1) x (2r+1) block
@@ -175,7 +158,7 @@ async function onEnter(link, event) {
 
     activeHref = href;
     showState("Loading structure…");
-    positionBubble(event);
+    bubble.position(event);
 
     prefetchNeighbours(link);
 
@@ -185,7 +168,7 @@ async function onEnter(link, event) {
     if (activeHref !== href) return;
 
     showMoleculeData(data);
-    positionBubble(event);
+    bubble.position(event);
 }
 
 export function initPlateMapStructureTooltip() {
@@ -215,9 +198,9 @@ export function initPlateMapStructureTooltip() {
 
     // Keep the bubble next to the cursor while hovering the link.
     document.addEventListener("mousemove", (event) => {
-        if (activeHref === null || bubble?.hidden) return;
+        if (activeHref === null || bubble.hidden()) return;
         if (!event.target.closest?.(WELL_LINK_SELECTOR)) return;
-        positionBubble(event);
+        bubble.position(event);
     });
 
     // A Turbo navigation can tear out the body (and our bubble) mid-hover.

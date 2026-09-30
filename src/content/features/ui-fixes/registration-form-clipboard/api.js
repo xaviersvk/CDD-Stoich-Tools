@@ -12,6 +12,11 @@
 // systems are in the react_props of the RegistrationFormDefinitionsPage
 // element, so the map needs no bridge and no extra request.
 
+import {
+    createFormDefinition,
+    listFormDefinitions,
+    updateFormDefinition,
+} from "../../../utils/form-definitions-api.js";
 import { vaultIdFromPath } from "../form-clipboard/api.js";
 
 export { vaultIdFromPath };
@@ -22,45 +27,12 @@ function base(vaultId) {
     return `/api/internal/v1/vaults/${vaultId}/registration_form_definitions`;
 }
 
-function headers(withBody) {
-    const out = {
-        Accept: "application/json",
-        "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]')?.content || "",
-        "X-Requested-With": "XMLHttpRequest",
-    };
-    if (withBody) out["Content-Type"] = "application/json";
-    return out;
+export function listRegistrationForms(vaultId) {
+    return listFormDefinitions(base(vaultId));
 }
 
-async function failure(response) {
-    let text = "";
-    try {
-        text = (await response.text()).slice(0, 200).replace(/\s+/g, " ").trim();
-    } catch {
-        // nothing to add
-    }
-    return new Error(`HTTP ${response.status}${text ? `: ${text}` : ""}`);
-}
-
-export async function listRegistrationForms(vaultId) {
-    const response = await fetch(base(vaultId), { credentials: "same-origin", headers: headers(false) });
-    if (!response.ok) throw await failure(response);
-    const forms = await response.json();
-    if (!Array.isArray(forms)) throw new Error("the form list did not come back as a list");
-    return forms;
-}
-
-export async function createRegistrationForm(vaultId, form) {
-    const response = await fetch(base(vaultId), {
-        method: "POST",
-        credentials: "same-origin",
-        headers: headers(true),
-        body: JSON.stringify({ form_definition: form }),
-    });
-    if (!response.ok) throw await failure(response);
-    const created = await response.json();
-    if (!created || created.id == null) throw new Error("the server answered without a form");
-    return created;
+export function createRegistrationForm(vaultId, form) {
+    return createFormDefinition(base(vaultId), form);
 }
 
 // Measured in the same bundle: updateFormDefinition sends
@@ -69,14 +41,8 @@ export async function createRegistrationForm(vaultId, form) {
 // allow_new_molecules, registration_system_id } } — the whole document, so
 // the caller sends back everything it was given. What comes back is not
 // relied on; the caller lists the forms again and compares.
-export async function updateRegistrationForm(vaultId, formId, form) {
-    const response = await fetch(`${base(vaultId)}/${formId}`, {
-        method: "PUT",
-        credentials: "same-origin",
-        headers: headers(true),
-        body: JSON.stringify({ form_definition: form }),
-    });
-    if (!response.ok) throw await failure(response);
+export function updateRegistrationForm(vaultId, formId, form) {
+    return updateFormDefinition(`${base(vaultId)}/${formId}`, form);
 }
 
 // { defs: { molecule, batch, sample, inventory }, systems } or null.

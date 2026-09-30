@@ -78,7 +78,7 @@ async function markPass(dialog) {
         marking = false;
         if (markAgain) {
             markAgain = false;
-            if (dialog.isConnected) markPass(dialog);
+            if (dialog.isConnected) void markPass(dialog);
         }
     }
 }
@@ -94,7 +94,7 @@ function sync() {
     // Always on: a colour in a dialog and a filter box above the tree, no
     // switch. Both run whether or not the scan button is mounted.
     mountTreeFilter(dialog);
-    markPass(dialog);
+    void markPass(dialog);
 
     const existing = dialog.querySelector(`.${BUTTON_CLASS}`);
     if (isInventoryScanEnabled()) {

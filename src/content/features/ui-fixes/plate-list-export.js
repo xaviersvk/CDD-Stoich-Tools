@@ -12,6 +12,7 @@
 // search results.
 
 import { resolveAndDownloadPlateLocations } from "./plate-location-csv.js";
+import { watchDocument } from "../../utils/dom.js";
 
 const LOG_PREFIX = "[CDD plate plugin]";
 
@@ -202,23 +203,8 @@ export function initPlateListExport() {
 
     injectStyles();
 
-    let scheduled = false;
-    const run = () => {
-        if (scheduled) return;
-        scheduled = true;
-        requestAnimationFrame(() => {
-            scheduled = false;
-            ensureLink();
-        });
-    };
-
-    // Observe <html>: Turbo swaps <body> on navigation, and the filter bar is
-    // re-rendered with it; ensureLink() is idempotent per render.
-    const observer = new MutationObserver(run);
-    observer.observe(document.documentElement, {
-        childList: true,
-        subtree: true,
-    });
-
+    // The filter bar is re-rendered with every Turbo <body> swap; ensureLink()
+    // is idempotent per render.
+    const run = watchDocument(ensureLink);
     run();
 }

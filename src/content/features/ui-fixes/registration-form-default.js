@@ -33,6 +33,7 @@ import {
 } from "../../../shared/registration-form.js";
 import { applyOptionOrder, optionNames } from "./entity-type-select.js";
 import { harvestFromLiveDom } from "../../api/registration-form-fields.js";
+import { watchDocument } from "../../utils/dom.js";
 
 const SELECT_SELECTOR = "#registration-form-select";
 
@@ -161,23 +162,6 @@ export async function initRegistrationFormDefault() {
         if (event.target?.matches?.(SELECT_SELECTOR)) onUserPickedForm(event.target);
     });
 
-    let scheduled = false;
-
-    const run = () => {
-        if (scheduled) return;
-        scheduled = true;
-
-        requestAnimationFrame(() => {
-            scheduled = false;
-            sync();
-        });
-    };
-
-    // <html>, not <body>: Turbo swaps <body> on in-app navigation.
-    new MutationObserver(run).observe(document.documentElement, {
-        childList: true,
-        subtree: true,
-    });
-
+    const run = watchDocument(sync);
     run();
 }

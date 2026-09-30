@@ -113,21 +113,10 @@ export function selectedNodeId(dialog) {
     return item ? item.dataset.nodeid : null;
 }
 
-// React tracks an input's value on the DOM node itself; assigning `.value`
-// hides the change from it. Go through the prototype setter so the framework
-// sees a real edit — the same trick run-form-templates/form-model.js uses.
-export function setNativeValue(element, value) {
-    const prototype = element instanceof HTMLTextAreaElement
-        ? window.HTMLTextAreaElement.prototype
-        : window.HTMLInputElement.prototype;
-
-    const setter = Object.getOwnPropertyDescriptor(prototype, "value")?.set;
-    if (setter) setter.call(element, value);
-    else element.value = value;
-
-    element.dispatchEvent(new Event("input", { bubbles: true }));
-    element.dispatchEvent(new Event("change", { bubbles: true }));
-}
+// Used here, and re-exported for this feature's other modules, which import it
+// from this file.
+import { setNativeValue } from "../../../utils/dom.js";
+export { setNativeValue };
 
 // Our own panel lives inside the dialog, so a bare querySelectorAll for
 // `input[type=number]` would find the panel's grid boxes as well as CDD's.

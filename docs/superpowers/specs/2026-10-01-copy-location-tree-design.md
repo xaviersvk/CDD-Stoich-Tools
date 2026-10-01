@@ -45,14 +45,14 @@ already in the tree or in the list is refused (a barcode is one rack).
 - `isPlate`: `node.plate_id != null`;
 - `organized`: `node.organized === false ? false : true`;
 - `columns`, `rows`: `Number(node.num_columns) || 0`, `Number(node.num_rows) || 0`;
-- `capacity`: `Number(node.capacity ?? node.position_limit) || 0`
-  (confirmed on `UBox1` during implementation; the spec records which).
+- `capacity`: `Number(node.capacity) || 0` — measured on `UBox1`:
+  `organized: false, capacity: 100`, no `position_limit`.
 
-`isBox` stays as is but is false for a plate. `tree-source.js` and
-`tree-model.js buildNodes` carry `isPlate` through. Plates are dropped from
-the nodes `buildNodes` returns, so they stop posing as locations in the
-*Into* list, the duplicate check and the filter. (The DOM fallback cannot
-tell a plate; it keeps today's behaviour.)
+`isBox` is unchanged (a plate has neither `organized` nor `num_columns`, so it
+was never a box). `tree-source.js` gains `readRawTree()` — the bridge's flat
+list, or null — for the copy. The scan panel's own node list is **not**
+changed: plates keep counting in its duplicate check as today, so *Scan
+racks* behaves exactly as before for everything but the two points in §3.
 
 ### 2. Copy tree — `tree-text.js` (DOM-free) + a footer button
 
@@ -64,8 +64,11 @@ which touch `chrome` inside functions only).
 `treeToLines(rawNodes)` takes the bridge's flat list (root first) and
 returns the text:
 
-- Order: the tree's own (depth first, children in `display_order`, as the
-  bridge lists them).
+- Order: depth first, as the bridge lists them — but under one parent
+  **locations (with their subtrees) before boxes**. Measured: `Bench 1`
+  holds a box *and* three locations, and CDD offers no "Create new location"
+  on a location that already holds a box; built in the other order, the run
+  would stop at the first sub-location.
 - Each line is absolute: `<root name> > … > <name>`.
 - A **box**: organized → `path ⇥ columns ⇥ rows`; unorganized →
   `path ⇥ capacity`.

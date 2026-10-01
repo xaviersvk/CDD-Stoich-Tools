@@ -87,6 +87,13 @@ export async function readTreeNodes(dialog) {
     return (await readTreeState(dialog)).nodes;
 }
 
+// The bridge's own list — sizes and plates included — for Copy tree, or null
+// when the bridge is silent. No DOM fallback: the DOM shows only what is
+// expanded, and half a tree copied without a word is worse than none.
+export async function readRawTree() {
+    return (await requestBridge())?.nodes ?? null;
+}
+
 // Fire and forget: the tree repaints, and the discovery pass sees that.
 export function expandTree(ids) {
     window.postMessage(

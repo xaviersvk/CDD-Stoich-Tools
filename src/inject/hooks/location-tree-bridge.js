@@ -10,7 +10,8 @@
 //
 // Protocol (window.postMessage, source EVENT_SOURCE):
 //   LOCATION_TREE_REQUEST { requestId }
-//     -> LOCATION_TREE    { requestId, nodes: [{ id, parentId, name, isBox }] | null,
+//     -> LOCATION_TREE    { requestId, nodes: [{ id, parentId, name, isBox, isPlate,
+//                           organized, columns, rows, capacity }] | null,
 //                           expanded: string[] }
 //   LOCATION_TREE_EXPAND  { ids: string[] }   (no answer)
 //
@@ -73,6 +74,15 @@ function flatten(roots) {
             parentId,
             name: String(node.value ?? "").trim(),
             isBox: isBoxNode(node),
+            // A plate sits in the tree like a location but is not one: it has
+            // plate_id and neither organized nor num_columns (measured, vault
+            // 1000000109). Copy tree leaves it out.
+            isPlate: node.plate_id != null,
+            organized: node.organized !== false,
+            columns: Number(node.num_columns) || 0,
+            rows: Number(node.num_rows) || 0,
+            // An unorganized box's size; measured `capacity: 100` on UBox1.
+            capacity: Number(node.capacity) || 0,
         });
         for (const child of node.children || []) walk(child, id);
     };

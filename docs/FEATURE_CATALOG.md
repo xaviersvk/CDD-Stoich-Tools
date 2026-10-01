@@ -553,21 +553,27 @@ affect the others. These are the **safest** files to touch.
 - **Regression risk:** **low** — admin-only, preview first, first failure
   stops the run.
 
-### 6.9e Add Batch Fields to Existing Registration Forms
-- **User value:** *Add fields to forms* above the Registration Forms table.
-  Tick batch fields in row order, give a Pick List its default, read the
-  preview per form, apply. The row goes above the file-only rows a form ends
-  in (else at the end); a row left below the files is moved up; a Pick List
-  cell with no default gets the chosen one; a form that has everything, or
-  has no layout of its own, is left alone. The choice is remembered by name,
-  so the next vault opens with the same fields ticked.
-- **Entry point:** `ui-fixes/registration-form-rows/init.js`; `row-model.js`
-  is DOM-free (`planForm`, `withRows`, `verifySaved`), `panel.js` the card,
-  `selection.js` the remembered choice.
-- **Data source:** the same endpoint, plus **PUT** `…/{form_id}` — the whole
-  document goes back, dead `fieldID`s included; batch definitions from the
-  page's react_props; `chrome.storage.local` key
-  `cddRegistrationFormRowSelection`.
+### 6.9e Add Fields to Existing Forms
+- **User value:** *Add fields to forms* above the Registration Forms table
+  (switch: Entity · Batch · Sample · Inventory) and, since 18.8.0, above the
+  Protocol Forms table (switch: Run · Protocol). Pick the kind, tick fields in
+  row order, give a Pick List its default, read the preview per form, apply.
+  The row goes above the file-only rows a form ends in (else at the end); a
+  row left below the files is moved up; a Pick List cell with no default gets
+  the chosen one; a form that has everything, or has no layout of its own
+  for that kind, is left alone. The choice is remembered by name per kind,
+  and the card opens on the kind used last on that page.
+- **Entry point:** `ui-fixes/form-rows/init.js`; `row-model.js` is DOM-free
+  (`planForm`, `withRows`, `verifySaved`, each taking the `components` key),
+  `pages.js` the two page configs, `panel.js` the card, `selection.js` the
+  remembered choice.
+- **Data source:** the same endpoints, plus **PUT** `…/{form_id}` — the whole
+  document goes back, dead `fieldID`s and ontology cells included.
+  Registration: definitions from the page's react_props, PUT with the six
+  registration keys. Protocol: definitions through
+  `inject/hooks/form-store-bridge.js` (`fieldDefinitionsMap`), PUT
+  `{ name, components }`. `chrome.storage.local` key `cddFormRowSelection`;
+  the pre-18.8 `cddRegistrationFormRowSelection` is read as the batch entry.
 - **Safeguards:** a JSON backup is downloaded before the first write; each
   form is re-listed right before its PUT (changed since the preview → stop)
   and right after (anything but the agreed document → stop); the first
@@ -576,8 +582,8 @@ affect the others. These are the **safest** files to touch.
   documents other people work with; the layout grammar (6-wide rows, spans,
   `isLocked`/`defaultValue`) is measured, not documented.
 - **Regression risk:** **medium** — admin-only and preview-first, but it
-  changes forms in use. `row-model.js` has the cases; run them with `node`
-  before touching it.
+  changes forms in use. Run `node scripts/check-form-rows.mjs` before
+  touching `row-model.js`.
 
 ### 6.9f Which Forms Show a Field
 - **User value:** on the Molecule / Batch / Sample / Inventory *Fields*

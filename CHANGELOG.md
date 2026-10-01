@@ -19,6 +19,44 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [18.8.0] — 2026-10-01
+
+### Added
+- **Add fields to forms for every kind, on both form pages** (6.9e). The
+  card has a switch of the form's tables: **Entity · Batch · Sample ·
+  Inventory** on Settings → Registration, **Run · Protocol** on Settings →
+  Protocol Forms (new: the bar sits under that page's Copy / Paste, same
+  administrator rule). Everything else — row order, Pick List default,
+  preview per form, backup, re-list before and after each PUT, stop at the
+  first failure — is unchanged and applies to every kind.
+  - `ui-fixes/registration-form-rows/` → `ui-fixes/form-rows/`.
+    `row-model.js`: `planForm`/`withRows` take the `components` key (default
+    `batch`); `putBody`/`verifySaved` take the PUT keys (`REGISTRATION_SENT`,
+    `PROTOCOL_SENT`); notes name the kind ("shows every inventory field").
+  - `pages.js`: the two page configs (forms API, definitions source, kinds,
+    PUT keys). `panel.js` builds the card from one; the selected kind is
+    bold.
+  - `selection.js`: picks per key and last kind per page under
+    `cddFormRowSelection`; the old batch list
+    (`cddRegistrationFormRowSelection`) is read as the batch entry.
+  - `form-clipboard/api.js updateForm` — measured in CDD's bundle: `PUT
+    …/protocol_form_definitions/{id}` with `{ form_definition: { name,
+    components } }`.
+  - `form-store-bridge.js`: protocol/run definitions now carry
+    `data_type_name`, `pick_list_values`, `disabled` (the form clipboard
+    still reads only id and name).
+  - `scripts/check-form-rows.mjs`: the model's cases on shapes measured in
+    vault 8289 — run table with a string `fieldID` and an `L6` row, protocol
+    table with `ontologyAssn` cells (returned untouched), entity, inventory
+    with no layout, and the old batch call shape.
+  - Tested live in vault 1000000109: a run field into one protocol form and
+    an entity field into one registration form; in both, the server held
+    exactly one new row and every other table and key unchanged.
+
+### Fixed (before release)
+- The card could not open on Registration: `readRegistrationMap()` is async
+  and its `.defs` was read off the promise.
+
 ## [18.7.0] — 2026-10-01
 
 ### Added

@@ -13,6 +13,13 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 18.8.0 — 2026-10-01
+
+**Add fields to forms** now adds entity, sample and inventory fields to registration forms, and run and protocol fields to protocol forms.
+
+- Pick the kind at the top of the card.
+- On **Settings → Protocol Forms**, the button sits under Copy / Paste.
+
 ## 18.7.0 — 2026-10-01
 
 On the **Protocol Fields** and **Run Fields** settings pages, hover the ⓘ after a field's name to see which protocol forms use it. It turns red when no form does.

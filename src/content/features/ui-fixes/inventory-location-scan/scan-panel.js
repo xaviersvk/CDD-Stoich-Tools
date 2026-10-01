@@ -340,6 +340,9 @@ export async function openScanPanel(dialog) {
         scan.columns = size?.columns ?? state.gridColumns;
         scan.rows = size?.rows ?? state.gridRows;
         scan.capacity = size?.capacity ?? state.capacity;
+        // Two numbers made an organized box, one an unorganized one; no
+        // numbers, and the row follows the Organized checkbox.
+        scan.organized = size?.organized;
         // A size that came in with the row counts as set by hand: the boxes at
         // the top must not overwrite what an Excel sheet already said.
         scan.sized = Boolean(size);
@@ -444,7 +447,7 @@ export async function openScanPanel(dialog) {
         capacityInput.disabled = state.busy;
         organizedInput.disabled = state.busy;
         intoSelect.disabled = state.busy;
-        scanInput.disabled = state.busy || !targets.length;
+        scanInput.disabled = state.busy;
 
         list.textContent = "";
         if (!state.scans.length) {
@@ -476,7 +479,7 @@ export async function openScanPanel(dialog) {
                 row.append(el("span", "cdd-scan-why", "created"));
             } else if (!scan.box) {
                 row.append(el("span", "cdd-scan-kind", "location"));
-            } else if (state.organized && !state.busy) {
+            } else if ((scan.organized ?? state.organized) && !state.busy) {
                 const size = el("span", "cdd-scan-size");
                 size.append(
                     sizeInput(scan, "columns"),
@@ -511,7 +514,7 @@ export async function openScanPanel(dialog) {
         if (boxes || !locations) parts.push(plural(boxes, "box"));
         if (locations) parts.push(plural(locations, "location"));
         createButton.textContent = `Create ${parts.join(", ")}`;
-        createButton.disabled = state.busy || (boxes + locations) === 0 || !state.targetId;
+        createButton.disabled = state.busy || (boxes + locations) === 0;
 
         status.textContent = state.status;
 
@@ -571,7 +574,7 @@ export async function openScanPanel(dialog) {
 
     async function createAll() {
         const pending = acceptedScans(state.scans);
-        if (state.busy || !pending.length || !state.targetId) return;
+        if (state.busy || !pending.length) return;
 
         state.busy = true;
         state.status = "";
@@ -587,7 +590,7 @@ export async function openScanPanel(dialog) {
                         name: scan.box,
                         columns: scan.columns,
                         rows: scan.rows,
-                        organized: state.organized,
+                        organized: scan.organized ?? state.organized,
                         capacity: scan.capacity,
                     });
                     nodes = await readTreeNodes(dialog);
@@ -641,7 +644,7 @@ export async function openScanPanel(dialog) {
     open = { panel, content, contentPosition, onKeyDown, leftColumn, onTreeClick, dialog };
 
     if (!targets.length) {
-        state.status = "There is no location that can hold a box. Create one first.";
+        state.status = "No location can hold a box yet — paste paths that start with Locations, or create one first.";
     }
 
     paintTargets();

@@ -195,6 +195,14 @@ export function classifyScan(raw, nodes, scans, context = {}) {
     const above = box ? segments : segments.slice(0, -1);
     const base = { segments, box, absolute, pathLabel: above.join(" > "), where: null };
 
+    // No Into (a vault with no location that holds a box yet): only a path
+    // from the root says where the row goes. `null`, not undefined — a caller
+    // that passes no context keeps today's behaviour.
+    if (!absolute && context.targetId === null) {
+        const name = box ?? segments[segments.length - 1];
+        return { ...base, name, status: SCAN_BLOCKED, where: `pick a location in Into first, or start the line with ${root?.name ?? "the root"}` };
+    }
+
     if (box) {
         const k = key(box);
         const inTree = (nodes || []).find((node) => key(node.name) === k);

@@ -62,3 +62,17 @@ assert.equal(copied.boxes, 8);
 assert.deepEqual(parsePastedLine("A > B\t9\t9"), { name: "A > B", size: { columns: 9, rows: 9, organized: true } });
 assert.deepEqual(parsePastedLine("A > U\t100"), { name: "A > U", size: { capacity: 100, organized: false } });
 assert.deepEqual(parsePastedLine("A > B >"), { name: "A > B >", size: null });
+
+// Pasted into an empty vault (the root alone, no Into): every copied line is
+// accepted; a relative line is refused until Into is picked.
+{
+    const empty = buildNodes([{ id: "1", parentId: "undefined", name: "Locations", rendered: true, canTakeLocation: true, canTakeBox: false }]);
+    const kept = [];
+    for (const line of copied.text.split("\n")) {
+        const scan = classifyScan(parsePastedLine(line).name, empty, kept, { targetId: null });
+        assert.equal(scan.status, SCAN_OK, line);
+        kept.push(scan);
+    }
+    assert.equal(kept.length, 11);
+    assert.equal(classifyScan("Shelf A > R-1", empty, [], { targetId: null }).status, SCAN_BLOCKED);
+}

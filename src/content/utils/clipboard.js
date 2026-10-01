@@ -3,6 +3,15 @@
 // Single clipboard helper for the whole content script. Prefers the async
 // Clipboard API and falls back to a hidden-textarea + execCommand("copy") when
 // it is unavailable or blocked (older pages, missing permission).
+//
+// The API refusing is an expected state — the page has no focus, or the click
+// was not the user's — so it is logged at debug, which chrome://extensions
+// does not list. Only a copy that failed BOTH ways is a warning.
+
+function reportIfFailed(ok) {
+    if (!ok) console.warn("[CDD Stoich Tools] Could not copy to the clipboard — the page may not have had focus.");
+    return ok;
+}
 
 function copyTextFallback(text) {
     try {
@@ -20,7 +29,7 @@ function copyTextFallback(text) {
         textarea.remove();
         return ok;
     } catch (err) {
-        console.warn("[CDD Stoich Tools] Clipboard fallback failed:", err);
+        console.debug("[CDD Stoich Tools] Clipboard fallback threw:", err?.name || err);
         return false;
     }
 }
@@ -33,11 +42,11 @@ export async function copyText(text) {
             await navigator.clipboard.writeText(text);
             return true;
         } catch (err) {
-            console.warn("[CDD Stoich Tools] Clipboard write failed, using fallback:", err);
+            console.debug("[CDD Stoich Tools] Clipboard API refused, trying the fallback:", err?.name || err);
         }
     }
 
-    return copyTextFallback(text);
+    return reportIfFailed(copyTextFallback(text));
 }
 
 export async function copyTextWithFeedback(element, text, successLabel = "Copied") {
@@ -87,7 +96,7 @@ function copyRichFallback(html, text) {
         return ok;
     } catch (err) {
         document.removeEventListener("copy", onCopy);
-        console.warn("[CDD Stoich Tools] Rich clipboard fallback failed:", err);
+        console.debug("[CDD Stoich Tools] Rich clipboard fallback threw:", err?.name || err);
         return false;
     }
 }
@@ -108,9 +117,9 @@ export async function copyRichText(html, text) {
             ]);
             return true;
         } catch (err) {
-            console.warn("[CDD Stoich Tools] Rich clipboard write failed, using fallback:", err);
+            console.debug("[CDD Stoich Tools] Rich clipboard API refused, trying the fallback:", err?.name || err);
         }
     }
 
-    return copyRichFallback(markup, plain);
+    return reportIfFailed(copyRichFallback(markup, plain));
 }

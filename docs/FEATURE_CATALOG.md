@@ -625,6 +625,15 @@ affect the others. These are the **safest** files to touch.
   locations before the box (`tree-model.js parsePath`/`resolvePath`,
   `dialog-dom.js createLocationUnder`), relative to the target or absolute
   when it starts with the root's name; a trailing `>` means locations only.
+  Two numbers after a path make an organized box, one number an unorganized
+  box of that capacity, whatever the *Organized* checkbox says. With no
+  location able to hold a box (an empty vault), root-anchored lines still go.
+- **Copy tree:** a footer button, always shown (it only reads). The whole
+  tree from the bridge (`tree-source.js readRawTree`) becomes those lines
+  (`tree-text.js treeToLines`): plates left out, under one parent locations
+  before boxes (CDD offers no new location under a location holding a box).
+  Paste into *Scan racks* in another vault to build the same tree. Run
+  `node scripts/check-location-tree.mjs` before touching `tree-text.js`.
 - **Filter:** `inventory-location-scan/tree-filter.js` — a box above the
   tree; matches and their ancestors stay, branches unfold through the bridge
   (`LOCATION_TREE_EXPAND`), clearing restores the previous expansion.

@@ -58,6 +58,7 @@ import {
     rootOf,
 } from "./tree-model.js";
 import { readTreeNodes } from "./tree-source.js";
+import { parsePastedLine } from "./tree-text.js";
 import { renderLocationTreeGuide } from "../../../../shared/location-tree-guide.js";
 
 const SCAN_CREATED = "created";
@@ -92,19 +93,6 @@ function numberBox(className, value, max = 100) {
     return input;
 }
 
-// Excel puts a TAB between columns, and only a TAB — splitting on commas too
-// would quietly cut a rack whose code contains one. A line is a name or a
-// path, then optionally two numbers (columns and rows) or one (capacity, for
-// an unorganized shelf).
-function parsePastedLine(line) {
-    const parts = line.split("\t").map((part) => part.trim());
-    const name = parts.shift() || "";
-    const columns = sanitizeBoxSide(parts[0], null);
-    const rows = sanitizeBoxSide(parts[1], null);
-    if (columns && rows) return { name, size: { columns, rows } };
-    const capacity = parts[1] === undefined || parts[1] === "" ? sanitizeCapacity(parts[0], null) : null;
-    return { name, size: capacity ? { capacity } : null };
-}
 
 // The node itself if it can take a box, otherwise the closest ancestor that
 // can. Returns null when nothing in that line can — which is what tells a

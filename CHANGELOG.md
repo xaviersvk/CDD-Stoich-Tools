@@ -19,7 +19,11 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
-## [18.8.0] — 2026-10-01
+## [Unreleased]
+
+Not tagged, not in the stores. `manifest.json` reads 18.8.0 (bumped through
+18.7.0 while it was built); the heading gets that number and a date when it
+is tagged.
 
 ### Added
 - **Add fields to forms for every kind, on both form pages** (6.9e). The
@@ -52,14 +56,6 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   - Tested live in vault 1000000109: a run field into one protocol form and
     an entity field into one registration form; in both, the server held
     exactly one new row and every other table and key unchanged.
-
-### Fixed (before release)
-- The card could not open on Registration: `readRegistrationMap()` is async
-  and its `.defs` was read off the promise.
-
-## [18.7.0] — 2026-10-01
-
-### Added
 - **Which protocol forms show a field** — the ⓘ after a field's name (6.9f)
   now also appears on the *Protocol Fields* and *Run Fields* settings pages,
   listing the protocol forms whose `components.protocol` / `components.run`
@@ -76,6 +72,10 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   - Checked against vault 8289: 17 protocol forms, every one with both a
     protocol and a run layout; numeric `fieldID`s are the field ids, and
     built-ins (`"run_date"`) are strings and never match.
+
+### Fixed (before release)
+- The *Add fields to forms* card could not open on Registration:
+  `readRegistrationMap()` is async and its `.defs` was read off the promise.
 
 ## [18.6.1] — 2026-09-30
 

@@ -11,7 +11,7 @@
 // said, never swallowed (utils/form-definitions-api.js).
 
 import { EVENTS, EVENT_SOURCE } from "../../../../shared/event-types.js";
-import { createFormDefinition, listFormDefinitions } from "../../../utils/form-definitions-api.js";
+import { createFormDefinition, listFormDefinitions, updateFormDefinition } from "../../../utils/form-definitions-api.js";
 
 const BRIDGE_TIMEOUT_MS = 500;
 
@@ -27,6 +27,14 @@ export function createForm(vaultId, form) {
     return createFormDefinition(base(vaultId), form);
 }
 
+// Measured in CDD's bundle (updateFormDefinition, case "protocol_form"):
+// PUT …/protocol_form_definitions/{form_id} with { form_definition: { name,
+// components } }. What comes back is not relied on; the caller lists the
+// forms again and compares.
+export function updateForm(vaultId, formId, form) {
+    return updateFormDefinition(`${base(vaultId)}/${formId}`, form);
+}
+
 export function vaultIdFromPath(pathname) {
     const match = /^\/vaults\/(\d+)(?:\/|$)/.exec(pathname || "");
     return match ? match[1] : null;
@@ -40,7 +48,7 @@ export function vaultName() {
 
 let requestCounter = 0;
 
-// { protocol: [{ id, name }], run: [{ id, name }] } or null.
+// { protocol: [def], run: [def] } or null — see inject/hooks/form-store-bridge.js for a def.
 export function requestFieldMap() {
     return new Promise((resolve) => {
         const requestId = `cdd-form-map-${++requestCounter}`;

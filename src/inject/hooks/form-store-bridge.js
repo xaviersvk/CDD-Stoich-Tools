@@ -10,7 +10,8 @@
 //
 // Protocol (window.postMessage, source EVENT_SOURCE):
 //   FORM_FIELD_MAP_REQUEST { requestId }
-//     -> FORM_FIELD_MAP    { requestId, map: { protocol: [{ id, name }], run: [{ id, name }] } | null }
+//     -> FORM_FIELD_MAP    { requestId, map: { protocol: [def], run: [def] } | null }
+//        def = { id, name, data_type_name, pick_list_values: [{ id, value, hidden }], disabled }
 
 import { post } from "../bus.js";
 import { EVENTS, EVENT_SOURCE } from "../../shared/event-types.js";
@@ -40,10 +41,20 @@ function findMap(bag, depth, seen) {
     return null;
 }
 
+// What the content side needs of a definition: the name for the clipboards,
+// and the type and pick list values for adding a field to forms.
 function reduce(list) {
     return (list || [])
         .filter((entry) => entry && entry.id != null)
-        .map((entry) => ({ id: entry.id, name: String(entry.name ?? "") }));
+        .map((entry) => ({
+            id: entry.id,
+            name: String(entry.name ?? ""),
+            data_type_name: String(entry.data_type_name ?? ""),
+            pick_list_values: (entry.pick_list_values || [])
+                .filter((value) => value && value.id != null)
+                .map((value) => ({ id: value.id, value: String(value.value ?? ""), hidden: !!value.hidden })),
+            disabled: !!entry.disabled,
+        }));
 }
 
 function readMap() {

@@ -504,7 +504,7 @@ export const REGISTRATION_FORMS = {
     listForms: listRegistrationForms,
     updateForm: updateRegistrationForm,
     // { molecule, batch, sample, inventory } or null.
-    readDefs: async () => readRegistrationMap()?.defs || null,
+    readDefs: async () => (await readRegistrationMap())?.defs || null,
     sent: REGISTRATION_SENT,
     formTag: (form) => form.registration_system?.prefix || "",
 };

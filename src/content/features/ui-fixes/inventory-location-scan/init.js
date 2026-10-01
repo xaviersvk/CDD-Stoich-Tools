@@ -12,7 +12,9 @@
 // start-up, so flipping it in the options page adds or removes the button on a
 // dialog that is already open.
 //
-// Independently of the switch, every sync also runs the duplicate-name pass:
+// Independently of the switch, the footer also gets Copy tree
+// (tree-copy-button.js), which only reads. And every sync runs the
+// duplicate-name pass:
 // the whole tree from the bridge, the twins from tree-model, the colour from
 // name-marks. A rename typed into CDD's name field repaints the label — as a
 // characterData mutation, measured: React rewrites the text node in place
@@ -30,6 +32,7 @@ import { markDuplicateNames } from "./name-marks.js";
 import { closeScanPanel, openScanPanel } from "./scan-panel.js";
 import { injectScanStyles } from "./styles.js";
 import { mountTreeFilter, paintTreeFilter, unmountTreeFilter } from "./tree-filter.js";
+import { ensureTreeCopyButton } from "./tree-copy-button.js";
 import { duplicateBoxNames } from "./tree-model.js";
 import { readTreeNodes } from "./tree-source.js";
 
@@ -95,6 +98,8 @@ function sync() {
     // switch. Both run whether or not the scan button is mounted.
     mountTreeFilter(dialog);
     void markPass(dialog);
+    // Copy tree only reads, so it does not wait for the Scan racks switch.
+    ensureTreeCopyButton(dialog, findFooter(dialog));
 
     const existing = dialog.querySelector(`.${BUTTON_CLASS}`);
     if (isInventoryScanEnabled()) {

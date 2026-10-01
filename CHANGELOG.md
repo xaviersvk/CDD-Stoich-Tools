@@ -21,11 +21,47 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 ---
 ## [Unreleased]
 
-Not tagged, not in the stores. `manifest.json` reads 18.8.0 (bumped through
-18.7.0 while it was built); the heading gets that number and a date when it
-is tagged.
+Not tagged, not in the stores. `manifest.json` reads 18.9.0 (bumped through
+18.7.0 and 18.8.0 while it was built); the heading gets that number and a
+date when it is tagged.
 
 ### Added
+- **Copy tree** in the *Edit Locations* footer (6.10): the whole location
+  tree — collapsed branches included — onto the clipboard as the lines
+  *Scan racks* reads, one per box or empty location:
+  `Locations > Lab 1 > Fridge 1 > Box 1 ⇥ 9 ⇥ 9`, `… > UBox1 ⇥ 100`
+  (unorganized), `… > Bench 1 > Shelf >` (empty location). Pasted into
+  *Scan racks* in another vault, it builds the same tree. Plates are left
+  out; under one parent locations come before boxes, because CDD offers no
+  "Create new location" on a location that already holds a box (measured on
+  `Bench 1`, vault 1000000109). Always shown — it only reads.
+  - `inventory-location-scan/tree-text.js` (DOM-free): `treeToLines`, and
+    `parsePastedLine` moved out of `scan-panel.js`.
+  - `tree-copy-button.js`; `tree-source.js readRawTree()` (bridge only, no
+    DOM fallback — half a tree must not be copied silently).
+  - `location-tree-bridge.js`: each node also carries `isPlate`
+    (`plate_id`), `organized`, `columns`, `rows`, `capacity` (measured:
+    `capacity: 100` on an unorganized box, no `position_limit`).
+  - `scripts/check-location-tree.mjs`: the exact text for the tree measured
+    in 1000000109 (11 locations, 8 boxes, 7 plates skipped) and its paste
+    into an empty vault.
+  - Tested live: copied from 1000000109; pasted into *Scan racks* in the
+    empty vault 1000000075 — 11 rows, none refused, *Create 8 boxes, 11
+    locations*.
+
+### Changed
+- **Scan racks** takes a whole tree. A pasted line carries its own box kind:
+  two numbers make an organized box, one number an **unorganized** box of
+  that capacity — whatever the *Organized* checkbox says (before, a single
+  number was ignored while the checkbox was on). In a vault where no
+  location can hold a box yet, the scan box is no longer disabled: lines
+  that start with the root's name are accepted, others are refused with
+  "pick a location in Into first".
+- Clipboard: the Clipboard API refusing (page without focus, a click that was
+  not the user's) is logged at debug; only a copy that failed both ways
+  warns, so chrome://extensions no longer lists a copy that worked.
+
+### Added (earlier in this batch)
 - **Add fields to forms for every kind, on both form pages** (6.9e). The
   card has a switch of the form's tables: **Entity · Batch · Sample ·
   Inventory** on Settings → Registration, **Run · Protocol** on Settings →

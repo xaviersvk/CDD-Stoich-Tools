@@ -58,6 +58,7 @@ import {
     rootOf,
 } from "./tree-model.js";
 import { readTreeNodes } from "./tree-source.js";
+import { parsePastedLine } from "./tree-text.js";
 import { renderLocationTreeGuide } from "../../../../shared/location-tree-guide.js";
 
 const SCAN_CREATED = "created";
@@ -92,19 +93,6 @@ function numberBox(className, value, max = 100) {
     return input;
 }
 
-// Excel puts a TAB between columns, and only a TAB — splitting on commas too
-// would quietly cut a rack whose code contains one. A line is a name or a
-// path, then optionally two numbers (columns and rows) or one (capacity, for
-// an unorganized shelf).
-function parsePastedLine(line) {
-    const parts = line.split("\t").map((part) => part.trim());
-    const name = parts.shift() || "";
-    const columns = sanitizeBoxSide(parts[0], null);
-    const rows = sanitizeBoxSide(parts[1], null);
-    if (columns && rows) return { name, size: { columns, rows } };
-    const capacity = parts[1] === undefined || parts[1] === "" ? sanitizeCapacity(parts[0], null) : null;
-    return { name, size: capacity ? { capacity } : null };
-}
 
 // The node itself if it can take a box, otherwise the closest ancestor that
 // can. Returns null when nothing in that line can — which is what tells a
@@ -352,6 +340,9 @@ export async function openScanPanel(dialog) {
         scan.columns = size?.columns ?? state.gridColumns;
         scan.rows = size?.rows ?? state.gridRows;
         scan.capacity = size?.capacity ?? state.capacity;
+        // Two numbers made an organized box, one an unorganized one; no
+        // numbers, and the row follows the Organized checkbox.
+        scan.organized = size?.organized;
         // A size that came in with the row counts as set by hand: the boxes at
         // the top must not overwrite what an Excel sheet already said.
         scan.sized = Boolean(size);
@@ -456,7 +447,7 @@ export async function openScanPanel(dialog) {
         capacityInput.disabled = state.busy;
         organizedInput.disabled = state.busy;
         intoSelect.disabled = state.busy;
-        scanInput.disabled = state.busy || !targets.length;
+        scanInput.disabled = state.busy;
 
         list.textContent = "";
         if (!state.scans.length) {
@@ -488,7 +479,7 @@ export async function openScanPanel(dialog) {
                 row.append(el("span", "cdd-scan-why", "created"));
             } else if (!scan.box) {
                 row.append(el("span", "cdd-scan-kind", "location"));
-            } else if (state.organized && !state.busy) {
+            } else if ((scan.organized ?? state.organized) && !state.busy) {
                 const size = el("span", "cdd-scan-size");
                 size.append(
                     sizeInput(scan, "columns"),
@@ -523,7 +514,7 @@ export async function openScanPanel(dialog) {
         if (boxes || !locations) parts.push(plural(boxes, "box"));
         if (locations) parts.push(plural(locations, "location"));
         createButton.textContent = `Create ${parts.join(", ")}`;
-        createButton.disabled = state.busy || (boxes + locations) === 0 || !state.targetId;
+        createButton.disabled = state.busy || (boxes + locations) === 0;
 
         status.textContent = state.status;
 
@@ -583,7 +574,7 @@ export async function openScanPanel(dialog) {
 
     async function createAll() {
         const pending = acceptedScans(state.scans);
-        if (state.busy || !pending.length || !state.targetId) return;
+        if (state.busy || !pending.length) return;
 
         state.busy = true;
         state.status = "";
@@ -599,7 +590,7 @@ export async function openScanPanel(dialog) {
                         name: scan.box,
                         columns: scan.columns,
                         rows: scan.rows,
-                        organized: state.organized,
+                        organized: scan.organized ?? state.organized,
                         capacity: scan.capacity,
                     });
                     nodes = await readTreeNodes(dialog);
@@ -653,7 +644,7 @@ export async function openScanPanel(dialog) {
     open = { panel, content, contentPosition, onKeyDown, leftColumn, onTreeClick, dialog };
 
     if (!targets.length) {
-        state.status = "There is no location that can hold a box. Create one first.";
+        state.status = "No location can hold a box yet — paste paths that start with Locations, or create one first.";
     }
 
     paintTargets();

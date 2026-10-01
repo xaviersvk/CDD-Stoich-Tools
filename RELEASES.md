@@ -20,6 +20,7 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 - Pick the kind at the top of the card.
 - On **Settings → Protocol Forms**, the button sits under Copy / Paste.
 - On **Protocol Fields** and **Run Fields**, hover the ⓘ after a field's name to see which protocol forms use it.
+- **Copy tree** in *Edit Locations* copies the whole location tree; paste it into **Scan racks** in another vault to build it there.
 
 ## 18.6.1 — 2026-09-30
 

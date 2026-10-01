@@ -40,8 +40,9 @@ export function injectScanStyles() {
     .cdd-tree-filter:focus { outline: none; border-color: #1565c0; }
     li[role="treeitem"][data-cdd-filtered] { display: none; }
 
-    /* ===== THE FOOTER BUTTON ===== */
-    .cdd-scan-open {
+    /* ===== THE FOOTER BUTTONS: Scan racks, Copy tree ===== */
+    .cdd-scan-open,
+    .cdd-tree-copy {
         appearance: none;
         border: 0;
         background: none;
@@ -52,8 +53,10 @@ export function injectScanStyles() {
         color: #1565c0;
         cursor: pointer;
     }
-    .cdd-scan-open:hover { text-decoration: underline; }
-    .cdd-scan-open[disabled] { color: rgba(0, 0, 0, 0.38); cursor: default; }
+    .cdd-scan-open:hover,
+    .cdd-tree-copy:hover { text-decoration: underline; }
+    .cdd-scan-open[disabled],
+    .cdd-tree-copy[disabled] { color: rgba(0, 0, 0, 0.38); cursor: default; }
 
     /* ===== THE PANEL ===== */
     .cdd-scan-panel {

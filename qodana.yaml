@@ -13,7 +13,7 @@ include:
 # house style: they send validation failures and API rejections through the one
 # catch that reports progress ("Changed N of M…, stopped at X") and the one
 # finally that clears busy state. Rewriting them would copy that path to every
-# guard. All 13 hits on 2026-09-30 (form-clipboard, registration-form-rows,
+# guard. All 13 hits on 2026-09-30 (form-clipboard, form-rows,
 # sample-duplicate) were read one by one and every one is this shape; the rule
 # is excluded here rather than with scattered `noinspection` comments.
 exclude:

@@ -1,13 +1,17 @@
-// content/features/ui-fixes/registration-form-rows/row-model.js
+// content/features/ui-fixes/form-rows/row-model.js
 //
-// The data side of adding batch fields to registration forms that already
-// exist: what a new row looks like, which forms can take it, the document to
-// send, and the check that the server kept everything else.
+// The data side of adding fields to forms that already exist — one table of
+// a registration form (molecule, batch, sample, inventory) or of a protocol
+// form (run, protocol): what a new row looks like, which forms can take it,
+// the document to send, and the check that the server kept everything else.
+// The table is named by its key in `components`; the notes below were
+// measured on batch tables and hold for all six (vault 8289, 2026-10-01 —
+// protocol tables also carry ontology cells, which go back untouched).
 //
 // All of it measured on real forms:
 //
-//   - components.batch is either null — the form has no layout of its own
-//     and CDD shows every batch field — or { sections: [ { contents: [ a
+//   - components[key] is either null — the form has no layout of its own
+//     and CDD shows every field of that kind — or { sections: [ { contents: [ a
 //     table ] } ] }. A null layout is never given one here: a layout with one
 //     row would hide every other field.
 //   - a table's rows are always 6 wide: a label cell of span 1 and a field
@@ -39,8 +43,12 @@ export const PLAN_ODD_LAYOUT = "odd-layout";
 
 const ROW_WIDTH = 6;
 const PAIRS_PER_ROW = 3;
-// The form keys CDD itself sends when it saves a registration form.
-const SENT = ["name", "components", "registration_type", "structureless_image_name", "allow_new_molecules", "registration_system_id"];
+// The form keys CDD itself sends when it saves a form, per page.
+export const REGISTRATION_SENT = ["name", "components", "registration_type", "structureless_image_name", "allow_new_molecules", "registration_system_id"];
+export const PROTOCOL_SENT = ["name", "components"];
+
+// What a table key is called in a note. CDD calls the Entity "molecule".
+const KIND_NOUNS = { molecule: "entity", batch: "batch", sample: "sample", inventory: "inventory", run: "run", protocol: "protocol" };
 
 function cleanName(name) {
     return String(name ?? "").trim();
@@ -69,9 +77,9 @@ function fieldIds(node, out = new Set()) {
     return out;
 }
 
-// The last table of the last section: "the end of the batch table".
-function lastTable(batch) {
-    const sections = batch?.sections;
+// The last table of the last section: "the end of the table".
+function lastTable(layout) {
+    const sections = layout?.sections;
     if (!Array.isArray(sections) || !sections.length) return null;
     const contents = sections[sections.length - 1]?.contents;
     if (!Array.isArray(contents)) return null;
@@ -89,8 +97,8 @@ function rowFieldIds(row) {
 
 // The ids of this vault's File fields; a dead id is in no set, so a row that
 // carries one is never taken for a file row.
-export function fileFieldIds(batchDefs) {
-    return new Set((batchDefs || []).filter((def) => def?.data_type_name === "File").map((def) => def.id));
+export function fileFieldIds(defs) {
+    return new Set((defs || []).filter((def) => def?.data_type_name === "File").map((def) => def.id));
 }
 
 // Where new rows go: above the closing run of rows that hold File fields only.
@@ -122,9 +130,9 @@ function misplaced(rows, cells, fileIds) {
 }
 
 // The user's choice — [{ name, default }] , names and value texts, never ids —
-// against this vault's batch field definitions.
-export function resolveChosen(chosen, batchDefs) {
-    const byName = new Map((batchDefs || []).filter((def) => def && !def.disabled).map((def) => [cleanName(def.name), def]));
+// against this vault's field definitions of one kind.
+export function resolveChosen(chosen, defs) {
+    const byName = new Map((defs || []).filter((def) => def && !def.disabled).map((def) => [cleanName(def.name), def]));
     const cells = [];
     const missing = [];
     const droppedDefaults = [];
@@ -151,7 +159,7 @@ export function resolveChosen(chosen, batchDefs) {
 }
 
 // The form's own cells of chosen fields that have no default, where one was chosen.
-function cellsWithoutDefault(batch, cells) {
+function cellsWithoutDefault(layout, cells) {
     const wanted = new Map((cells || []).filter((cell) => cell.defaultValue != null).map((cell) => [cell.fieldID, cell]));
     const out = [];
     (function walk(node) {
@@ -160,7 +168,7 @@ function cellsWithoutDefault(batch, cells) {
             if (wanted.has(node.fieldID) && node.defaultValue == null) out.push({ node, cell: wanted.get(node.fieldID) });
             for (const value of Object.values(node)) if (value && typeof value === "object") walk(value);
         }
-    })(batch);
+    })(layout);
     return out;
 }
 
@@ -174,20 +182,22 @@ function setDefault(node, value) {
     node.defaultValue = value;
 }
 
-// What adding `cells` would do to one form. `fileIds`: fileFieldIds().
-export function planForm(form, cells, fileIds = new Set()) {
-    const batch = form?.components?.batch;
-    if (batch == null) {
-        return { status: PLAN_NO_LAYOUT, add: [], note: "no layout of its own — it shows every batch field already" };
+// What adding `cells` to `components[key]` would do to one form. `fileIds`:
+// fileFieldIds() of that kind's definitions.
+export function planForm(form, cells, fileIds = new Set(), key = "batch") {
+    const noun = KIND_NOUNS[key] || key;
+    const layout = form?.components?.[key];
+    if (layout == null) {
+        return { status: PLAN_NO_LAYOUT, add: [], note: `no layout of its own — it shows every ${noun} field already` };
     }
-    const table = lastTable(batch);
-    if (!table) return { status: PLAN_ODD_LAYOUT, add: [], note: "its batch section has no table to add a row to" };
+    const table = lastTable(layout);
+    if (!table) return { status: PLAN_ODD_LAYOUT, add: [], note: `its ${noun} section has no table to add a row to` };
     const odd = table.contents.find((row) => row?.layoutType !== "row" || rowWidth(row) !== ROW_WIDTH);
-    if (odd) return { status: PLAN_ODD_LAYOUT, add: [], note: `a row of its batch table is not ${ROW_WIDTH} wide` };
+    if (odd) return { status: PLAN_ODD_LAYOUT, add: [], note: `a row of its ${noun} table is not ${ROW_WIDTH} wide` };
 
-    const present = fieldIds(batch);
+    const present = fieldIds(layout);
     const add = (cells || []).filter((cell) => !present.has(cell.fieldID));
-    const defaults = [...new Set(cellsWithoutDefault(batch, cells).map(({ cell }) => cell))];
+    const defaults = [...new Set(cellsWithoutDefault(layout, cells).map(({ cell }) => cell))];
     const defaultsNote = defaults.length
         ? `sets the default ${defaults.map((cell) => `"${cell.defaultText}" on ${cell.name}`).join(", ")}`
         : "";
@@ -232,30 +242,30 @@ export function buildRows(cells) {
 
 // The form as it should be afterwards. Throws rather than returning a form
 // the plan did not promise.
-export function withRows(form, cells, fileIds = new Set()) {
-    const plan = planForm(form, cells, fileIds);
+export function withRows(form, cells, fileIds = new Set(), key = "batch") {
+    const plan = planForm(form, cells, fileIds, key);
     if (plan.status !== PLAN_ADD && plan.status !== PLAN_MOVE && plan.status !== PLAN_DEFAULT) throw new Error(plan.note);
     const next = clone(form);
-    const table = lastTable(next.components.batch);
+    const table = lastTable(next.components[key]);
     // Defaults first, on the form's own cells; the rows built below carry theirs already.
-    for (const { node, cell } of cellsWithoutDefault(next.components.batch, cells)) setDefault(node, cell.defaultValue);
+    for (const { node, cell } of cellsWithoutDefault(next.components[key], cells)) setDefault(node, cell.defaultValue);
     if (plan.status === PLAN_MOVE) table.contents = misplaced(table.contents, cells, fileIds);
     else if (plan.status === PLAN_ADD) table.contents.splice(insertionIndex(table.contents, fileIds), 0, ...buildRows(plan.add));
     return next;
 }
 
-export function putBody(form) {
+export function putBody(form, sent = REGISTRATION_SENT) {
     const body = {};
-    for (const key of SENT) body[key] = form[key];
+    for (const key of sent) body[key] = form[key];
     return body;
 }
 
 // `expected` is what was sent, `saved` what the server lists afterwards.
 // Anything but the agreed document is a problem worth stopping for.
-export function verifySaved(expected, saved) {
+export function verifySaved(expected, saved, sent = REGISTRATION_SENT) {
     const problems = [];
     if (!saved) return ["the form is no longer listed"];
-    for (const key of SENT) {
+    for (const key of sent) {
         if (key === "components") continue;
         if (!sameDocument(expected[key] ?? null, saved[key] ?? null)) problems.push(`${key} changed`);
     }

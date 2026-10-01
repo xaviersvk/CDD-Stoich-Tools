@@ -137,6 +137,19 @@ export function injectFieldClipboardStyles() {
     }
     .cdd-fc-filter { font-weight: 400; width: 180px; }
     .cdd-fc-pick { display: flex; gap: 14px; font-weight: 400; }
+    /* The table switch at the top of "Add fields to forms": links, the
+       current one in bold — weight marks it, not colour. */
+    .cdd-fc-kind {
+        appearance: none;
+        border: 0;
+        background: none;
+        padding: 0;
+        font: inherit;
+        color: #1565c0;
+        cursor: pointer;
+    }
+    .cdd-fc-kind.is-current { font-weight: 700; color: inherit; cursor: default; }
+    .cdd-fc-kind[disabled] { cursor: default; }
     .cdd-fc-order { min-width: 14px; color: rgba(0, 0, 0, 0.6); text-align: right; }
     .cdd-fc-row[hidden] { display: none; }
 

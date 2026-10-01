@@ -579,14 +579,17 @@ affect the others. These are the **safest** files to touch.
   changes forms in use. `row-model.js` has the cases; run them with `node`
   before touching it.
 
-### 6.9f Which Registration Forms Show a Field
+### 6.9f Which Forms Show a Field
 - **User value:** on the Molecule / Batch / Sample / Inventory *Fields*
   settings pages, a small ⓘ after each field's name; hover or focus lists the
   registration forms that show it (*In 3 of 11 registration forms*). Red when
-  none does. A form with no layout for that kind counts, and says so.
+  none does. A form with no layout for that kind counts, and says so. Since
+  18.7.0 the same on the Protocol / Run *Fields* pages, listing protocol
+  forms (*In 3 of 17 protocol forms*).
 - **Entry point:** `ui-fixes/field-forms/init.js`; `forms-model.js` is
   DOM-free.
-- **Data source:** `listRegistrationForms` once per page visit; field ids
+- **Data source:** `listRegistrationForms` or, for protocol/run fields,
+  `form-clipboard/api.js listForms`, once per page visit; field ids
   through the field-rows bridge.
 - **Maintenance difficulty:** **low**. The ⓘ lives in the name cell, so names
   are read through `page-dom.js readModeName()` — keep that if the markup

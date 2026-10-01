@@ -19,6 +19,26 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [18.7.0] — 2026-10-01
+
+### Added
+- **Which protocol forms show a field** — the ⓘ after a field's name (6.9f)
+  now also appears on the *Protocol Fields* and *Run Fields* settings pages,
+  listing the protocol forms whose `components.protocol` / `components.run`
+  layout carries the field's id (*In 3 of 17 protocol forms*; red when none
+  does).
+  - `field-forms/init.js`: `KEPT_KINDS` replaced by `SOURCE_BY_KIND`, which
+    pairs each field kind with its form list — `listRegistrationForms` for
+    molecule/batch/sample/inventory, `form-clipboard/api.js listForms`
+    (`/api/internal/v1/vaults/<id>/protocol_form_definitions`) for
+    protocol/run. The forms cache is keyed by source and vault.
+  - `forms-model.js describeForms()` takes the form noun ("registration" /
+    "protocol"); the default keeps the registration wording.
+  - ELN fields stay unannotated: no form lays them out.
+  - Checked against vault 8289: 17 protocol forms, every one with both a
+    protocol and a run layout; numeric `fieldID`s are the field ids, and
+    built-ins (`"run_date"`) are strings and never match.
+
 ## [18.6.1] — 2026-09-30
 
 ### Fixed

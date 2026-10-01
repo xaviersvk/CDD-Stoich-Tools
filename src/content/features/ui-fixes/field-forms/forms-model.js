@@ -1,7 +1,7 @@
 // content/features/ui-fixes/field-forms/forms-model.js
 //
-// The data side of "which registration forms show this field": walking a
-// registration form's `components[kind]` layout for a `fieldID`, and turning
+// The data side of "which forms show this field": walking a registration or
+// protocol form's `components[kind]` layout for a `fieldID`, and turning
 // the matches into what the bubble behind the field's (i) says. No DOM,
 // no storage, no imports — checkable with `node`.
 //
@@ -24,8 +24,9 @@ function hasFieldId(node, fieldId, seen) {
     ));
 }
 
-// forms: the array listRegistrationForms() resolves to. kind: "molecule" |
-// "batch" | "sample" | "inventory". fieldId: the field's numeric id.
+// forms: the array listRegistrationForms() or listForms() resolves to. kind:
+// "molecule" | "batch" | "sample" | "inventory" on a registration form,
+// "protocol" | "run" on a protocol form. fieldId: the field's numeric id.
 // -> [{ name, byLayout }], byLayout true when the form has no layout for
 // this kind and is showing the field only because it shows every field.
 export function formsForField(forms, kind, fieldId) {
@@ -45,14 +46,15 @@ export function formsForField(forms, kind, fieldId) {
 }
 
 // list: formsForField()'s result. totalForms: how many forms the vault has
-// at all. -> what the bubble behind the field's (i) says: a heading, one line
-// per form, and whether the field is in no form at all — the one case worth
-// a colour. A vault with zero forms gets null: nothing to say.
-export function describeForms(list, totalForms) {
+// at all. noun: "registration" | "protocol". -> what the bubble behind the
+// field's (i) says: a heading, one line per form, and whether the field is
+// in no form at all — the one case worth a colour. A vault with zero forms
+// gets null: nothing to say.
+export function describeForms(list, totalForms, noun = "registration") {
     if (!totalForms) return null;
-    if (!list.length) return { heading: "In no registration form", lines: [], warn: true };
+    if (!list.length) return { heading: `In no ${noun} form`, lines: [], warn: true };
     return {
-        heading: `In ${list.length} of ${totalForms} registration form${totalForms === 1 ? "" : "s"}`,
+        heading: `In ${list.length} of ${totalForms} ${noun} form${totalForms === 1 ? "" : "s"}`,
         lines: list.map((entry) => ({ name: entry.name, note: entry.byLayout ? "no layout — shows every field" : "" })),
         warn: false,
     };

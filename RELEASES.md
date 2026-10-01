@@ -13,6 +13,10 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 18.7.0 — 2026-10-01
+
+On the **Protocol Fields** and **Run Fields** settings pages, hover the ⓘ after a field's name to see which protocol forms use it. It turns red when no form does.
+
 ## 18.6.1 — 2026-09-30
 
 - Fixed: a plate with many runs no longer stretches the **Protocols** column; the dates wrap instead.

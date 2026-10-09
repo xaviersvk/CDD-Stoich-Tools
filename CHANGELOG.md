@@ -21,8 +21,16 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 ---
 ## [18.14.0] — 2026-10-09
 
-`manifest.json` was bumped to 18.10.1, 18.11.0, 18.11.1, 18.12.0 and
-18.13.0 for the changes below; none was tagged, and all ship here.
+`manifest.json` was bumped to 18.10.0, 18.10.1, 18.11.0, 18.11.1, 18.12.0
+and 18.13.0 for the changes below and in the 18.10.0 section; none was
+tagged, and all ship here.
+
+**Inventory search changes are in the code but switched off** in this
+release (`installInventoryExactFirst()` in `inject/main.js`,
+`initInventoryExactTable()` in `content/main.js`, both commented out): while
+they were being tested, CDD's own text search returned nothing for any term
+with all eight projects selected, and inventory work was parked until that
+is understood. The two entries below describe the code as it stands.
 
 ### Added
 - **Inventory search: the exact match is the first row.** CDD's keyword
@@ -241,7 +249,7 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 - `STATE.isKetcherOpen` still reflects Ketcher only: a sidebar hides the
   panel but does not stop it being built.
 
-## [18.10.0] — 2026-10-09
+## [18.10.0] — 2026-10-09 (untagged, ships in 18.14.0)
 
 `manifest.json` was bumped to 18.9.1 for the change under *Removed*; it was
 never tagged and ships here.

@@ -248,7 +248,9 @@ function init() {
 
   // Inventory search: the exact hits (lifted first by the page-world hook)
   // also shown in a view-only "Exact" table above CDD's results.
-  initInventoryExactTable();
+  // OFF since 18.14.0, together with installInventoryExactFirst() in
+  // inject/main.js — the table has nothing to show without it.
+  // initInventoryExactTable();
 
   // Selecting text in a stoichiometry table: CDD's Slate void turns
   // user-select off and hijacks the mouse into a block drag, so nothing in

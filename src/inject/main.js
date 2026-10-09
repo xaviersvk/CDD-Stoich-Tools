@@ -160,7 +160,10 @@ const tryParseText = createTextParser(processJsonPayload);
   installFetchHook(processJsonPayload, tryParseText);
   installXhrHook(tryParseText);
   // After the XHR hook, so it wraps it: inventory search answered exact-first.
-  installInventoryExactFirst();
+  // OFF since 18.14.0 — parked until inventory search is looked at again
+  // (text search returned nothing with all projects selected; not ours, but
+  // not to be mixed up with it). One line restores it.
+  // installInventoryExactFirst();
 
   // An opening ELN entry puts no payload on the wire; ask for it ourselves and
   // let the fetch hook above parse the answer.

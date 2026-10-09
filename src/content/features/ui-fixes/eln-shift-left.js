@@ -48,6 +48,7 @@ const STYLES = `
 // edge. Capped at the room the entry leaves, or a left-side strip would
 // push the entry off the right of the page.
 function measureReserve() {
+    watchEntry();
     const panel = document.getElementById(PANEL_ID);
     const entry = document.getElementById("content-inner");
     const pageWidth = document.documentElement.clientWidth;
@@ -68,16 +69,39 @@ function measureReserve() {
 // resize both land in its `style` attribute (left, --cdd-panel-width).
 // `class` too: collapsing, or a CDD sidebar hiding it, changes the entry's
 // width, and the cap above must be measured while the rule applies.
+//
+// Sizes as well, through a ResizeObserver on the panel and on the entry.
+// On a fresh page load the panel can be up before CDD has rendered the
+// entry, while #content-inner still spans the whole page — the cap then
+// comes out 0 and, with nothing else changing, it stayed 0 (no shift until
+// the panel was touched). The entry settling to its real width is what
+// re-measures now.
 let panelWatch = null;
+let sizeWatch = null;
 let watchedPanel = null;
+let watchedEntry = null;
 
 function watchPanel() {
     const panel = document.getElementById(PANEL_ID);
     if (panel === watchedPanel) return;
+    if (watchedPanel && sizeWatch) sizeWatch.unobserve(watchedPanel);
     watchedPanel = panel;
     if (panelWatch) panelWatch.disconnect();
-    if (panel) panelWatch.observe(panel, { attributes: true, attributeFilter: ["style", "class"] });
+    if (panel) {
+        panelWatch.observe(panel, { attributes: true, attributeFilter: ["style", "class"] });
+        if (sizeWatch) sizeWatch.observe(panel);
+    }
     measureReserve();
+}
+
+// #content-inner is replaced when Turbo swaps <body> on in-app navigation.
+function watchEntry() {
+    if (!sizeWatch) return;
+    const entry = document.getElementById("content-inner");
+    if (entry === watchedEntry) return;
+    if (watchedEntry) sizeWatch.unobserve(watchedEntry);
+    watchedEntry = entry;
+    if (entry) sizeWatch.observe(entry);
 }
 
 let started = false;
@@ -86,7 +110,12 @@ function startMeasuring() {
     if (started) return;
     started = true;
     panelWatch = new MutationObserver(measureReserve);
-    new MutationObserver(watchPanel).observe(document.documentElement, { childList: true });
+    if (typeof ResizeObserver !== "undefined") sizeWatch = new ResizeObserver(measureReserve);
+    // <html>'s own children: the panel, and <body> when Turbo swaps it.
+    new MutationObserver(() => {
+        watchPanel();
+        measureReserve();
+    }).observe(document.documentElement, { childList: true });
     window.addEventListener("resize", measureReserve);
     watchPanel();
 }

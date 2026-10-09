@@ -55,6 +55,16 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   right-side fallback. The panel's `class` is observed as well as `style`,
   so the cap is re-measured when the panel is collapsed, reopened or
   un-hidden — while the rule applies and the entry has its full width.
+- **The shift now applies on a fresh page load.** The cap above made the
+  first measurement come out 0: the panel can be up before CDD has rendered
+  the entry, while `#content-inner` still spans the whole page, so "room
+  the entry leaves" was 0 — and nothing re-measured until the panel was
+  dragged, resized or collapsed. A `ResizeObserver` on the panel and on
+  `#content-inner` now re-measures when either settles; `#content-inner`
+  is re-acquired when Turbo swaps `<body>` (the `<html>` childList
+  observer now re-measures on every change, not only a new panel). No
+  feedback loop: with `flex-shrink: 0` the entry's width does not depend
+  on the padding being set.
 
 ### Changed
 - **The panel hides while CDD's Comments or Table of contents sidebar is

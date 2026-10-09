@@ -19,11 +19,10 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
-## [Unreleased]
+## [18.9.0] — 2026-10-09
 
-Not tagged, not in the stores. `manifest.json` reads 18.9.0 (bumped through
-18.7.0 and 18.8.0 while it was built); the heading gets that number and a
-date when it is tagged.
+`manifest.json` was bumped through 18.7.0 and 18.8.0 while this was built;
+neither was tagged.
 
 ### Added
 - **Drag to select outliers** on a dose-response plot (CDD Visualization,

@@ -13,7 +13,7 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
-## Unreleased
+## 18.9.0 — 2026-10-09
 
 **Add fields to forms** now adds entity, sample and inventory fields to registration forms, and run and protocol fields to protocol forms.
 

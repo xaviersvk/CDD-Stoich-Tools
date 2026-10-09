@@ -77,6 +77,7 @@ import {
     getActiveReactionEnabled,
     saveActiveReactionEnabled,
 } from "../shared/active-reaction-flag.js";
+import { getLinkAliasField, saveLinkAliasField } from "../shared/link-alias.js";
 import {
     getAssayWindowEnabled,
     saveAssayWindowEnabled,
@@ -1149,6 +1150,22 @@ async function initActiveReactionUI() {
     activeReactionCheckbox.checked = await getActiveReactionEnabled();
 }
 
+const linkAliasFieldInput = document.getElementById("linkAliasField");
+
+// Saved as you type; a blank box goes back to the default on blur.
+linkAliasFieldInput.addEventListener("input", () => {
+    saveLinkAliasField(linkAliasFieldInput.value);
+});
+
+linkAliasFieldInput.addEventListener("blur", async () => {
+    if (linkAliasFieldInput.value.trim()) return;
+    linkAliasFieldInput.value = await saveLinkAliasField("");
+});
+
+async function initLinkAliasUI() {
+    linkAliasFieldInput.value = await getLinkAliasField();
+}
+
 const assayWindowCheckbox = document.getElementById("assayWindow");
 
 assayWindowCheckbox.addEventListener("change", () => {
@@ -1546,6 +1563,7 @@ initPurityThresholdUI();
 initShowProductsUI();
 initElnShiftLeftUI();
 initActiveReactionUI();
+initLinkAliasUI();
 initElnIdToBatchUI();
 initPanelSourcesUI();
 initHeatMapFieldsUI();

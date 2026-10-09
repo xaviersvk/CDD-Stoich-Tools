@@ -19,10 +19,50 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
-## [18.11.1] — 2026-10-09
+## [18.12.0] — 2026-10-09
 
-`manifest.json` was bumped to 18.10.1 and 18.11.0 for the changes below;
-neither was tagged, and both ship here.
+`manifest.json` was bumped to 18.10.1, 18.11.0 and 18.11.1 for the changes
+below; none was tagged, and all ship here.
+
+### Added
+- **Link search puts the exact match on top.** CDD lists the hits of its
+  link search (`@` in the text, *Insert link*, *Bulk link*) in identifier
+  order: searching `IXX-DEMO-0000011-001-SM000008` put that sample 16th of
+  30, below every sample of IXX-DEMO-0000006…0000010. The exact match (case
+  ignored) now comes first, then the hits that start with the query; the
+  rest keep CDD's order. It is also made the highlighted item, so **Enter
+  picks it** — verified live: Enter filled the link with sample 1000002060
+  (SM000008), not CDD's first row.
+  `src/content/features/ui-fixes/link-search-rank.js`: the dropdown
+  (`[data-autotest-id="link-suggestion__dropdown"]`) is one flex column, so
+  the lift is CSS `order` on its children — no node moves, React's list is
+  untouched. The highlight is a synthetic `mouseover` on the item, which is
+  how CDD moves it; done once per dropdown and query so it never fights the
+  mouse. The query is the popup's search box when focused (its last word —
+  Bulk link takes several IDs), otherwise the `@…` word before the caret.
+  Arrow keys still walk CDD's own order. A hit CDD does not return (it shows
+  about 30) cannot be lifted.
+- **Insert link names a batch or sample link by a batch field.** In
+  *Display Options* CDD offers *Description* (free text) and the record's
+  identifier. For a batch or sample link, the extension fills *Description*
+  with the batch's **Internal ID** (`ab123` for
+  IXX-DEMO-0000011-001-SM000008) — CDD then selects it on its own. The
+  field is set under *Settings → Panel fields → Link name from*
+  (`shared/link-alias.js`, key `cddLinkAliasField`, default
+  `Internal ID`; CDD's `*` required marker and case don't count). Empty in
+  that batch, or the lookup fails → CDD's own choice. Once per popup and
+  link, and only into an empty Description, so picking the identifier back
+  or typing your own text is never overwritten.
+  `src/content/features/ui-fixes/link-alias.js`: the link URL
+  (`…/molecules/<m>#molecule-(batches|inventory_samples)/<id>`) gives the
+  molecule; a sample is mapped to its batch through
+  `fetchMoleculeSamples` (mentions/store.js), and the batch field is read
+  from the molecule page's batch `react_props` via `getBatchFieldData`
+  (api/batch-fields.js) — that covers a batch with no samples too.
+  Not for a molecule link (many batches, no single Internal ID; CDD offers
+  synonyms there), not for `@` (no Display Options — changing the text
+  would mean editing the document) and not for *Bulk link* (one display
+  choice for all items, no description).
 
 ### Changed
 - **Insert link: "Include structure" starts unticked.** CDD's link popup

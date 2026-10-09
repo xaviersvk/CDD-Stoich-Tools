@@ -67,6 +67,8 @@ import {initRegistrationDefaults} from "./features/ui-fixes/registration-default
 import {initStoichAmountEditing} from "./features/ui-fixes/stoich-amount-editing";
 import {initStoichRoleQuickPick} from "./features/ui-fixes/stoich-role-quick-pick";
 import {initLinkStructureDefault} from "./features/ui-fixes/link-structure-default";
+import {initLinkSearchRank} from "./features/ui-fixes/link-search-rank";
+import {initLinkAlias} from "./features/ui-fixes/link-alias";
 import {initSlurpTypeDefault} from "./features/ui-fixes/slurp-type-default";
 import {initOptionsMenuLink} from "./features/ui-fixes/options-menu-link";
 import {initSavedSearchCopyLinks} from "./features/savedSearchCopyLinks/savedSearchCopyLinks";
@@ -235,6 +237,13 @@ function init() {
 
   // Insert link → Display Options: "Include structure" starts unticked.
   initLinkStructureDefault();
+
+  // Link search (@, Insert link, Bulk link): the exact match on top.
+  initLinkSearchRank();
+
+  // Insert link on a batch or sample: its Internal ID (or the field set in
+  // Settings) offered and preselected as the link's description.
+  initLinkAlias();
 
   // Selecting text in a stoichiometry table: CDD's Slate void turns
   // user-select off and hijacks the mouse into a block drag, so nothing in

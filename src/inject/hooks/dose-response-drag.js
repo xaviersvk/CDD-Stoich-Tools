@@ -44,23 +44,8 @@ function fiberOf(element) {
     return key ? element[key] : null;
 }
 
-// React keeps two copies of every fiber and swaps them on each render, but the
-// DOM node's `__reactFiber$` expando is set once, when the node is created. So
-// after an odd number of renders it points into the OLD tree, whose props
-// still hold the points as they were before the last change — measured: a
-// Ctrl-drag right after a Shift-drag found no outliers until something else
-// re-rendered the plot. Whichever copy's tree ends in the root's `current`
-// HostRoot is the live one.
-function currentFiber(fiber) {
-    let top = fiber;
-    while (top.return) top = top.return;
-    if (top.tag !== 3 || top.stateNode?.current === top) return fiber;
-    return fiber.alternate || fiber;
-}
-
 function findUp(element, test) {
-    const own = fiberOf(element);
-    let fiber = own && currentFiber(own);
+    let fiber = fiberOf(element);
     for (let i = 0; fiber && i < MAX_WALK; i++, fiber = fiber.return) {
         const found = test(fiber.memoizedProps);
         if (found) return found;
@@ -68,13 +53,88 @@ function findUp(element, test) {
     return null;
 }
 
-function plotProps(canvas) {
-    return findUp(canvas, (p) =>
+function isPlotProps(p) {
+    return !!(
         p?.scatterplotXScale && typeof p.xScale === "function" &&
         typeof p.yScale === "function" && Array.isArray(p.allPoints)
-            ? p
-            : null
     );
+}
+
+// React keeps two copies of every fiber and swaps them on each render, and the
+// DOM node's `__reactFiber$` expando is set once, when the node is created.
+// Walking up from it can therefore land on the OLD copy of the plot, whose
+// props are one render behind — measured: a Ctrl-drag straight after a
+// Shift-drag saw the points as not yet marked and did nothing. Checking the
+// root's `current` was not enough: `return` pointers of a subtree that did not
+// re-render still lead to old parents. So both copies are collected here, and
+// the caller decides which one is live.
+function plotPropsCandidates(canvas) {
+    const own = fiberOf(canvas);
+    const found = new Set();
+    for (const start of [own, own?.alternate]) {
+        let fiber = start;
+        for (let i = 0; fiber && i < MAX_WALK; i++, fiber = fiber.return) {
+            if (!isPlotProps(fiber.memoizedProps)) continue;
+            found.add(fiber.memoizedProps);
+            if (isPlotProps(fiber.alternate?.memoizedProps)) found.add(fiber.alternate.memoizedProps);
+            break;
+        }
+    }
+    return [...found];
+}
+
+// { value, px } for each tick of one axis. The axes are SVG that React has
+// already committed, so they always show the live scale.
+function axisTicks(svg, axis) {
+    let ticks = svg?.querySelectorAll(`g.${axis}.axis .tick`);
+    if (!ticks?.length) ticks = document.querySelectorAll(`g.${axis}.axis .tick`);
+    const out = [];
+    for (const tick of ticks) {
+        const m = /translate\(\s*([-\d.e+]+)[\s,]+([-\d.e+]+)/i.exec(tick.getAttribute("transform") || "");
+        const value = Number((tick.textContent || "").trim().replace(/−/g, "-").replace(/,/g, ""));
+        if (!m || !Number.isFinite(value)) continue;
+        out.push({ value, px: Number(axis === "x" ? m[1] : m[2]) });
+    }
+    return out;
+}
+
+// The plot props whose scales put the axis ticks where the page draws them:
+// the live copy. With no readable ticks, the first copy found.
+function plotProps(canvas) {
+    const candidates = plotPropsCandidates(canvas);
+    if (candidates.length < 2) return candidates[0] || null;
+
+    const svg = canvas.closest("svg");
+    const xTicks = axisTicks(svg, "x");
+    const yTicks = axisTicks(svg, "y");
+    let best = candidates[0];
+    let bestError = Infinity;
+    for (const props of candidates) {
+        let error = 0;
+        let n = 0;
+        for (const t of xTicks) {
+            const d = Math.abs(props.xScale(t.value) - t.px);
+            if (Number.isFinite(d)) { error += d; n++; }
+        }
+        for (const t of yTicks) {
+            const d = Math.abs(props.yScale(t.value) - t.px);
+            if (Number.isFinite(d)) { error += d; n++; }
+        }
+        if (n && error / n < bestError) {
+            bestError = error / n;
+            best = props;
+        }
+    }
+    return best;
+}
+
+// The point as the store holds it now. Props can be a render behind; the
+// store cannot, and markPoint toggles whatever type it is handed.
+function livePoint(store, point) {
+    const series = (store.$series || store.series || []).find(
+        (s) => s?.mode === "outliers" && s.id === point.serieId
+    );
+    return series?.points?.find((p) => p.id === point.id) || point;
 }
 
 function storeOf(canvas) {
@@ -156,12 +216,14 @@ function apply(plot, area, markOutliers) {
 
     let changed = 0;
     for (const point of props.allPoints) {
-        if (point?.type !== from) continue;
+        if (point?.type !== "point" && point?.type !== "outlier") continue;
         const x = origin.left + props.xScale(point.x);
         const y = origin.top + props.yScale(point.y);
         if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
         if (x < area.left || x > area.right || y < area.top || y > area.bottom) continue;
-        plot.store.markPoint(point);
+        const live = livePoint(plot.store, point);
+        if (live.type !== from) continue;
+        plot.store.markPoint(live);
         changed++;
     }
     return changed;

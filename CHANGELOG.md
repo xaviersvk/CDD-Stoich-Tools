@@ -42,10 +42,14 @@ date when it is tagged.
     context provider above) has `mode === "outliers"` while editing and
     `markPoint(point)`, which toggles. A cancelled pointerdown keeps the zoom
     brush out; the click that follows is swallowed, else CDD resets the zoom.
-  - The canvas's `__reactFiber$` is set once and, after an odd number of
-    renders, points into React's old tree — a Ctrl-drag right after a
-    Shift-drag saw the points as not yet marked and did nothing. The lookup
-    starts from whichever copy belongs to the root's `current` tree.
+  - React keeps two copies of each fiber, and the canvas's `__reactFiber$`
+    (set once) can lead to the old copy of the plot props, one render behind
+    — a Ctrl-drag right after a Shift-drag saw the points as not yet marked
+    and did nothing. Checking the root's `current` was not enough (`return`
+    pointers of a subtree that did not re-render lead to old parents). So a
+    point's type is read from the store, which is never behind, and of the
+    two copies of the plot props the one whose scales put the axis ticks
+    where the committed SVG draws them is used.
   - `shared/dose-response-drag-flag.js`, `dose-response-override/drag-select.js`:
     the switch, posted to the page world as `DOSE_RESPONSE_DRAG_ENABLED`
     (again on the bridge's `DOSE_RESPONSE_DRAG_HELLO`).

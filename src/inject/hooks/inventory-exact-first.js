@@ -20,6 +20,25 @@
 
 const PATH = /\/vaults\/\d+\/inventory_search\.json(?:$|\?)/;
 
+// The exact hits are also published on <html> as `data-cdd-exact` (JSON:
+// names and sample links), so the content script can lift those rows into
+// an "Exact" table above CDD's (ui-fixes/inventory-exact-table.js). An empty
+// attribute means "no exact hits for this search".
+const EXACT_ATTR = "data-cdd-exact";
+
+function publish(hits, url) {
+    const vault = /\/vaults\/(\d+)\//.exec(url)?.[1];
+    const payload = hits.length
+        ? JSON.stringify(hits.map((e) => ({
+            name: e.name,
+            url: vault && e.batch?.molecule_id
+                ? `/vaults/${vault}/molecules/${e.batch.molecule_id}#molecule-inventory_samples/${e.id}`
+                : null,
+        })))
+        : "";
+    document.documentElement.setAttribute(EXACT_ATTR, payload);
+}
+
 function parseBody(body) {
     if (typeof body !== "string") return null;
     try {
@@ -99,7 +118,10 @@ export function installInventoryExactFirst() {
     XMLHttpRequest.prototype.send = function (body) {
         const ctx = this.__cddExact;
         const request = ctx && parseBody(body);
-        if (!request || !wantsExact(request)) return origSend.call(this, body);
+        if (!request || !wantsExact(request)) {
+            if (request) publish([], ctx.url);
+            return origSend.call(this, body);
+        }
 
         const xhr = this;
         const page = Number(request.page) || 0;
@@ -109,9 +131,13 @@ export function installInventoryExactFirst() {
                 post(ctx.url, ctx.headers, { ...request, text: `"${request.text.trim()}"`, page: 0 }),
             ]);
             const merged = merge(original.json, exact.json, page);
+            const hits = Array.isArray(exact.json.inventory_entries) ? exact.json.inventory_entries : [];
+            // Lifted to the top of page 1 only, so only page 1 shows them apart.
+            publish(page === 0 ? hits : [], ctx.url);
             complete(xhr, ctx.url, JSON.stringify(merged), original.contentType);
         })().catch((err) => {
             console.debug("[CDD Stoich Tools] exact-first search failed, sending as is", err);
+            publish([], ctx.url);
             origSend.call(xhr, body);
         });
     };

@@ -19,10 +19,10 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
-## [18.13.0] — 2026-10-09
+## [18.14.0] — 2026-10-09
 
-`manifest.json` was bumped to 18.10.1, 18.11.0, 18.11.1 and 18.12.0 for
-the changes below; none was tagged, and all ship here.
+`manifest.json` was bumped to 18.10.1, 18.11.0, 18.11.1, 18.12.0 and
+18.13.0 for the changes below; none was tagged, and all ship here.
 
 ### Added
 - **Inventory search: the exact match is the first row.** CDD's keyword
@@ -48,8 +48,22 @@ the changes below; none was tagged, and all ship here.
   / `load` / `loadend`. Verified live on vault 1000000109: `SM000008` →
   IXX-DEMO-0000011-001-SM000008 in row 1, once, and its expand arrow opens
   the event history as usual.
-  A first cut drew a separate "Exact" block above the table; the chemist
-  wanted the row in the table itself, so that never shipped.
+- **…and a view-only "Exact" table above CDD's.** The hook also publishes
+  the exact hits on `<html>` as `data-cdd-exact` (JSON: name, sample link;
+  empty when there are none or the search was skipped, page 1 only).
+  `src/content/features/ui-fixes/inventory-exact-table.js` finds those rows
+  in CDD's table (`.InventorySearchTable table`, main rows only — the
+  `child-row` rows after each are its collapsed event history) and shows a
+  copy of them under an *Exact* heading, with a clone of CDD's header and
+  the same column widths (CDD's table is `table-layout: auto`, so the widths
+  are copied from its header cells), then labels CDD's table *Similar*. The
+  rows stay in CDD's table as well — the chemist wanted to see the matches
+  first, not to lose them below. The copy is view-only (`pointer-events:
+  none`, checkbox and expand arrow hidden) and the sample name links to the
+  sample; Export stays with CDD's table. Rebuilt only when the original
+  rows' HTML changes — e.g. when CDD's lazily drawn structure PNG arrives.
+  A first cut drew its own name/location/amount block instead; a second one
+  only reordered CDD's table. Neither shipped.
 - **Link search puts the exact match on top.** CDD lists the hits of its
   link search (`@` in the text, *Insert link*, *Bulk link*) in identifier
   order: searching `IXX-DEMO-0000011-001-SM000008` put that sample 16th of

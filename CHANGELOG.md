@@ -45,7 +45,7 @@ below; none was tagged, and all ship here.
 - **Insert link offers a batch field as one more link name.** In *Display
   Options* CDD offers *Description* (free text) and the record's identifier.
   For a batch or sample link, the extension adds a third radio next to the
-  identifier — the batch's **Internal ID**, e.g. `ab123 (Internal ID)` for
+  identifier, 3 px apart — the batch's **Internal ID**, e.g. `ab123` (the field name in its tooltip) for
   IXX-DEMO-0000011-001-SM000008. **Nothing is picked for you.** The field
   is set under *Settings → Panel fields → Link name from*
   (`shared/link-alias.js`, key `cddLinkAliasField`, default

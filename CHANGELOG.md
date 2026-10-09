@@ -19,6 +19,21 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [18.9.1] — 2026-10-09
+
+### Removed
+- **Number preselection in the stoichiometry popup.** CDD now selects the
+  value itself when the one-field popup opens, so the extension's own
+  `setSelectionRange` on `focusin` was doing the same job twice. The
+  `mousedown` listener and the click-window check that existed only to
+  suppress the preselection for a hand-placed caret are gone with it.
+
+### Unchanged
+- The unit safety net in the same module stays: a field committed as a bare
+  number (`25`) when it opened with a unit (`19 g`) still gets that unit back
+  before CDD reads it against the popup label (`Mass [mg]`). Listeners left:
+  `focusin` (remembers the unit), `keydown` (Enter), `focusout`.
+
 ## [18.9.0] — 2026-10-09
 
 `manifest.json` was bumped through 18.7.0 and 18.8.0 while this was built;

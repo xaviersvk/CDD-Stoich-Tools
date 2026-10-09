@@ -13,6 +13,10 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 18.9.1 — 2026-10-09
+
+- Clicking an amount in the stoichiometry table no longer pre-selects the number — CDD does that itself now. The unit is still put back if you type a bare number.
+
 ## 18.9.0 — 2026-10-09
 
 **Add fields to forms** now adds entity, sample and inventory fields to registration forms, and run and protocol fields to protocol forms.

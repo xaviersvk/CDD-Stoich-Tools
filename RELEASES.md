@@ -13,12 +13,13 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
-## 18.12.0 — 2026-10-09
+## 18.13.0 — 2026-10-09
 
 On an entry with several reactions, the panel now marks the reaction you are looking at and scrolls to it. Switch it off in *Settings → Panel fields*.
 
 - **Insert link** no longer ticks *Include structure* for you — tick it when you want the drawing.
 - Link search (`@`, *Insert link*, *Bulk link*) puts the exact match on top, and Enter picks it.
+- **Inventory search** shows the exact matches in an *Exact* block above the results — searching `SM000008` no longer buries that sample among every other `SM…`.
 - *Insert link* to a batch or sample offers its **Internal ID** as one more name to pick, next to the identifier. Choose another field under *Settings → Panel fields → Link name from*.
 - Fixed: with the panel open, the ELN entry now really moves aside — centred in the space beside the panel, whichever side you drag it to — so the panel no longer covers its right-hand columns. Switch it off in *Settings → Panel fields*.
 - The panel steps out of the way while CDD's **Comments** or **Table of contents** is open, and comes back when you close it.

@@ -69,6 +69,7 @@ import {initStoichRoleQuickPick} from "./features/ui-fixes/stoich-role-quick-pic
 import {initLinkStructureDefault} from "./features/ui-fixes/link-structure-default";
 import {initLinkSearchRank} from "./features/ui-fixes/link-search-rank";
 import {initLinkAlias} from "./features/ui-fixes/link-alias";
+import {initInventoryExactMatch} from "./features/ui-fixes/inventory-exact-match";
 import {initSlurpTypeDefault} from "./features/ui-fixes/slurp-type-default";
 import {initOptionsMenuLink} from "./features/ui-fixes/options-menu-link";
 import {initSavedSearchCopyLinks} from "./features/savedSearchCopyLinks/savedSearchCopyLinks";
@@ -244,6 +245,10 @@ function init() {
   // Insert link on a batch or sample: its Internal ID (or the field set in
   // Settings) offered and preselected as the link's description.
   initLinkAlias();
+
+  // Inventory search: an "Exact" block (the query in quotes) above CDD's
+  // results, which split "SM000008" into "SM" and match every sample.
+  initInventoryExactMatch();
 
   // Selecting text in a stoichiometry table: CDD's Slate void turns
   // user-select off and hijacks the mouse into a block drag, so nothing in

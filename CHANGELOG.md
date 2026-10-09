@@ -19,12 +19,35 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
-## [18.12.0] — 2026-10-09
+## [18.13.0] — 2026-10-09
 
-`manifest.json` was bumped to 18.10.1, 18.11.0 and 18.11.1 for the changes
-below; none was tagged, and all ship here.
+`manifest.json` was bumped to 18.10.1, 18.11.0, 18.11.1 and 18.12.0 for
+the changes below; none was tagged, and all ship here.
 
 ### Added
+- **Inventory search: an "Exact" block above the results.** CDD's keyword
+  search (`POST /vaults/<v>/inventory_search.json`, body
+  `{"text":"SM000008","page":0}`) splits the term — the server's own
+  `highlights` show only `<em>SM</em>` matched on most hits — so
+  "SM000008" returned **all 46** samples of the test vault, sorted by Name,
+  30 to a page; the sample asked for sat 15th, and for another query could
+  be on page 2. The same endpoint with the text in quotes
+  (`{"text":"\"SM000008\""}`) returns exactly that one sample. On every
+  search (Enter in the box, or the *Submit search* button) the extension asks
+  once more with the text quoted and lists those hits above CDD's results —
+  name linking to the sample, the matched text from `highlights` (the match
+  can be in any field, not only the name), location, amount, *Depleted* —
+  and labels CDD's own results *Similar*. Up to 10 rows, then "…and N more".
+  No exact hit → no block. Skipped when the text already holds quotes or a
+  `*`. Read-only: one extra POST with the page's CSRF token.
+  `src/content/features/ui-fixes/inventory-exact-match.js`: the block goes
+  before `.search-bar__entries_summary` and is put back if a re-render
+  drops it; the server's highlight HTML is never inserted — the fragment is
+  split on `<em>` and written with `textContent`. Listeners are cheap on
+  every page and the document observer starts only on the search page, so
+  in-app navigation there works too. Verified live on vault 1000000109:
+  `SM000008` → *Exact (1)*: IXX-DEMO-0000011-001-SM000008, Lab 1 > Fridge 1
+  > Box 1 > 1/A1, 498.725 g.
 - **Link search puts the exact match on top.** CDD lists the hits of its
   link search (`@` in the text, *Insert link*, *Bulk link*) in identifier
   order: searching `IXX-DEMO-0000011-001-SM000008` put that sample 16th of

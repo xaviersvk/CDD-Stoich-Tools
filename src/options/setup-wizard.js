@@ -76,7 +76,7 @@ const STEPS = [
         pane: "col-fields-heading",
         controls: [
             { kind: "check", mirror: "#panelSourceTableRows", label: "Cards for the stoichiometry table rows", hint: "The reaction cards, with their fill buttons." },
-            { kind: "check", mirror: "#panelSourceMentions", label: "Cards for batches and samples linked in the entry text", hint: "Display only — a mention has no table row to fill." },
+            { kind: "check", mirror: "#panelSourceMentions", label: "Cards for batches and samples you link in the text", hint: "Link one with @ and the panel shows where the bottle is, how much is left and its purity — even if it is not in a table. Nothing to fill." },
             { kind: "check", mirror: "#showProducts", label: "Show the products of each reaction", hint: "In the panel and on the print sheets. No fill buttons: a product has nothing to fill." },
             { kind: "check", mirror: "#elnShiftLeft", label: "Move the entry beside the panel while it is open", hint: "Centred in the room that is left, so the panel no longer covers its columns. Helps on a laptop." },
             { kind: "check", mirror: "#activeReaction", label: "Mark the reaction you are looking at", hint: "On an entry with several reactions, its group in the panel gets a heavier frame and the panel scrolls to it." },

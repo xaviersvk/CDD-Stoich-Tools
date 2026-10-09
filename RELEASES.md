@@ -16,6 +16,7 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 ## 18.10.1 — 2026-10-09
 
 - Fixed: with the panel open, the ELN entry now really moves to the left edge so the panel no longer covers its right-hand columns. Switch it off in *Settings → Panel fields*.
+- The panel steps out of the way while CDD's **Comments** or **Table of contents** is open, and comes back when you close it.
 
 ## 18.10.0 — 2026-10-09
 

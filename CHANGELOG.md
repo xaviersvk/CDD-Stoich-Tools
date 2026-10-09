@@ -31,6 +31,32 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   1000000823 at a 1646 px viewport: entry at x = 0, right edge 1186 px,
   panel from 1310 px; collapsing the panel puts the entry back at 223 px.
 
+### Changed
+- **The panel hides while CDD's Comments or Table of contents sidebar is
+  open.** Both are flex siblings of `#content-inner` inside `#content`, and
+  CDD re-margins the entry around them itself. Comments is 300 px on the
+  right (1331–1631 px at a 1646 px viewport) — exactly under the panel
+  (1310–1610 px), which covered it completely. Reserving room for the panel
+  instead (`padding-right` on `#content`) was tried live and rejected: with
+  Comments open the entry shrank to 1015 px and the editor grew a horizontal
+  scrollbar, 715 px with both sidebars. So the panel steps aside the same way
+  it already does for the Ketcher editor (`display: none` from
+  `overlay-watcher.js`), and returns on close with its collapsed state and
+  position untouched — nothing is written to storage.
+
+### Technical
+- Both sidebars are always in the DOM and open by width alone
+  (`[data-autotest-id="toc-sidebar-content"]`,
+  `[data-autotest-id="comments-sidebar-header"]`, 0 px when closed). Their
+  width is followed with a `ResizeObserver`; the existing document
+  MutationObserver only re-finds the two elements (two `querySelector`
+  calls, no layout read) when CDD re-renders them. A ResizeObserver does not
+  fire in a hidden tab — fine here, since the sidebars open on a click.
+- A hidden panel carries `cdd-overlay-hidden`, and the shift-left rule
+  excludes it, so CDD's own sidebar layout is never overridden.
+- `STATE.isKetcherOpen` still reflects Ketcher only: a sidebar hides the
+  panel but does not stop it being built.
+
 ## [18.10.0] — 2026-10-09
 
 `manifest.json` was bumped to 18.9.1 for the change under *Removed*; it was

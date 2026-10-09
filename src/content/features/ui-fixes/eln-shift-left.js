@@ -5,7 +5,8 @@
 // lands on the entry's right-hand columns while the same width sits unused on
 // the left. While the panel is open, the entry is pushed to the left edge
 // instead; on a full-HD 14" display that is enough for the two to sit side
-// by side. Collapsed or absent panel → CDD's own centring, untouched.
+// by side. Collapsed, absent, or hidden while CDD's Comments / Table of
+// contents sidebar is open (overlay-watcher.js) → CDD's own layout, untouched.
 //
 // One stylesheet, keyed on the panel through `:has()`, so there is nothing to
 // keep in sync with the panel's own lifecycle. Injected on every CDD page:
@@ -14,13 +15,14 @@
 
 import { PANEL_ID } from "../../../shared/plugin-constants.js";
 import { initElnShift, onElnShiftChanged } from "../../../shared/eln-shift-flag.js";
+import { OVERLAY_HIDDEN_CLASS } from "../../overlay-watcher.js";
 
 const STYLE_ID = "cdd-stoich-eln-shift-left";
 
 // `:root`, not `body`: sample-panel.js appends the panel to <html>, so
 // `body:has(#panel)` never matched and the rule shipped dead in 15.1.0.
 const STYLES = `
-  :root:has(#${PANEL_ID}:not(.collapsed)) #content-inner {
+  :root:has(#${PANEL_ID}:not(.collapsed):not(.${OVERLAY_HIDDEN_CLASS})) #content-inner {
     margin-left: 0;
     margin-right: auto;
   }

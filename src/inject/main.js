@@ -16,6 +16,7 @@ import { installLocationTreeBridge } from "./hooks/location-tree-bridge.js";
 import { installFieldRowsBridge } from "./hooks/field-rows-bridge.js";
 import { installFormStoreBridge } from "./hooks/form-store-bridge.js";
 import { installDoseResponseDrag } from "./hooks/dose-response-drag.js";
+import { installInventoryExactFirst } from "./hooks/inventory-exact-first.js";
 import { installPrintDispatcher } from "./print/dispatcher.js";
 
 
@@ -158,6 +159,8 @@ const tryParseText = createTextParser(processJsonPayload);
   installPrintDispatcher();
   installFetchHook(processJsonPayload, tryParseText);
   installXhrHook(tryParseText);
+  // After the XHR hook, so it wraps it: inventory search answered exact-first.
+  installInventoryExactFirst();
 
   // An opening ELN entry puts no payload on the wire; ask for it ourselves and
   // let the fetch hook above parse the answer.

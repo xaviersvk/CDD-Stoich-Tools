@@ -13,8 +13,9 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
-## 18.9.1 — 2026-10-09
+## 18.10.0 — 2026-10-09
 
+- Click **Role** in a stoichiometry row and the list of roles is already open — pick one.
 - Clicking an amount in the stoichiometry table no longer pre-selects the number — CDD does that itself now. The unit is still put back if you type a bare number.
 
 ## 18.9.0 — 2026-10-09

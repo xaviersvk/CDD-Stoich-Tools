@@ -19,7 +19,20 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
-## [18.9.1] — 2026-10-09
+## [18.10.0] — 2026-10-09
+
+`manifest.json` was bumped to 18.9.1 for the change under *Removed*; it was
+never tagged and ships here.
+
+### Added
+- **Role list opens with its popup.** Picking a stoichiometry row's Role took
+  three clicks: *Role: Optional* opens CDD's popup with a read-only
+  *Select role* box, a second click drops the list (Reactant / Reagent /
+  Catalyst on a reactant row, Product on a product row), a third picks. The
+  extension now makes the second click, so the list is open as soon as the
+  popup is. Nothing is chosen or written by the extension — CDD's own list
+  takes the pick and saves it. On a solvent row CDD's list is empty, so the
+  dropped list shows nothing, as before.
 
 ### Removed
 - **Number preselection in the stoichiometry popup.** CDD now selects the
@@ -33,6 +46,20 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   number (`25`) when it opened with a unit (`19 g`) still gets that unit back
   before CDD reads it against the popup label (`Mass [mg]`). Listeners left:
   `focusin` (remembers the unit), `keydown` (Enter), `focusout`.
+
+### Technical
+- `src/content/features/ui-fixes/stoich-role-quick-pick.js`, initialised from
+  `content/main.js`. One capture-phase `click` listener: a trusted click
+  inside `[data-autotest-id="stoichiometry-role-select"]` polls (20 ms, 15
+  tries) for `input[data-autotest-id="Role-input"]` and calls `.click()` on
+  it — a synthetic click is enough to drop CDD's list, measured live. It
+  skips the click when `[data-autotest-id="stoichiometry-role-select-popup"]`
+  is already open, because the box toggles the list. A timer, not
+  `requestAnimationFrame`: rAF never fires in a hidden tab, which is where
+  live verification runs.
+- The Role label exists only in the table's edit mode — click a free spot in
+  the table's values to get there.
+- `stoich-amount-editing.js` ignores the Role box: it is `readOnly`.
 
 ## [18.9.0] — 2026-10-09
 

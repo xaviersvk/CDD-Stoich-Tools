@@ -44,8 +44,23 @@ function fiberOf(element) {
     return key ? element[key] : null;
 }
 
+// React keeps two copies of every fiber and swaps them on each render, but the
+// DOM node's `__reactFiber$` expando is set once, when the node is created. So
+// after an odd number of renders it points into the OLD tree, whose props
+// still hold the points as they were before the last change — measured: a
+// Ctrl-drag right after a Shift-drag found no outliers until something else
+// re-rendered the plot. Whichever copy's tree ends in the root's `current`
+// HostRoot is the live one.
+function currentFiber(fiber) {
+    let top = fiber;
+    while (top.return) top = top.return;
+    if (top.tag !== 3 || top.stateNode?.current === top) return fiber;
+    return fiber.alternate || fiber;
+}
+
 function findUp(element, test) {
-    let fiber = fiberOf(element);
+    const own = fiberOf(element);
+    let fiber = own && currentFiber(own);
     for (let i = 0; fiber && i < MAX_WALK; i++, fiber = fiber.return) {
         const found = test(fiber.memoizedProps);
         if (found) return found;

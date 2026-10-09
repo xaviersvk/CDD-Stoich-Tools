@@ -30,6 +30,20 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   `margin: 0 auto`. Now keyed on `:root:has(…)`. Measured live on entry
   1000000823 at a 1646 px viewport: entry at x = 0, right edge 1186 px,
   panel from 1310 px; collapsing the panel puts the entry back at 223 px.
+- **…and centred in the room left of the panel, not jammed against the left
+  edge.** Flush-left left a 62 px band at the left, nothing, and a 124 px
+  gap before the panel. Now the strip the panel occupies is taken out of
+  `#content` (`padding-right: var(--cdd-stoich-panel-reserve)`) and CDD's
+  own `margin: 0 auto` centres the entry in the rest: 62 px | entry | 62 px |
+  panel at a 1646 px viewport. `#content-inner` gets `flex-shrink: 0`, so
+  where the room is too narrow the entry keeps its 1186 px instead of being
+  squeezed (measured: it shrank to 1010 px without it) and starts at the
+  left edge — the old flush-left behaviour, as a fallback only. The reserve
+  is measured from the panel's left edge (page width − left), since the
+  panel can be dragged and resized; a panel dragged into the left half
+  reserves nothing. Re-measured on window resize, on the panel's `style`
+  attribute (drag and resize both write there) and when the panel is
+  rebuilt (a `childList` observer on `<html>`, not the subtree).
 
 ### Changed
 - **The panel hides while CDD's Comments or Table of contents sidebar is

@@ -106,6 +106,9 @@ function ensureAliasRow(options, alias) {
     row.setAttribute(ALIAS_ROW_ATTR, "");
     row.removeAttribute("data-autotest-id");
     row.title = `${currentLinkAliasField()} of this batch`;
+    // CDD's rows sit flush against each other; ours read as glued to the
+    // identifier before it.
+    row.style.marginLeft = "3px";
 
     const radio = row.querySelector('input[type="radio"]');
     if (!radio) return;

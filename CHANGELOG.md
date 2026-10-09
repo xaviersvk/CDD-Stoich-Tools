@@ -19,7 +19,47 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
-## [18.10.1] — 2026-10-09
+## [18.11.0] — 2026-10-09
+
+`manifest.json` was bumped to 18.10.1 for the fixes below; it was never
+tagged and ships here.
+
+### Added
+- **The panel marks the reaction in view.** On an entry with two or more
+  reactions, the panel group of the reaction taking up most of the viewport
+  gets a 3 px frame (same colour, weight rather than a new colour) and the
+  panel's own body scrolls to it — the page never scrolls. Other groups are
+  left as they are, not dimmed. Switch: *Settings → Panel fields*, "Mark the
+  reaction you are looking at", **on by default**
+  (`shared/active-reaction-flag.js`, storage key `cddActiveReaction`).
+- **Sticky switching.** Another reaction takes over only once it shows 40 %
+  of the viewport height more than the current one (`SWITCH_MARGIN = 0.4`)
+  — with two blocks sharing the screen, about 70 % of it rather than the
+  halfway mark — so the panel does not jump at the seam between reactions.
+  With no reaction on screen (prose between them) the last one stays marked.
+- The panel scrolls only when the active reaction **changes**, so a
+  re-render never fights the user scrolling the panel.
+
+### Technical
+- `src/content/features/active-reaction.js`. One `IntersectionObserver`
+  (21 thresholds) on the reaction blocks from `getReactionContainers()`
+  (`row-fill.js`); block N = `reactionIndex` N, the rule the fill already
+  relies on. When the block count and the panel's reaction-group count
+  disagree (the page sometimes renders fewer blocks than reactions), nothing
+  is marked — no highlight beats the wrong one.
+- The panel rebuilds its cards dozens of times a second on a live entry, so
+  the active index lives in module scope; `renderSamples` calls
+  `syncReactionBlocks()` (one `querySelectorAll` and a comparison when
+  nothing changed) and `markActiveReaction()` on every render. Reaction
+  groups carry `data-reaction-index`; the "Mentioned in text" group does not
+  and is never marked.
+- The panel is scrolled with `body.scrollTo`, not `scrollIntoView`, which
+  would scroll the page too. An IntersectionObserver does not fire in a
+  hidden tab; the reaction switch itself was verified by geometry (the same
+  visible-height rule computed synchronously on entry 1000000823: R1 at the
+  top, R2 from y ≈ 2100) and the frame and panel scroll by hand.
+- The *Panel fields* label and the setup guide for the ELN shift now say
+  "beside the panel" instead of "the left edge".
 
 ### Fixed
 - **Move the ELN entry left while the panel is open** never worked. The rule

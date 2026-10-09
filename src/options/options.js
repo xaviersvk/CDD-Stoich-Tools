@@ -74,6 +74,10 @@ import {
     saveElnShiftEnabled,
 } from "../shared/eln-shift-flag.js";
 import {
+    getActiveReactionEnabled,
+    saveActiveReactionEnabled,
+} from "../shared/active-reaction-flag.js";
+import {
     getAssayWindowEnabled,
     saveAssayWindowEnabled,
 } from "../shared/assay-window.js";
@@ -1135,6 +1139,16 @@ async function initElnShiftLeftUI() {
     elnShiftLeftCheckbox.checked = await getElnShiftEnabled();
 }
 
+const activeReactionCheckbox = document.getElementById("activeReaction");
+
+activeReactionCheckbox.addEventListener("change", () => {
+    saveActiveReactionEnabled(activeReactionCheckbox.checked);
+});
+
+async function initActiveReactionUI() {
+    activeReactionCheckbox.checked = await getActiveReactionEnabled();
+}
+
 const assayWindowCheckbox = document.getElementById("assayWindow");
 
 assayWindowCheckbox.addEventListener("change", () => {
@@ -1531,6 +1545,7 @@ initFillRowNameUI();
 initPurityThresholdUI();
 initShowProductsUI();
 initElnShiftLeftUI();
+initActiveReactionUI();
 initElnIdToBatchUI();
 initPanelSourcesUI();
 initHeatMapFieldsUI();

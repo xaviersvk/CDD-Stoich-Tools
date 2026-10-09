@@ -27,6 +27,7 @@ import { PANEL_ID, REACTION_COLORS } from "../../shared/plugin-constants.js";
 import { OPEN_OPTIONS_MESSAGE } from "../../shared/event-types.js";
 import { getPanelContents } from "./panel-contents.js";
 import { updatePanelVisibilityForOverlays } from "../overlay-watcher.js";
+import { ACTIVE_GROUP_CLASS, markActiveReaction, syncReactionBlocks } from "./active-reaction.js";
 import { printPanel } from "./panel-print.js";
 import { exportPanelCsv } from "./panel-csv.js";
 import {
@@ -471,6 +472,11 @@ export function ensurePanel() {
     border-radius: 12px;
     overflow: hidden;
     background: #0b1220;
+  }
+
+  /* The reaction in view on the page: a heavier frame, the same colour. */
+  #${PANEL_ID} .cdd-stoich-group.${ACTIVE_GROUP_CLASS} {
+    border-width: 3px;
   }
 
   #${PANEL_ID} .cdd-stoich-group-header {
@@ -1507,6 +1513,10 @@ export function renderSamples(payload) {
         groupEl.className = "cdd-stoich-group";
         groupEl.style.borderColor = color.border;
         groupEl.style.boxShadow = `0 0 0 1px ${color.glow} inset`;
+        // Table reactions only: the mention group has no block on the page.
+        if (!group.items.every((s) => s.isMention)) {
+            groupEl.dataset.reactionIndex = String(group.reactionIndex);
+        }
 
         const groupHeader = document.createElement("div");
         groupHeader.className = "cdd-stoich-group-header";
@@ -1652,6 +1662,11 @@ export function renderSamples(payload) {
         groupEl.appendChild(groupBody);
         list.appendChild(groupEl);
     }
+
+    // The reaction in view (active-reaction.js) is kept outside the cards,
+    // so this rebuild would otherwise drop its mark.
+    syncReactionBlocks();
+    markActiveReaction();
 
     updateFillAllButton();
 }

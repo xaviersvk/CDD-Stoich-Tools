@@ -19,10 +19,27 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
-## [18.11.0] — 2026-10-09
+## [18.11.1] — 2026-10-09
 
-`manifest.json` was bumped to 18.10.1 for the fixes below; it was never
-tagged and ships here.
+`manifest.json` was bumped to 18.10.1 and 18.11.0 for the changes below;
+neither was tagged, and both ship here.
+
+### Changed
+- **Insert link: "Include structure" starts unticked.** CDD's link popup
+  (toolbar → Insert link, pick an entity) opens its *Display Options* with
+  *Include structure* ticked, so every link dropped a structure drawing into
+  the entry unless it was unticked by hand. The extension unticks it once as
+  it appears; ticking it again is respected for the rest of that popup.
+  `src/content/features/ui-fixes/link-structure-default.js`: a
+  `watchDocument` callback looks for
+  `[data-autotest-id="show-structure-checkbox"] input[type="checkbox"]`
+  (inside `[data-autotest-id="display-options"]`) and calls `.click()` on
+  it once per checkbox element (WeakSet) — CDD's React state follows a plain
+  click, measured live: the box re-renders unticked, and a re-tick by the
+  user survives the next pass. No setting.
+- **Settings → Panel fields:** the *Mentioned in text* switch now says what
+  the cards are (a batch or sample linked with `@`) and what they show
+  (location, amount left, purity), instead of why they cannot fill anything.
 
 ### Added
 - **The panel marks the reaction in view.** On an entry with two or more

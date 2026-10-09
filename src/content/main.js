@@ -66,6 +66,7 @@ import {initElnIdToRegistration} from "./features/ui-fixes/eln-id-to-registratio
 import {initRegistrationDefaults} from "./features/ui-fixes/registration-defaults";
 import {initStoichAmountEditing} from "./features/ui-fixes/stoich-amount-editing";
 import {initStoichRoleQuickPick} from "./features/ui-fixes/stoich-role-quick-pick";
+import {initLinkStructureDefault} from "./features/ui-fixes/link-structure-default";
 import {initSlurpTypeDefault} from "./features/ui-fixes/slurp-type-default";
 import {initOptionsMenuLink} from "./features/ui-fixes/options-menu-link";
 import {initSavedSearchCopyLinks} from "./features/savedSearchCopyLinks/savedSearchCopyLinks";
@@ -231,6 +232,9 @@ function init() {
   // Role in a stoichiometry row: CDD's popup opens with its list already
   // dropped, so a role is one click away instead of two.
   initStoichRoleQuickPick();
+
+  // Insert link → Display Options: "Include structure" starts unticked.
+  initLinkStructureDefault();
 
   // Selecting text in a stoichiometry table: CDD's Slate void turns
   // user-select off and hijacks the mouse into a block drag, so nothing in

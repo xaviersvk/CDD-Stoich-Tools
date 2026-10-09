@@ -13,6 +13,10 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 18.10.1 — 2026-10-09
+
+- Fixed: with the panel open, the ELN entry now really moves to the left edge so the panel no longer covers its right-hand columns. Switch it off in *Settings → Panel fields*.
+
 ## 18.10.0 — 2026-10-09
 
 - Click **Role** in a stoichiometry row and the list of roles is already open — pick one.

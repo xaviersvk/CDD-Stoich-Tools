@@ -17,8 +17,10 @@ import { initElnShift, onElnShiftChanged } from "../../../shared/eln-shift-flag.
 
 const STYLE_ID = "cdd-stoich-eln-shift-left";
 
+// `:root`, not `body`: sample-panel.js appends the panel to <html>, so
+// `body:has(#panel)` never matched and the rule shipped dead in 15.1.0.
 const STYLES = `
-  body:has(#${PANEL_ID}:not(.collapsed)) #content-inner {
+  :root:has(#${PANEL_ID}:not(.collapsed)) #content-inner {
     margin-left: 0;
     margin-right: auto;
   }

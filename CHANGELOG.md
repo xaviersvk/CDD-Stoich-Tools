@@ -19,6 +19,18 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [18.10.1] — 2026-10-09
+
+### Fixed
+- **Move the ELN entry left while the panel is open** never worked. The rule
+  in `src/content/features/ui-fixes/eln-shift-left.js` was keyed on
+  `body:has(#cdd-stoich-panel:not(.collapsed))`, but `sample-panel.js`
+  appends the panel to `<html>` (it has since the first commit), so
+  `body:has()` never matched and `#content-inner` stayed centred by CDD's
+  `margin: 0 auto`. Now keyed on `:root:has(…)`. Measured live on entry
+  1000000823 at a 1646 px viewport: entry at x = 0, right edge 1186 px,
+  panel from 1310 px; collapsing the panel puts the entry back at 223 px.
+
 ## [18.10.0] — 2026-10-09
 
 `manifest.json` was bumped to 18.9.1 for the change under *Removed*; it was

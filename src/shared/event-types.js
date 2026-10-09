@@ -67,4 +67,12 @@ export const EVENTS = {
   // answers with FORM_FIELD_MAP.
   FORM_FIELD_MAP_REQUEST: "FORM_FIELD_MAP_REQUEST",
   FORM_FIELD_MAP: "FORM_FIELD_MAP",
+  // Content -> page world: { enabled } — the Settings switch for Shift/Ctrl-drag
+  // outlier selection on dose-response plots. The plot's points and CDD's
+  // markPoint live in the page world (inject/hooks/dose-response-drag.js),
+  // the switch in chrome.storage. Page world -> content: DOSE_RESPONSE_DRAG_HELLO
+  // once the bridge is listening, so a switch posted before it loaded is
+  // posted again.
+  DOSE_RESPONSE_DRAG_ENABLED: "DOSE_RESPONSE_DRAG_ENABLED",
+  DOSE_RESPONSE_DRAG_HELLO: "DOSE_RESPONSE_DRAG_HELLO",
 };

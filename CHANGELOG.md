@@ -26,6 +26,27 @@ Not tagged, not in the stores. `manifest.json` reads 18.9.0 (bumped through
 date when it is tagged.
 
 ### Added
+- **Drag to select outliers** on a dose-response plot (CDD Visualization,
+  *Edit Outliers & Override*): **Shift**-drag a box to mark every point in it
+  as an outlier, **Ctrl**-drag to unmark them; a Shift/Ctrl click with no drag
+  acts on the point under the cursor. Points already in the wanted state are
+  left alone. Nothing is written: each point goes through CDD's own
+  `store.markPoint` — what a click on it does — and CDD's *Save* / *Cancel*
+  decide. A plain drag is still CDD's zoom. On by default; *Settings → Dose
+  response*.
+  - `inject/hooks/dose-response-drag.js`: points are drawn on a `<canvas>`, so
+    the bridge reads them from React props — the component carrying
+    `scatterplotXScale` has `allPoints` (`type` `"point"` / `"outlier"`) and
+    `xScale` / `yScale`, measured to map data to pixels from the top-left of
+    the plot's `.brush-1 > rect`. The MobX store (`props.value.store` of a
+    context provider above) has `mode === "outliers"` while editing and
+    `markPoint(point)`, which toggles. A cancelled pointerdown keeps the zoom
+    brush out; the click that follows is swallowed, else CDD resets the zoom.
+  - `shared/dose-response-drag-flag.js`, `dose-response-override/drag-select.js`:
+    the switch, posted to the page world as `DOSE_RESPONSE_DRAG_ENABLED`
+    (again on the bridge's `DOSE_RESPONSE_DRAG_HELLO`).
+  - Tested live on a plot in vault 6884 with synthetic Shift/Ctrl pointer
+    events (marked 2, unmarked 1 of them), then *Cancel*.
 - **Copy tree** in the *Edit Locations* footer (6.10): the whole location
   tree — collapsed branches included — onto the clipboard as the lines
   *Scan racks* reads, one per box or empty location:

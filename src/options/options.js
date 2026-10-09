@@ -78,6 +78,10 @@ import {
     saveAssayWindowEnabled,
 } from "../shared/assay-window.js";
 import {
+    getDoseResponseDragEnabled,
+    saveDoseResponseDragEnabled,
+} from "../shared/dose-response-drag-flag.js";
+import {
     getElnIdToBatchEnabled,
     saveElnIdToBatchEnabled,
 } from "../shared/eln-id-to-batch.js";
@@ -1143,6 +1147,17 @@ async function initAssayWindowUI() {
     refreshRailChips();
 }
 
+const doseResponseDragCheckbox = document.getElementById("doseResponseDrag");
+
+doseResponseDragCheckbox.addEventListener("change", () => {
+    void saveDoseResponseDragEnabled(doseResponseDragCheckbox.checked);
+});
+
+async function initDoseResponseDragUI() {
+    doseResponseDragCheckbox.checked = await getDoseResponseDragEnabled();
+    refreshRailChips();
+}
+
 const elnIdToBatchCheckbox = document.getElementById("elnIdToBatch");
 
 elnIdToBatchCheckbox.addEventListener("change", () => {
@@ -1471,6 +1486,9 @@ function refreshRailChips() {
     const qcOn = document.getElementById("assayWindow");
     if (qcOn) setChip("plateqc", qcOn.checked ? "on" : "off");
 
+    const dragOn = document.getElementById("doseResponseDrag");
+    if (dragOn) setChip("doseresponse", dragOn.checked ? "on" : "off");
+
     const scanOn = document.getElementById("inventoryScanEnabled");
     if (scanOn) setChip("inventoryscan", scanOn.checked ? "on" : "off");
 
@@ -1517,6 +1535,7 @@ initElnIdToBatchUI();
 initPanelSourcesUI();
 initHeatMapFieldsUI();
 void initAssayWindowUI();
+void initDoseResponseDragUI();
 initHplcInjectionUI();
 void initInventoryScanUI();
 initRegistrationDefaultsUI();

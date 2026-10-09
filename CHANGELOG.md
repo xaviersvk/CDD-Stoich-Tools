@@ -44,6 +44,17 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   reserves nothing. Re-measured on window resize, on the panel's `style`
   attribute (drag and resize both write there) and when the panel is
   rebuilt (a `childList` observer on `<html>`, not the subtree).
+- **Either side.** A panel whose centre is in the left half reserves its
+  strip on the left (`--cdd-stoich-panel-reserve-left`, page edge to the
+  panel's right edge); the right half as above. Measured with the panel at
+  20 px: panel 20–313, entry 379–1565 — 66 px either side. Both strips are
+  capped at the room the entry leaves (page width − entry width): without
+  the cap a left-side panel at 300 px pushed the entry to 593–1779 and gave
+  the page a horizontal scrollbar; with it the entry sits against the right
+  edge (445–1631) and the panel overlaps its left side, mirroring the
+  right-side fallback. The panel's `class` is observed as well as `style`,
+  so the cap is re-measured when the panel is collapsed, reopened or
+  un-hidden — while the rule applies and the entry has its full width.
 
 ### Changed
 - **The panel hides while CDD's Comments or Table of contents sidebar is

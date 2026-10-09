@@ -117,7 +117,7 @@ function ensureAliasRow(options, alias) {
     radio.value = "";
 
     const label = [...row.querySelectorAll("span")].reverse().find((s) => !s.children.length);
-    if (label) label.textContent = `${alias} (${currentLinkAliasField()})`;
+    if (label) label.textContent = alias;
 
     row.addEventListener("click", (event) => {
         event.stopPropagation();

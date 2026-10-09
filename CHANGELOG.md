@@ -70,8 +70,10 @@ below; none was tagged, and all ship here.
   A first cut filled and selected Description by itself; the chemist wanted
   a choice, not a default, so it never shipped that way.
 - **`@` search: the query is read across Slate leaves.** The first cut read
-  only the caret's text node, and the `@` sits in a different leaf from
-  the query, so nothing was ranked in `@` search. The query is now the
+  only the caret's text node, and nothing was ranked in `@` search — most
+  likely because the `@` and the query sit in different Slate leaves (not
+  confirmed live: typing in the test entry hit "Invalid entry version" while
+  it was open elsewhere). The query is now the
   paragraph's text from its start to the caret (a DOM Range), zero-width
   placeholders removed.
 

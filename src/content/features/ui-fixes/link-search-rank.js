@@ -32,10 +32,23 @@ function currentQuery() {
         const words = active.value.trim().split(/\s+/);
         return words[words.length - 1] || "";
     }
+    // The whole paragraph up to the caret, not just the caret's text node:
+    // Slate can split "@" and the query into separate leaves.
     const selection = window.getSelection();
     const node = selection?.anchorNode;
-    if (!node || node.nodeType !== Node.TEXT_NODE) return "";
-    const before = node.textContent.slice(0, selection.anchorOffset);
+    if (!node) return "";
+    const element = node.nodeType === Node.TEXT_NODE ? node.parentElement : node;
+    const block = element?.closest('[data-slate-node="element"]');
+    if (!block) return "";
+    const range = document.createRange();
+    range.setStart(block, 0);
+    try {
+        range.setEnd(node, selection.anchorOffset);
+    } catch {
+        return "";
+    }
+    // Zero-width spaces are Slate's placeholders inside empty leaves.
+    const before = range.toString().replace(/​/g, "");
     const match = /@([^\s@]*)$/.exec(before);
     return match ? match[1] : "";
 }

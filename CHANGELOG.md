@@ -42,27 +42,38 @@ below; none was tagged, and all ship here.
   Bulk link takes several IDs), otherwise the `@…` word before the caret.
   Arrow keys still walk CDD's own order. A hit CDD does not return (it shows
   about 30) cannot be lifted.
-- **Insert link names a batch or sample link by a batch field.** In
-  *Display Options* CDD offers *Description* (free text) and the record's
-  identifier. For a batch or sample link, the extension fills *Description*
-  with the batch's **Internal ID** (`ab123` for
-  IXX-DEMO-0000011-001-SM000008) — CDD then selects it on its own. The
-  field is set under *Settings → Panel fields → Link name from*
+- **Insert link offers a batch field as one more link name.** In *Display
+  Options* CDD offers *Description* (free text) and the record's identifier.
+  For a batch or sample link, the extension adds a third radio next to the
+  identifier — the batch's **Internal ID**, e.g. `ab123 (Internal ID)` for
+  IXX-DEMO-0000011-001-SM000008. **Nothing is picked for you.** The field
+  is set under *Settings → Panel fields → Link name from*
   (`shared/link-alias.js`, key `cddLinkAliasField`, default
-  `Internal ID`; CDD's `*` required marker and case don't count). Empty in
-  that batch, or the lookup fails → CDD's own choice. Once per popup and
-  link, and only into an empty Description, so picking the identifier back
-  or typing your own text is never overwritten.
-  `src/content/features/ui-fixes/link-alias.js`: the link URL
+  `Internal ID`; CDD's `*` required marker and case don't count). Empty
+  in that batch, or the lookup fails → no extra radio.
+  `src/content/features/ui-fixes/link-alias.js`. CDD's choices are React
+  state the extension cannot add to, so the extra radio is a clone of CDD's
+  identifier row (inert — `cloneNode` carries no handlers) wired as a
+  shortcut onto the one free-text choice: picking it writes the value into
+  Description through the native setter, and CDD selects Description on its
+  own. It shows as picked exactly while Description is picked and holds that
+  value, so another choice or an edit of the text unticks it. Appended after
+  CDD's last choice, re-added if a re-render drops it, replaced when a
+  different link is picked in the same popup. The link URL
   (`…/molecules/<m>#molecule-(batches|inventory_samples)/<id>`) gives the
-  molecule; a sample is mapped to its batch through
-  `fetchMoleculeSamples` (mentions/store.js), and the batch field is read
-  from the molecule page's batch `react_props` via `getBatchFieldData`
-  (api/batch-fields.js) — that covers a batch with no samples too.
-  Not for a molecule link (many batches, no single Internal ID; CDD offers
-  synonyms there), not for `@` (no Display Options — changing the text
-  would mean editing the document) and not for *Bulk link* (one display
-  choice for all items, no description).
+  molecule; a sample is mapped to its batch through `fetchMoleculeSamples`
+  (mentions/store.js), and the batch field is read from the molecule page's
+  batch `react_props` via `getBatchFieldData` (api/batch-fields.js) — that
+  covers a batch with no samples too. Not for a molecule link (many
+  batches; CDD offers synonyms there), not for `@` (no Display Options)
+  and not for *Bulk link* (one display choice for all items).
+  A first cut filled and selected Description by itself; the chemist wanted
+  a choice, not a default, so it never shipped that way.
+- **`@` search: the query is read across Slate leaves.** The first cut read
+  only the caret's text node, and the `@` sits in a different leaf from
+  the query, so nothing was ranked in `@` search. The query is now the
+  paragraph's text from its start to the caret (a DOM Range), zero-width
+  placeholders removed.
 
 ### Changed
 - **Insert link: "Include structure" starts unticked.** CDD's link popup

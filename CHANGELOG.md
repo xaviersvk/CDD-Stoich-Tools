@@ -54,7 +54,7 @@ the changes below; none was tagged, and all ship here.
   link search (`@` in the text, *Insert link*, *Bulk link*) in identifier
   order: searching `IXX-DEMO-0000011-001-SM000008` put that sample 16th of
   30, below every sample of IXX-DEMO-0000006…0000010. The exact match (case
-  ignored) now comes first, then the hits that start with the query; the
+  ignored) now comes first, in bold, then the hits that start with the query; the
   rest keep CDD's order. It is also made the highlighted item, so **Enter
   picks it** — verified live: Enter filled the link with sample 1000002060
   (SM000008), not CDD's first row.

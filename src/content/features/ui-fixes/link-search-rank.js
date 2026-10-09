@@ -4,8 +4,8 @@
 // in identifier order, not by how well they match: searching
 // "IXX-DEMO-0000011-001-SM000008" put that very sample 16th of 30, below
 // every sample of IXX-DEMO-0000006…0000010. This lifts the exact match to the
-// top, then the hits that start with what was typed; the rest keep CDD's
-// order.
+// top, in bold, then the hits that start with what was typed; the rest
+// keep CDD's order.
 //
 // The dropdown is one flex column, so the lift is CSS `order` on its
 // children — no node is moved, and React's list stays intact. The exact
@@ -80,6 +80,16 @@ function rankDropdown(dropdown) {
             }
         }
         if (child.style.order !== order) child.style.order = order;
+
+        // The exact match also reads as one: bold. The item, not the whole
+        // child — the first child carries the group header too.
+        // Set on the label itself too: a class there could pin its own weight.
+        const item = child.matches(ITEM) ? child : child.querySelector(ITEM);
+        const weight = order === String(EXACT) ? "700" : "";
+        const label = item?.querySelector('[data-autotest-id="link-suggestion__label"]');
+        for (const el of [item, label]) {
+            if (el && el.style.fontWeight !== weight) el.style.fontWeight = weight;
+        }
     }
 
     if (!exact || highlighted.get(dropdown) === query) return;

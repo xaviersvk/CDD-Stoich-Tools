@@ -101,6 +101,14 @@
                 <span class="rail__label">Plate QC</span>
                 <span class="rail__chip" data-chip="plateqc" hidden></span>
             </button>
+            <button type="button" class="rail__item" data-pane="col-doseresponse-heading">
+                <span class="tile" aria-hidden="true">
+                    <span class="tile__no"></span>
+                    <span class="tile__sym">Dr</span>
+                </span>
+                <span class="rail__label">Dose response</span>
+                <span class="rail__chip" data-chip="doseresponse" hidden></span>
+            </button>
             <p class="rail__group">Registering a compound</p>
             <button type="button" class="rail__item" data-pane="col-regform-heading">
                 <span class="tile" aria-hidden="true">
@@ -353,6 +361,30 @@
                 <label class="field-item show-products-toggle">
                     <input type="checkbox" id="assayWindow" />
                     <span>Show <strong>Plate QC</strong> on run pages</span>
+                </label>
+            </div>
+        </section>
+        <section class="card" aria-labelledby="col-doseresponse-heading">
+            <header class="card__head">
+                <span class="tile" aria-hidden="true">
+                    <span class="tile__no"></span>
+                    <span class="tile__sym">Dr</span>
+                </span>
+                <div class="card__titles">
+                    <h3 class="card__name" id="col-doseresponse-heading">Dose response</h3>
+                </div>
+            </header>
+
+            <div class="card__body">
+                <p class="note">
+                    In <em>Edit Outliers &amp; Override</em> on a dose-response
+                    plot: <strong>Shift</strong>-drag a box to mark the points
+                    in it as outliers, <strong>Ctrl</strong>-drag to unmark
+                    them. Nothing is saved until you press <em>Save</em>.
+                </p>
+                <label class="field-item show-products-toggle">
+                    <input type="checkbox" id="doseResponseDrag" />
+                    <span>Select outliers by <strong>dragging</strong></span>
                 </label>
             </div>
         </section>

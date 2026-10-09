@@ -343,6 +343,19 @@ printed in the page world via a hidden iframe.
 - **Regression risk:** **high** — it **writes data back to CDD**. A wrong payload
   could mis-set overrides. It also depends on both CDD's DOM *and* API shapes.
 
+### 4.2 Drag to select outliers
+- **User value:** In *Edit Outliers & Override* on a dose-response plot,
+  Shift-drag marks every point in a box as an outlier, Ctrl-drag unmarks them.
+  Nothing is saved until CDD's own *Save*.
+- **Entry point:** `src/inject/hooks/dose-response-drag.js`
+  (`installDoseResponseDrag`); switch in `shared/dose-response-drag-flag.js`,
+  passed in by `dose-response-override/drag-select.js`.
+- **Data source:** React props of the plot (`allPoints`, `xScale`, `yScale`)
+  and CDD Visualization's MobX store (`mode`, `markPoint`).
+- **Maintenance difficulty:** medium — relies on prop names and a store method
+  of CDD's bundle; if any is missing the drag is left to CDD.
+- **Regression risk:** low — it only changes CDD's unsaved edit state.
+
 ---
 
 ## 5. Saved Searches

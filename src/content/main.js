@@ -20,6 +20,7 @@ import {
 } from "./features/depleted-marker.js";
 import {resetState} from "./state";
 import {initDoseResponseOverride} from "./features/dose-response-override/init";
+import {initDoseResponseDragSelect} from "./features/dose-response-override/drag-select";
 import {
   applyFileDialogFixes,
   fixAssociateFileBar,
@@ -111,6 +112,8 @@ function init() {
   if (window.__CDD_STOICH_TOOLS_CONTENT__) return;
   window.__CDD_STOICH_TOOLS_CONTENT__ = true;
 
+  // Before the page script loads, so its hello finds a listener.
+  initDoseResponseDragSelect();
   injectPageScript();
   initDoseResponseOverride();
   initSamplePanelFields();

@@ -3,11 +3,12 @@
 // CDD renders an ELN entry at a fixed ~1 190px and centres it with
 // `margin: 0 auto`, so on a laptop the panel (300px, pinned to the right)
 // lands on the entry's right-hand columns while the same width sits unused on
-// the left. While the panel is open, the strip it occupies is taken out of
-// the page (padding on that side of #content), so CDD's own `margin: 0 auto`
-// centres the entry in what is left — equal gaps towards the page edge and
-// towards the panel. Either side: a panel dragged into the left half
-// reserves its strip on the left. Where that leaves too little room, the
+// the left. While the panel is open and would cover the entry, a strip on
+// the panel's side is taken out of the page (padding on that side of
+// #content), just wide enough that CDD's own `margin: 0 auto` re-centres the
+// entry 24px clear of the panel. A wide screen where they do not meet is left
+// alone. Either side: a panel dragged into the left half reserves its strip
+// on the left. Where that leaves too little room, the
 // entry keeps its width (`flex-shrink: 0` stops it being squeezed into a
 // horizontal scrollbar) and the strip is cut down to what fits, so the
 // entry sits against the far page edge and the panel overlaps its near
@@ -42,11 +43,19 @@ const STYLES = `
   }
 `;
 
-// The strip between the panel and the nearer page edge, decided by which
-// half the panel's centre is in: right half → from its left edge to the
-// right of the page, left half → from the left of the page to its right
-// edge. Capped at the room the entry leaves, or a left-side strip would
-// push the entry off the right of the page.
+// Gap kept between the shifted entry and the panel.
+const PANEL_GAP = 24;
+
+// Only as much as keeps PANEL_GAP between the entry and the panel. The side
+// is decided by which half the panel's centre is in. CDD centres the entry,
+// so a reserve R on the right moves its right edge to (W − R + entryW) / 2;
+// solving for an edge at panel.left − gap gives the reserve below (mirrored
+// for the left). On a wide screen, where the centred entry already clears
+// the panel, that is ≤ 0 → nothing moves; as the room shrinks the entry
+// slides away smoothly instead of jumping. Capped at the room the entry
+// leaves, or a left-side strip would push the entry off the right of the
+// page. The entry's width does not depend on the reserve (`flex-shrink: 0`),
+// so measuring it here cannot feed back.
 function measureReserve() {
     watchEntry();
     const panel = document.getElementById(PANEL_ID);
@@ -56,9 +65,13 @@ function measureReserve() {
     let right = 0;
     if (panel && entry) {
         const rect = panel.getBoundingClientRect();
-        const room = Math.max(0, pageWidth - entry.getBoundingClientRect().width);
-        if (rect.left + rect.width / 2 > pageWidth / 2) right = Math.min(room, Math.round(pageWidth - rect.left));
-        else left = Math.min(room, Math.round(rect.right));
+        const entryWidth = entry.getBoundingClientRect().width;
+        const room = Math.max(0, pageWidth - entryWidth);
+        if (rect.left + rect.width / 2 > pageWidth / 2) {
+            right = Math.min(room, Math.round(pageWidth + entryWidth - 2 * (rect.left - PANEL_GAP)));
+        } else {
+            left = Math.min(room, Math.round(pageWidth + entryWidth - 2 * (pageWidth - rect.right - PANEL_GAP)));
+        }
     }
     const root = document.documentElement.style;
     root.setProperty(RESERVE_LEFT_VAR, `${Math.max(0, left)}px`);

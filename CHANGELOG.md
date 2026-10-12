@@ -19,6 +19,22 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [18.14.1] — 2026-10-12
+
+### Changed
+- **The ELN entry moves only when the panel would cover it, and only as far
+  as needed.** Before, the panel's whole strip was always reserved and the
+  entry re-centred in what was left — on a 1920px screen, where the centred
+  ~1190px entry already clears a 300px panel, it still jumped ~150px left
+  for nothing. `measureReserve()` in `ui-fixes/eln-shift-left.js` now
+  reserves `W + entryW − 2·(panel.left − 24)` on the right (mirrored on the
+  left): the width that lets CDD's `margin: 0 auto` put the entry 24px clear
+  of the panel. Zero or less → nothing moves; as the window narrows or the
+  panel widens, the entry slides away smoothly instead of jumping at a
+  threshold. Still capped at the room the entry leaves. On a tight laptop
+  screen the entry now sits 24px from the panel rather than at equal gaps.
+- The settings label and setup-guide hint for the shift say so.
+
 ## [18.14.0] — 2026-10-09
 
 `manifest.json` was bumped to 18.10.0, 18.10.1, 18.11.0, 18.11.1, 18.12.0

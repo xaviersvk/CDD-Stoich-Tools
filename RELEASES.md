@@ -13,6 +13,10 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 18.14.1 — 2026-10-12
+
+- With the panel open, the ELN entry now moves only when the panel would cover it, and only as far as needed. On a large screen it stays put.
+
 ## 18.14.0 — 2026-10-09
 
 On an entry with several reactions, the panel now marks the reaction you are looking at and scrolls to it. Switch it off in *Settings → Panel fields*.

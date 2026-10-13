@@ -19,6 +19,31 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [18.15.1] — 2026-10-13
+
+### Fixed
+- **Field names read from CDD's definitions API.** CDD stopped embedding
+  `registration_form_definitions` and `batch_field_definitions` in the
+  RegistrationFormRenderer `react_props` (Create Entity and molecule pages);
+  the props now carry only `definitions_url` and the data rows. Everything
+  that joined the two came back empty:
+  - Form chips in the Search → Keywords and Inventory → Filter field pickers
+    could not refresh (they kept whatever map was cached; a vault with no cache
+    showed no chips).
+  - Batch fields on panel cards (batch-only rows and products), the ELN ID →
+    batch button, synonym-panel batch fields and the heat-map / link tooltips
+    found no names for the lot's values.
+
+  New `api/field-definitions.js` loads
+  `/api/internal/v1/vaults/{v}/data_sets/{v}/registration_form_definitions`
+  once per vault per page session; props that still carry definitions win.
+  The endpoint answers non-admin users too (CDD's own form depends on it).
+- **Create a new… → Location** stayed hidden for a user who had just been made
+  inventory admin, or after another login in the same tab: the permission
+  answer was cached for the whole tab session. It is now keyed to the
+  logged-in user; a yes holds for the session, a no for five minutes.
+
+---
 ## [18.15.0] — 2026-10-13
 
 ### Added

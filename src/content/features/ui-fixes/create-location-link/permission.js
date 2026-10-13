@@ -11,12 +11,18 @@
 //
 // So everyone else is judged by the door itself: one GET of the settings page
 // the dialog lives on. CDD answers an authorised user with 200 at that path;
-// anyone else is sent elsewhere. Remembered per vault for the session, so the
-// probe runs once, not on every page.
+// anyone else is sent elsewhere.
+//
+// Remembered per vault and per USER for the tab's session. A yes holds for the
+// session; a no only for a few minutes. A tab outlives a login switch and an
+// admin granting inventory rights, and a "no" kept for the whole session
+// hid the entry from someone who had just been given the right.
 
 const ROLE_LINK_SELECTOR = '.user-dropdown a[data-tooltip-path*="user_roles"]';
 const ADMIN_ROLE = "Vault Administrator";
+const USER_SELECTOR = ".username-text";
 const CACHE_PREFIX = "cddCanEditLocations:";
+const NO_TTL_MS = 5 * 60 * 1000;
 
 export function vaultIdFromPath(pathname) {
     const match = /^\/vaults\/(\d+)(?:\/|$)/.exec(pathname || "");
@@ -32,20 +38,44 @@ export function headerSaysAdmin(doc = document) {
     return Boolean(link) && link.textContent.trim() === ADMIN_ROLE;
 }
 
-function cached(vaultId) {
+// Name and email from the header, whitespace-folded. Empty when the header
+// is not there; then answers are shared by whoever is logged in.
+export function currentUserKey(doc = document) {
+    return (doc.querySelector(USER_SELECTOR)?.textContent || "").replace(/\s+/g, " ").trim();
+}
+
+// Pure: is a stored answer still good for this user now? Returns true/false,
+// or null to probe again. Old plain "1"/"0" values carry no user and no time.
+export function readCachedAnswer(raw, user, now) {
+    let entry;
     try {
-        const value = sessionStorage.getItem(CACHE_PREFIX + vaultId);
-        if (value === "1") return true;
-        if (value === "0") return false;
+        entry = JSON.parse(raw);
     } catch {
-        // storage can be off; then we simply probe each page load
+        return null;
+    }
+    if (!entry || typeof entry !== "object" || entry.user !== user) return null;
+    if (entry.allowed === true) return true;
+    if (entry.allowed === false && now - Number(entry.at) >= 0 && now - Number(entry.at) < NO_TTL_MS) {
+        return false;
     }
     return null;
 }
 
+function cached(vaultId) {
+    try {
+        return readCachedAnswer(sessionStorage.getItem(CACHE_PREFIX + vaultId), currentUserKey(), Date.now());
+    } catch {
+        // storage can be off; then we simply probe each page load
+        return null;
+    }
+}
+
 function remember(vaultId, allowed) {
     try {
-        sessionStorage.setItem(CACHE_PREFIX + vaultId, allowed ? "1" : "0");
+        sessionStorage.setItem(
+            CACHE_PREFIX + vaultId,
+            JSON.stringify({ allowed, user: currentUserKey(), at: Date.now() })
+        );
     } catch {
         // see above
     }

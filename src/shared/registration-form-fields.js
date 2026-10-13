@@ -43,9 +43,9 @@ export const REG_FORM_FIELD_MAP_KEY = "cddRegFormFieldMap";
 // Record<vaultId, formName> — the chip the user last picked, per vault.
 export const REG_FORM_FILTER_LAST_KEY = "cddRegFormFilterLastUsed";
 
-// How long a harvested map is trusted before a refetch is worth the ~10 s the
-// /molecules/new render costs. Vault admins add fields rarely; a visit to the
-// Create Entity page refreshes the map for free long before this expires.
+// How long a harvested map is trusted before it is fetched again. Vault admins
+// add fields rarely; a visit to the Create Entity page refreshes the map long
+// before this expires.
 export const FIELD_MAP_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 // The column kinds a registration form has an opinion about. Anything else a

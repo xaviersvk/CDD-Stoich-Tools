@@ -14,8 +14,7 @@
 // --------------------------
 //   GET /api/internal/v1/vaults/{v}/data_sets/{v}/registration_form_definitions
 //
-// Works on the session cookie and is small — unlike /molecules/new, which
-// api/registration-form-fields.js scrapes. Top-level molecule_field_definitions
+// Loaded through api/field-definitions.js. Top-level molecule_field_definitions
 // and batch_field_definitions carry { id, data_type_name, pick_list_values }.
 //
 // HOW CDD APPLIES A DEFAULT
@@ -32,6 +31,7 @@
 // Turbo then re-renders the mapping section, so injection is idempotent and
 // driven by the document watcher.
 
+import { loadFieldDefinitions } from "../../api/field-definitions.js";
 import { watchDocument } from "../../utils/dom.js";
 
 const PAGE = /^\/vaults\/(\d+)\/slurps\/\d+\/mapping/;
@@ -82,16 +82,7 @@ export function fieldIdFromErrorId(errorId) {
  * ------------------------------------------------------------------ */
 
 async function fetchPicklists(vaultId) {
-    try {
-        const response = await fetch(
-            `/api/internal/v1/vaults/${vaultId}/data_sets/${vaultId}/registration_form_definitions`,
-            { credentials: "same-origin", headers: { Accept: "application/json" } }
-        );
-        if (!response.ok) return new Map();
-        return picklistsFromDefinitions(await response.json());
-    } catch {
-        return new Map();
-    }
+    return picklistsFromDefinitions(await loadFieldDefinitions(vaultId));
 }
 
 // Returns the map when loaded, otherwise starts loading and returns null; the

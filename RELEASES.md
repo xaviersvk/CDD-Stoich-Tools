@@ -13,6 +13,11 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 18.15.1 — 2026-10-13
+
+- Batch fields on panel cards, the ELN ID → batch button and the form filter in field pickers work again after a CDD change.
+- **Create a new… → Location** now shows up as soon as you get inventory admin rights.
+
 ## 18.15.0 — 2026-10-13
 
 Copy a protocol's readout definitions into a protocol in another vault: **Copy readout definitions** on the source's *Protocol Details*, then **Paste** on the target.

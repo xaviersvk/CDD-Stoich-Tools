@@ -19,6 +19,40 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [18.15.0] — 2026-10-13
+
+### Added
+- **Bulk registration: pick list values as one-click defaults.** On the
+  slurp mapping page (`/vaults/{v}/slurps/{s}/mapping/edit`), every
+  "You must map X … or provide a default x" line and its default dialog get
+  the field's allowed values as buttons; a click fills CDD's own default form
+  and submits it, so the value applies to every record in the file. Values
+  come from `GET /api/internal/v1/vaults/{v}/data_sets/{v}/registration_form_definitions`
+  (session cookie, small — no need to scrape `/molecules/new`); hidden values
+  are left out. `ui-fixes/slurp-picklist-defaults.js`, always on.
+- **Protocols: copy readout definitions between vaults.** On a protocol's
+  Protocol Details, *Copy readout definitions* stores the protocol's
+  readouts in the extension clipboard; *Paste* (shown where CDD allows
+  editing) recreates them in a protocol in any vault, reloads the page and
+  shows the report again after the reload. `ui-fixes/readout-clipboard/`.
+  - Copies what Protocol Details lists: plain readouts (type, unit,
+    precision, description, required, condition, pick list values),
+    normalisations (`normalized_calculations_attributes`, created together
+    with their input readout), dose-response fits (dose and response looked
+    up by name in the target; equation, constraints, inactivity bound,
+    intercepts) and custom calculations (`formatted_formula`, with the
+    source protocol's name swapped for the target's).
+  - Outputs CDD generates for a calculation (CI, fold change, R squared,
+    plateau, …: `parent_readout_definition_id` set, or `calculation_id`
+    without `calculation_type`) are not copied; CDD recreates them with the
+    fit (an unreleased first cut copied them: 67 readouts instead of 16).
+  - Other calculation types (Boltz-2, folding, …) are reported as not copied.
+  - A name already in the target is skipped; nothing is overwritten or
+    deleted. Calculations that depend on each other are retried in rounds.
+  - Measured quirks: create ignores `precision_type`/`precision_number`
+    (send `display_format`) and a custom calculation's `formula` (send
+    `formatted_formula`).
+
 ## [18.14.1] — 2026-10-12
 
 ### Changed

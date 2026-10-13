@@ -71,6 +71,8 @@ import {initLinkSearchRank} from "./features/ui-fixes/link-search-rank";
 import {initLinkAlias} from "./features/ui-fixes/link-alias";
 import {initInventoryExactTable} from "./features/ui-fixes/inventory-exact-table";
 import {initSlurpTypeDefault} from "./features/ui-fixes/slurp-type-default";
+import {initSlurpPicklistDefaults} from "./features/ui-fixes/slurp-picklist-defaults";
+import {initReadoutClipboard} from "./features/ui-fixes/readout-clipboard/init";
 import {initOptionsMenuLink} from "./features/ui-fixes/options-menu-link";
 import {initSavedSearchCopyLinks} from "./features/savedSearchCopyLinks/savedSearchCopyLinks";
 import {initSearchColumnCopy} from "./features/ui-fixes/search-column-copy";
@@ -273,6 +275,8 @@ function init() {
   // and call initStoichTableCopy() here.
 
   initSlurpTypeDefault();
+  initSlurpPicklistDefaults();
+  initReadoutClipboard();
   initOptionsMenuLink();
   initSavedSearchCopyLinks();
   initSearchColumnCopy();

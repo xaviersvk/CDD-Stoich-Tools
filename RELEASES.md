@@ -13,6 +13,13 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 18.15.0 — 2026-10-13
+
+Copy a protocol's readout definitions into a protocol in another vault: **Copy readout definitions** on the source's *Protocol Details*, then **Paste** on the target.
+
+- Normalisations, dose-response fits and calculated readouts (pIC50 from IC50) come along. Readouts already in the target are left alone.
+- **Bulk registration:** when CDD asks for a default for a pick list field, its values are now buttons — click one to use it for the whole file.
+
 ## 18.14.1 — 2026-10-12
 
 - With the panel open, the ELN entry now moves only when the panel would cover it, and only as far as needed. On a large screen it stays put.

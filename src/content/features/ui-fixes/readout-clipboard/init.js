@@ -190,6 +190,33 @@ function summary(result, entry) {
 }
 
 /* ------------------------------------------------------------------ *
+ * The paste report, carried across the reload
+ * ------------------------------------------------------------------ */
+
+const REPORT_KEY = "cddReadoutPasteReport";
+
+function saveReport(text, isError) {
+    try {
+        sessionStorage.setItem(REPORT_KEY, JSON.stringify({ path: location.pathname, text, isError }));
+    } catch {
+        // no storage: the reload just shows the new table without the report
+    }
+}
+
+// One-shot: shown on the next bar of the same protocol, then forgotten.
+function takeReport() {
+    try {
+        const raw = sessionStorage.getItem(REPORT_KEY);
+        if (!raw) return null;
+        sessionStorage.removeItem(REPORT_KEY);
+        const report = JSON.parse(raw);
+        return report?.path === location.pathname ? report : null;
+    } catch {
+        return null;
+    }
+}
+
+/* ------------------------------------------------------------------ *
  * The bar
  * ------------------------------------------------------------------ */
 
@@ -254,20 +281,32 @@ function buildBar(view) {
         status.className = "cdd-fc-note";
         try {
             const result = await paste(ids, entry, (text) => (status.textContent = text));
-            status.textContent = summary(result, entry);
-            if (result.failed.length) {
-                status.className = "cdd-fc-status";
-            } else if (result.created.length) {
-                status.textContent += " Reloading…";
-                setTimeout(() => location.reload(), 1200);
+            const text = summary(result, entry);
+            const isError = result.failed.length > 0;
+
+            // CDD's table only shows the new readouts after a reload. The
+            // report — failures included — is handed over the reload so it
+            // is still there to read.
+            if (result.created.length) {
+                saveReport(text, isError);
+                status.textContent = `${text} Reloading…`;
+                location.reload();
                 return;
             }
+            status.textContent = text;
+            if (isError) status.className = "cdd-fc-status";
         } catch (error) {
             status.className = "cdd-fc-status";
             status.textContent = `Paste failed: ${error.message}`;
         }
         setBusy(false);
     });
+
+    const report = takeReport();
+    if (report) {
+        status.textContent = report.text;
+        status.className = report.isError ? "cdd-fc-status" : "cdd-fc-note";
+    }
 
     refreshers.add(refresh);
     refresh();

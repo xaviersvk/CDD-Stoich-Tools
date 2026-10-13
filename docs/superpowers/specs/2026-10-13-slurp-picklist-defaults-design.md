@@ -99,15 +99,19 @@ colour fill. The row wraps on narrow widths.
 ## Files
 
 - `src/content/features/ui-fixes/slurp-picklist-defaults.js` — the feature.
-  Pure helpers (`picklistsFromDefinitions`, `fieldIdFromErrorId`) are exported
-  for tests.
+  Pure helpers (`picklistsFromDefinitions`, `fieldIdFromErrorId`) kept free
+  of DOM access.
 - `src/content/main.js` — call `initSlurpPicklistDefaults()` next to
   `initSlurpTypeDefault()`.
 
 ## Testing
 
-- Unit: `picklistsFromDefinitions` (PickList only, hidden dropped, order kept,
-  junk input → empty map) and `fieldIdFromErrorId`.
+The repo has no test runner; follow its practice:
+
+- `npm run build` passes.
+- Before the user tests, check the live mapping page read-only (no clicks
+  on the buttons): rows exist for Origin and Intermediate/Final in both
+  places, with the right values; none on "+ Add a field…".
 - Manual (user, vault 8158 slurp 1000024490): buttons appear in the error box
   and in the dialog; one click sets Origin and the error goes away; the same
   for Intermediate/Final; nothing appears on "+ Add a field…".

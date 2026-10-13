@@ -77,3 +77,13 @@ export function createReadout(vaultId, protocolId, body) {
 export function createCalculation(vaultId, protocolId, body) {
     return postJson(`${protocolBase(vaultId, protocolId)}/custom_calculations`, body);
 }
+
+export function getDoseResponse(vaultId, protocolId, calculationId) {
+    return getJson(`${protocolBase(vaultId, protocolId)}/dose_response_calculations/${calculationId}`);
+}
+
+// Flat body with dose_readout_definition_id / response_readout_definition_id
+// of the TARGET protocol; CDD creates the fit's other outputs itself.
+export function createDoseResponse(vaultId, protocolId, body) {
+    return postJson(`${protocolBase(vaultId, protocolId)}/dose_response_calculations`, body);
+}

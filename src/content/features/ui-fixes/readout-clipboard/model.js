@@ -36,7 +36,62 @@ function readoutBody(def) {
         .map((v, index) => ({ value: v.value, hidden: !!v.hidden, display_order: index }));
     if (def.data_type_name === "PickList") body.pick_list_values = values;
 
+    // Normalisations ride on their input readout: CDD creates the output
+    // ("Polarization % bound fraction") together with it.
+    const normalizations = (Array.isArray(def.normalized_calculations_attributes) ? def.normalized_calculations_attributes : [])
+        .filter((n) => n?.type)
+        .map((n) => {
+            const out = { type: n.type, name: n.name || n.output_readout_definition?.name, selected: true };
+            for (const key of ["scope", "invert_normalized_value", "control_type", "mean_type", "description"]) {
+                if (n[key] != null) out[key] = n[key];
+            }
+            return out;
+        });
+    if (normalizations.length) body.normalized_calculations_attributes = normalizations;
+
     return body;
+}
+
+// The fields of a dose-response calculation that travel. Readouts are named,
+// not numbered; paste looks the ids up in the target.
+const DOSE_RESPONSE_KEYS = [
+    "normalized",
+    "equation_type",
+    "constraints",
+    "graph_log_scale_x",
+    "graph_log_scale_y",
+    "inactivity_lower_bound",
+    "inactivity_upper_bound",
+    "minimum_inactivity_modifier",
+];
+
+function doseResponseStep(calc, nameById) {
+    const doseName = nameById.get(String(calc.dose_readout_definition_id));
+    const responseName = nameById.get(String(calc.response_readout_definition_id));
+    const intercepts = (calc.intercept_readout_definitions_attributes || []).map((i) => {
+        const out = {
+            name: i.name,
+            intercept: i.intercept,
+            display_format: displayFormat(i.precision_type, i.precision_number),
+            intercept_absolute: !!i.intercept_absolute,
+        };
+        if (i.unit_label) out.unit_label = i.unit_label;
+        if (i.description) out.description = i.description;
+        return out;
+    });
+    if (!doseName || !responseName || !intercepts.length) return null;
+
+    const body = {};
+    for (const key of DOSE_RESPONSE_KEYS) if (calc[key] != null) body[key] = calc[key];
+    body.intercept_readout_definitions_attributes = intercepts;
+
+    return {
+        kind: "dose-response",
+        name: intercepts.map((i) => i.name).join(", "),
+        doseName,
+        responseName,
+        body,
+    };
 }
 
 // True for readouts CDD makes by itself as part of a calculation.
@@ -45,10 +100,18 @@ export function isGenerated(def) {
     return def.calculation_id != null && !def.calculation_type;
 }
 
-// readouts: CDD's list, any order. calculationsById: Map(id -> custom
-// calculation JSON) for every CustomCalculation output in the list.
+// The calculation types copy knows how to rebuild, and how to fetch them.
+export const COPIED_CALCULATIONS = ["CustomCalculation", "DoseResponseCalculation"];
+
+// readouts: CDD's list, any order. calculationsById: Map(id -> calculation
+// JSON) for every CustomCalculation / DoseResponseCalculation in the list.
+//
+// calculations[] holds both kinds, in source order:
+//   { kind: "custom", name, body: { formatted_formula, … } }
+//   { kind: "dose-response", name, doseName, responseName, body: { … } }
 export function toClipboard({ vaultId, vaultName, protocolName, readouts, calculationsById }) {
     const sorted = [...readouts].sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+    const nameById = new Map(readouts.map((d) => [String(d.id), d.name]));
     const entry = {
         vaultId,
         vaultName,
@@ -72,24 +135,47 @@ export function toClipboard({ vaultId, vaultName, protocolName, readouts, calcul
             continue;
         }
 
-        const calc = def.calculation_type === "CustomCalculation" && calculationsById.get(String(def.calculation_id));
-        if (!calc?.formatted_formula) {
-            entry.skipped.push({ name: def.name, type: def.calculation_type });
+        const calc = calculationsById.get(String(def.calculation_id));
+
+        if (def.calculation_type === "CustomCalculation" && calc?.formatted_formula) {
+            entry.calculations.push({
+                kind: "custom",
+                name: def.name,
+                body: {
+                    formatted_formula: calc.formatted_formula,
+                    aggregate_readouts_by: calc.aggregate_readouts_by || "batch and run",
+                    output_readout_definition_attributes: readoutBody(def),
+                },
+            });
             continue;
         }
 
-        entry.calculations.push({
-            formatted_formula: calc.formatted_formula,
-            aggregate_readouts_by: calc.aggregate_readouts_by || "batch and run",
-            output_readout_definition_attributes: readoutBody(def),
+        // A dose-response fit shows up in the list as one placeholder readout
+        // (oddly named after one of its outputs, e.g. "Hill slope").
+        const step = def.calculation_type === "DoseResponseCalculation" && calc && doseResponseStep(calc, nameById);
+        if (step) {
+            entry.calculations.push(step);
+            continue;
+        }
+
+        entry.skipped.push({
+            name: calc?.sentenced_intercept_names || def.name,
+            type: def.calculation_type,
         });
     }
 
     return entry;
 }
 
+// What the Protocol Details table will show once pasted: readouts, their
+// normalisations, and one row per calculation.
 export function readoutCount(entry) {
-    return (entry?.readouts?.length || 0) + (entry?.calculations?.length || 0);
+    if (!entry) return 0;
+    const normalizations = (entry.readouts || []).reduce(
+        (sum, r) => sum + (r.normalized_calculations_attributes?.length || 0),
+        0
+    );
+    return (entry.readouts?.length || 0) + normalizations + (entry.calculations?.length || 0);
 }
 
 // "[Kinetic Solubility -> Kinetic_Solubility (uM)]" names its protocol; in

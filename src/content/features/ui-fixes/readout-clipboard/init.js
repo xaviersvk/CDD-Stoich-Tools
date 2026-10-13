@@ -12,7 +12,14 @@
 
 import { watchDocument } from "../../../utils/dom.js";
 import { injectFieldClipboardStyles } from "../field-clipboard/styles.js";
-import { createCalculation, createReadout, getCalculation, listReadouts } from "./api.js";
+import {
+    createCalculation,
+    createDoseResponse,
+    createReadout,
+    getCalculation,
+    getDoseResponse,
+    listReadouts,
+} from "./api.js";
 import { onReadoutClipboardChanged, readReadoutClipboard, writeReadoutClipboard } from "./clipboard.js";
 import { readoutCount, retargetFormula, toClipboard } from "./model.js";
 
@@ -63,11 +70,15 @@ function button(text) {
 async function copy({ vaultId, protocolId }) {
     const readouts = await listReadouts(vaultId, protocolId);
 
+    const fetchers = {
+        CustomCalculation: getCalculation,
+        DoseResponseCalculation: getDoseResponse,
+    };
     const calculationsById = new Map();
     for (const def of readouts) {
-        if (def.calculation_type !== "CustomCalculation" || !def.calculation_id) continue;
-        const calc = await getCalculation(vaultId, protocolId, def.calculation_id);
-        calculationsById.set(String(def.calculation_id), calc);
+        const fetchCalc = fetchers[def.calculation_type];
+        if (!fetchCalc || !def.calculation_id) continue;
+        calculationsById.set(String(def.calculation_id), await fetchCalc(vaultId, protocolId, def.calculation_id));
     }
 
     const entry = toClipboard({
@@ -85,50 +96,79 @@ async function copy({ vaultId, protocolId }) {
  * Paste
  * ------------------------------------------------------------------ */
 
+// Clipboards written before dose-response support held bare custom
+// calculation bodies; read them as custom steps.
+function steps(entry) {
+    return (entry.calculations || []).map((calc) =>
+        calc.kind ? calc : { kind: "custom", name: calc.output_readout_definition_attributes.name, body: calc }
+    );
+}
+
+function createStep({ vaultId, protocolId }, step, { idByName, from, to }) {
+    if (step.kind === "custom") {
+        return createCalculation(vaultId, protocolId, {
+            ...step.body,
+            formatted_formula: retargetFormula(step.body.formatted_formula, from, to),
+        });
+    }
+
+    const dose = idByName.get(step.doseName.trim());
+    const response = idByName.get(step.responseName.trim());
+    if (!dose || !response) {
+        const missing = [!dose && step.doseName, !response && step.responseName].filter(Boolean);
+        return Promise.reject(new Error(`needs ${missing.join(" and ")} in this protocol`));
+    }
+    return createDoseResponse(vaultId, protocolId, {
+        ...step.body,
+        dose_readout_definition_id: dose,
+        response_readout_definition_id: response,
+    });
+}
+
 async function paste({ vaultId, protocolId }, entry, report) {
     const existing = new Set((await listReadouts(vaultId, protocolId)).map((d) => d.name.trim()));
     const result = { created: [], skipped: [], failed: [] };
 
-    const fresh = (body) => {
-        if (!existing.has(body.name.trim())) return true;
-        result.skipped.push(body.name);
+    const fresh = (name) => {
+        if (!existing.has(name.trim())) return true;
+        result.skipped.push(name);
         return false;
     };
 
     // Plain readouts first: calculations refer to them. Stop at the first
     // failure — whatever went wrong will go wrong for the rest too.
-    for (const body of entry.readouts.filter(fresh)) {
+    for (const body of entry.readouts.filter((b) => fresh(b.name))) {
         report(`Creating ${body.name}…`);
         try {
             await createReadout(vaultId, protocolId, body);
             result.created.push(body.name);
+            for (const n of body.normalized_calculations_attributes || []) result.created.push(n.name);
         } catch (error) {
             result.failed.push(`${body.name}: ${error.message}`);
             return result;
         }
     }
 
-    // A calculation may refer to another calculation's output; retry the
-    // ones that failed for as long as a round still creates something.
+    // Calculations build on readouts, normalisations and each other (a
+    // pIC50 formula reads a fit's IC50). Retry the ones that failed for as
+    // long as a round still creates something; each round re-reads the
+    // target so a fit can find the readouts the previous round made.
     const target = protocolName();
-    let pending = entry.calculations.filter((calc) => fresh(calc.output_readout_definition_attributes));
+    let pending = steps(entry).filter((step) => fresh(step.name.split(", ")[0]));
     let errors = new Map();
 
     while (pending.length) {
+        const idByName = new Map((await listReadouts(vaultId, protocolId)).map((d) => [d.name.trim(), d.id]));
         const next = [];
         errors = new Map();
-        for (const calc of pending) {
-            const name = calc.output_readout_definition_attributes.name;
-            report(`Creating ${name}…`);
+        for (const step of pending) {
+            report(`Creating ${step.name}…`);
             try {
-                await createCalculation(vaultId, protocolId, {
-                    ...calc,
-                    formatted_formula: retargetFormula(calc.formatted_formula, entry.protocolName, target),
-                });
-                result.created.push(name);
+                await createStep({ vaultId, protocolId }, step, { idByName, from: entry.protocolName, to: target });
+                result.created.push(step.name);
             } catch (error) {
-                errors.set(name, error.message);
-                next.push(calc);
+                errors.set(step.name, error.message);
+                next.push(step);
             }
         }
         if (next.length === pending.length) break;

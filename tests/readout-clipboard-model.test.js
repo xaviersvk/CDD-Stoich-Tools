@@ -110,6 +110,39 @@ test("toClipboard keeps what Protocol Details lists, in display order", () => {
     assert.ok(!JSON.stringify(entry).includes("IC50 CI"));
 });
 
+test("toClipboard keeps a fit with no intercepts (linear equation)", () => {
+    const entry = toClipboard({
+        vaultId: "1",
+        protocolName: "Src",
+        readouts: [
+            { id: 1, name: "Concentration", data_type_name: "Number", display_order: 0 },
+            { id: 2, name: "Absorption", data_type_name: "Number", display_order: 1 },
+            { id: 3, name: "Slope", display_order: 2, calculation_id: 40, calculation_type: "DoseResponseCalculation" },
+            { id: 4, name: "Y-Intercept", display_order: 2, calculation_id: 40, calculation_type: null },
+        ],
+        calculationsById: new Map([
+            [
+                "40",
+                {
+                    dose_readout_definition_id: 1,
+                    response_readout_definition_id: 2,
+                    normalized: true,
+                    equation_type: 1,
+                    intercept_readout_definitions_attributes: [],
+                },
+            ],
+        ]),
+    });
+
+    assert.deepEqual(entry.skipped, []);
+    assert.equal(entry.calculations.length, 1);
+    const fit = entry.calculations[0];
+    assert.equal(fit.kind, "dose-response");
+    assert.equal(fit.name, "Slope");
+    assert.equal(fit.body.equation_type, 1);
+    assert.deepEqual(fit.body.intercept_readout_definitions_attributes, []);
+});
+
 test("readoutCount counts readouts, normalisations and calculations", () => {
     const entry = toClipboard({ vaultId: "1", protocolName: "Src", readouts, calculationsById });
     assert.equal(readoutCount(entry), 2 + 1 + 2);

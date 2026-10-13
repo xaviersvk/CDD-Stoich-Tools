@@ -65,7 +65,10 @@ const DOSE_RESPONSE_KEYS = [
     "minimum_inactivity_modifier",
 ];
 
-function doseResponseStep(calc, nameById) {
+// def is the fit's placeholder readout. Equations without intercepts
+// (linear, scatterplot, line graph) are named after it instead; it is one
+// of the outputs CDD creates, so paste can still tell the fit is there.
+function doseResponseStep(def, calc, nameById) {
     const doseName = nameById.get(String(calc.dose_readout_definition_id));
     const responseName = nameById.get(String(calc.response_readout_definition_id));
     const intercepts = (calc.intercept_readout_definitions_attributes || []).map((i) => {
@@ -79,7 +82,7 @@ function doseResponseStep(calc, nameById) {
         if (i.description) out.description = i.description;
         return out;
     });
-    if (!doseName || !responseName || !intercepts.length) return null;
+    if (!doseName || !responseName) return null;
 
     const body = {};
     for (const key of DOSE_RESPONSE_KEYS) if (calc[key] != null) body[key] = calc[key];
@@ -87,7 +90,7 @@ function doseResponseStep(calc, nameById) {
 
     return {
         kind: "dose-response",
-        name: intercepts.map((i) => i.name).join(", "),
+        name: intercepts.length ? intercepts.map((i) => i.name).join(", ") : def.name,
         doseName,
         responseName,
         body,
@@ -149,7 +152,7 @@ export function toClipboard({ vaultId, vaultName, protocolName, readouts, calcul
 
         // A dose-response fit shows up in the list as one placeholder readout
         // (oddly named after one of its outputs, e.g. "Hill slope").
-        const step = def.calculation_type === "DoseResponseCalculation" && calc && doseResponseStep(calc, nameById);
+        const step = def.calculation_type === "DoseResponseCalculation" && calc && doseResponseStep(def, calc, nameById);
         if (step) {
             entry.calculations.push(step);
             continue;

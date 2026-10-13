@@ -19,6 +19,19 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [18.15.2] — 2026-10-13
+
+### Fixed
+- **Copy readout definitions keeps fits without intercepts.** A
+  `DoseResponseCalculation` was copied only when it had at least one
+  intercept readout (IC50, EC50, …); fits whose equation has none — Linear
+  Equation, Scatterplot, Line Graph, Michaelis-Menten, Receptor Binding — came
+  back from `doseResponseStep` as `null` and were skipped, reported under
+  *Not copied* as "Slope – DoseResponseCalculation". Such a fit is now copied with an empty
+  `intercept_readout_definitions_attributes` and named after its placeholder
+  readout (e.g. "Slope"), which is one of the outputs CDD creates, so paste
+  still recognises a fit that is already in the target. Unit test added.
+
 ## [18.15.1] — 2026-10-13
 
 ### Fixed

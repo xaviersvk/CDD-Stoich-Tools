@@ -13,6 +13,10 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 18.15.2 — 2026-10-13
+
+- **Copy readout definitions** now copies linear fits and scatterplots too, instead of listing them under *Not copied*.
+
 ## 18.15.1 — 2026-10-13
 
 - Batch fields on panel cards, the ELN ID → batch button and the form filter in field pickers work again after a CDD change.

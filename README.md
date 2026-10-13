@@ -358,8 +358,19 @@ npm run build:inject
 `build:content` empties `dist/` and copies the static assets; `build:inject` has
 `emptyOutDir: false`, so it adds `inject.js` without wiping the rest.
 
-> There is **no `dev`/watch script and no test/lint/CI setup** — only production
+> There is **no `dev`/watch script and no lint/CI setup** — only production
 > builds. Iterating means: rebuild, then reload the unpacked extension.
+
+### Tests
+
+```bash
+npm test             # node --test "tests/**/*.test.js" — no extra dependency
+```
+
+Unit tests cover the pure parts that need no CDD page: readout clipboard
+translation, field-definition parsing (forms, pick lists, batch field names)
+and the Location link's permission cache. Anything that talks to CDD is still
+tested by hand in the test vault.
 
 ### Loading the extension (Chrome)
 

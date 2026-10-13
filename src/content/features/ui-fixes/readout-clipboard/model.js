@@ -100,9 +100,6 @@ export function isGenerated(def) {
     return def.calculation_id != null && !def.calculation_type;
 }
 
-// The calculation types copy knows how to rebuild, and how to fetch them.
-export const COPIED_CALCULATIONS = ["CustomCalculation", "DoseResponseCalculation"];
-
 // readouts: CDD's list, any order. calculationsById: Map(id -> calculation
 // JSON) for every CustomCalculation / DoseResponseCalculation in the list.
 //

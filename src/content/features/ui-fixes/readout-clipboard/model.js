@@ -39,6 +39,12 @@ function readoutBody(def) {
     return body;
 }
 
+// True for readouts CDD makes by itself as part of a calculation.
+export function isGenerated(def) {
+    if (def.parent_readout_definition_id != null) return true;
+    return def.calculation_id != null && !def.calculation_type;
+}
+
 // readouts: CDD's list, any order. calculationsById: Map(id -> custom
 // calculation JSON) for every CustomCalculation output in the list.
 export function toClipboard({ vaultId, vaultName, protocolName, readouts, calculationsById }) {
@@ -54,6 +60,13 @@ export function toClipboard({ vaultId, vaultName, protocolName, readouts, calcul
     };
 
     for (const def of sorted) {
+        // A calculation's own outputs (a dose-response fit's CI, fold change,
+        // R squared, plateau, …) carry its calculation_id but no
+        // calculation_type, or hang off a parent readout. CDD creates them
+        // with the calculation and does not list them on Protocol Details;
+        // copying them would create dozens of stray readouts.
+        if (isGenerated(def)) continue;
+
         if (!def.calculation_type) {
             entry.readouts.push(readoutBody(def));
             continue;

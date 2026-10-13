@@ -32,24 +32,23 @@ import {
     saveRegistrationFormNames,
 } from "../../../shared/registration-form.js";
 import { applyOptionOrder, optionNames } from "./entity-type-select.js";
-import { harvestFromLiveDom } from "../../api/registration-form-fields.js";
+import { refreshFieldMap } from "../../api/registration-form-fields.js";
 import { watchDocument } from "../../utils/dom.js";
 
 const SELECT_SELECTOR = "#registration-form-select";
 
 let started = false;
 
-// This page also carries, in its RegistrationFormRenderer props, the map of
-// which fields each form uses — which the Search/Inventory field pickers filter
-// by. Harvesting it here is free: the props are already in the DOM, so the
-// pickers never have to fetch this 1 MB page themselves. Once per page load.
+// Someone on this page may just have changed a form, so refresh the map of
+// which fields each form uses — the Search/Inventory field pickers filter by
+// it. Once per page load.
 let harvested = false;
 
 function harvestFieldMapOnce() {
     if (harvested) return;
     if (!document.querySelector('[component_class="RegistrationFormRenderer"]')) return;
     harvested = true;
-    harvestFromLiveDom();
+    refreshFieldMap();
 }
 
 // The settings snapshot the sync pass reads. Kept in module scope because the

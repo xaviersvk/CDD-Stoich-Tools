@@ -31,6 +31,7 @@ import {
     findDefId,
     readFieldByLabel,
 } from "../api/batch-registration-props.js";
+import { batchFieldDefs, loadFieldDefinitions } from "../api/field-definitions.js";
 import { batchFieldControlId, moleculeBatchesUrl } from "../../shared/eln-id-to-batch.js";
 
 // The batches tab renders client-side; a cold frame needs a moment, and a
@@ -120,9 +121,13 @@ export async function writeElnIdToBatch({
         // The definition id comes from the page we are about to write to, not
         // from the panel's cache: the label is per-vault configuration and the
         // id behind it differs between vaults.
+        //
+        // The page's renderers no longer name their fields; the names come
+        // from the same vault's definitions.
+        const defs = batchFieldDefs(await loadFieldDefinitions(vaultId));
         const props = await waitFor(() => {
             const d = frame.contentDocument;
-            return d ? readBatchProps(d, batchId) : null;
+            return d ? readBatchProps(d, batchId, defs) : null;
         }, RENDER_TIMEOUT_MS);
 
         if (!props) return { ok: false, reason: "the batch page did not load" };

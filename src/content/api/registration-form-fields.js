@@ -5,33 +5,18 @@
 //
 // WHERE THE DATA IS
 // -----------------
-// CDD embeds the whole thing in the Create Entity page's DOM:
-//
-//   div[component_class="RegistrationFormRenderer"][react_props]
-//
-// `react_props` is a ~154 kB JSON string carrying
-//   registration_form_definitions        11 forms, each with a nested layout
+// The definitions JSON CDD's own Create Entity form loads (see
+// api/field-definitions.js), carrying
+//   registration_form_definitions        the forms, each with a nested layout
 //                                        tree whose leaves hold a `fieldID`
 //   molecule_field_definitions           id -> name, per object kind
 //   batch_field_definitions
 //   inventory_sample_field_definitions
 //
 // Walking each form's layout tree for `fieldID`s and joining against the
-// definitions gives the map. There is no JSON API for this — the public
-// /api/v1/vaults/{id}/fields wants an API token and 401s on a session cookie.
-// Same scrape-the-props approach as batch-field-enrichment.js.
-//
-// TWO WAYS IN, BECAUSE THE PAGE IS EXPENSIVE
-// ------------------------------------------
-// /vaults/{id}/molecules/new is ~1 MB and takes the server ~10 s to render, so
-// it must never sit on the critical path of opening a picker:
-//
-//   1. FREE — when the user is ON the Create Entity page anyway, harvest the
-//      props straight out of the live DOM. No fetch, no wait. In practice this
-//      is where the map comes from, because registering anything goes through
-//      that page.
-//   2. FETCH — only when nothing is cached. Runs in the background at page load
-//      so the picker is already warm by the time it's opened.
+// definitions gives the map. This JSON used to sit in the react_props of
+// /vaults/{id}/molecules/new (~1 MB, ~10 s) and was scraped from there; CDD has
+// since moved it out of the page, and the scrape found no forms.
 //
 // A stale map is served immediately and refreshed behind the user's back; only
 // a completely missing one ever makes anybody wait.
@@ -45,11 +30,7 @@ import {
     isUsable,
     saveFieldMap,
 } from "../../shared/registration-form-fields.js";
-
-// The element CDD renders the form definitions into. Matching on
-// component_class (not the css class) is what batch-field-enrichment.js does —
-// the css class is styling, the attribute is the contract.
-const RENDERER_SELECTOR = '[component_class="RegistrationFormRenderer"]';
+import { forgetFieldDefinitions, loadFieldDefinitions } from "./field-definitions.js";
 
 // props key holding the definitions for each column kind, and the key under
 // `components` that lays that kind out. CDD calls the Entity object "molecule"
@@ -88,9 +69,8 @@ function collectFieldIds(node, out) {
     return out;
 }
 
-// Reduce one RegistrationFormRenderer's props to the few kB worth keeping.
-// Returns null when the props aren't the ones we want (the molecule SHOW page
-// renders this component per batch, without the form definitions).
+// Reduce the definitions JSON to the few kB worth keeping. Returns null when it
+// carries no forms.
 export function reduceProps(props) {
     const definitions = props?.registration_form_definitions;
     if (!Array.isArray(definitions) || !definitions.length) return null;
@@ -138,26 +118,6 @@ export function reduceProps(props) {
     return { fetchedAt: Date.now(), known, forms };
 }
 
-// Pull the map out of a document (live or parsed). Several renderers can be
-// present; take the first that carries the definitions.
-export function harvestFromDocument(doc) {
-    for (const el of doc.querySelectorAll(RENDERER_SELECTOR)) {
-        const raw = el.getAttribute("react_props");
-        if (!raw || !raw.includes("registration_form_definitions")) continue;
-
-        let props;
-        try {
-            props = JSON.parse(raw);
-        } catch {
-            continue;
-        }
-
-        const reduced = reduceProps(props);
-        if (reduced) return reduced;
-    }
-    return null;
-}
-
 /* --------------------------------------------------------------------------- */
 /* Cache                                                                       */
 /* --------------------------------------------------------------------------- */
@@ -173,13 +133,10 @@ function remember(vaultId, vaultMap) {
 }
 
 async function fetchFieldMap(vaultId) {
-    const response = await fetch(`/vaults/${vaultId}/molecules/new`, {
-        credentials: "same-origin",
-    });
-    if (!response.ok) return null;
-
-    const html = await response.text();
-    return harvestFromDocument(new DOMParser().parseFromString(html, "text/html"));
+    // A refresh is asked for because the map may be out of date; never answer
+    // it from this page session's copy.
+    forgetFieldDefinitions(vaultId);
+    return reduceProps(await loadFieldDefinitions(vaultId));
 }
 
 // One fetch per vault at a time; the promise is dropped on settle so a failure
@@ -254,25 +211,19 @@ export function setActiveFormName(formName, vaultId = currentVaultId()) {
 }
 
 /**
- * Harvest from the page the user is already on. Called on the Create Entity
- * page, where the props are in the DOM for free — this is the cheap path that
- * keeps the cache warm without ever paying for the 10 s render.
+ * Refresh this vault's map now. Called on the Create Entity page, where a form
+ * the user just edited would otherwise wait out the stale-map timer.
  */
-export function harvestFromLiveDom() {
-    const vaultId = currentVaultId();
-    if (!vaultId) return null;
-
-    const vaultMap = harvestFromDocument(document);
-    if (vaultMap) remember(vaultId, vaultMap);
-    return vaultMap;
+export function refreshFieldMap(vaultId = currentVaultId()) {
+    return vaultId ? refresh(vaultId) : Promise.resolve(null);
 }
 
 /**
  * Warm memory from what we already have — the remembered chip and any stored
  * map. Deliberately does NOT touch the network: the pickers are initialised on
- * every CDD page, and firing a 1 MB / ~10 s request on each one to serve a
- * dropdown nobody may open would be indefensible. The fetch is started when a
- * picker is actually opened (see form-filter-chips.js).
+ * every CDD page, and fetching on each one to serve a dropdown nobody may open
+ * would be wasted. The fetch is started when a picker is actually opened (see
+ * form-filter-chips.js).
  */
 export async function initRegistrationFormFields() {
     const vaultId = currentVaultId();
@@ -280,10 +231,6 @@ export async function initRegistrationFormFields() {
 
     const choice = await getFilterChoice(vaultId);
     if (choice) choices.set(vaultId, choice);
-
-    // Free path first: on the Create Entity page the props are already in the
-    // DOM, so the cache refreshes without fetching the page we're looking at.
-    if (harvestFromLiveDom()) return;
 
     const stored = await getFieldMap(vaultId);
     if (isUsable(stored)) memory.set(vaultId, stored);

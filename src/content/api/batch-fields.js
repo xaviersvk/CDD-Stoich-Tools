@@ -5,7 +5,9 @@
 // client-side by React, so a plain fetch never yields its cells — but the raw
 // HTML carries everything in the RegistrationFormRenderer components'
 // `react_props`: `batch_field_definitions` (field id -> label) and `data` (the
-// batch's values). We join the two here.
+// batch's values). We join the two here. CDD has since moved the definitions
+// out of the props into api/field-definitions.js; props that still carry
+// their own win, the vault's list stands in otherwise.
 //
 // Same contract as molecule-image.js: one fetch per (vault, molecule) per
 // session, the Promise is cached (failures included), so hover bursts and
@@ -13,6 +15,7 @@
 
 import { extractSynonym } from "./molecule-image.js";
 import { recordHeatMapFieldDefs } from "../../shared/heat-map-fields.js";
+import { loadFieldDefinitions } from "./field-definitions.js";
 
 const LOG_PREFIX = "[CDD plate plugin]";
 
@@ -25,7 +28,7 @@ const EMPTY = { synonym: null, batches: [] };
 // object_id; the blank new-batch form has object_id null). Every vault field
 // is kept, valued or not, so a configured field can render as "—" rather than
 // silently vanish. The batch-name field ("001") names the batch instead.
-function extractBatches(doc) {
+function extractBatches(doc, fallbackDefs = []) {
     const batches = [];
     let recorded = false;
 
@@ -41,9 +44,13 @@ function extractBatches(doc) {
         // Feed the options page's checkbox list from ANY batch renderer — the
         // blank new-batch form (object_id null) carries the full definitions
         // too, so discovery works even for molecules without saved batches.
-        if (!recorded && Array.isArray(props.batch_field_definitions)) {
+        const defs = Array.isArray(props.batch_field_definitions) && props.batch_field_definitions.length
+            ? props.batch_field_definitions
+            : fallbackDefs;
+
+        if (!recorded && defs.length) {
             recorded = true;
-            recordHeatMapFieldDefs(props.batch_field_definitions);
+            recordHeatMapFieldDefs(defs);
         }
 
         if (props.object_id == null) continue;
@@ -62,9 +69,6 @@ function extractBatches(doc) {
 
         let name = null;
         const fields = [];
-        const defs = Array.isArray(props.batch_field_definitions)
-            ? props.batch_field_definitions
-            : [];
         for (const def of defs) {
             if (!def || typeof def.name !== "string") continue;
             const value = values.get(def.id) ?? "";
@@ -98,7 +102,15 @@ async function fetchBatchFieldData(vaultId, moleculeId) {
         const html = await res.text();
         const doc = new DOMParser().parseFromString(html, "text/html");
 
-        return { synonym: extractSynonym(doc), batches: extractBatches(doc) };
+        // The vault the page came from: a molecule can live in another vault
+        // than the one asked for, and its field ids are that vault's.
+        const landedVaultId = String(res.url || "").match(/\/vaults\/(\d+)\//)?.[1] || vaultId;
+        const definitions = await loadFieldDefinitions(landedVaultId);
+        const fallbackDefs = Array.isArray(definitions?.batch_field_definitions)
+            ? definitions.batch_field_definitions
+            : [];
+
+        return { synonym: extractSynonym(doc), batches: extractBatches(doc, fallbackDefs) };
     } catch (err) {
         console.warn(`${LOG_PREFIX} failed to load batch fields`, {
             vaultId,

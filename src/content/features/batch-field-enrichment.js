@@ -5,7 +5,8 @@
 // metafields — CDD's eln_entry JSON simply doesn't carry them. This module
 // fills the gap: it fetches the batch's molecule page (one GET per molecule,
 // cached), reads the RegistrationFormRenderer react_props embedded in the
-// HTML, joins batch_field_definitions (id → name) with the lot's data values,
+// HTML, joins the vault's batch field definitions (id → name, from
+// api/field-definitions.js) with the lot's data values,
 // and merges the named field map (Purity [%], Density [g/mL], Vendor ID…)
 // into the matching panel samples before re-rendering.
 //
@@ -62,7 +63,7 @@ function applyBatchFields(sample, fieldMap, vaultId) {
 }
 
 function applyPage(sample, page) {
-    const props = readBatchProps(page.doc, sample.batchId);
+    const props = readBatchProps(page.doc, sample.batchId, page.batchFieldDefs);
 
     if (props) {
         applyBatchFields(sample, props.fieldMap, page.vaultId);

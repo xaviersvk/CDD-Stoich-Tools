@@ -17,12 +17,14 @@
 // api/molecule-synonyms.js reads the Synonyms row, api/batch-registration-props
 // the registration fields. This module only hands over the parsed document.
 
+import { batchFieldDefs, loadFieldDefinitions } from "./field-definitions.js";
+
 const LOG_PREFIX = "[CDD stoich plugin]";
 
 // cacheKey (`${vaultId}:${moleculeId}`) -> Promise<Document|null>
 const pageCache = new Map();
 
-// cacheKey -> { doc, vaultId }, once the page has arrived.
+// cacheKey -> { doc, vaultId, batchFieldDefs }, once the page has arrived.
 const settled = new Map();
 
 // Split from fetchMoleculePage so the HTTP-status throw is raised OUTSIDE the
@@ -56,14 +58,22 @@ async function requestMoleculePage(vaultId, moleculeId) {
         throw error;
     }
 
+    // The vault the request actually LANDED in. A molecule can live in a
+    // different vault than the entry that mentions it (ELN vault 6884 ->
+    // registration vault 6885); the server redirects and fetch follows it
+    // transparently. Anything that later builds a URL for one of this
+    // molecule's batches must use this, never location.pathname.
+    const landedVaultId = String(res.url || "").match(/\/vaults\/(\d+)\//)?.[1] || vaultId;
+    const doc = new DOMParser().parseFromString(await res.text(), "text/html");
+
     return {
-        doc: new DOMParser().parseFromString(await res.text(), "text/html"),
-        // The vault the request actually LANDED in. A molecule can live in a
-        // different vault than the entry that mentions it (ELN vault 6884 ->
-        // registration vault 6885); the server redirects and fetch follows it
-        // transparently. Anything that later builds a URL for one of this
-        // molecule's batches must use this, never location.pathname.
-        vaultId: String(res.url || "").match(/\/vaults\/(\d+)\//)?.[1] || vaultId,
+        doc,
+        vaultId: landedVaultId,
+        // id -> name of the batch fields. The page's renderers no longer
+        // carry it, and without it their data rows cannot be named. Empty
+        // when the definitions cannot be read; the page is still good for
+        // callers that do not need them.
+        batchFieldDefs: batchFieldDefs(await loadFieldDefinitions(landedVaultId)),
     };
 }
 

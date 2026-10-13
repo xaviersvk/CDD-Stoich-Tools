@@ -9,6 +9,10 @@
 // data rows have no batch_field_definition_id), which is why the join below
 // is safe to run over all of them.
 //
+// The renderers used to carry batch_field_definitions (id -> name) too; CDD
+// has moved those to the definitions API (api/field-definitions.js). Callers
+// pass that list as `fallbackDefs`; props that still carry their own win.
+//
 // One reader, not two: the enrichment pass and the pre-write re-check must
 // agree, byte for byte, on what "Internal ID is empty" means. Two copies of
 // this parse would eventually disagree, and the one that drifted would be the
@@ -19,7 +23,7 @@ import { fieldLabelsMatch } from "../../shared/eln-id-carry.js";
 const RENDERER_SELECTOR = '[component_class="RegistrationFormRenderer"]';
 
 // `doc` is a parsed DOMParser document or `document` itself.
-export function readBatchProps(doc, batchId) {
+export function readBatchProps(doc, batchId, fallbackDefs = []) {
     const wanted = Number(batchId);
     if (!Number.isFinite(wanted)) return null;
 
@@ -33,7 +37,7 @@ export function readBatchProps(doc, batchId) {
 
         if (Number(props?.object_id) !== wanted) continue;
 
-        return readRenderer(props);
+        return readRenderer(props, fallbackDefs);
     }
 
     return null;
@@ -44,13 +48,14 @@ export function readBatchProps(doc, batchId) {
 // Shared by the two ways of asking: readBatchProps finds the renderer by the
 // batch's numeric id, readBatchFieldsByName finds every renderer and keys them
 // by the name the batch prints. The turning is the same either way.
-function readRenderer(props) {
-    const defs = (Array.isArray(props?.batch_field_definitions)
+function readRenderer(props, fallbackDefs = []) {
+    const own = (Array.isArray(props?.batch_field_definitions)
         ? props.batch_field_definitions
         : []
     )
         .filter((d) => d && d.id != null && d.name)
         .map((d) => ({ id: d.id, name: d.name }));
+    const defs = own.length ? own : fallbackDefs || [];
 
     const nameById = new Map(defs.map((d) => [d.id, d.name]));
     const fieldMap = {};
@@ -99,7 +104,7 @@ export function vaultIdFromUrl(url) {
 }
 
 /**
- * readBatchFieldsByName(doc) -> Map(batchName -> { fieldName: value })
+ * readBatchFieldsByName(doc, fallbackDefs) -> Map(batchName -> { fieldName: value })
  *
  * Every EXISTING batch on the molecule page, keyed by its Batch Name ("001").
  * readBatchProps above answers for one batch by its numeric id; this answers
@@ -109,7 +114,7 @@ export function vaultIdFromUrl(url) {
  * The page also carries a blank renderer for "register a new batch"; it has no
  * name and is skipped.
  */
-export function readBatchFieldsByName(doc) {
+export function readBatchFieldsByName(doc, fallbackDefs = []) {
     const out = new Map();
 
     for (const el of doc.querySelectorAll(RENDERER_SELECTOR)) {
@@ -121,7 +126,7 @@ export function readBatchFieldsByName(doc) {
         }
         if (props?.resource_type !== "batch") continue;
 
-        const { fieldMap } = readRenderer(props);
+        const { fieldMap } = readRenderer(props, fallbackDefs);
         const batchName = String(fieldMap["Batch Name"] || "").trim();
         if (batchName) out.set(batchName, fieldMap);
     }

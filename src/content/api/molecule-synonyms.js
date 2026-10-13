@@ -13,7 +13,7 @@
 // stored. An empty array means "asked, has none" (a final answer); `null`
 // from getSynonyms means nobody has asked yet.
 
-import { getMoleculePage } from "./molecule-page.js";
+import { getMoleculePageInfo } from "./molecule-page.js";
 import { extractSynonymsText } from "./molecule-image.js";
 import { readBatchFieldsByName } from "./batch-registration-props.js";
 import { splitSynonyms } from "../../shared/pretty-name.js";
@@ -83,11 +83,11 @@ export function loadSynonyms(vaultId, moleculeId) {
         return Promise.reject(new Error("molecule page kept failing"));
     }
 
-    const promise = getMoleculePage(vaultId, id)
-        .then((doc) => {
+    const promise = getMoleculePageInfo(vaultId, id)
+        .then(({ doc, batchFieldDefs }) => {
             const list = splitSynonyms(extractSynonymsText(doc));
             lists.set(id, list);
-            batchesByMolecule.set(id, readBatchFieldsByName(doc));
+            batchesByMolecule.set(id, readBatchFieldsByName(doc, batchFieldDefs));
             failures.delete(id);
             return list;
         })

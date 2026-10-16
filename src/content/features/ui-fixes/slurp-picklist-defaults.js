@@ -36,7 +36,7 @@ import { watchDocument } from "../../utils/dom.js";
 
 const PAGE = /^\/vaults\/(\d+)\/slurps\/\d+\/mapping/;
 
-const ROW_CLASS = "cdd-picklist-defaults";
+export const ROW_CLASS = "cdd-picklist-defaults";
 const FIELD_ID_INPUT = 'input[name="header_mapping[field_definition_id]"]';
 const VALUE_INPUT = 'input[name="virtual_header[virtual_value]"]';
 const ERROR_LINK = 'a[data-mapping-error-id^="provide"]';
@@ -107,7 +107,7 @@ function picklistsFor(vaultId, rerun) {
  * DOM
  * ------------------------------------------------------------------ */
 
-function injectStyles() {
+export function injectStyles() {
     if (stylesInjected) return;
     stylesInjected = true;
 

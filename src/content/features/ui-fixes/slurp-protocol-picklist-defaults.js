@@ -29,7 +29,7 @@
 //    read header_mapping[run_id] from the readouts form.
 // 2. POST /mapping/headers with virtual_header[name|virtual_value] — the
 //    "+ Add a field…" form.
-// 3. Reload /mapping/edit, find the new column_header_{id}.
+// 3. Its Turbo stream names the new column (column_virtual_header_{id}).
 // 4. GET its edit drilldown, fill the readouts form (run, protocol, readout)
 //    and submit it — the "Apply" of the column mapping.
 // 5. Reload the page so CDD re-renders the mapping and the error list.
@@ -42,6 +42,7 @@ const PAGE = /^(\/vaults\/(\d+)\/slurps\/\d+)\/mapping/;
 
 const MARK_ATTR = "data-cdd-protocol-picklist";
 const REQUIREMENT = /^You must map (.+?) when importing protocol data for (.+?)\.?$/;
+const COLUMN_ID = /^column_(?:virtual_)?header_(\d+)$/;
 const READOUT_SELECT = 'select[name="header_mapping[readout_definition_id]"]';
 const RUN_INPUT = 'input[name="header_mapping[run_id]"]';
 
@@ -61,6 +62,17 @@ const squash = (text) => (text || "").replace(/\s+/g, " ").trim();
 export function parseProtocolRequirement(text) {
     const match = squash(text).match(REQUIREMENT);
     return match ? { readout: match[1], protocol: match[2] } : null;
+}
+
+// CDD answers "+ Add a field…" with a Turbo stream that selects the new
+// column: <turbo-stream action="select_column" target="column_virtual_header_123">.
+export function selectedColumnId(stream) {
+    for (const [tag] of (stream || "").matchAll(/<turbo-stream\b[^>]*>/g)) {
+        if (!/\baction="select_column"/.test(tag)) continue;
+        const id = tag.match(/\btarget="column_(?:virtual_)?header_(\d+)"/)?.[1];
+        if (id) return id;
+    }
+    return null;
 }
 
 // Map<readoutName, { id, values }> of every pick-list readout, visible values
@@ -161,16 +173,18 @@ async function post(url, body) {
         body,
     });
     if (!response.ok) throw new Error(`HTTP ${response.status} on ${url}`);
+    return response.text();
 }
 
 function readoutsForm(doc) {
     return doc.querySelector(READOUT_SELECT)?.closest("form") || null;
 }
 
+// File columns are column_header_{id}; added ones are column_virtual_header_{id}.
 function columnIds(doc) {
-    return [...doc.querySelectorAll('[id^="column_header_"]')].map((el) =>
-        el.id.slice("column_header_".length)
-    );
+    return [...doc.querySelectorAll('[id^="column_"]')]
+        .map((el) => el.id.match(COLUMN_ID)?.[1])
+        .filter(Boolean);
 }
 
 // A column already mapped to this protocol: its footer reads
@@ -197,7 +211,7 @@ function formBody(form) {
 
 // target: { base, protocol, protocolId, readout, readoutId }
 async function applyReadoutDefault(target, value) {
-    const { base, protocol, protocolId, readout, readoutId } = target;
+    const { base, protocol, readout } = target;
     const headers = `${base}/mapping/headers`;
 
     // Everything is checked before the first write, so a failure leaves no
@@ -209,17 +223,30 @@ async function applyReadoutDefault(target, value) {
     const runId = template?.querySelector(RUN_INPUT)?.value;
     if (!runId) throw new Error("could not tell which run the file goes to");
 
+    // A click that failed half-way left an unmapped column with this value;
+    // map that one instead of adding another.
+    const leftover = leftoverColumn(readout, value);
+    if (leftover) return mapColumn(target, leftover, runId);
+
     const before = new Set(columnIds(document));
     const add = new FormData();
     add.set("virtual_header[name]", readout);
     add.set("virtual_header[virtual_value]", value);
-    await post(headers, add);
+    const stream = await post(headers, add);
 
-    const added = columnIds(await fetchDocument(`${base}/mapping/edit`)).filter((id) => !before.has(id));
-    const headerId = added[added.length - 1];
+    const headerId =
+        selectedColumnId(stream) ||
+        columnIds(await fetchDocument(`${base}/mapping/edit`))
+            .filter((id) => !before.has(id))
+            .pop();
     if (!headerId) throw new Error("the new column did not show up");
 
-    const form = readoutsForm(await fetchDocument(`${headers}/${headerId}/edit`));
+    return mapColumn(target, headerId, runId);
+}
+
+// The column's own Readouts drilldown, filled in and applied.
+async function mapColumn({ base, protocolId, readoutId }, headerId, runId) {
+    const form = readoutsForm(await fetchDocument(`${base}/mapping/headers/${headerId}/edit`));
     if (!form) throw new Error("the new column has no readout mapping form");
 
     const body = formBody(form);
@@ -230,6 +257,17 @@ async function applyReadoutDefault(target, value) {
     await post(form.getAttribute("action"), body);
 
     location.reload();
+}
+
+// An added column that is still unmapped, named after the readout and
+// holding this value.
+function leftoverColumn(readout, value) {
+    for (const column of document.querySelectorAll('.unmappedColumn[id^="column_virtual_header_"]')) {
+        const name = squash(column.querySelector(".headerCell")?.textContent);
+        const first = squash(column.querySelector(".headerCell + .cell")?.textContent);
+        if (name === readout && first === value) return column.id.match(COLUMN_ID)?.[1] || null;
+    }
+    return null;
 }
 
 /* ------------------------------------------------------------------ *

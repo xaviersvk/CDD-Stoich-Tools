@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
     parseProtocolRequirement,
     readoutPicklists,
+    selectedColumnId,
 } from "../src/content/features/ui-fixes/slurp-protocol-picklist-defaults.js";
 
 test("parseProtocolRequirement reads readout and protocol from CDD's error line", () => {
@@ -46,4 +47,13 @@ test("readoutPicklists keeps pick-list readouts with visible values, by name", (
 
 test("readoutPicklists tolerates a missing list", () => {
     assert.equal(readoutPicklists(undefined).size, 0);
+});
+
+test("selectedColumnId reads the new column from CDD's Turbo stream", () => {
+    const stream =
+        '<turbo-stream action="replace" target="mapper-columns-inner"><template></template></turbo-stream>' +
+        '<turbo-stream action="select_column" target="column_virtual_header_1000618210"></turbo-stream>';
+    assert.equal(selectedColumnId(stream), "1000618210");
+    assert.equal(selectedColumnId('<turbo-stream target="column_header_5" action="select_column">'), "5");
+    assert.equal(selectedColumnId("<html></html>"), null);
 });

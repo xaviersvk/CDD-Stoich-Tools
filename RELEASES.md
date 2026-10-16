@@ -13,6 +13,10 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 18.16.0 — 2026-10-16
+
+- **Bulk import of protocol data:** when CDD says *You must map Buffer…* for a pick list readout, its values are now buttons under the message — click one to use it for the whole file.
+
 ## 18.15.2 — 2026-10-13
 
 - **Copy readout definitions** now copies linear fits and scatterplots too, instead of listing them under *Not copied*.

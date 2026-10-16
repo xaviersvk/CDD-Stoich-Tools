@@ -19,6 +19,24 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [18.16.0] — 2026-10-16
+
+### Added
+- **Pick list buttons for required protocol readouts on bulk import.** On the
+  slurp mapping page (`/vaults/{v}/slurps/{s}/mapping/edit`), CDD blocks a
+  protocol-data import with "You must map Buffer when importing protocol data
+  for …" but, unlike molecule fields, offers no "provide a default" link.
+  Under the first such line per protocol and readout the readout's visible
+  pick list values (from `/vaults/{v}/protocols/{p}/readout_definitions`) are
+  now buttons. A click reads the run from a column already mapped to that
+  protocol, adds a virtual column (`virtual_header[name|virtual_value]`,
+  the "+ Add a field…" form), maps it through its own Readouts drilldown to
+  that run and readout, and reloads the page. The run is checked before
+  anything is written; an unmapped leftover column with the same value is
+  reused instead of adding another. A file going into several runs of one
+  protocol uses the run of the first mapped column.
+  `ui-fixes/slurp-protocol-picklist-defaults.js`, always on. Unit tests added.
+
 ## [18.15.2] — 2026-10-13
 
 ### Fixed

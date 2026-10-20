@@ -101,6 +101,8 @@ export function tableRowsFromEntry(elnEntry) {
                 structureId: feature.data.attachedStructureId ?? null,
                 sampleText: typeof row?.userInput?.msample === "string" ? row.userInput.msample.trim() : "",
                 name: rowName(row),
+                // Other names the same compound may be written under.
+                aliases: [row?.moleculeName, row?.iupacName].filter((a) => typeof a === "string" && a.trim()),
                 role: String(row?.role || ""),
                 massG: num(row?.mass),
                 sampleG: sample?.kind === "mass" ? sample.value : null,

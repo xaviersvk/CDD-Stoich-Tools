@@ -29,7 +29,7 @@ function entry() {
         ]),
         feature_map: {
             77: { type: "reaction", data: { attachedStructureId: 1000149090, stoichiometryTable: { rows: [
-                { uid: 1, role: "reactant", name: "ab123", mass: 0.002, mole: 0.00001448, userInput: { msample: "20 mg" } },
+                { uid: 1, role: "reactant", name: "ab123", moleculeName: "IXX-DEMO-0000011", mass: 0.002, mole: 0.00001448, userInput: { msample: "20 mg" } },
                 { uid: 2, role: "reactant", name: "Acetyl Acetate", mass: 0.001478, mole: 0.00001448, userInput: {} },
                 { uid: 3, role: "product", userInput: {} },
             ] } } },
@@ -89,4 +89,32 @@ test("the clipboard HTML carries a Slate fragment with mention nodes", () => {
     assert.deepEqual(link.children, [{ text: "ab123 (20 mg, 14.5 µmol)" }]);
     assert.deepEqual(rest, { text: " was dissolved." });
     assert.match(html, /<h2>Procedure<\/h2><p><a href="[^"]+">ab123 \(20 mg, 14\.5 µmol\)<\/a> was dissolved\.<\/p>/);
+});
+
+test("names written without a token are linked, first time only, as written", () => {
+    const segments = splitMentions("The acetyl acetate (1.48 mg, 14.5 µmol) was added, then more acetyl acetate.", mentions());
+    const linked = segments.filter((s) => s.mention);
+    assert.equal(linked.length, 1);
+    assert.equal(linked[0].mention.label, "acetyl acetate (1.48 mg, 14.5 µmol)");
+    assert.equal(linked[0].mention.data.defaultLabel, "acetyl acetate (1.48 mg, 14.5 µmol)");
+    assert.equal(linked[0].mention.data.id, "#attached_structures/1000149090%23reaction_components/2");
+    assert.equal(mentionsToPlain(segments), "The acetyl acetate (1.48 mg, 14.5 µmol) was added, then more acetyl acetate.");
+});
+
+test("a name already linked by its token is not linked again; parts of words are not names", () => {
+    const segments = splitMentions("[[R1]] in ab1234 and ab123 again; see Dose response - 2026-05-01.", mentions());
+    const tokens = segments.filter((s) => s.mention).map((s) => s.mention.token);
+    assert.deepEqual(tokens, ["R1", "L1"]);
+});
+
+test("a bare name keeps the sentence as it was", () => {
+    const segments = splitMentions("It was dissolved in ab123.", mentions());
+    assert.equal(segments[1].mention.label, "ab123");
+    assert.equal(mentionsToPlain(segments), "It was dissolved in ab123.");
+});
+
+test("a row is also found by its molecule code", () => {
+    const segments = splitMentions("IXX-DEMO-0000011 was weighed out.", mentions());
+    assert.equal(segments[0].mention.token, "R1");
+    assert.equal(segments[0].mention.label, "IXX-DEMO-0000011");
 });

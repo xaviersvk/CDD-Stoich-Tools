@@ -6,7 +6,9 @@
 // The model is given a token per entity — [[R3]] for the 3rd row of the
 // stoichiometry tables, [[L1]] for a record the entry already links to (a
 // run, another entry, a batch picked with @) — and writes the token where it
-// names one. Here the tokens become mentions:
+// names one. Small models often don't, so an entity NAMED in the English
+// (table name, molecule code, IUPAC name, link label) is linked too, the
+// first time it appears. Here both become mentions:
 //
 //   - in the panel, a link showing the mention's label;
 //   - on the clipboard, text/html carrying a Slate fragment in
@@ -62,6 +64,7 @@ export function entityMentions(rows, elnEntry, entryUrl) {
         mentions.push({
             token: `R${row.row}`,
             label,
+            names: [row.name, ...(row.aliases || [])],
             data: {
                 dataVersion: 1,
                 id,
@@ -92,7 +95,7 @@ export function entityMentions(rows, elnEntry, entryUrl) {
             if (data && !String(data.id).includes("reaction_components") && !seen.has(String(data.id))) {
                 seen.add(String(data.id));
                 const label = (data.display === "label" ? data.label : data.defaultLabel) || data.label || "";
-                if (label) mentions.push({ token: `L${seen.size}`, label, data: { ...data } });
+                if (label) mentions.push({ token: `L${seen.size}`, label, names: [label], data: { ...data } });
             }
             walk(node?.children);
         }
@@ -113,29 +116,80 @@ export function mentionPromptBlock(mentions) {
 
 // ---------------------------------------------------------------- text → segments
 
+function pushText(segments, s) {
+    if (!s) return;
+    const prev = segments[segments.length - 1];
+    if (prev && !prev.mention) prev.text += s;
+    else segments.push({ text: s });
+}
+
+function escapeRegExp(s) {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// Shorter names hit too much ("Et", "A").
+const MIN_NAME_LENGTH = 3;
+
+/**
+ * The model does not always write the tokens, so names are linked here too:
+ * the FIRST time an entity not already linked by a token is named in the
+ * text, that name — with the "(20 mg, 14.5 µmol)" after it, if any — becomes
+ * its mention, showing exactly the words the model wrote.
+ */
+function linkNames(segments, mentions) {
+    const linked = new Set(segments.filter((s) => s.mention).map((s) => s.mention.token));
+    // Every name of every entity — a row is also known by its molecule code
+    // and IUPAC name — longest first: "ethyl acetate" before "acetate".
+    const candidates = mentions
+        .flatMap((m) => (m.names || []).map((name) => ({ m, name: String(name).trim() })))
+        .filter(({ name }) => name.length >= MIN_NAME_LENGTH)
+        .sort((a, b) => b.name.length - a.name.length);
+
+    let out = segments;
+    for (const { m, name } of candidates) {
+        if (linked.has(m.token)) continue;
+        const pattern = new RegExp(
+            `(?<![\\p{L}\\p{N}])${escapeRegExp(name)}(?![\\p{L}\\p{N}])(?:\\s*\\([^()\\n]*\\d[^()\\n]*\\))?`,
+            "iu"
+        );
+        const next = [];
+        let done = false;
+        for (const seg of out) {
+            const match = !done && !seg.mention ? seg.text.match(pattern) : null;
+            if (!match) {
+                next.push(seg);
+                continue;
+            }
+            done = true;
+            linked.add(m.token);
+            const written = match[0];
+            pushText(next, seg.text.slice(0, match.index));
+            next.push({ mention: { ...m, label: written, data: { ...m.data, defaultLabel: written, label: written } } });
+            pushText(next, seg.text.slice(match.index + written.length));
+        }
+        out = next;
+    }
+    return out;
+}
+
 /**
  * "Then [[R2]] was added." → [{ text: "Then " }, { mention }, { text: " was added." }].
- * An unknown token is dropped rather than shown as brackets.
+ * An unknown token is dropped rather than shown as brackets. Entities named
+ * without a token are linked as well (linkNames).
  */
 export function splitMentions(text, mentions) {
     const byToken = new Map(mentions.map((m) => [m.token, m]));
     const source = String(text || "");
     const segments = [];
-    const pushText = (s) => {
-        if (!s) return;
-        const prev = segments[segments.length - 1];
-        if (prev && !prev.mention) prev.text += s;
-        else segments.push({ text: s });
-    };
     let last = 0;
     for (const match of source.matchAll(TOKEN)) {
-        pushText(source.slice(last, match.index));
+        pushText(segments, source.slice(last, match.index));
         const mention = byToken.get(`${match[1]}${match[2]}`);
         if (mention) segments.push({ mention });
         last = match.index + match[0].length;
     }
-    pushText(source.slice(last));
-    return segments;
+    pushText(segments, source.slice(last));
+    return linkNames(segments, mentions);
 }
 
 /** Splits segments at line breaks: one array of segments per line. */

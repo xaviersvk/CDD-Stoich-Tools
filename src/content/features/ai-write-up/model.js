@@ -345,6 +345,49 @@ export function buildDictationMessages(
     ];
 }
 
+// ---------------------------------------------------------------- ask
+
+// "Ask about this entry": a request about the entry, which goes along whole
+// as background. Back comes only what the request asks for — new text to add,
+// or an answer — never the entry rewritten. Same JSON as a dictation, so the
+// card gets Checks; no notMentioned: a paragraph to add never names everything.
+const ASK_PROMPT = `You help a synthetic chemist with an electronic lab notebook (ELN) entry.
+You are given the ENTRY (its text and stoichiometry table) as background, and a REQUEST.
+The request may be Slovak, Czech or English.
+
+Do what the REQUEST asks, using the entry as background:
+- if it asks to write or add something (a workup paragraph, a summary, a conclusion…), write ONLY that new text,
+  as clear, factual English experimental prose: past tense, passive voice, standard units (mg, mL, mmol, °C, h);
+- if it asks a question, answer it briefly in English.
+Never rewrite, repeat or translate the rest of the entry. Take facts from the entry and the request; do not invent any.
+${PLACEHOLDER_RULE}
+
+Answer with ONE JSON object only, no prose around it:
+"text": the new text or the answer.
+"amounts": [{"row": <table row number>, "mass": "...", "volume": "...", "amount": "...", "eq": "..."}]
+           (quantities YOUR text states for table rows, copied as written; omit fields you do not state)
+"product": {"row": <product row number>, "mass": "<as written>", "yield": "<as written>"} or null
+"notes": ["<short imperative advice: what the request or entry leaves out — at most 5>"]
+
+JSON shape: {"text": "...", "amounts": [...], "product": {...}|null, "notes": [...]}`;
+
+/** The request and the whole entry as background — see ASK_PROMPT. */
+export function buildAskMessages(request, { rows = [], entryText = "", mentionBlock = "" } = {}) {
+    const parts = [];
+    if (rows.length) parts.push(["STOICHIOMETRY TABLE", ...rows.map(tableLine)].join(NL));
+    parts.push(["ENTRY TEXT", entryText.trim() || "(the entry has no text yet)"].join(NL));
+    if (mentionBlock) parts.push(mentionBlock);
+    parts.push(["REQUEST", request.trim()].join(NL));
+    parts.push(
+        'Answer with the JSON object. Its "text" is only what the REQUEST asks for, in English — ' +
+            "not the entry. Reply in English only."
+    );
+    return [
+        { role: "system", content: ASK_PROMPT },
+        { role: "user", content: parts.join(NL + NL) },
+    ];
+}
+
 /**
  * Settings → AI write-up → House rules: the ones switched on, added to the
  * system prompt of any request built above.

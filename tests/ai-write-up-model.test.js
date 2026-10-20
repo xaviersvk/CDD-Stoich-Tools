@@ -9,6 +9,7 @@ import {
     parseQuantity,
     buildChecks,
     buildDictationMessages,
+    buildAskMessages,
     cleanDictationAnswer,
     looksUntranslated,
     sectionContext,
@@ -202,7 +203,7 @@ test("a Polish + instruction comes after the text, and the last line says to fol
     assert.match(user.content, /following the extra instruction\. Reply in English only\.$/);
 });
 
-test("no structure in any form reaches either prompt, however much of it the table carries", () => {
+test("no structure in any form reaches any prompt, however much of it the table carries", () => {
     const e = entry();
     const STRUCTURE = {
         mrv: "<cml><MDocument>ZZMRV</MDocument></cml>",
@@ -224,6 +225,7 @@ test("no structure in any form reaches either prompt, however much of it the tab
     const sent = JSON.stringify([
         buildMessages(entryTextFromBody(e.body), rows),
         buildDictationMessages("text", { rows, entryText: entryTextFromBody(e.body) }),
+        buildAskMessages("text", { rows, entryText: entryTextFromBody(e.body) }),
     ]);
     assert.ok(!/ZZ|<cml|999\.111|998\.222|base64/.test(sent), "a structure field leaked into a prompt");
 });
@@ -248,4 +250,27 @@ test("a dictation's JSON answer gives checks against its table", () => {
     const answer = parseLlmJson('{"text":"Acetyl acetate (29 µmol) was added.","amounts":[{"row":2,"amount":"29 µmol"}],"product":null,"notes":["Add the reaction time"]}');
     const checks = buildChecks({ ...answer, notMentioned: [] }, rows);
     assert.deepEqual(checks.map((c) => c.kind), ["mismatch", "note"]);
+});
+
+test("Ask sends the whole entry as background and asks only for what the request wants", () => {
+    const rows = tableRowsFromEntry(entry());
+    const [system, user] = buildAskMessages("dopíš workup: 3× EtOAc", {
+        rows,
+        entryText: ["## Procedure", "The vial was charged."].join("\n"),
+        mentionBlock: "ENTITY TOKENS\n[[R1]] = ab123",
+    });
+    assert.match(system.content, /write ONLY that new text/);
+    assert.match(system.content, /Never rewrite, repeat or translate the rest of the entry/);
+    assert.ok(!system.content.includes("notMentioned"));
+    assert.ok(user.content.includes(["ENTRY TEXT", "## Procedure"].join("\n")));
+    assert.ok(user.content.includes("Row 1 | ab123"));
+    assert.ok(user.content.includes(["REQUEST", "dopíš workup: 3× EtOAc"].join("\n")));
+    assert.match(user.content, /Reply in English only\.$/);
+    // The request comes after the background, the last order after the request.
+    assert.ok(user.content.indexOf("REQUEST") > user.content.indexOf("ENTRY TEXT"));
+});
+
+test("Ask on an empty entry says so instead of sending nothing", () => {
+    const [, user] = buildAskMessages("write a summary");
+    assert.ok(user.content.includes("(the entry has no text yet)"));
 });

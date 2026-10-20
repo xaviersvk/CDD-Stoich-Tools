@@ -29,6 +29,7 @@ import { currentEntry, entryUrl, fetchEntry, textFromEditor } from "./entry.js";
 import { mountDictation, newestCardAt, onDictationChanged, refreshDictation } from "./dictation.js";
 import { entityMentions, mentionPromptBlock, mentionsToDom, splitMentions } from "./mentions.js";
 import { checksList } from "./checks-view.js";
+import { mountAskBox, ASK_BOX_STYLES } from "./ask-box.js";
 import { answerMeta, cardActions, copyParagraphOnCtrlClick } from "./copy-button.js";
 
 let pane = null;
@@ -80,8 +81,8 @@ function renderChecks(card, result) {
 function arrange() {
     if (!resultEl || !dictationsEl) return;
     const resultNewer = result?.entryKey === currentEntry()?.key && (result?.at || 0) > newestCardAt();
-    resultEl.style.order = resultNewer ? "3" : "4";
-    dictationsEl.style.order = resultNewer ? "4" : "3";
+    resultEl.style.order = resultNewer ? "4" : "5";
+    dictationsEl.style.order = resultNewer ? "5" : "4";
 }
 
 function render() {
@@ -199,7 +200,7 @@ export function mountWriteUpPane(target) {
     pane.replaceChildren();
 
     pane.append(el("div", "cdd-wu-hint",
-        "🎤 turns what you say into English, ready to copy. Polish entry rewrites the whole entry in English and checks it against the table. Nothing is written into the entry."));
+        "🎤 turns what you say into English, ready to copy. Polish entry rewrites the whole entry in English and checks it against the table. Ask does what you ask, with the entry as background. Nothing is written into the entry."));
 
     const bar = el("div", "cdd-wu-bar");
     runButton = el("button", "cdd-wu-run", "Polish entry");
@@ -218,7 +219,7 @@ export function mountWriteUpPane(target) {
     statusEl.hidden = true;
     resultEl = el("div", "cdd-wu-result");
     pane.classList.add("cdd-wu-pane");
-    pane.append(bar, statusEl, dictationsEl, resultEl);
+    pane.append(bar, mountAskBox(), statusEl, dictationsEl, resultEl);
     if (!arrangeSubscribed) {
         arrangeSubscribed = true;
         onDictationChanged(arrange);
@@ -242,7 +243,9 @@ export const WRITE_UP_PANE_STYLES = (panelId) => `
   #${panelId} .cdd-wu-pane { display: flex; flex-direction: column; }
   #${panelId} .cdd-wu-pane > .cdd-wu-hint { order: 0; }
   #${panelId} .cdd-wu-pane > .cdd-wu-bar { order: 1; }
-  #${panelId} .cdd-wu-pane > .cdd-wu-status { order: 2; }
+  #${panelId} .cdd-wu-pane > .cdd-wu-ask { order: 2; }
+  #${panelId} .cdd-wu-pane > .cdd-wu-status { order: 3; }
+${ASK_BOX_STYLES(panelId)}
   #${panelId} .cdd-wu-line { position: relative; border-radius: 4px; }
   #${panelId} .cdd-wu-line--blank { min-height: 0.7em; }
   /* Ctrl+click copied this paragraph. */

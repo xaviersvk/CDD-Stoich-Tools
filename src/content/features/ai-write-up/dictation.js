@@ -35,6 +35,7 @@ import {
 import { AI_CHAT_MESSAGE, AI_TRANSCRIBE_MESSAGE } from "../../../shared/event-types.js";
 import {
     ENTRY_CONTEXT_CHARS,
+    buildAskMessages,
     buildChecks,
     buildDictationMessages,
     cleanDictationAnswer,
@@ -130,7 +131,7 @@ async function tableForContext(origin) {
     try {
         const elnEntry = await fetchEntry(entry);
         const all = tableRowsFromEntry(elnEntry);
-        const rows = origin ? all.filter((r) => r.reaction === origin.reactionIndex + 1) : all;
+        const rows = origin?.reactionIndex != null ? all.filter((r) => r.reaction === origin.reactionIndex + 1) : all;
         return { rows, mentions: entityMentions(rows, elnEntry, entryUrl(entry)) };
     } catch {
         return { rows: [], mentions: [] };   // dictation works without the table
@@ -149,6 +150,8 @@ async function runDictation(blob, origin, entryText, entryKey) {
     const startedAt = Date.now();
     step("transcribing", "");
     try {
+        // 🎤 at the Ask field only fills the field: no table, no chat.
+        const fillsField = typeof origin?.onText === "function";
         const [heard, { rows, mentions }] = await Promise.all([
             chrome.runtime.sendMessage({
                 type: AI_TRANSCRIBE_MESSAGE,
@@ -157,15 +160,20 @@ async function runDictation(blob, origin, entryText, entryKey) {
                 mimeType: blob.type || "audio/webm",
                 language: getAiWriteUpView().language,
             }),
-            tableForContext(origin),
+            fillsField ? { rows: [], mentions: [] } : tableForContext(origin),
         ]);
         if (!heard?.ok) return step("idle", aiErrorMessage(heard));
         if (!heard.text) return step("idle", "Heard nothing — speak closer to the microphone.");
+        if (fillsField) {
+            step("idle", "");
+            origin.onText(heard.text);
+            return;
+        }
 
         await toEnglishCard({
             source: heard.text,
             sourceLabel: "Heard",
-            label: origin ? `Reaction ${origin.reactionIndex + 1}` : "Dictation",
+            label: origin?.reactionIndex != null ? `Reaction ${origin.reactionIndex + 1}` : "Dictation",
             rows,
             mentions,
             entryText,
@@ -173,7 +181,7 @@ async function runDictation(blob, origin, entryText, entryKey) {
             startedAt,
             // A reaction's dictation is meant to cover the reaction: say
             // what it leaves out. One sentence about the entry would not.
-            askMissing: !!origin,
+            askMissing: origin?.reactionIndex != null,
         });
     } catch (err) {
         console.debug("[CDD Stoich Tools] dictation failed", err);
@@ -181,28 +189,25 @@ async function runDictation(blob, origin, entryText, entryKey) {
     }
 }
 
-// The step dictation and Polish on a selection share: `source` → polished
+// The step dictation, Polish on a selection and Ask share: `source` →
 // English → a card. `sourceLabel` names the original on the card ("Heard",
-// "Selected"). A selection may already be English, so for it an answer that
-// matches the source is fine; only one still in Slovak/Czech is refused.
+// "Selected", "Asked"). A selection or a request may already be English, so
+// for them an answer unlike the source is fine; only one still in
+// Slovak/Czech is refused. `ask`: the source is a request about the entry
+// (buildAskMessages), not text to translate.
 async function toEnglishCard({
     source, sourceLabel, label, rows, mentions, entryText, entryKey, startedAt,
-    instruction = "", mayBeEnglish = false, askMissing = false,
+    instruction = "", mayBeEnglish = false, askMissing = false, ask = false,
 }) {
     step("translating", `${sourceLabel}: “${source}”`);
+    const mentionBlock = mentionPromptBlock(mentions);
+    const messages = ask
+        ? buildAskMessages(source, { rows, entryText, mentionBlock })
+        : buildDictationMessages(source, { rows, entryText, mentionBlock, instruction, askMissing });
     const answer = await chrome.runtime.sendMessage({
         type: AI_CHAT_MESSAGE,
         id: crypto.randomUUID(),
-        messages: withHouseRules(
-            buildDictationMessages(source, {
-                rows,
-                entryText,
-                mentionBlock: mentionPromptBlock(mentions),
-                instruction,
-                askMissing,
-            }),
-            getAiWriteUpView().rules
-        ),
+        messages: withHouseRules(messages, getAiWriteUpView().rules),
     });
     if (!answer?.ok) return step("idle", `${aiErrorMessage(answer)} ${sourceLabel}: “${source}”`);
 
@@ -238,6 +243,47 @@ async function toEnglishCard({
         ...cards,
     ].slice(0, MAX_CARDS);
     step("idle", "");
+}
+
+/**
+ * Ask about this entry (the Write-up tab's field): `request` with the whole
+ * entry — every table, the text — as background → an "Ask" card holding only
+ * what was asked for. Ignored while a recording or another request is running.
+ */
+export async function askAboutEntry(request) {
+    if (state.phase !== "idle" || !request.trim()) return false;
+    if (!getAiWriteUpView().hasKey) {
+        step("idle", aiErrorMessage({ error: "no-key" }));
+        return false;
+    }
+    const entryKey = currentEntry()?.key;
+    const startedAt = Date.now();
+    try {
+        step("translating", "");
+        const { rows, mentions } = await tableForContext(null);
+        await toEnglishCard({
+            source: request.trim(),
+            sourceLabel: "Asked",
+            label: "Ask",
+            rows,
+            mentions,
+            entryText: (textFromEditor() ?? "").slice(-ENTRY_CONTEXT_CHARS),
+            entryKey,
+            startedAt,
+            mayBeEnglish: true,
+            ask: true,
+        });
+        return true;
+    } catch (err) {
+        console.debug("[CDD Stoich Tools] ask failed", err);
+        step("idle", aiErrorMessage({ error: "network" }));
+        return false;
+    }
+}
+
+/** 🎤 at the Ask field: record, transcribe, hand the words to `onText`. */
+export function dictateInto(onText) {
+    toggleDictation({ onText });
 }
 
 /**

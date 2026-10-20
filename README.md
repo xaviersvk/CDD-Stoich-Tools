@@ -57,6 +57,21 @@ Here's the short version of everything it adds:
   (masses, volumes, equivalents, yield, plus the reaction scheme).
 - The sample panel can also print exactly the columns you've chosen.
 
+### ✍️ AI write-up (optional, off by default)
+- Switch on in *Settings → AI write-up* with your own CERIT-SC API key
+  (MetaCentrum or MUNI account; key from `chat.ai.e-infra.cz`).
+- **Dictate** in Slovak, Czech or English — 🎤 in the panel's *Write-up* tab for
+  the whole entry, 🎤 on a reaction for that reaction — and get polished
+  English back. **Polish / Polish +** does the same for selected text,
+  **Polish entry** for the whole entry, **Ask** answers a request with the
+  entry as background, **Reply** revises a card with your answer.
+- Results are cards to copy: compounds come back as CDD @-mentions, missing
+  facts as slots to fill in, and **Checks** compare the text with the
+  stoichiometry table (amounts, yield, lost numbers) — calculated locally,
+  not by the model. Nothing is written into the entry.
+- Only text you choose (and dictated audio) goes to CERIT-SC, on a click;
+  structures never do. See the [privacy policy](https://xaviersvk.github.io/CDD-Stoich-Tools/privacy.html).
+
 ### 🧫 Inventory & locations
 - **Batch sample creation** — select several empty wells in the "Pick Location"
   grid and create all the samples at once, with a results panel showing what
@@ -299,7 +314,12 @@ without that tag.
 
 ### Backend
 
-**None.** The extension has no server component. The closest thing is
+**None of its own.** The extension has no server component. The one external
+service is optional: with AI write-up switched on, `background.js` calls the
+OpenAI-compatible CERIT-SC API (`https://llm.ai.e-infra.cz/v1` — chat
+completions and `whisper-large-v3` transcriptions) with the user's API key.
+The code is in `src/content/features/ai-write-up/` (pipelines, prompts, checks,
+mentions) and `src/shared/ai-write-up-settings.js`. The closest thing is
 `src/content/api/cdd-api.js`, an authenticated `fetchJson` helper that talks to
 **CDD's own API** (reusing the logged-in session) to PUT dose-response override
 payloads and POST inventory samples.
@@ -311,6 +331,7 @@ No database. Persistence uses browser storage only:
 | Data | Mechanism |
 | --- | --- |
 | Field selection, ELN-title mode, discovered custom fields, prefix colors | `chrome.storage.local` (async) |
+| AI write-up: on/off, CERIT API key, model, language, wait limit, house rules, compound-link style | `chrome.storage.local` key `cddAiWriteUp` (the key is read only by `background.js`) |
 | Panel position / collapsed state, location-tree width | `localStorage` (page origin) |
 | Last captured payload, runtime flags | in-memory `STATE` (lost on reload) |
 
@@ -432,18 +453,20 @@ keys are preserved.
 
 | Key | Value | Meaning |
 | --- | --- | --- |
-| `permissions` | `["storage"]` | Only `chrome.storage` — no host/tabs/scripting permissions. |
+| `permissions` | `["storage"]` | Only `chrome.storage` — no tabs/scripting permissions. |
+| `optional_host_permissions` | `["https://llm.ai.e-infra.cz/*"]` | Requested only when AI write-up is switched on, removed when it is switched off. |
 | `content_scripts.matches` | `*://*.collaborativedrug.com/*` | The extension runs **only** on CDD. |
 | `web_accessible_resources` | `assets/inject.js` | The page script the content side injects. |
 | `gecko.strict_min_version` | `142.0` | Minimum Firefox version. |
 | `data_collection_permissions.required` | `["none"]` | No data collection / telemetry. |
+| `data_collection_permissions.optional` | `["websiteContent", "authenticationInfo"]` | Firefox: asked for with AI write-up — ELN text/audio and the API key go to CERIT. |
 
 ### Environment variables
 
 **None.** The extension has no environment variables, `.env` files, or runtime
 configuration beyond the manifest and the browser-storage settings above. There
-is no remote endpoint to configure — it always talks to the CDD origin the user
-is already on.
+is no remote endpoint to configure — it talks to the CDD origin the user is
+already on, and, only with AI write-up switched on, to CERIT-SC.
 
 ### Adding a new setting
 
@@ -561,8 +584,11 @@ There are no servers; "deployment" means publishing the packaged extension.
 ### Privacy & security
 
 No remote code is executed; all logic is bundled locally with Vite. The manifest
-declares `data_collection → none` and requests only the `storage` permission. The
-extension acts strictly within the user's existing CDD session.
+requests only the `storage` permission, plus the optional CERIT host permission
+for AI write-up, which is off by default. The extension acts strictly within the
+user's existing CDD session; AI write-up sends the text the user chooses (and
+dictated audio) to CERIT-SC under the user's own key, never structures (no
+SMILES, mol files, images, MW or the table's IUPAC names) — a unit test guards that.
 
 The public privacy policy the store listings link to is
 <https://xaviersvk.github.io/CDD-Stoich-Tools/privacy.html>, written in

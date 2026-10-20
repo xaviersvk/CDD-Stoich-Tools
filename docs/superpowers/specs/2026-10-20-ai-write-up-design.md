@@ -1,6 +1,9 @@
 # AI write-up (CERIT LLM) — design
 
-Status: approved 2026-10-20
+Status: approved 2026-10-20 — **superseded in detail.** This is the first
+design; what shipped (dictation cards instead of typing into the entry,
+mentions, placeholders, Ask, Reply, checks) is in CHANGELOG.md under 19.0.0
+and 19.1.0, and in the module comments of `src/content/features/ai-write-up/`.
 
 ## Goal
 

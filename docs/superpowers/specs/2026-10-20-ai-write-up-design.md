@@ -77,6 +77,17 @@ A third tab, **Write-up**, shown only while the feature is enabled.
 | Unparseable JSON | Show the text if recoverable; Checks: "Checks unavailable" |
 | No table | Polishing only; Checks card hidden |
 
+## Dictation (second step, same branch)
+
+Languages: Slovak, Czech, English (picker in the Write-up tab, remembered).
+Input to the LLM may mix all three; output is always English.
+
+- CERIT serves `whisper-large-v3` (confirmed by the user). Record with
+  `MediaRecorder`, send to `/v1/audio/transcriptions` (`model:
+  whisper-large-v3`, `language: sk|cs|en`) through `background.js`. Works in
+  Chrome and Firefox; audio stays at CERIT. No Google fallback.
+- The transcript is inserted at the cursor in the ELN editor.
+
 ## Manifest / release
 
 - `optional_host_permissions: ["https://llm.ai.e-infra.cz/*"]`

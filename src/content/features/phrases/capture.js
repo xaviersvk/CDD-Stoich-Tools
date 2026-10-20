@@ -24,7 +24,7 @@ import { COMBO_STYLES } from "../../../shared/combo-input.js";
 import { makeCategoriesEditor, PLACES_STYLES } from "../../../shared/places-editor.js";
 import { getPanelRoot, setPanelTab } from "../sample-panel.js";
 import { isAiWriteUpEnabled } from "../../../shared/ai-write-up-settings.js";
-import { polishSelection } from "../ai-write-up/dictation.js";
+import { dictateInto, dictationLabel, onDictationChanged, polishSelection } from "../ai-write-up/dictation.js";
 import { readSelection, selectionInEditor } from "./selection-html.js";
 
 const BUTTON_ID = "cdd-phrase-save-btn";
@@ -233,6 +233,24 @@ function openAskDialog() {
             event.preventDefault();
             submit();
         }
+    });
+
+    // 🎤: dictate the instruction into the field, read it, then Polish.
+    const mic = document.createElement("button");
+    mic.type = "button";
+    mic.textContent = "🎤";
+    mic.title = "Dictate the instruction into the field";
+    mic.addEventListener("click", () => {
+        dictateInto((words) => {
+            input.value = input.value.trim() ? `${input.value.trim()} ${words}` : words;
+            input.focus();
+        }, "polish-plus");
+    });
+    actions.prepend(mic);
+    const unsubscribe = onDictationChanged((state) => {
+        if (!mic.isConnected) return unsubscribe();
+        mic.textContent = state.origin?.field === "polish-plus" ? dictationLabel("🎤") : "🎤";
+        mic.disabled = state.phase !== "idle" && state.origin?.field !== "polish-plus";
     });
 
     dialog.append(title, preview, label, actions);

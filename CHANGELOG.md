@@ -34,6 +34,7 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   slots, notes, missing compounds — to `buildReviseMessages`. The revised
   draft takes the card's place ("… · revised", "Replied: …") with Checks
   against the same table; a failed reply leaves the card and the typed text.
+- 🎤 in the Polish + dialog dictates the instruction into its field.
 - **Lost numbers** (`lostQuantities`): every number with a unit written in
   the source (entry text, transcript, selection) must still be in the
   English, compared by value (0.5 g = 500 mg; °C, h, min, %, equiv/ekv).

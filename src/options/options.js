@@ -9,6 +9,7 @@
 // content script, which is why those modules never touch the DOM.
 
 import { initPhrasesUI } from "./phrases-ui.js";
+import { initAiWriteUpUI } from "./ai-write-up-ui.js";
 import { deleteButton } from "./delete-button.js";
 import { renderLocationTreeGuide } from "../shared/location-tree-guide.js";
 import { initSetupWizard } from "./setup-wizard.js";
@@ -1520,6 +1521,9 @@ function refreshRailChips() {
     const dragOn = document.getElementById("doseResponseDrag");
     if (dragOn) setChip("doseresponse", dragOn.checked ? "on" : "off");
 
+    const aiOn = document.getElementById("aiWriteUpEnabled");
+    if (aiOn) setChip("aiwriteup", aiOn.checked ? "on" : "off");
+
     const scanOn = document.getElementById("inventoryScanEnabled");
     if (scanOn) setChip("inventoryscan", scanOn.checked ? "on" : "off");
 
@@ -1573,5 +1577,6 @@ initHplcInjectionUI();
 void initInventoryScanUI();
 initRegistrationDefaultsUI();
 initPhrasesUI();
+void initAiWriteUpUI();
 initRailUI();
 void initSetupWizard();   // deliberate: the guide opens on its own

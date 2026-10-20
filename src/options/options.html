@@ -166,6 +166,14 @@
                 <span class="rail__label">Phrases</span>
                 <span class="rail__chip" data-chip="phrases" hidden></span>
             </button>
+            <button type="button" class="rail__item" data-pane="col-aiwriteup-heading">
+                <span class="tile" aria-hidden="true">
+                    <span class="tile__no"></span>
+                    <span class="tile__sym">Ai</span>
+                </span>
+                <span class="rail__label">AI write-up</span>
+                <span class="rail__chip" data-chip="aiwriteup" hidden></span>
+            </button>
     </nav>
 
     <div class="panes" id="settingsPanes">
@@ -941,6 +949,51 @@
                 <button id="phrasesClear" type="button" class="btn btn--quiet" hidden>
                     Delete all
                 </button>
+            </div>
+        </section>
+        <section class="card" aria-labelledby="col-aiwriteup-heading">
+            <header class="card__head">
+                <span class="tile" aria-hidden="true">
+                    <span class="tile__no"></span>
+                    <span class="tile__sym">Ai</span>
+                </span>
+                <div class="card__titles">
+                    <h3 class="card__name" id="col-aiwriteup-heading">AI write-up</h3>
+                </div>
+            </header>
+
+            <div class="card__body">
+                <p class="note">
+                    Adds a <em>Write-up</em> tab to the panel. Dictate into the
+                    entry in Slovak, Czech or English, then <strong>Polish
+                    entry</strong> returns it as an English write-up and lists
+                    where the text and the stoichiometry table disagree. Nothing
+                    is written into the entry — copy what you want.
+                </p>
+                <p class="note">
+                    The entry's text and table go to <strong>CERIT-SC</strong>
+                    (llm.ai.e-infra.cz, Masaryk University), dictated audio
+                    too. Get a key at <em>chat.ai.e-infra.cz → Settings →
+                    Account → API keys</em> (MetaCentrum or MUNI account).
+                </p>
+                <label class="field-item auto-fill-toggle">
+                    <input type="checkbox" id="aiWriteUpEnabled" />
+                    <span>Show the <strong>Write-up</strong> tab. Off by
+                    default; turning it on asks the browser for access to
+                    llm.ai.e-infra.cz.</span>
+                </label>
+                <label class="field-item purity-threshold-row">
+                    <span><strong>API key</strong></span>
+                    <input type="password" id="aiApiKey" class="text-input" autocomplete="off" spellcheck="false" />
+                </label>
+                <label class="field-item purity-threshold-row">
+                    <span><strong>Model</strong> — a small one is fast enough.</span>
+                    <select id="aiModel" class="select"></select>
+                </label>
+                <div class="phrase-tools">
+                    <button id="aiTest" type="button" class="btn">Test connection</button>
+                </div>
+                <p id="aiStatus" class="note" hidden></p>
             </div>
         </section>
         <section class="card" aria-labelledby="col-inventoryscan-heading">

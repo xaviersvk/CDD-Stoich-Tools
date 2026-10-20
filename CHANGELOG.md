@@ -72,8 +72,12 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 - Slots the table answers come filled in (still editable): a yield slot
   with the calculated yield, a mass slot about the product with the
   product's mass. The prompts now forbid placeholders for what the table or
-  text gives and adding compounds the text never mentions (a reply about
-  "reactants 1 to 4" had the model list the product and empty rows).
+  text gives.
+- The prompt numbers table rows the way CDD shows them — the other rows,
+  then the products — so "reactants 1 to 4" in a dictation means the rows
+  the chemist sees as 1 to 4; past the first reaction a row says
+  "reaction 2 no. 1". The product is made, never added; Unnamed rows are
+  not ingredients.
   "Unspecified Batch" is no longer taken for a compound name.
 - Notes that repeat a placeholder ("Add the temperature" next to a
   temperature slot) are dropped, and the prompts ask for that too.

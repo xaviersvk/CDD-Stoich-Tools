@@ -76,7 +76,7 @@ test("table rows are numbered from 1 with SI values", () => {
         { row: rows[0].row, name: rows[0].name, massG: rows[0].massG, sampleG: rows[0].sampleG, limiting: rows[0].limiting },
         { row: 1, name: "ab123", massG: 0.002, sampleG: 0.02, limiting: true }
     );
-    assert.equal(rows[3].volumeL, 0.01448);
+    assert.equal(rows[2].volumeL, 0.01448);   // toluene: products are listed last
 });
 
 test("messages carry the text and one line per row", () => {
@@ -85,7 +85,8 @@ test("messages carry the text and one line per row", () => {
     assert.match(system.content, /English/);
     assert.match(user.content, /text here/);
     assert.match(user.content, /Row 1 \| ab123 \| reactant/);
-    assert.match(user.content, /Row 4 \| toluene/);
+    assert.match(user.content, /Row 3 \| toluene/);
+    assert.match(user.content, /Row 4 \| aspirin \| product/);
 });
 
 test("parseLlmJson reads fenced and prose-wrapped JSON", () => {
@@ -143,7 +144,7 @@ test("a product mass without a stated yield reports the calculated one", () => {
 
 test("rows not in the text and LLM notes are listed", () => {
     const rows = tableRowsFromEntry(entry());
-    assert.deepEqual(buildChecks({ notMentioned: [4, 99], notes: ["Add the reaction temperature", ""] }, rows), [
+    assert.deepEqual(buildChecks({ notMentioned: [3, 99], notes: ["Add the reaction temperature", ""] }, rows), [
         { kind: "missing", label: "toluene" },
         { kind: "note", message: "Add the reaction temperature" },
     ]);
@@ -367,5 +368,17 @@ test("the table's product mass and yield, and 'Unspecified Batch' is no name", (
     assert.equal(tableYieldText(rows), "9 %");
     const e = entry();
     e.feature_map[77].data.stoichiometryTable.rows.push({ role: "agent", batch: { name: "Unspecified Batch" }, mole: 0.04 });
-    assert.equal(tableRowsFromEntry(e).at(-1).name, "Unnamed");
+    assert.equal(tableRowsFromEntry(e).find((r) => r.mol === 0.04).name, "Unnamed");
+});
+
+test("prompt rows are numbered as CDD shows them; past the first reaction they say where they sit", () => {
+    const e = entry();
+    e.feature_map[90] = { type: "reaction", data: { attachedStructureId: 2, stoichiometryTable: { rows: [
+        { uid: 1, role: "reactant", name: "sexi compound", userInput: {} },
+    ] } } };
+    e.body = JSON.stringify([...JSON.parse(e.body), { type: "reaction", data: { feature_id: "90" }, children: [{ text: "" }] }]);
+    const content = buildMessages("t", tableRowsFromEntry(e))[1].content;
+    assert.match(content, /Row 1 \| ab123/);
+    assert.match(content, /Row 5 \| reaction 2 no\. 1 \| sexi compound/);
+    assert.match(buildMessages("t", [])[0].content, /"reactants 1 to 4"\), those are the rows of that number/);
 });

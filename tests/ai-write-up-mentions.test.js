@@ -159,8 +159,10 @@ test("the row's own name is the one prose uses; products are numbered last", () 
     const e = tenofovirEntry();
     const rows = tableRowsFromEntry(e);
     assert.equal(rows[0].name, "Tenofovir");
-    // Products are numbered after all the other rows.
-    assert.deepEqual(rows.map((r) => r.component), [1, 5, 2, 3, 4]);
+    // Products are numbered after all the other rows, and listed so — the
+    // order CDD shows them in.
+    assert.deepEqual(rows.map((r) => r.component), [1, 2, 3, 4, 5]);
+    assert.equal(rows.at(-1).role, "product");
 
     const list = entityMentions(rows, e, ENTRY_URL);
     const byName = Object.fromEntries(list.map((m) => [m.names[0], m]));
@@ -274,12 +276,12 @@ test("the product is a component too, numbered after the other rows (entry 10000
         },
     };
     const rows = tableRowsFromEntry(e);
-    assert.deepEqual(rows.map((r) => r.component), [1, 3, 2]);
-    const product = entityMentions(rows, e, ENTRY_URL).find((m) => m.token === "R2");
+    assert.deepEqual(rows.map((r) => [r.row, r.component, r.role]), [[1, 1, "reactant"], [2, 2, "agent"], [3, 3, "product"]]);
+    const product = entityMentions(rows, e, ENTRY_URL).find((m) => m.token === "R3");
     assert.equal(product.data.id, "#attached_structures/1000646098%23reaction_components/3");
     // Found by its IUPAC name in the English, locally.
     const segments = splitMentions("affording tert-butyl 2-aryl-1-pyrrolecarboxylate (1.2 g).", entityMentions(rows, e, ENTRY_URL));
-    assert.equal(segments.find((s) => s.mention)?.mention.token, "R2");
+    assert.equal(segments.find((s) => s.mention)?.mention.token, "R3");
 });
 
 test("links with no id (a paper, a patent) are told apart by their href", () => {

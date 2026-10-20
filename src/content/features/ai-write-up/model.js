@@ -113,13 +113,13 @@ export function tableRowsFromEntry(elnEntry) {
         const others = tableRows.filter((r) => r?.role !== "product").length;
         let component = 0;
         let productComponent = others;
+        const reactionRows = [];
         for (const row of tableRows) {
             const sample = parseQuantity(row?.userInput?.msample);
             const [name = "Unnamed", ...aliases] = rowNames(row);
             const iupac = typeof row?.iupacName === "string" ? row.iupacName.trim() : "";
             const isProduct = row?.role === "product";
-            rows.push({
-                row: rows.length + 1,
+            reactionRows.push({
                 reaction: reactionIndex + 1,
                 // What an @-mention of this row points at (mentions.js).
                 component: isProduct ? ++productComponent : ++component,
@@ -141,6 +141,10 @@ export function tableRowsFromEntry(elnEntry) {
                 limiting: !!row?.limitingReagent,
             });
         }
+        // In the order CDD numbers them on screen, products last, so the
+        // prompt's "Row 4" is the row the chemist sees as 4 ("reactants 1 to 4").
+        reactionRows.sort((a, b) => a.component - b.component);
+        for (const r of reactionRows) rows.push({ row: rows.length + 1, ...r });
     });
     return rows;
 }
@@ -214,7 +218,8 @@ const PLACEHOLDER_RULE =
     "Never invent the value. At most 5 placeholders, only where the sentence needs one. " +
     "Never a placeholder for what the STOICHIOMETRY TABLE or the text already gives (a mass, an amount, " +
     "equivalents, the product's mass) — write that value. Notes must not repeat what a placeholder already asks for. " +
-    "Never add a compound the text does not mention: a table row is not an ingredient unless the text says it was used.";
+    'Where the text refers to table rows by number or role ("reactants 1 to 4"), those are the rows of that number. ' +
+    "The product is made, never added; a row named Unnamed is not an ingredient.";
 
 const SYSTEM_PROMPT = `You edit electronic lab notebook (ELN) entries for synthetic chemists.
 The entry may be dictated and may mix Slovak, Czech and English.
@@ -241,6 +246,8 @@ function tableLine(r) {
     // MW (the yield is calculated here, not by the model): names, amounts,
     // equivalents.
     const parts = [`Row ${r.row}`, r.name, r.role || "row"];
+    // Past the first reaction the row numbers run on; say where it sits.
+    if (r.row !== r.component) parts.splice(1, 0, `reaction ${r.reaction} no. ${r.component}`);
     if (r.sampleG != null) parts.push(`sample ${formatIn(r.sampleG, "mg", 1e-3)}`);
     if (r.massG != null) parts.push(formatIn(r.massG, "mg", 1e-3));
     if (r.volumeL != null) parts.push(formatIn(r.volumeL, "mL", 1e-3));

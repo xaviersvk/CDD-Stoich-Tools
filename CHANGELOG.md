@@ -42,9 +42,18 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 - Yield: from the product's own reaction and its row marked limiting
   (reactant or reagent), scaled by product and limiting equivalents; with no
   limiting row marked, no yield is shown instead of a guess.
-- Row mentions show the name only. A token used to print the table's
-  "(20 mg, …)" and so replaced the amounts the text gave; the model is now
-  told to keep them. An existing mention's data is reused with the name.
+- **Compound links** setting (*Settings → AI write-up*): "like an
+  @-mention" (default) pastes CDD's own label, "Tenofovir (36.8 mg, 128
+  µmol)" — the token stands for the name and the amounts after it, and a
+  name the model writes (often a sample ID for a row with no name) links
+  with that label too; "only the name" keeps the text's own amounts. With
+  the default, amounts in the text that differ from the table show up as
+  "Put back …".
+- Products get mentions: CDD numbers components over the other rows
+  first, then the products (entry 1000000814: product = component 9).
+  Links with no id (a paper, a patent) no longer collapse into one.
+- "Mention X in the text" drops rows the text names and never lists
+  products; notes name rows instead of "row 1"; "mol %" is a percentage.
 - Requests ask for `response_format: json_object` (retried without it on a
   400). The English is dug out of JSON that does not parse; a raw `{…` is
   never shown as text.

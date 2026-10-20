@@ -20,6 +20,11 @@ export function currentEntry() {
     return m ? { vaultId: m[1], entryId: m[2], key: `${m[1]}/${m[2]}` } : null;
 }
 
+/** The entry's absolute URL — where a mention of one of its table rows points. */
+export function entryUrl({ vaultId, entryId }) {
+    return `${location.origin}/vaults/${vaultId}/eln/entries/${entryId}`;
+}
+
 export async function fetchEntry({ vaultId, entryId }) {
     const response = await fetch(`/vaults/${vaultId}/eln/v2/entries/${entryId}`, {
         credentials: "include",

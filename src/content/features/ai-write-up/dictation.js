@@ -23,7 +23,6 @@
 // Both buttons draw themselves from the one state below (onDictationChanged).
 // The browser asks for the microphone the first time, for the CDD site.
 
-import { copyText } from "../../utils/clipboard.js";
 import {
     AI_LANGUAGES,
     aiErrorMessage,
@@ -39,7 +38,9 @@ import {
     sectionContext,
     tableRowsFromEntry,
 } from "./model.js";
-import { currentEntry, fetchEntry, sectionAroundBlock, textFromEditor } from "./entry.js";
+import { currentEntry, entryUrl, fetchEntry, sectionAroundBlock, textFromEditor } from "./entry.js";
+import { entityMentions, mentionPromptBlock, mentionsToDom, splitMentions } from "./mentions.js";
+import { copyButton } from "./copy-button.js";
 
 const MAX_SECONDS = 300;
 const MAX_CARDS = 10;
@@ -53,7 +54,7 @@ const listeners = new Set();
 let recorder = null;
 let chunks = [];
 let tick = null;
-// [{ entryKey, english, heard, label }], newest first. Module state, not
+// [{ entryKey, segments, heard, label }], newest first. Module state, not
 // DOM: the pane is rebuilt when the panel is.
 let cards = [];
 
@@ -113,15 +114,19 @@ function entryTextForContext(origin) {
     return (textFromEditor() ?? "").slice(-ENTRY_CONTEXT_CHARS);
 }
 
-async function tableRowsForContext(origin) {
+// The table rows to send and the entities the English may mention. A
+// reaction's button: that reaction's rows only (both count in display
+// order) — and its mentions, plus the records the entry links to.
+async function tableForContext(origin) {
     const entry = currentEntry();
-    if (!entry) return [];
+    if (!entry) return { rows: [], mentions: [] };
     try {
-        const rows = tableRowsFromEntry(await fetchEntry(entry));
-        // A reaction's button: that reaction only (both count in display order).
-        return origin ? rows.filter((r) => r.reaction === origin.reactionIndex + 1) : rows;
+        const elnEntry = await fetchEntry(entry);
+        const all = tableRowsFromEntry(elnEntry);
+        const rows = origin ? all.filter((r) => r.reaction === origin.reactionIndex + 1) : all;
+        return { rows, mentions: entityMentions(rows, elnEntry, entryUrl(entry)) };
     } catch {
-        return [];   // dictation works without the table
+        return { rows: [], mentions: [] };   // dictation works without the table
     }
 }
 
@@ -136,7 +141,7 @@ function step(phase, status = state.status) {
 async function runDictation(blob, origin, entryText, entryKey) {
     step("transcribing", "");
     try {
-        const [heard, rows] = await Promise.all([
+        const [heard, { rows, mentions }] = await Promise.all([
             chrome.runtime.sendMessage({
                 type: AI_TRANSCRIBE_MESSAGE,
                 id: crypto.randomUUID(),
@@ -144,7 +149,7 @@ async function runDictation(blob, origin, entryText, entryKey) {
                 mimeType: blob.type || "audio/webm",
                 language: getAiWriteUpView().language,
             }),
-            tableRowsForContext(origin),
+            tableForContext(origin),
         ]);
         if (!heard?.ok) return step("idle", aiErrorMessage(heard));
         if (!heard.text) return step("idle", "Heard nothing — speak closer to the microphone.");
@@ -153,7 +158,11 @@ async function runDictation(blob, origin, entryText, entryKey) {
         const answer = await chrome.runtime.sendMessage({
             type: AI_CHAT_MESSAGE,
             id: crypto.randomUUID(),
-            messages: buildDictationMessages(heard.text, { rows, entryText }),
+            messages: buildDictationMessages(heard.text, {
+                rows,
+                entryText,
+                mentionBlock: mentionPromptBlock(mentions),
+            }),
         });
         if (!answer?.ok) return step("idle", `${aiErrorMessage(answer)} Heard: “${heard.text}”`);
 
@@ -164,7 +173,12 @@ async function runDictation(blob, origin, entryText, entryKey) {
             return step("idle", `${aiErrorMessage({ error: "untranslated", model: answer.model })} Heard: “${heard.text}”`);
         }
         cards = [
-            { entryKey, english, heard: heard.text, label: origin ? `Reaction ${origin.reactionIndex + 1}` : "Dictation" },
+            {
+                entryKey,
+                segments: splitMentions(english, mentions),
+                heard: heard.text,
+                label: origin ? `Reaction ${origin.reactionIndex + 1}` : "Dictation",
+            },
             ...cards,
         ].slice(0, MAX_CARDS);
         step("idle", "");
@@ -229,21 +243,11 @@ function cardNode(card) {
     const title = document.createElement("div");
     title.className = "cdd-wu-card__title";
     title.textContent = card.label;
-    const copy = document.createElement("button");
-    copy.type = "button";
-    copy.className = "cdd-wu-copy";
-    copy.textContent = "Copy";
-    copy.addEventListener("click", async (event) => {
-        event.stopPropagation();
-        const ok = await copyText(card.english);
-        copy.textContent = ok ? "✓ copied" : "✗ failed";
-        setTimeout(() => { copy.textContent = "Copy"; }, 1200);
-    });
-    head.append(title, copy);
+    head.append(title, copyButton(card.segments));
 
     const text = document.createElement("div");
     text.className = "cdd-wu-text";
-    text.textContent = card.english;
+    text.append(mentionsToDom(card.segments));
 
     const heard = document.createElement("div");
     heard.className = "cdd-wu-heard";

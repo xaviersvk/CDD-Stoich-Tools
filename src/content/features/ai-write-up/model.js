@@ -96,6 +96,10 @@ export function tableRowsFromEntry(elnEntry) {
             rows.push({
                 row: rows.length + 1,
                 reaction: reactionIndex + 1,
+                // What an @-mention of this row points at (mentions.js).
+                uid: row?.uid ?? null,
+                structureId: feature.data.attachedStructureId ?? null,
+                sampleText: typeof row?.userInput?.msample === "string" ? row.userInput.msample.trim() : "",
                 name: rowName(row),
                 role: String(row?.role || ""),
                 massG: num(row?.mass),
@@ -194,7 +198,8 @@ function tableLine(r) {
     return parts.join(" | ");
 }
 
-export function buildMessages(text, rows) {
+/** `mentionBlock`: mentions.js's token list, "" for none. */
+export function buildMessages(text, rows, mentionBlock = "") {
     const table = rows.length
         ? rows.map(tableLine).join("\n")
         : "(this entry has no stoichiometry table — return empty amounts, product null)";
@@ -203,7 +208,9 @@ export function buildMessages(text, rows) {
         {
             role: "user",
             content:
-                `STOICHIOMETRY TABLE\n${table}\n\nENTRY TEXT\n${text}\n\n` +
+                `STOICHIOMETRY TABLE\n${table}\n\n` +
+                (mentionBlock ? `${mentionBlock}\n\n` : "") +
+                `ENTRY TEXT\n${text}\n\n` +
                 'Answer with the JSON object. The "text" field must be in English, whatever language the entry is in.',
         },
     ];
@@ -246,17 +253,18 @@ export function sectionContext(text, maxChars = SECTION_CONTEXT_CHARS) {
 }
 
 /**
- * `rows` (the table) and `entryText` are both optional — the dictation
- * context setting decides which the caller passes. Small models follow the
- * LAST instruction they read, so the order to translate is repeated after
- * the dictation, not only in the system prompt.
+ * `rows` (the table), `entryText` and `mentionBlock` (mentions.js's token
+ * list) are all optional. Small models follow the LAST instruction they
+ * read, so the order to translate is repeated after the dictation, not only
+ * in the system prompt.
  */
-export function buildDictationMessages(transcript, { rows = [], entryText = "" } = {}) {
+export function buildDictationMessages(transcript, { rows = [], entryText = "", mentionBlock = "" } = {}) {
     const context = [];
     if (rows.length) context.push(["STOICHIOMETRY TABLE", ...rows.map(tableLine)].join(NL));
     if (entryText.trim()) context.push(["ENTRY TEXT BEFORE THE DICTATION", entryText.trim()].join(NL));
     const parts = [];
     if (context.length) parts.push("CONTEXT (for understanding only — do not translate or repeat it)", ...context);
+    if (mentionBlock) parts.push(mentionBlock);
     parts.push(["DICTATION", transcript].join(NL));
     parts.push("Translate only the DICTATION above into English lab-notebook prose. Reply in English only.");
     return [

@@ -14,7 +14,6 @@
 //
 // Where the text and the table are read from: entry.js.
 
-import { copyRichText } from "../../utils/clipboard.js";
 import { getAiWriteUpView, aiErrorMessage } from "../../../shared/ai-write-up-settings.js";
 import { AI_CHAT_MESSAGE, AI_CANCEL_MESSAGE } from "../../../shared/event-types.js";
 import {
@@ -25,15 +24,17 @@ import {
     buildChecks,
     looksUntranslated,
 } from "./model.js";
-import { currentEntry, fetchEntry, textFromEditor } from "./entry.js";
+import { currentEntry, entryUrl, fetchEntry, textFromEditor } from "./entry.js";
 import { mountDictation, refreshDictation } from "./dictation.js";
+import { entityMentions, mentionPromptBlock, mentionsToDom, splitMentions } from "./mentions.js";
+import { copyButton } from "./copy-button.js";
 
 let pane = null;
 let runButton = null;
 let statusEl = null;
 let resultEl = null;
 let running = null;     // { id } while a request is out
-let result = null;      // { entryKey, text, checks, hasTable, parsed }
+let result = null;      // { entryKey, segments, checks, hasTable }
 
 function el(tag, className, text) {
     const node = document.createElement(tag);
@@ -48,21 +49,6 @@ function setStatus(text) {
 }
 
 // ---------------------------------------------------------------- rendering
-
-function escapeHtml(s) {
-    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
-
-function writeUpHtml(text) {
-    return text
-        .split("\n")
-        .filter((line) => line.trim())
-        .map((line) => {
-            const heading = line.match(/^#{1,6}\s+(.*)$/);
-            return heading ? `<h2>${escapeHtml(heading[1])}</h2>` : `<p>${escapeHtml(line)}</p>`;
-        })
-        .join("");
-}
 
 function checkLine(check) {
     const line = el("div", "cdd-wu-check");
@@ -115,20 +101,14 @@ function render() {
     const key = currentEntry()?.key;
     if (!result || result.entryKey !== key) return;
 
-    if (result.text) {
+    if (result.segments.length) {
         const card = el("div", "cdd-wu-card");
         const head = el("div", "cdd-wu-card__head");
         head.append(el("div", "cdd-wu-card__title", "English text"));
-        const copy = el("button", "cdd-wu-copy", "Copy");
-        copy.type = "button";
-        copy.addEventListener("click", async (event) => {
-            event.stopPropagation();
-            const ok = await copyRichText(writeUpHtml(result.text), result.text.replace(/^#{1,6}\s+/gm, ""));
-            copy.textContent = ok ? "✓ copied" : "✗ failed";
-            setTimeout(() => { copy.textContent = "Copy"; }, 1200);
-        });
-        head.append(copy);
-        card.append(head, el("div", "cdd-wu-text", result.text));
+        head.append(copyButton(result.segments));
+        const text = el("div", "cdd-wu-text");
+        text.append(mentionsToDom(result.segments));
+        card.append(head, text);
         resultEl.append(card);
     }
 
@@ -174,22 +154,29 @@ async function polish() {
             return;
         }
 
+        const mentions = entityMentions(rows, elnEntry, entryUrl(entry));
+
         setStatus("Polishing… (CERIT, usually under a minute)");
-        const answer = await chrome.runtime.sendMessage({ type: AI_CHAT_MESSAGE, id, messages: buildMessages(text, rows) });
+        const answer = await chrome.runtime.sendMessage({
+            type: AI_CHAT_MESSAGE,
+            id,
+            messages: buildMessages(text, rows, mentionPromptBlock(mentions)),
+        });
         if (!answer?.ok) {
             setStatus(aiErrorMessage(answer));
             return;
         }
 
         const parsed = parseLlmJson(answer.content);
+        // An answer that is not JSON is most likely the text itself.
+        const english = typeof parsed?.text === "string" ? parsed.text.trim() : parsed ? "" : answer.content.trim();
         result = {
             entryKey: entry.key,
-            // An answer that is not JSON is most likely the text itself.
-            text: typeof parsed?.text === "string" ? parsed.text.trim() : parsed ? "" : answer.content.trim(),
+            segments: splitMentions(english, mentions),
             checks: parsed ? buildChecks(parsed, rows) : null,
             hasTable: rows.length > 0,
         };
-        setStatus(result.text && looksUntranslated(result.text, text)
+        setStatus(english && looksUntranslated(english, text)
             ? aiErrorMessage({ error: "untranslated", model: answer.model })
             : `Polished with ${answer.model}. Check it before you paste it in.`);
         render();
@@ -258,4 +245,5 @@ export const WRITE_UP_PANE_STYLES = (panelId) => `
   }
   #${panelId} .cdd-wu-check { font-size: 12px; line-height: 1.45; padding: 2px 0; }
   #${panelId} .cdd-wu-check--lead { font-weight: 700; }
+  #${panelId} .cdd-wu-mention { color: #93c5fd; text-decoration: underline; }
 `;

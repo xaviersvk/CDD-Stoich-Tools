@@ -34,7 +34,7 @@ export const AI_LANGUAGES = [
 ];
 
 // How long a request may take before it is given up, in seconds.
-export const AI_TIMEOUT_DEFAULT_S = 180;
+export const AI_TIMEOUT_DEFAULT_S = 300;
 export const AI_TIMEOUT_MIN_S = 15;
 export const AI_TIMEOUT_MAX_S = 1800;
 

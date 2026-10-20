@@ -37,12 +37,30 @@ const AI_BASE = "https://llm.ai.e-infra.cz/v1";
 const AI_DEFAULT_MODEL = "mini";
 const AI_TRANSCRIBE_MODEL = "whisper-large-v3";
 // Settings → AI write-up → "Wait for an answer"; same bounds as the settings module.
-const AI_TIMEOUT_DEFAULT_S = 180;
+const AI_TIMEOUT_DEFAULT_S = 300;
 const AI_TIMEOUT_MIN_S = 15;
 const AI_TIMEOUT_MAX_S = 1800;
 
 // Request id → AbortController, so the panel's Cancel can stop a request.
 const inFlight = new Map();
+
+// The default wait went from 180 s to 300 s, so a 5-minute dictation has time
+// to transcribe. Settings saved before then hold the old default; lift a
+// stored 180 once, and leave alone a 180 someone sets after that.
+const AI_TIMEOUT_MIGRATED_KEY = "cddAiWriteUpTimeout300";
+
+async function migrateAiTimeout() {
+    const stored = await chrome.storage.local.get([AI_SETTINGS_STORAGE_KEY, AI_TIMEOUT_MIGRATED_KEY]);
+    if (stored[AI_TIMEOUT_MIGRATED_KEY]) return;
+    const value = stored[AI_SETTINGS_STORAGE_KEY];
+    const patch = { [AI_TIMEOUT_MIGRATED_KEY]: true };
+    if (value && Number(value.timeoutS) === 180) patch[AI_SETTINGS_STORAGE_KEY] = { ...value, timeoutS: AI_TIMEOUT_DEFAULT_S };
+    await chrome.storage.local.set(patch);
+}
+
+chrome.runtime.onInstalled.addListener(() => {
+    void migrateAiTimeout();
+});
 
 async function aiSettings() {
     const stored = await chrome.storage.local.get(AI_SETTINGS_STORAGE_KEY);

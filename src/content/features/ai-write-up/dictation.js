@@ -382,7 +382,7 @@ export function mountDictation(bar, list) {
 
     const language = document.createElement("select");
     language.className = "cdd-wu-lang";
-    language.title = "Language you dictate in";
+    language.title = "Language you dictate in — Auto lets the speech recognition tell; pick one if it guesses wrong";
     for (const [code, label] of AI_LANGUAGES) {
         const option = document.createElement("option");
         option.value = code;

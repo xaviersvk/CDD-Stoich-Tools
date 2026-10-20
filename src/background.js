@@ -127,7 +127,8 @@ async function transcribe(id, audioBase64, mimeType, language) {
     const form = new FormData();
     form.append("file", new Blob([bytes], { type: mimeType }), `dictation.${extension}`);
     form.append("model", AI_TRANSCRIBE_MODEL);
-    if (language) form.append("language", language);
+    // "auto" (the default): no language, whisper detects it.
+    if (language && language !== "auto") form.append("language", language);
     const result = await aiRequest(id, "/audio/transcriptions", { method: "POST", body: form });
     if (!result.ok) return result;
     return { ok: true, text: String(result.data?.text || "").trim() };

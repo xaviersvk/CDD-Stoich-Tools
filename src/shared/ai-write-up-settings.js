@@ -13,16 +13,21 @@ export const AI_SETTINGS_STORAGE_KEY = "cddAiWriteUp";
 export const AI_ORIGIN = "https://llm.ai.e-infra.cz";
 export const AI_PERMISSION = { origins: [`${AI_ORIGIN}/*`] };
 // What switching AI write-up on asks for. Firefox also asks for the data
-// collection the manifest declares as optional ("websiteContent" — the ELN
-// text that goes to CERIT); Chrome has no such key and rejects it.
+// collection the manifest declares as optional — "websiteContent" (the ELN
+// text and dictated audio that go to CERIT) and "authenticationInfo" (the
+// CERIT API key, sent to CERIT); Chrome has no such key and rejects it.
 export function aiPermissionRequest() {
     const firefox = typeof navigator !== "undefined" && /firefox/i.test(navigator.userAgent);
-    return firefox ? { ...AI_PERMISSION, data_collection: ["websiteContent"] } : AI_PERMISSION;
+    return firefox ? { ...AI_PERMISSION, data_collection: ["websiteContent", "authenticationInfo"] } : AI_PERMISSION;
 }
 // "mini" is CERIT's small fast model alias — the one their own docs call.
 export const AI_DEFAULT_MODEL = "mini";
 export const AI_TRANSCRIBE_MODEL = "whisper-large-v3";
+// "auto": whisper detects the language itself — the default. Naming it
+// helps when it would guess wrong: Slovak is easily taken for Czech, and a
+// dictation that opens on "TLC showed…" for English.
 export const AI_LANGUAGES = [
+    ["auto", "Auto"],
     ["sk", "Slovenčina"],
     ["cs", "Čeština"],
     ["en", "English"],
@@ -48,7 +53,7 @@ const DEFAULTS = {
     enabled: false,
     apiKey: "",
     model: AI_DEFAULT_MODEL,
-    language: "sk",
+    language: "auto",
     timeoutS: AI_TIMEOUT_DEFAULT_S,
     rules: AI_DEFAULT_RULES,
 };

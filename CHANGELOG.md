@@ -26,9 +26,11 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   OpenAI-compatible CERIT-SC AI as a Service API (`https://llm.ai.e-infra.cz/v1`)
   under the user's own API key. Turning it on requests the optional host
   permission `https://llm.ai.e-infra.cz/*` (Firefox: plus the optional
-  `websiteContent` data collection); turning it off removes it. All requests
+  `websiteContent` and `authenticationInfo` data collection); turning it off
+  removes it. All requests
   go through `background.js`, so the key never reaches the CDD page. Settings:
-  key, chat model (from `/v1/models`, default `mini`), dictation language,
+  key, chat model (from `/v1/models`, default `mini`), dictation language
+  (*Auto* by default — whisper detects it; Slovak, Czech or English to pin it),
   how long to wait (15 s – 30 min, default 180 s), and *house rules* —
   instructions added to every system prompt while ticked (six starters, all
   off). *Test connection* lists the models and whether `whisper-large-v3` is

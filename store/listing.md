@@ -124,7 +124,7 @@ Done by hand, once per wording change.
 - [ ] Support URL → `https://github.com/xaviersvk/CDD-Stoich-Tools/issues`
 - [ ] Homepage URL → `https://xaviersvk.github.io/CDD-Stoich-Tools/`
 - [ ] *Privacy* tab → Privacy policy URL → `https://xaviersvk.github.io/CDD-Stoich-Tools/privacy.html`
-- [ ] *Privacy practices* (19.0.0) → justify the optional host permission `https://llm.ai.e-infra.cz/*`: "AI write-up, off by default: sends ELN text the user chooses to the CERIT-SC language model API, under the user's own API key." Data usage → tick *Website content*; certify it is not sold or used for anything else
+- [ ] *Privacy practices* (19.0.0) → justify the optional host permission `https://llm.ai.e-infra.cz/*`: "AI write-up, off by default: sends ELN text the user chooses to the CERIT-SC language model API, under the user's own API key." Data usage → tick *Website content* (ELN text, dictated audio) and *Authentication information* (the user's CERIT API key, sent to CERIT); certify it is not sold or used for anything else
 - [ ] Save draft → *Submit for review* (listing-only changes still go through review)
 
 **Firefox Add-ons** — Developer Hub → add-on → *Edit Product Page*
@@ -134,7 +134,7 @@ Done by hand, once per wording change.
 - [ ] *Experimental* → unticked
 - [ ] Support *Web Site* (same form) → `https://github.com/xaviersvk/CDD-Stoich-Tools/issues`
 - [ ] *Additional Details* → Homepage → `https://xaviersvk.github.io/CDD-Stoich-Tools/`
-- [ ] (19.0.0) The manifest now declares *websiteContent* as optional data collection — AMO shows it; nothing to set by hand, but expect the review to read the policy
+- [ ] (19.0.0) The manifest now declares *websiteContent* and *authenticationInfo* as optional data collection — AMO shows it; nothing to set by hand, but expect the review to read the policy
 - [ ] *Manage Authors & Licence* → *This add-on has a Privacy Policy* → paste the
       text of `scripts/privacy.html` as plain paragraphs, first line linking to
       the full page (AMO takes text here, not a URL)

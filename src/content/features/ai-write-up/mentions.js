@@ -16,6 +16,10 @@
 //     entry makes real mentions; anywhere else the same HTML pastes as
 //     ordinary links, and text/plain carries the labels.
 //
+// The model also marks facts the text needs but does not give — [[?temperature]]
+// — as placeholders. In the panel each is a slot to type the value into; one
+// left empty is copied as a bold "[temperature?]", easy to spot in the entry.
+//
 // A mention is a Slate `a` node whose `data` is the mention's feature data;
 // CDD creates the feature when the fragment is pasted. A reaction row's
 // mention points at "#attached_structures/<structure>%23reaction_components/
@@ -23,7 +27,9 @@
 // products left out (model.js) — and its label is CDD's "name (amount, mol)".
 
 const NL = "\n";
-const TOKEN = /\[\[([RL])(\d+)\]\]/g;
+// [[R3]] / [[L1]] — an entity; [[?temperature]] — a fact the text is missing.
+const TOKEN = /\[\[(?:([RL])(\d+)|\?([^\][\n]{1,40}))\]\]/g;
+const MAX_PLACEHOLDERS = 8;
 
 // ---------------------------------------------------------------- labels
 
@@ -140,10 +146,12 @@ export function mentionPromptBlock(mentions) {
 
 // ---------------------------------------------------------------- text → segments
 
+const isText = (seg) => typeof seg?.text === "string";
+
 function pushText(segments, s) {
     if (!s) return;
     const prev = segments[segments.length - 1];
-    if (prev && !prev.mention) prev.text += s;
+    if (isText(prev)) prev.text += s;
     else segments.push({ text: s });
 }
 
@@ -179,7 +187,7 @@ function linkNames(segments, mentions) {
         const next = [];
         let done = false;
         for (const seg of out) {
-            const match = !done && !seg.mention ? seg.text.match(pattern) : null;
+            const match = !done && isText(seg) ? seg.text.match(pattern) : null;
             if (!match) {
                 next.push(seg);
                 continue;
@@ -199,17 +207,27 @@ function linkNames(segments, mentions) {
 /**
  * "Then [[R2]] was added." → [{ text: "Then " }, { mention }, { text: " was added." }].
  * An unknown token is dropped rather than shown as brackets. Entities named
- * without a token are linked as well (linkNames).
+ * without a token are linked as well (linkNames). "[[?time]]" becomes
+ * { placeholder: { what: "time", value: "" } } — `value` is filled in the
+ * panel, and every rendering reads it when it runs.
  */
 export function splitMentions(text, mentions) {
     const byToken = new Map(mentions.map((m) => [m.token, m]));
     const source = String(text || "");
     const segments = [];
+    let placeholders = 0;
     let last = 0;
     for (const match of source.matchAll(TOKEN)) {
         pushText(segments, source.slice(last, match.index));
-        const mention = byToken.get(`${match[1]}${match[2]}`);
-        if (mention) segments.push({ mention });
+        if (match[3] != null) {
+            const what = match[3].trim();
+            // Past the cap a placeholder reads as its plain words.
+            if (what && placeholders++ < MAX_PLACEHOLDERS) segments.push({ placeholder: { what, value: "" } });
+            else pushText(segments, what);
+        } else {
+            const mention = byToken.get(`${match[1]}${match[2]}`);
+            if (mention) segments.push({ mention });
+        }
         last = match.index + match[0].length;
     }
     pushText(segments, source.slice(last));
@@ -220,7 +238,7 @@ export function splitMentions(text, mentions) {
 function lines(segments) {
     const out = [[]];
     for (const seg of segments) {
-        if (seg.mention) {
+        if (!isText(seg)) {
             out[out.length - 1].push(seg);
             continue;
         }
@@ -241,10 +259,22 @@ function headingOf(line) {
 
 // ---------------------------------------------------------------- renderings
 
+/** The placeholders still empty, in order — for "Fill in: …". */
+export function unfilledPlaceholders(segments) {
+    return segments.filter((s) => s.placeholder && !s.placeholder.value.trim()).map((s) => s.placeholder.what);
+}
+
+// What a placeholder prints as: its value, or "[what?]" while empty.
+function placeholderText(p) {
+    return p.value.trim() || `[${p.what}?]`;
+}
+
 export function mentionsToPlain(segments) {
     return lines(segments)
         .map((line) => {
-            const text = line.map((s) => (s.mention ? s.mention.label : s.text)).join("");
+            const text = line
+                .map((s) => (s.mention ? s.mention.label : s.placeholder ? placeholderText(s.placeholder) : s.text))
+                .join("");
             return text.replace(/^#{1,6}\s+/, "");
         })
         .join(NL);
@@ -256,9 +286,14 @@ function escapeHtml(s) {
 
 function inlineHtml(line) {
     return line
-        .map((s) => (s.mention
-            ? `<a href="${escapeHtml(s.mention.data.href || "")}">${escapeHtml(s.mention.label)}</a>`
-            : escapeHtml(s.text)))
+        .map((s) => {
+            if (s.mention) return `<a href="${escapeHtml(s.mention.data.href || "")}">${escapeHtml(s.mention.label)}</a>`;
+            if (s.placeholder) {
+                const text = escapeHtml(placeholderText(s.placeholder));
+                return s.placeholder.value.trim() ? text : `<strong>${text}</strong>`;
+            }
+            return escapeHtml(s.text);
+        })
         .join("");
 }
 
@@ -276,8 +311,11 @@ function slateNodes(segments) {
                     data: { ...s.mention.data },
                     children: [{ text: s.mention.label }],
                 });
+            } else if (s.placeholder && !s.placeholder.value.trim()) {
+                // CDD's bold mark, so an empty slot stands out in the entry.
+                children.push({ text: placeholderText(s.placeholder), bold: true });
             } else {
-                children.push({ text: s.text });
+                children.push({ text: s.placeholder ? placeholderText(s.placeholder) : s.text });
             }
         }
         if (!children.length || children[children.length - 1].type) children.push({ text: "" });
@@ -308,15 +346,65 @@ export function mentionsToClipboardHtml(segments) {
     return `<span data-slate-fragment="${encodeFragment(slateNodes(segments))}">${visible}</span>`;
 }
 
-/** The panel's view: text nodes and links, "## " lines in bold. */
-export function mentionsToDom(segments, doc = document) {
+// A placeholder in the panel: a slot showing "temperature?" (empty) or its
+// value; a click turns it into an input, Enter or leaving it keeps what was
+// typed, Escape keeps what was there. `onChange` runs after every change.
+function slotNode(p, doc, onChange) {
+    const slot = doc.createElement("button");
+    slot.type = "button";
+    const paint = () => {
+        const filled = !!p.value.trim();
+        slot.className = `cdd-wu-slot${filled ? " cdd-wu-slot--filled" : ""}`;
+        slot.textContent = filled ? p.value.trim() : `${p.what}?`;
+        slot.title = filled ? `${p.what} — click to change` : `Fill in the ${p.what}`;
+    };
+    slot.addEventListener("mousedown", (event) => event.stopPropagation());
+    slot.addEventListener("click", (event) => {
+        event.stopPropagation();
+        const input = doc.createElement("input");
+        input.type = "text";
+        input.className = "cdd-wu-slot-input";
+        input.value = p.value;
+        input.placeholder = p.what;
+        input.size = Math.max(p.what.length, p.value.length, 6);
+        let done = false;
+        const finish = (keep) => {
+            if (done) return;
+            done = true;
+            if (keep) p.value = input.value;
+            paint();
+            input.replaceWith(slot);
+            onChange?.();
+        };
+        input.addEventListener("mousedown", (e) => e.stopPropagation());
+        input.addEventListener("keydown", (e) => {
+            e.stopPropagation();
+            if (e.key === "Enter") finish(true);
+            else if (e.key === "Escape") finish(false);
+        });
+        input.addEventListener("blur", () => finish(true));
+        slot.replaceWith(input);
+        input.focus();
+        input.select();
+    });
+    paint();
+    return slot;
+}
+
+/**
+ * The panel's view: text nodes, links and placeholder slots, "## " lines in
+ * bold. `onChange` runs when a placeholder is filled in.
+ */
+export function mentionsToDom(segments, { doc = document, onChange } = {}) {
     const fragment = doc.createDocumentFragment();
     lines(segments).forEach((line, i) => {
         if (i > 0) fragment.append(doc.createTextNode(NL));
         const heading = headingOf(line);
         const target = heading ? doc.createElement("strong") : fragment;
         for (const s of heading || line) {
-            if (s.mention) {
+            if (s.placeholder) {
+                target.append(slotNode(s.placeholder, doc, onChange));
+            } else if (s.mention) {
                 const a = doc.createElement("a");
                 a.href = s.mention.data.href || "#";
                 a.target = "_blank";

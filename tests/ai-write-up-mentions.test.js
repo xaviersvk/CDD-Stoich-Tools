@@ -9,6 +9,7 @@ import {
     splitMentions,
     mentionsToPlain,
     mentionsToClipboardHtml,
+    unfilledPlaceholders,
 } from "../src/content/features/ai-write-up/mentions.js";
 
 const ENTRY_URL = "https://eu.collaborativedrug.com/vaults/1/eln/entries/2";
@@ -165,4 +166,37 @@ test("a batch name is never matched as a compound name", () => {
     const e = tenofovirEntry();
     const list = entityMentions(tableRowsFromEntry(e), e, ENTRY_URL);
     assert.ok(!list.some((m) => m.names.includes("008")));
+});
+
+test("placeholders become slots; empty ones copy as bold [what?], filled ones as their value", () => {
+    const segments = splitMentions("The mixture was stirred at [[?temperature]] for [[? time ]].", mentions());
+    const slots = segments.filter((s) => s.placeholder);
+    assert.deepEqual(slots.map((s) => s.placeholder.what), ["temperature", "time"]);
+    assert.deepEqual(unfilledPlaceholders(segments), ["temperature", "time"]);
+    assert.equal(mentionsToPlain(segments), "The mixture was stirred at [temperature?] for [time?].");
+
+    slots[0].placeholder.value = "80 °C";
+    assert.deepEqual(unfilledPlaceholders(segments), ["time"]);
+    assert.equal(mentionsToPlain(segments), "The mixture was stirred at 80 °C for [time?].");
+
+    const html = mentionsToClipboardHtml(segments);
+    assert.match(html, /stirred at 80 °C for <strong>\[time\?\]<\/strong>\./);
+    const nodes = JSON.parse(decodeURIComponent(atob(html.match(/data-slate-fragment="([^"]+)"/)[1])));
+    assert.deepEqual(nodes[0].children, [
+        { text: "The mixture was stirred at " },
+        { text: "80 °C" },
+        { text: " for " },
+        { text: "[time?]", bold: true },
+        { text: "." },
+    ]);
+});
+
+test("placeholders do not stop names from being linked, and are capped", () => {
+    const segments = splitMentions("[[?amount]] ab123 was added.", mentions());
+    assert.ok(segments[0].placeholder);
+    assert.equal(segments.find((s) => s.mention)?.mention.token, "R1");
+
+    const many = splitMentions(Array.from({ length: 10 }, (_, i) => `[[?x${i}]]`).join(" "), []);
+    assert.equal(many.filter((s) => s.placeholder).length, 8);
+    assert.match(mentionsToPlain(many), /x8 x9$/);
 });

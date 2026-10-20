@@ -184,6 +184,13 @@ function formatIn(value, unit, factor) {
 
 // ---------------------------------------------------------------- prompt
 
+// Both prompts: where a sentence needs a fact nobody gave, a placeholder the
+// chemist fills in the panel (mentions.js) — never a guess.
+const PLACEHOLDER_RULE =
+    "Where a sentence needs a fact the text does not give (temperature, time, a volume, the yield…), " +
+    'write a placeholder [[?short name]] in its place, e.g. "stirred at [[?temperature]] for [[?time]]". ' +
+    "Never invent the value. At most 5 placeholders, only where the sentence needs one.";
+
 const SYSTEM_PROMPT = `You edit electronic lab notebook (ELN) entries for synthetic chemists.
 The entry may be dictated and may mix Slovak, Czech and English.
 
@@ -192,6 +199,7 @@ Do two things and answer with ONE JSON object only, no prose around it:
 1. "text": the whole entry rewritten as a clear, factual experimental write-up in English.
    Keep every fact, quantity, observation and section heading. Do not invent anything.
    Keep the "## " heading markers. Past tense, passive voice, standard units (mg, mL, mmol, °C, h).
+   ${PLACEHOLDER_RULE}
 
 2. Report what the text says about the stoichiometry table rows given below. Do NOT calculate anything:
    copy quantities exactly as written in the text, with their units.
@@ -239,6 +247,7 @@ const DICTATION_PROMPT = `You turn a dictated lab notebook passage into English 
 The dictation was transcribed by speech recognition and may be Slovak, Czech or English, with recognition errors.
 Rewrite it as clear, factual English experimental prose: past tense, passive voice, standard units (mg, mL, mmol, °C, h).
 Keep every fact and number exactly; do not add anything. Fix misheard chemical names when the table clearly matches.
+${PLACEHOLDER_RULE}
 You may be given CONTEXT — the reaction's stoichiometry table and the entry text the dictation continues.
 Use it only to understand the dictation and to match its names, abbreviations and style.
 Never translate, repeat or summarise the context itself.

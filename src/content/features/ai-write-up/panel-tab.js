@@ -26,7 +26,7 @@ import {
 } from "./model.js";
 import { currentEntry, entryUrl, fetchEntry, textFromEditor } from "./entry.js";
 import { mountDictation, refreshDictation } from "./dictation.js";
-import { entityMentions, mentionPromptBlock, mentionsToDom, splitMentions } from "./mentions.js";
+import { entityMentions, mentionPromptBlock, mentionsToDom, splitMentions, unfilledPlaceholders } from "./mentions.js";
 import { copyButton } from "./copy-button.js";
 
 let pane = null;
@@ -65,8 +65,15 @@ function checkLine(check) {
     return line;
 }
 
-function renderChecks(card, checks, hasTable) {
-    card.append(el("div", "cdd-wu-card__title", "Checks"));
+function renderChecks(card, { checks, hasTable, segments }) {
+    card.replaceChildren(el("div", "cdd-wu-card__title", "Checks"));
+    // The placeholders in the text, until each is filled in.
+    const unfilled = unfilledPlaceholders(segments);
+    if (unfilled.length) {
+        const line = el("div", "cdd-wu-check cdd-wu-check--fill");
+        line.append(el("strong", null, "Fill in: "), document.createTextNode(unfilled.join(", ")));
+        card.append(line);
+    }
     if (!hasTable) {
         card.append(el("div", "cdd-wu-check", "No stoichiometry table in this entry — text polished only."));
         return;
@@ -82,8 +89,7 @@ function renderChecks(card, checks, hasTable) {
     if (!checks.length) {
         card.append(el("div", "cdd-wu-check", "Text and table agree."));
         return;
-    }
-    if (numbers.length) {
+    }    if (numbers.length) {
         card.append(el("div", "cdd-wu-check cdd-wu-check--lead", "Correct the text or the table:"));
         for (const c of numbers) card.append(checkLine(c));
     }
@@ -100,6 +106,7 @@ function render() {
     resultEl.replaceChildren();
     const key = currentEntry()?.key;
     if (!result || result.entryKey !== key) return;
+    const checksCard = el("div", "cdd-wu-card");
 
     if (result.segments.length) {
         const card = el("div", "cdd-wu-card");
@@ -107,13 +114,14 @@ function render() {
         head.append(el("div", "cdd-wu-card__title", "English text"));
         head.append(copyButton(result.segments));
         const text = el("div", "cdd-wu-text");
-        text.append(mentionsToDom(result.segments));
+        // Filling a placeholder redraws the checks only: the text keeps its
+        // scroll position and the slot just typed into.
+        text.append(mentionsToDom(result.segments, { onChange: () => renderChecks(checksCard, result) }));
         card.append(head, text);
         resultEl.append(card);
     }
 
-    const checksCard = el("div", "cdd-wu-card");
-    renderChecks(checksCard, result.checks, result.hasTable);
+    renderChecks(checksCard, result);
     resultEl.append(checksCard);
 }
 
@@ -246,4 +254,17 @@ export const WRITE_UP_PANE_STYLES = (panelId) => `
   #${panelId} .cdd-wu-check { font-size: 12px; line-height: 1.45; padding: 2px 0; }
   #${panelId} .cdd-wu-check--lead { font-weight: 700; }
   #${panelId} .cdd-wu-mention { color: #93c5fd; text-decoration: underline; }
+  #${panelId} .cdd-wu-check--fill { margin-bottom: 4px; }
+  /* A placeholder: dashed amber while empty, solid green once filled. */
+  #${panelId} .cdd-wu-slot {
+    display: inline; padding: 0 4px; margin: 0 1px;
+    font: 600 12px Arial, sans-serif; line-height: 1.3;
+    color: #fcd34d; background: transparent;
+    border: 1px dashed #f59e0b; border-radius: 4px; cursor: text;
+  }
+  #${panelId} .cdd-wu-slot--filled { color: #f9fafb; border: 1px solid #22c55e; font-weight: 400; }
+  #${panelId} .cdd-wu-slot-input {
+    font: 12px Arial, sans-serif; color: #111827; background: #fff;
+    border: 1px solid #f59e0b; border-radius: 4px; padding: 0 4px;
+  }
 `;

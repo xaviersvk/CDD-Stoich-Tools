@@ -203,7 +203,7 @@ async function runDictation(blob, origin, entryText, entryKey) {
 // "Selected", "Asked"). A selection or a request may already be English, so
 // for them an answer unlike the source is fine; only one still in
 // Slovak/Czech is refused. `ask`: the source is a request about the entry
-// (buildAskMessages), not text to translate.
+// (buildAskMessages), not text to translate. True when a card came of it.
 async function toEnglishCard(args) {
     const {
         source, sourceLabel, label, rows, mentions, entryText, entryKey, startedAt,
@@ -242,7 +242,8 @@ async function toEnglishCard(args) {
                 ...cards,
             ].slice(0, MAX_CARDS);
         }
-        return step("idle", aiErrorMessage(answer));
+        step("idle", aiErrorMessage(answer));
+        return false;
     }
 
     // JSON like Polish entry's: the English and what it says about the
@@ -253,7 +254,8 @@ async function toEnglishCard(args) {
     // A model that echoes the source back (small models do) is reported
     // rather than shown as if it were the translation.
     if (!english || looksUntranslated(english, mayBeEnglish ? "" : source)) {
-        return step("idle", `${aiErrorMessage({ error: "untranslated", model: answer.model })} ${sourceLabel}: “${source}”`);
+        step("idle", `${aiErrorMessage({ error: "untranslated", model: answer.model })} ${sourceLabel}: “${source}”`);
+        return false;
     }
     const at = Date.now();
     const segments = splitMentions(english, mentions);
@@ -285,6 +287,7 @@ async function toEnglishCard(args) {
         ...cards,
     ].slice(0, MAX_CARDS);
     step("idle", "");
+    return true;
 }
 
 /**
@@ -305,7 +308,8 @@ export async function askAboutEntry(request) {
         setState({ origin: null });
         step("translating", "");
         const { rows, mentions } = await tableForContext(null);
-        await toEnglishCard({
+        // Only a request that became a card empties the field.
+        return await toEnglishCard({
             source: request.trim(),
             sourceLabel: "Asked",
             label: "Ask",
@@ -317,7 +321,6 @@ export async function askAboutEntry(request) {
             mayBeEnglish: true,
             ask: true,
         });
-        return true;
     } catch (err) {
         console.debug("[CDD Stoich Tools] ask failed", err);
         step("idle", aiErrorMessage({ error: "network" }));
@@ -525,6 +528,7 @@ export function mountDictation(bar, list) {
         if (shown?.cards !== cards || shown?.key !== key) {
             shown = { cards, key };
             const mine = cards.filter((c) => c.entryKey === key);
+            /** @type {HTMLElement[]} */
             const nodes = mine.map(cardNode);
             // They pile up: one click empties this entry's.
             if (mine.length > 1) {

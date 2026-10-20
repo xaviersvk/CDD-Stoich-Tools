@@ -143,10 +143,10 @@ export function tableRowsFromEntry(elnEntry) {
 
 // unit → [kind, factor to g / L / mol]
 const UNITS = {
-    ug: ["mass", 1e-6], "µg": ["mass", 1e-6], "μg": ["mass", 1e-6], mg: ["mass", 1e-3], g: ["mass", 1], kg: ["mass", 1e3],
-    ul: ["volume", 1e-6], "µl": ["volume", 1e-6], "μl": ["volume", 1e-6], ml: ["volume", 1e-3], l: ["volume", 1],
-    nmol: ["amount", 1e-9], umol: ["amount", 1e-6], "µmol": ["amount", 1e-6], "μmol": ["amount", 1e-6],
-    mmol: ["amount", 1e-3], mol: ["amount", 1],
+    // µ and μ (micro sign, Greek mu) arrive as "u" — parseQuantity folds them.
+    ug: ["mass", 1e-6], mg: ["mass", 1e-3], g: ["mass", 1], kg: ["mass", 1e3],
+    ul: ["volume", 1e-6], ml: ["volume", 1e-3], l: ["volume", 1],
+    nmol: ["amount", 1e-9], umol: ["amount", 1e-6], mmol: ["amount", 1e-3], mol: ["amount", 1],
     eq: ["eq", 1], "eq.": ["eq", 1], equiv: ["eq", 1], "equiv.": ["eq", 1], equivalents: ["eq", 1],
     ekv: ["eq", 1], "ekv.": ["eq", 1],
     "%": ["percent", 1],
@@ -159,7 +159,9 @@ const UNITS = {
  */
 export function parseQuantity(input) {
     if (input == null) return null;
-    const match = String(input).trim().match(/^~?\s*(\d+(?:[.,]\d+)?)\s*([a-zA-Zµμ%.]*)$/);
+    // Micro sign and Greek mu both read as "u" ("µmol" → "umol").
+    const text = String(input).trim();
+    const match = text.replace(/µ/g, "u").replace(/μ/g, "u").match(/^~?\s*(\d+(?:[.,]\d+)?)\s*([a-zA-Z%.]*)$/);
     if (!match) return null;
     const digits = match[1].replace(",", ".");
     const unitKey = (match[2] || "eq").toLowerCase();
@@ -170,7 +172,8 @@ export function parseQuantity(input) {
     return {
         kind,
         value: parseFloat(digits) * factor,
-        unit: match[2] || "eq",
+        // As written, so a check reads "14.5 µmol", not "umol".
+        unit: text.slice(text.length - match[2].length) || "eq",
         factor,
         step: 0.5 * 10 ** -decimals * factor,
     };
@@ -539,7 +542,7 @@ function yieldCheck(product, rows) {
 // "keep every fact" is only a request to the model, this is the check.
 // Units are compared by value, so 0.5 g → 500 mg is the same number.
 const QUANTITY_IN_TEXT =
-    /(\d+(?:[.,]\d+)?)\s*(mol\s?%|µg|μg|ug|mg|kg|g|µl|μl|ul|ml|l|nmol|µmol|μmol|umol|mmol|mol|equiv\.?|eq\.?|ekv\.?|%|°\s?c|hours?|hrs?|h|minutes?|mins?|min)(?![\p{L}])/giu;
+    /(\d+(?:[.,]\d+)?)\s*(mol\s?%|µg|μg|ug|mg|kg|g|µl|μl|ul|ml|l|nmol|µmol|μmol|umol|mmol|mol|equiv\.?|eq\.?|ekv\.?|%|°\s?c|hours?|hrs?|h|minutes?|mins?|min)(?!\p{L})/giu;
 const TIME_UNITS = { hour: "h", hours: "h", hr: "h", hrs: "h", h: "h", minute: "min", minutes: "min", mins: "min", min: "min" };
 
 function quantityKeys(text) {

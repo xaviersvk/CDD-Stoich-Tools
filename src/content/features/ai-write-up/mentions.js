@@ -28,7 +28,7 @@
 
 const NL = "\n";
 // [[R3]] / [[L1]] — an entity; [[?temperature]] — a fact the text is missing.
-const TOKEN = /\[\[(?:([RL])(\d+)|\?([^\][\n]{1,40}))\]\]/g;
+const TOKEN = /\[\[(?:([RL])(\d+)|\?([^\][\n]{1,40}))]]/g;
 const MAX_PLACEHOLDERS = 8;
 
 // Link features of the entry by their target id.

@@ -219,16 +219,7 @@ function openAskDialog() {
     input.placeholder = "e.g. make it shorter · turn it into a bullet list · write it as the workup paragraph";
     label.append(input);
 
-    const actions = document.createElement("div");
-    actions.className = "cdd-phrase-actions";
-    const cancelBtn = document.createElement("button");
-    cancelBtn.type = "button";
-    cancelBtn.textContent = "Cancel";
-    cancelBtn.addEventListener("click", closeDialog);
-    const goBtn = document.createElement("button");
-    goBtn.type = "button";
-    goBtn.className = "cdd-phrase-primary";
-    goBtn.textContent = "Polish";
+    const { actions, primary: goBtn } = dialogActions("Polish");
     const submit = () => {
         setPanelTab("writeup");
         void polishSelection(text, block, input.value);
@@ -243,20 +234,9 @@ function openAskDialog() {
             submit();
         }
     });
-    actions.append(cancelBtn, goBtn);
 
     dialog.append(title, preview, label, actions);
-    document.documentElement.appendChild(dialog);
-    document.addEventListener("keydown", onDialogKey, true);
-
-    const w = dialog.offsetWidth;
-    const h = dialog.offsetHeight;
-    let left = anchorRect.left;
-    let top = anchorRect.bottom + 6;
-    if (left + w > window.innerWidth - 12) left = window.innerWidth - w - 12;
-    if (top + h > window.innerHeight - 12) top = Math.max(12, anchorRect.top - h - 6);
-    dialog.style.left = `${Math.max(12, left)}px`;
-    dialog.style.top = `${top}px`;
+    showDialog(anchorRect);
     input.focus();
 }
 
@@ -335,6 +315,37 @@ function schedulePosition() {
     });
 }
 
+// The Cancel + primary button row both dialogs end with.
+function dialogActions(primaryLabel) {
+    const actions = document.createElement("div");
+    actions.className = "cdd-phrase-actions";
+    const cancel = document.createElement("button");
+    cancel.type = "button";
+    cancel.textContent = "Cancel";
+    cancel.addEventListener("click", closeDialog);
+    const primary = document.createElement("button");
+    primary.type = "button";
+    primary.className = "cdd-phrase-primary";
+    primary.textContent = primaryLabel;
+    actions.append(cancel, primary);
+    return { actions, primary };
+}
+
+// `dialog` into the page near where its button was, kept inside the
+// viewport; Escape closes it.
+function showDialog(anchorRect) {
+    document.documentElement.appendChild(dialog);
+    document.addEventListener("keydown", onDialogKey, true);
+    const w = dialog.offsetWidth;
+    const h = dialog.offsetHeight;
+    let left = anchorRect.left;
+    let top = anchorRect.bottom + 6;
+    if (left + w > window.innerWidth - 12) left = window.innerWidth - w - 12;
+    if (top + h > window.innerHeight - 12) top = Math.max(12, anchorRect.top - h - 6);
+    dialog.style.left = `${Math.max(12, left)}px`;
+    dialog.style.top = `${top}px`;
+}
+
 function closeDialog() {
     if (!dialog) return;
     dialog.remove();
@@ -391,17 +402,7 @@ async function openDialog() {
         ? `${PHRASE_LIMIT} phrases is the limit — the one used longest ago will be dropped.`
         : `${phrases.length} of ${PHRASE_LIMIT} phrases saved.`;
 
-    const actions = document.createElement("div");
-    actions.className = "cdd-phrase-actions";
-    const cancelBtn = document.createElement("button");
-    cancelBtn.type = "button";
-    cancelBtn.textContent = "Cancel";
-    cancelBtn.addEventListener("click", closeDialog);
-    const saveBtn = document.createElement("button");
-    saveBtn.type = "button";
-    saveBtn.className = "cdd-phrase-primary";
-    saveBtn.textContent = "Save";
-    actions.append(cancelBtn, saveBtn);
+    const { actions, primary: saveBtn } = dialogActions("Save");
 
     const submit = async () => {
         saveBtn.disabled = true;
@@ -430,18 +431,7 @@ async function openDialog() {
     });
 
     dialog.append(heading, nameLabel, placesLabel, row, preview, note, actions);
-    document.documentElement.appendChild(dialog);
-    document.addEventListener("keydown", onDialogKey, true);
-
-    // Near where the button was, kept inside the viewport.
-    const w = dialog.offsetWidth;
-    const h = dialog.offsetHeight;
-    let left = anchorRect.left;
-    let top = anchorRect.bottom + 6;
-    if (left + w > window.innerWidth - 12) left = window.innerWidth - w - 12;
-    if (top + h > window.innerHeight - 12) top = Math.max(12, anchorRect.top - h - 6);
-    dialog.style.left = `${Math.max(12, left)}px`;
-    dialog.style.top = `${top}px`;
+    showDialog(anchorRect);
 
     nameInput.focus();
     nameInput.select();

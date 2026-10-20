@@ -13,7 +13,7 @@ import { entryTextFromNodes } from "./model.js";
 const ENTRY_PATH = /\/vaults\/(\d+)\/eln\/entries\/(\d+)/;
 const EDITOR_SELECTOR = '[data-slate-editor="true"]';
 // Slate's zero-width placeholders (BOM, zero-width space) in empty leaves.
-const ZERO_WIDTH = new RegExp(`[${String.fromCharCode(0xfeff, 0x200b)}]`, "g");
+const ZERO_WIDTH = /[\uFEFF\u200B]/g;
 
 export function currentEntry() {
     const m = location.pathname.match(ENTRY_PATH);

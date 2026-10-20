@@ -9,7 +9,9 @@
 //
 // While AI write-up is on, a "Polish" button sits beside it: the selection
 // goes to the LLM and comes back as English on a card in the panel's
-// Write-up tab (ai-write-up/dictation.js), which this opens.
+// Write-up tab (ai-write-up/dictation.js), which this opens. "＋" next to it
+// asks first what to do with the text ("make it a bullet list") instead of a
+// plain polish; that popover is the same dialog slot Save phrase uses.
 
 import { isElnEntryPage } from "../../../shared/page-detection.js";
 import {
@@ -27,11 +29,13 @@ import { readSelection, selectionInEditor } from "./selection-html.js";
 
 const BUTTON_ID = "cdd-phrase-save-btn";
 const POLISH_ID = "cdd-phrase-polish-btn";
+const POLISH_ASK_ID = "cdd-phrase-polish-ask-btn";
 const DIALOG_ID = "cdd-phrase-save-dialog";
 const STYLE_ID = "cdd-phrase-capture-style";
 
 let button = null;
 let polishButton = null;
+let askButton = null;
 let dialog = null;
 let currentRange = null;
 let positionRaf = 0;
@@ -41,7 +45,7 @@ function ensureStyle() {
     const style = document.createElement("style");
     style.id = STYLE_ID;
     style.textContent = `
-  #${BUTTON_ID}, #${POLISH_ID} {
+  #${BUTTON_ID}, #${POLISH_ID}, #${POLISH_ASK_ID} {
     position: fixed;
     z-index: 2147483646;
     padding: 4px 10px;
@@ -54,7 +58,7 @@ function ensureStyle() {
     cursor: pointer;
     user-select: none;
   }
-  #${BUTTON_ID}:hover, #${POLISH_ID}:hover { background: #374151; }
+  #${BUTTON_ID}:hover, #${POLISH_ID}:hover, #${POLISH_ASK_ID}:hover { background: #374151; }
 
   #${DIALOG_ID} {
     position: fixed;
@@ -74,7 +78,8 @@ function ensureStyle() {
   }
   #${DIALOG_ID} h4 { margin: 0; font-size: 13px; }
   #${DIALOG_ID} label { display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: #cbd5e1; }
-  #${DIALOG_ID} input {
+  #${DIALOG_ID} input,
+  #${DIALOG_ID} textarea {
     font: 13px Arial, sans-serif;
     color: #f9fafb;
     background: #0b1220;
@@ -157,8 +162,7 @@ function ensurePolishButton() {
         event.stopPropagation();
         if (!currentRange) return;
         const { text } = readSelection(currentRange);
-        const start = currentRange.startContainer;
-        const block = (start.nodeType === 1 ? start : start.parentElement)?.closest('[data-slate-node="element"]');
+        const block = selectionBlock(currentRange);
         setPanelTab("writeup");
         void polishSelection(text, block);
         hideButton();
@@ -167,9 +171,99 @@ function ensurePolishButton() {
     return polishButton;
 }
 
+function selectionBlock(range) {
+    const start = range.startContainer;
+    return (start.nodeType === 1 ? start : start.parentElement)?.closest('[data-slate-node="element"]') || null;
+}
+
+function ensureAskButton() {
+    if (askButton) return askButton;
+    askButton = document.createElement("button");
+    askButton.id = POLISH_ASK_ID;
+    askButton.type = "button";
+    askButton.textContent = "＋";
+    askButton.title = "Polish with your own instruction — say what to do with the selected text.";
+    askButton.hidden = true;
+    askButton.addEventListener("mousedown", (event) => event.preventDefault());
+    askButton.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        openAskDialog();
+    });
+    document.documentElement.appendChild(askButton);
+    return askButton;
+}
+
+// Polish +: what to do with the selection, then the same polish with it.
+function openAskDialog() {
+    if (!currentRange) return;
+    const { text } = readSelection(currentRange);
+    const block = selectionBlock(currentRange);
+    const anchorRect = askButton.getBoundingClientRect();
+    closeDialog();
+
+    dialog = document.createElement("div");
+    dialog.id = DIALOG_ID;
+    dialog.addEventListener("mousedown", (event) => event.stopPropagation());
+
+    const title = document.createElement("h4");
+    title.textContent = "Polish with an instruction";
+    const preview = document.createElement("div");
+    preview.className = "cdd-phrase-preview";
+    preview.textContent = text;
+
+    const label = document.createElement("label");
+    label.textContent = "What should it do with the text?";
+    const input = document.createElement("textarea");
+    input.rows = 3;
+    input.placeholder = "e.g. make it shorter · turn it into a bullet list · write it as the workup paragraph";
+    label.append(input);
+
+    const actions = document.createElement("div");
+    actions.className = "cdd-phrase-actions";
+    const cancelBtn = document.createElement("button");
+    cancelBtn.type = "button";
+    cancelBtn.textContent = "Cancel";
+    cancelBtn.addEventListener("click", closeDialog);
+    const goBtn = document.createElement("button");
+    goBtn.type = "button";
+    goBtn.className = "cdd-phrase-primary";
+    goBtn.textContent = "Polish";
+    const submit = () => {
+        setPanelTab("writeup");
+        void polishSelection(text, block, input.value);
+        closeDialog();
+        hideButton();
+    };
+    goBtn.addEventListener("click", submit);
+    // Enter sends, Shift+Enter is a new line.
+    input.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" && !event.shiftKey) {
+            event.preventDefault();
+            submit();
+        }
+    });
+    actions.append(cancelBtn, goBtn);
+
+    dialog.append(title, preview, label, actions);
+    document.documentElement.appendChild(dialog);
+    document.addEventListener("keydown", onDialogKey, true);
+
+    const w = dialog.offsetWidth;
+    const h = dialog.offsetHeight;
+    let left = anchorRect.left;
+    let top = anchorRect.bottom + 6;
+    if (left + w > window.innerWidth - 12) left = window.innerWidth - w - 12;
+    if (top + h > window.innerHeight - 12) top = Math.max(12, anchorRect.top - h - 6);
+    dialog.style.left = `${Math.max(12, left)}px`;
+    dialog.style.top = `${top}px`;
+    input.focus();
+}
+
 function hideButton() {
     if (button) button.hidden = true;
     if (polishButton) polishButton.hidden = true;
+    if (askButton) askButton.hidden = true;
     currentRange = null;
 }
 
@@ -195,6 +289,7 @@ function placeButton(range) {
     // off the window.
     if (!isAiWriteUpEnabled()) {
         if (polishButton) polishButton.hidden = true;
+        if (askButton) askButton.hidden = true;
         return;
     }
     const polish = ensurePolishButton();
@@ -205,6 +300,16 @@ function placeButton(range) {
     if (polishLeft + polishWidth > window.innerWidth - 8) polishLeft = saveLeft - polishWidth - 6;
     polish.style.left = `${Math.max(8, polishLeft)}px`;
     polish.style.top = btn.style.top;
+
+    // ＋ right after Polish (or before it, at the window's edge).
+    const ask = ensureAskButton();
+    ask.hidden = false;
+    const placedLeft = Math.max(8, polishLeft);
+    const askWidth = ask.offsetWidth || 28;
+    let askLeft = placedLeft + polishWidth + 4;
+    if (askLeft + askWidth > window.innerWidth - 8) askLeft = Math.min(saveLeft, placedLeft) - askWidth - 4;
+    ask.style.left = `${Math.max(8, askLeft)}px`;
+    ask.style.top = btn.style.top;
 }
 
 function onSelectionChanged() {

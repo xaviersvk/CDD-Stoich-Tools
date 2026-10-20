@@ -12,6 +12,7 @@ import {
     cleanDictationAnswer,
     looksUntranslated,
     sectionContext,
+    withHouseRules,
 } from "../src/content/features/ai-write-up/model.js";
 
 // The shape of /vaults/<v>/eln/v2/entries/<id> → eln_entry, trimmed to what
@@ -180,4 +181,23 @@ test("both prompts end with the order to answer in English", () => {
     const rows = tableRowsFromEntry(entry());
     assert.match(buildMessages("text", rows)[1].content, /must be in English[^\n]*$/);
     assert.match(buildDictationMessages("text", rows)[1].content, /Reply in English only\.$/);
+});
+
+test("nothing about the structure reaches the prompt — no MW", () => {
+    const content = buildMessages("t", tableRowsFromEntry(entry()))[1].content;
+    assert.ok(!/MW|138\.122/.test(content));
+});
+
+test("house rules that are on join the system prompt; none leaves it as it was", () => {
+    const messages = buildDictationMessages("text");
+    assert.equal(withHouseRules(messages, []), messages);
+    const [system, user] = withHouseRules(messages, ["Write room temperature as rt.", " "]);
+    assert.match(system.content, /HOUSE RULES — always follow these:\n- Write room temperature as rt\.$/);
+    assert.equal(user, messages[1]);
+});
+
+test("a Polish + instruction comes after the text, and the last line says to follow it", () => {
+    const [, user] = buildDictationMessages("text", { instruction: "make it a bullet list" });
+    assert.ok(user.content.includes(["EXTRA INSTRUCTION FOR THIS TEXT", "make it a bullet list"].join("\n")));
+    assert.match(user.content, /following the extra instruction\. Reply in English only\.$/);
 });

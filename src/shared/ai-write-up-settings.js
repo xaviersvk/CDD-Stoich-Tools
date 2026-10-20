@@ -1,5 +1,6 @@
 // shared/ai-write-up-settings.js — the Write-up tab's settings: on/off, the
-// CERIT API key, the chat model and the dictation language. DOM-free; the
+// CERIT API key, the chat model, the dictation language, how long to wait
+// for an answer, and the house rules sent with every request. DOM-free; the
 // options page uses the async pair, the content script the sync cache.
 //
 // The KEY is used by background.js only, which makes every request to CERIT.
@@ -20,7 +21,43 @@ export const AI_LANGUAGES = [
     ["en", "English"],
 ];
 
-const DEFAULTS = { enabled: false, apiKey: "", model: AI_DEFAULT_MODEL, language: "sk" };
+// How long a request may take before it is given up, in seconds.
+export const AI_TIMEOUT_DEFAULT_S = 180;
+export const AI_TIMEOUT_MIN_S = 15;
+export const AI_TIMEOUT_MAX_S = 1800;
+
+// House rules: instructions added to every prompt, each switched on or off.
+// These start the list, all off; people add their own.
+export const AI_DEFAULT_RULES = [
+    "Write room temperature as rt.",
+    "Give temperatures in °C and times in h or min.",
+    "Give yields to one decimal place, e.g. 78.4 %.",
+    "Use the usual solvent abbreviations: EtOAc, DCM, MeOH, THF, DMF, MeCN.",
+    "Write equivalents as equiv.",
+    "Never use the first person.",
+].map((text, i) => ({ id: `default-${i + 1}`, text, on: false }));
+
+const DEFAULTS = {
+    enabled: false,
+    apiKey: "",
+    model: AI_DEFAULT_MODEL,
+    language: "sk",
+    timeoutS: AI_TIMEOUT_DEFAULT_S,
+    rules: AI_DEFAULT_RULES,
+};
+
+function normalizeTimeout(value) {
+    const n = Math.round(Number(value));
+    if (!Number.isFinite(n)) return DEFAULTS.timeoutS;
+    return Math.min(AI_TIMEOUT_MAX_S, Math.max(AI_TIMEOUT_MIN_S, n));
+}
+
+function normalizeRules(value) {
+    if (!Array.isArray(value)) return DEFAULTS.rules.map((r) => ({ ...r }));
+    return value
+        .filter((r) => r && typeof r.text === "string" && r.text.trim())
+        .map((r, i) => ({ id: String(r.id || `rule-${i + 1}`), text: r.text.trim(), on: r.on === true }));
+}
 
 function normalize(raw) {
     const value = raw && typeof raw === "object" ? raw : {};
@@ -29,6 +66,8 @@ function normalize(raw) {
         apiKey: typeof value.apiKey === "string" ? value.apiKey.trim() : "",
         model: typeof value.model === "string" && value.model ? value.model : DEFAULTS.model,
         language: AI_LANGUAGES.some(([code]) => code === value.language) ? value.language : DEFAULTS.language,
+        timeoutS: value.timeoutS == null ? DEFAULTS.timeoutS : normalizeTimeout(value.timeoutS),
+        rules: normalizeRules(value.rules),
     };
 }
 
@@ -52,7 +91,7 @@ export async function saveAiSettings(patch) {
 
 // ---- content-script cache (no key) ----
 
-let cached = { enabled: false, hasKey: false, language: DEFAULTS.language };
+let cached = { enabled: false, hasKey: false, language: DEFAULTS.language, rules: [] };
 let listenerAttached = false;
 const changeListeners = new Set();
 
@@ -61,6 +100,8 @@ function publicView(settings) {
         enabled: settings.enabled,
         hasKey: !!settings.apiKey,
         language: settings.language,
+        // Only the texts of the rules that are on — what the prompts add.
+        rules: settings.rules.filter((r) => r.on).map((r) => r.text),
     };
 }
 
@@ -112,6 +153,7 @@ export function aiErrorMessage(result) {
         case "auth":
             return "Check the API key in Settings → AI write-up — CERIT refused it.";
         case "timeout":
+            return "CERIT did not answer in time — try again, or wait longer: Settings → AI write-up.";
         case "network":
             return "CERIT did not answer — try again.";
         case "cancelled":

@@ -37,6 +37,7 @@ import {
     ENTRY_CONTEXT_CHARS,
     buildDictationMessages,
     cleanDictationAnswer,
+    withHouseRules,
     looksUntranslated,
     sectionContext,
     tableRowsFromEntry,
@@ -176,16 +177,22 @@ async function runDictation(blob, origin, entryText, entryKey) {
 // English → a card. `sourceLabel` names the original on the card ("Heard",
 // "Selected"). A selection may already be English, so for it an answer that
 // matches the source is fine; only one still in Slovak/Czech is refused.
-async function toEnglishCard({ source, sourceLabel, label, rows, mentions, entryText, entryKey, mayBeEnglish = false }) {
+async function toEnglishCard({
+    source, sourceLabel, label, rows, mentions, entryText, entryKey, instruction = "", mayBeEnglish = false,
+}) {
     step("translating", `${sourceLabel}: “${source}”`);
     const answer = await chrome.runtime.sendMessage({
         type: AI_CHAT_MESSAGE,
         id: crypto.randomUUID(),
-        messages: buildDictationMessages(source, {
-            rows,
-            entryText,
-            mentionBlock: mentionPromptBlock(mentions),
-        }),
+        messages: withHouseRules(
+            buildDictationMessages(source, {
+                rows,
+                entryText,
+                mentionBlock: mentionPromptBlock(mentions),
+                instruction,
+            }),
+            getAiWriteUpView().rules
+        ),
     });
     if (!answer?.ok) return step("idle", `${aiErrorMessage(answer)} ${sourceLabel}: “${source}”`);
 
@@ -196,7 +203,7 @@ async function toEnglishCard({ source, sourceLabel, label, rows, mentions, entry
         return step("idle", `${aiErrorMessage({ error: "untranslated", model: answer.model })} ${sourceLabel}: “${source}”`);
     }
     cards = [
-        { entryKey, segments: splitMentions(english, mentions), source, sourceLabel, label },
+        { entryKey, segments: splitMentions(english, mentions), source, sourceLabel, label, instruction: instruction.trim() },
         ...cards,
     ].slice(0, MAX_CARDS);
     step("idle", "");
@@ -205,10 +212,11 @@ async function toEnglishCard({ source, sourceLabel, label, rows, mentions, entry
 /**
  * Polish on a selection (phrases/capture.js): the selected text → a
  * "Selection" card, with every table of the entry and the section the
- * selection starts in (`blockEl`) as context. Ignored while a recording or
+ * selection starts in (`blockEl`) as context, and `instruction` — Polish +,
+ * what to do with it instead of a plain polish. Ignored while a recording or
  * another polish is running.
  */
-export async function polishSelection(text, blockEl) {
+export async function polishSelection(text, blockEl, instruction = "") {
     if (state.phase !== "idle" || !text.trim()) return;
     if (!getAiWriteUpView().hasKey) return step("idle", aiErrorMessage({ error: "no-key" }));
     const entryKey = currentEntry()?.key;
@@ -223,6 +231,7 @@ export async function polishSelection(text, blockEl) {
             mentions,
             entryText: blockEl ? sectionContext(sectionAroundBlock(blockEl)) : "",
             entryKey,
+            instruction,
             mayBeEnglish: true,
         });
     } catch (err) {
@@ -297,6 +306,12 @@ function cardNode(card) {
     heard.textContent = `${card.sourceLabel}: “${card.source}”`;
 
     box.append(head, text, heard);
+    if (card.instruction) {
+        const asked = document.createElement("div");
+        asked.className = "cdd-wu-heard";
+        asked.textContent = `Asked: ${card.instruction}`;
+        box.append(asked);
+    }
     return box;
 }
 

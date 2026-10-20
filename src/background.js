@@ -36,7 +36,10 @@ const AI_SETTINGS_STORAGE_KEY = "cddAiWriteUp";
 const AI_BASE = "https://llm.ai.e-infra.cz/v1";
 const AI_DEFAULT_MODEL = "mini";
 const AI_TRANSCRIBE_MODEL = "whisper-large-v3";
-const AI_TIMEOUT_MS = 180_000;
+// Settings → AI write-up → "Wait for an answer"; same bounds as the settings module.
+const AI_TIMEOUT_DEFAULT_S = 180;
+const AI_TIMEOUT_MIN_S = 15;
+const AI_TIMEOUT_MAX_S = 1800;
 
 // Request id → AbortController, so the panel's Cancel can stop a request.
 const inFlight = new Map();
@@ -47,13 +50,14 @@ async function aiSettings() {
     return {
         apiKey: typeof value.apiKey === "string" ? value.apiKey.trim() : "",
         model: value.model || AI_DEFAULT_MODEL,
+        timeoutMs: 1000 * Math.min(AI_TIMEOUT_MAX_S, Math.max(AI_TIMEOUT_MIN_S, Number(value.timeoutS) || AI_TIMEOUT_DEFAULT_S)),
     };
 }
 
 // One shape for every failure, so the panel and the options page word them
 // the same way: no-key | permission | auth | timeout | cancelled | network | http.
 async function aiRequest(id, path, init, apiKeyOverride) {
-    const { apiKey: storedKey } = await aiSettings();
+    const { apiKey: storedKey, timeoutMs } = await aiSettings();
     const apiKey = apiKeyOverride || storedKey;
     if (!apiKey) return { ok: false, error: "no-key" };
 
@@ -65,7 +69,7 @@ async function aiRequest(id, path, init, apiKeyOverride) {
     const timer = setTimeout(() => {
         timedOut = true;
         controller.abort();
-    }, AI_TIMEOUT_MS);
+    }, timeoutMs);
     if (id) inFlight.set(id, controller);
 
     try {

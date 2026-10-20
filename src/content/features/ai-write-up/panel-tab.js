@@ -23,6 +23,7 @@ import {
     parseLlmJson,
     buildChecks,
     looksUntranslated,
+    withHouseRules,
 } from "./model.js";
 import { currentEntry, entryUrl, fetchEntry, textFromEditor } from "./entry.js";
 import { mountDictation, refreshDictation } from "./dictation.js";
@@ -162,7 +163,7 @@ async function polish() {
         const answer = await chrome.runtime.sendMessage({
             type: AI_CHAT_MESSAGE,
             id,
-            messages: buildMessages(text, rows, mentionPromptBlock(mentions)),
+            messages: withHouseRules(buildMessages(text, rows, mentionPromptBlock(mentions)), getAiWriteUpView().rules),
         });
         if (!answer?.ok) {
             setStatus(aiErrorMessage(answer));

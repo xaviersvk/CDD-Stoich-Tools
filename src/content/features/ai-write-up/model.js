@@ -212,8 +212,10 @@ Do two things and answer with ONE JSON object only, no prose around it:
 JSON shape: {"text": "...", "amounts": [...], "product": {...}|null, "notMentioned": [...], "notes": [...]}`;
 
 function tableLine(r) {
+    // Nothing about the structure goes to the model — no SMILES, mol file or
+    // MW (the yield is calculated here, not by the model): names, amounts,
+    // equivalents.
     const parts = [`Row ${r.row}`, r.name, r.role || "row"];
-    if (r.mw != null) parts.push(`MW ${r.mw}`);
     if (r.sampleG != null) parts.push(`sample ${formatIn(r.sampleG, "mg", 1e-3)}`);
     if (r.massG != null) parts.push(formatIn(r.massG, "mg", 1e-3));
     if (r.volumeL != null) parts.push(formatIn(r.volumeL, "mL", 1e-3));
@@ -284,7 +286,7 @@ export function sectionContext(text, maxChars = SECTION_CONTEXT_CHARS) {
  * read, so the order to translate is repeated after the dictation, not only
  * in the system prompt.
  */
-export function buildDictationMessages(transcript, { rows = [], entryText = "", mentionBlock = "" } = {}) {
+export function buildDictationMessages(transcript, { rows = [], entryText = "", mentionBlock = "", instruction = "" } = {}) {
     const context = [];
     if (rows.length) context.push(["STOICHIOMETRY TABLE", ...rows.map(tableLine)].join(NL));
     if (entryText.trim()) context.push(["ENTRY TEXT BEFORE THE DICTATION", entryText.trim()].join(NL));
@@ -292,11 +294,29 @@ export function buildDictationMessages(transcript, { rows = [], entryText = "", 
     if (context.length) parts.push("CONTEXT (for understanding only — do not translate or repeat it)", ...context);
     if (mentionBlock) parts.push(mentionBlock);
     parts.push(["DICTATION", transcript].join(NL));
-    parts.push("Translate only the DICTATION above into English lab-notebook prose. Reply in English only.");
+    // Polish + on a selection: what the chemist wants done with it.
+    if (instruction.trim()) {
+        parts.push(["EXTRA INSTRUCTION FOR THIS TEXT", instruction.trim()].join(NL));
+        parts.push("Rewrite only the DICTATION above in English, following the extra instruction. Reply in English only.");
+    } else {
+        parts.push("Translate only the DICTATION above into English lab-notebook prose. Reply in English only.");
+    }
     return [
         { role: "system", content: DICTATION_PROMPT },
         { role: "user", content: parts.join(NL + NL) },
     ];
+}
+
+/**
+ * Settings → AI write-up → House rules: the ones switched on, added to the
+ * system prompt of any request built above.
+ */
+export function withHouseRules(messages, rules = []) {
+    const list = rules.map((r) => String(r).trim()).filter(Boolean);
+    if (!list.length) return messages;
+    return messages.map((m) => (m.role === "system"
+        ? { ...m, content: [m.content, "", "HOUSE RULES — always follow these:", ...list.map((r) => `- ${r}`)].join(NL) }
+        : m));
 }
 
 // Slovak and Czech letters English never uses. An answer that still carries

@@ -23,7 +23,8 @@ function paint(btn) {
     const mine = state.origin?.reactionIndex === Number(btn.dataset.reactionIndex);
     btn.textContent = mine ? dictationLabel("🎤") : "🎤";
     btn.classList.toggle(`${BTN_CLASS}--active`, mine && state.phase !== "idle");
-    btn.disabled = state.phase !== "idle" && !(mine && state.phase === "recording");
+    // Busy, the button that started it cancels; the others wait.
+    btn.disabled = state.phase !== "idle" && !mine;
 }
 
 function paintAll() {

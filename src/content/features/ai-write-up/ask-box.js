@@ -68,7 +68,7 @@ export function mountAskBox() {
         const state = getDictationState();
         const mine = typeof state.origin?.onText === "function";
         mic.textContent = mine ? dictationLabel("🎤") : "🎤";
-        mic.disabled = state.phase !== "idle" && !(mine && state.phase === "recording");
+        mic.disabled = state.phase !== "idle" && !mine;
         askButton.disabled = state.phase !== "idle";
     };
     unsubscribe?.();

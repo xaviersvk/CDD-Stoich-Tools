@@ -24,46 +24,12 @@
 // CDD creates the feature when the fragment is pasted. A reaction row's
 // mention points at "#attached_structures/<structure>%23reaction_components/
 // <n>" within the entry — n counts the reaction's rows in table order,
-// products left out (model.js) — and its label is CDD's "name (amount, mol)".
+// products left out (model.js) — and it shows the name only.
 
 const NL = "\n";
 // [[R3]] / [[L1]] — an entity; [[?temperature]] — a fact the text is missing.
 const TOKEN = /\[\[(?:([RL])(\d+)|\?([^\][\n]{1,40}))\]\]/g;
 const MAX_PLACEHOLDERS = 8;
-
-// ---------------------------------------------------------------- labels
-
-function sig3(n) {
-    return n >= 100 ? n.toFixed(0) : Number(n.toPrecision(3)).toString();
-}
-
-function massText(grams) {
-    if (grams == null) return "";
-    return grams >= 1 ? `${sig3(grams)} g` : `${sig3(grams * 1e3)} mg`;
-}
-
-function molText(mol) {
-    if (mol == null) return "";
-    if (mol >= 1) return `${sig3(mol)} mol`;
-    if (mol >= 1e-3) return `${sig3(mol * 1e3)} mmol`;
-    return `${sig3(mol * 1e6)} µmol`;
-}
-
-function volumeText(litres) {
-    if (litres == null) return "";
-    return litres >= 1e-3 ? `${sig3(litres * 1e3)} mL` : `${sig3(litres * 1e6)} µL`;
-}
-
-/**
- * CDD's label for a reaction row: "ab123 (20 mg, 14.5 µmol)", a liquid by
- * its volume ("pyridine (25.6 mL, 318 mmol)"). Only used when the entry has
- * no mention of the row yet — otherwise CDD's own label is reused.
- */
-export function rowMentionLabel(row) {
-    const amount = row.sampleText || (row.volumeL != null ? volumeText(row.volumeL) : massText(row.massG));
-    const amounts = [amount, molText(row.mol)].filter(Boolean);
-    return amounts.length ? `${row.name} (${amounts.join(", ")})` : row.name;
-}
 
 // Link features of the entry by their target id.
 function linkFeatures(elnEntry) {
@@ -88,18 +54,20 @@ export function entityMentions(rows, elnEntry, entryUrl) {
         if (row.component == null || row.structureId == null || row.displayName === "Unnamed") continue;
         const id = `#attached_structures/${row.structureId}%23reaction_components/${row.component}`;
         const known = existing.get(id);
-        // `label` is what gets pasted and may use the IUPAC name (local);
-        // `promptLabel` is what the model is told, and never does. A mention
-        // already in the entry is in the entry's text anyway.
-        const label = known?.defaultLabel || rowMentionLabel({ ...row, name: row.displayName });
-        const promptLabel = known?.defaultLabel || rowMentionLabel(row);
+        // A row's mention shows the NAME only: the token stands for the name,
+        // and the amounts after it stay as the text wrote them — a label with
+        // the table's "(20 mg, …)" would swap the chemist's numbers for the
+        // table's. `label` (pasted) may be the IUPAC name, which is local;
+        // `promptLabel` (sent) never is.
+        const label = row.displayName;
+        const promptLabel = row.name !== "Unnamed" ? row.name : `row ${row.row}`;
         mentions.push({
             token: `R${row.row}`,
             label,
             promptLabel,
             names: [...(row.name !== "Unnamed" ? [row.name] : []), ...(row.aliases || [])],
             data: known
-                ? { ...known, href: known.href || `${entryUrl}${id}` }
+                ? { ...known, href: known.href || `${entryUrl}${id}`, display: "defaultLabel", defaultLabel: label, label }
                 : {
                     dataVersion: 1,
                     id,
@@ -143,8 +111,8 @@ export function entityMentions(rows, elnEntry, entryUrl) {
 export function mentionPromptBlock(mentions) {
     if (!mentions.length) return "";
     return [
-        "ENTITY TOKENS — where your English names one of these, write its token instead of the name",
-        "(and instead of the amounts in brackets after it: the token prints as the label shown). Use only these tokens.",
+        "ENTITY TOKENS — where your English names one of these, write its token instead of the name.",
+        "Keep any amounts the text gives after the name, as written. Use only these tokens.",
         ...mentions.map((m) => `[[${m.token}]] = ${m.promptLabel ?? m.label}`),
     ].join(NL);
 }

@@ -10,6 +10,8 @@ import {
     buildChecks,
     buildDictationMessages,
     buildAskMessages,
+    lostQuantities,
+    answerText,
     cleanDictationAnswer,
     looksUntranslated,
     sectionContext,
@@ -273,4 +275,48 @@ test("Ask sends the whole entry as background and asks only for what the request
 test("Ask on an empty entry says so instead of sending nothing", () => {
     const [, user] = buildAskMessages("write a summary");
     assert.ok(user.content.includes("(the entry has no text yet)"));
+});
+
+test("a whole number is not a ±50 % licence: 1 equiv vs 1.4 in the table is flagged", () => {
+    const rows = tableRowsFromEntry(entry());
+    rows[1].eq = 1.4;
+    assert.deepEqual(buildChecks({ amounts: [{ row: 2, eq: "1 equiv" }] }, rows).map((c) => c.kind), ["mismatch"]);
+    rows[1].eq = 1.03;
+    assert.deepEqual(buildChecks({ amounts: [{ row: 2, eq: "1 equiv" }] }, rows), []);
+});
+
+test("the yield uses the product's own reaction and its row marked limiting, or none", () => {
+    const rows = [
+        // Step 1: limiting reactant 1 mmol.
+        { row: 1, reaction: 1, role: "reactant", limiting: true, mol: 0.001, eq: 1 },
+        // Step 2: product 2 needs its own limiting row, 0.5 mmol, and is 2 equiv.
+        { row: 2, reaction: 2, role: "reagent", limiting: true, mol: 0.0005, eq: 1 },
+        { row: 3, reaction: 2, role: "product", mw: 100, eq: 2 },
+    ];
+    // 50 mg / 100 = 0.5 mmol of 1 mmol theoretical (0.5 × 2) = 50 %.
+    assert.deepEqual(buildChecks({ product: { row: 3, mass: "50 mg" } }, rows), [
+        { kind: "yield", label: "Yield", text: null, table: "50 %" },
+    ]);
+    rows[1].limiting = false;
+    assert.deepEqual(buildChecks({ product: { row: 3, mass: "50 mg" } }, rows), []);
+});
+
+test("numbers the English dropped are found; unit changes are not losses", () => {
+    assert.deepEqual(
+        lostQuantities("Pridali sme 0,5 g látky, 25 mg katalyzátora a 3 ekv. bázy, 80 °C, 2 h.", "0.5 g (500 mg) of the compound and 3 equiv of base were heated at 80 °C for 2 hours."),
+        [{ kind: "lost", text: "25 mg" }]
+    );
+    assert.deepEqual(lostQuantities("no numbers here", "none"), []);
+});
+
+test("the English comes out of broken JSON, and raw JSON is never shown", () => {
+    assert.equal(answerText('{"text": "Line \\"one\\".\nTwo", "amounts": ['), 'Line "one".\nTwo');
+    assert.equal(answerText('{"amounts": ['), "");
+    assert.equal(answerText("Plain English."), "Plain English.");
+});
+
+test("an English dictation the model leaves as it was is accepted", () => {
+    const heard = "The mixture was stirred at room temperature overnight.";
+    assert.equal(looksUntranslated(heard, heard), false);
+    assert.equal(looksUntranslated("Pridali sme 20 mg a miesali cez noc.", ""), true);
 });

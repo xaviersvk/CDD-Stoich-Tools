@@ -5,7 +5,8 @@
 //
 // One bullet per finding, most important first. The dot's colour says how
 // much it matters — the text stays one colour:
-//   fix   (red)   text and table disagree in the numbers
+//   fix   (red)   text and table disagree in the numbers, or the English
+//                 dropped a number that was written
 //   add   (amber) something to fill in or mention
 //   note  (blue)  advice, a calculated value nobody stated
 
@@ -19,18 +20,26 @@ const SEVERITY_ORDER = { fix: 0, add: 1, note: 2 };
  * that has nothing to report says nothing.
  */
 function checkItems({ checks, hasTable, segments }, { quiet }) {
+    const placeholders = segments.filter((s) => s.placeholder).map((s) => s.placeholder.what.toLowerCase());
     const items = unfilledPlaceholders(segments).map((what) => ["add", "Fill in the ", [what]]);
+    // A lost number is about the text, table or no table.
+    for (const c of checks || []) {
+        if (c.kind === "lost") items.push(["fix", "Put back ", [c.text], " — the English dropped it"]);
+    }
+    // "Add the temperature" next to a temperature slot says it twice.
+    const repeatsSlot = (message) => placeholders.some((what) => message.toLowerCase().includes(what));
     if (!hasTable) {
         if (!quiet) items.push(["note", "No stoichiometry table in this entry — text polished only."]);
     } else if (checks == null) {
         if (!quiet) items.push(["note", "Checks unavailable — the answer had no readable data. Polish again."]);
     } else {
         for (const c of checks) {
+            if (c.kind === "lost") continue;
             if (c.kind === "mismatch") items.push(["fix", [c.label], ` text ${c.text} · table ${c.table}`]);
             else if (c.kind === "yield" && c.text != null) items.push(["fix", [c.label], ` text ${c.text} · calculated ${c.table}`]);
             else if (c.kind === "yield") items.push(["note", [c.label], ` calculated ${c.table} — add it to the text`]);
             else if (c.kind === "missing") items.push(["add", "Mention ", [c.label], " in the text"]);
-            else if (c.kind === "note") items.push(["note", c.message]);
+            else if (c.kind === "note" && !repeatsSlot(c.message)) items.push(["note", c.message]);
         }
     }
     if (!quiet && !items.length && hasTable && checks != null) items.push(["note", "Text and table agree."]);

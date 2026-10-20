@@ -13,6 +13,14 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 19.1.0 — 2026-10-20
+
+Ask the AI about the whole entry — "add a workup paragraph: 3× EtOAc", "what is missing before the purification?" — from the new field in the panel's *Write-up* tab.
+
+- Checks now flag a number the English dropped, and check whole numbers like "1 equiv" to 5 %.
+- The yield comes from the product's own reaction; mentions keep the amounts you wrote.
+- A failed dictation stays on a card with **Retry**; click the busy 🎤 to cancel.
+
 ## 19.0.0 — 2026-10-20
 
 Dictate or select ELN text in Slovak, Czech or English and get polished English back, checked against the stoichiometry table. Switch it on in *Settings → AI write-up* with your CERIT-SC API key.

@@ -19,6 +19,41 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [19.1.0] — 2026-10-20
+
+### Added
+- **Ask about this entry** — a field in the Write-up tab (typed, or 🎤
+  dictated into the field) whose request goes with the whole entry, every
+  table and the text, as background (`buildAskMessages`). The model returns
+  only what was asked for — new text or an answer, never the entry
+  rewritten — as JSON like a dictation's, so the "Ask" card gets mentions,
+  placeholders and Checks.
+- **Lost numbers** (`lostQuantities`): every number with a unit written in
+  the source (entry text, transcript, selection) must still be in the
+  English, compared by value (0.5 g = 500 mg; °C, h, min, %, equiv/ekv).
+  A missing one is a red "Put back 25 mg". Not for Ask.
+- Dictation can be cancelled: the busy 🎤 (✕ on its label) cancels the
+  transcription or the chat request. A chat request that fails leaves a
+  "… — not translated" card holding what was heard or selected, with Retry.
+
+### Changed
+- Tolerance: the text's rounding counts at most 5 % of the value — "1 equiv"
+  stood for 0.5–1.5 and hid real differences.
+- Yield: from the product's own reaction and its row marked limiting
+  (reactant or reagent), scaled by product and limiting equivalents; with no
+  limiting row marked, no yield is shown instead of a guess.
+- Row mentions show the name only. A token used to print the table's
+  "(20 mg, …)" and so replaced the amounts the text gave; the model is now
+  told to keep them. An existing mention's data is reused with the name.
+- Requests ask for `response_format: json_object` (retried without it on a
+  400). The English is dug out of JSON that does not parse; a raw `{…` is
+  never shown as text.
+- An answer equal to its source is no longer refused as untranslated (an
+  English dictation may need no change); refusal is for Slovak/Czech left in
+  it, now also recognised by common words when diacritics are missing.
+- Notes that repeat a placeholder ("Add the temperature" next to a
+  temperature slot) are dropped, and the prompts ask for that too.
+
 ## [19.0.0] — 2026-10-20
 
 ### Added

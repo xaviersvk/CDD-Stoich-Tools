@@ -24,10 +24,12 @@ import {
     buildChecks,
     looksUntranslated,
     withHouseRules,
+    lostQuantities,
+    answerText,
 } from "./model.js";
 import { currentEntry, entryUrl, fetchEntry, textFromEditor } from "./entry.js";
 import { mountDictation, newestCardAt, onDictationChanged, refreshDictation } from "./dictation.js";
-import { entityMentions, mentionPromptBlock, mentionsToDom, splitMentions } from "./mentions.js";
+import { entityMentions, mentionPromptBlock, mentionsToDom, mentionsToPlain, splitMentions } from "./mentions.js";
 import { checksList } from "./checks-view.js";
 import { mountAskBox, ASK_BOX_STYLES } from "./ask-box.js";
 import { answerMeta, cardActions, copyParagraphOnCtrlClick } from "./copy-button.js";
@@ -163,16 +165,18 @@ async function polish() {
         }
 
         const parsed = parseLlmJson(answer.content);
-        // An answer that is not JSON is most likely the text itself.
-        const english = typeof parsed?.text === "string" ? parsed.text.trim() : parsed ? "" : answer.content.trim();
+        const english = answerText(answer.content, parsed).trim();
         const at = Date.now();
+        const segments = splitMentions(english, mentions);
+        // Numbers the rewrite dropped, whether or not the JSON came through.
+        const lost = english ? lostQuantities(text, mentionsToPlain(segments)) : [];
         result = {
             entryKey: entry.key,
             at,
             tookMs: at - startedAt,
             model: answer.model,
-            segments: splitMentions(english, mentions),
-            checks: parsed ? buildChecks(parsed, rows) : null,
+            segments,
+            checks: parsed ? [...lost, ...buildChecks(parsed, rows)] : lost.length ? lost : null,
             hasTable: rows.length > 0,
         };
         setStatus(english && looksUntranslated(english, text)

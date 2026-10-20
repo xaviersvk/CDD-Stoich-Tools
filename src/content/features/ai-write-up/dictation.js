@@ -32,13 +32,15 @@ import {
     getAiWriteUpView,
     saveAiSettings,
 } from "../../../shared/ai-write-up-settings.js";
-import { AI_CHAT_MESSAGE, AI_TRANSCRIBE_MESSAGE } from "../../../shared/event-types.js";
+import { AI_CANCEL_MESSAGE, AI_CHAT_MESSAGE, AI_TRANSCRIBE_MESSAGE } from "../../../shared/event-types.js";
 import {
     ENTRY_CONTEXT_CHARS,
     buildAskMessages,
     buildChecks,
     buildDictationMessages,
     cleanDictationAnswer,
+    lostQuantities,
+    answerText,
     parseLlmJson,
     withHouseRules,
     looksUntranslated,
@@ -46,7 +48,7 @@ import {
     tableRowsFromEntry,
 } from "./model.js";
 import { currentEntry, entryUrl, fetchEntry, sectionAroundBlock, textFromEditor } from "./entry.js";
-import { entityMentions, mentionPromptBlock, mentionsToDom, splitMentions } from "./mentions.js";
+import { entityMentions, mentionPromptBlock, mentionsToDom, mentionsToPlain, splitMentions } from "./mentions.js";
 import { answerMeta, cardActions, copyParagraphOnCtrlClick } from "./copy-button.js";
 import { checksList } from "./checks-view.js";
 
@@ -65,6 +67,13 @@ let tick = null;
 // [{ entryKey, segments, source, sourceLabel, label }], newest first. Module state, not
 // DOM: the pane is rebuilt when the panel is.
 let cards = [];
+// The request out at CERIT right now — a click on the busy button cancels it.
+let requestId = null;
+
+function newRequestId() {
+    requestId = crypto.randomUUID();
+    return requestId;
+}
 
 function setState(patch) {
     state = { ...state, ...patch };
@@ -97,9 +106,9 @@ export function dictationLabel(idleLabel) {
         case "recording":
             return `■ Stop ${clock(state.since)}`;
         case "transcribing":
-            return `⏳ Transcribing… ${clock(state.since)}`;
+            return `⏳ Transcribing… ${clock(state.since)} ✕`;
         case "translating":
-            return `⏳ Translating… ${clock(state.since)}`;
+            return `⏳ Translating… ${clock(state.since)} ✕`;
         default:
             return idleLabel;
     }
@@ -155,7 +164,7 @@ async function runDictation(blob, origin, entryText, entryKey) {
         const [heard, { rows, mentions }] = await Promise.all([
             chrome.runtime.sendMessage({
                 type: AI_TRANSCRIBE_MESSAGE,
-                id: crypto.randomUUID(),
+                id: newRequestId(),
                 audio: toBase64(await blob.arrayBuffer()),
                 mimeType: blob.type || "audio/webm",
                 language: getAiWriteUpView().language,
@@ -195,10 +204,11 @@ async function runDictation(blob, origin, entryText, entryKey) {
 // for them an answer unlike the source is fine; only one still in
 // Slovak/Czech is refused. `ask`: the source is a request about the entry
 // (buildAskMessages), not text to translate.
-async function toEnglishCard({
-    source, sourceLabel, label, rows, mentions, entryText, entryKey, startedAt,
-    instruction = "", mayBeEnglish = false, askMissing = false, ask = false,
-}) {
+async function toEnglishCard(args) {
+    const {
+        source, sourceLabel, label, rows, mentions, entryText, entryKey, startedAt,
+        instruction = "", mayBeEnglish = false, askMissing = false, ask = false,
+    } = args;
     step("translating", `${sourceLabel}: “${source}”`);
     const mentionBlock = mentionPromptBlock(mentions);
     const messages = ask
@@ -206,30 +216,58 @@ async function toEnglishCard({
         : buildDictationMessages(source, { rows, entryText, mentionBlock, instruction, askMissing });
     const answer = await chrome.runtime.sendMessage({
         type: AI_CHAT_MESSAGE,
-        id: crypto.randomUUID(),
+        id: newRequestId(),
         messages: withHouseRules(messages, getAiWriteUpView().rules),
     });
-    if (!answer?.ok) return step("idle", `${aiErrorMessage(answer)} ${sourceLabel}: “${source}”`);
+    if (!answer?.ok) {
+        // What was heard or selected is not lost: a card keeps it, with Retry
+        // — nobody should have to dictate it again.
+        if (answer?.error !== "cancelled") {
+            cards = [
+                {
+                    entryKey,
+                    segments: [{ text: source }],
+                    checks: null,
+                    hasTable: false,
+                    source,
+                    sourceLabel,
+                    label: `${label} — not translated`,
+                    instruction: instruction.trim(),
+                    failed: aiErrorMessage(answer),
+                    retry: () => toEnglishCard({ ...args, startedAt: Date.now() }),
+                    at: Date.now(),
+                    tookMs: Date.now() - startedAt,
+                    model: answer?.model || "",
+                },
+                ...cards,
+            ].slice(0, MAX_CARDS);
+        }
+        return step("idle", aiErrorMessage(answer));
+    }
 
     // JSON like Polish entry's: the English and what it says about the
     // table. An answer that is not JSON is most likely the English itself —
     // shown, with no Checks.
     const parsed = parseLlmJson(answer.content);
-    const english = cleanDictationAnswer(
-        typeof parsed?.text === "string" ? parsed.text : parsed ? "" : answer.content
-    );
+    const english = cleanDictationAnswer(answerText(answer.content, parsed));
     // A model that echoes the source back (small models do) is reported
     // rather than shown as if it were the translation.
     if (!english || looksUntranslated(english, mayBeEnglish ? "" : source)) {
         return step("idle", `${aiErrorMessage({ error: "untranslated", model: answer.model })} ${sourceLabel}: “${source}”`);
     }
     const at = Date.now();
+    const segments = splitMentions(english, mentions);
+    // Numbers the English dropped. Not for Ask: its answer is new text, not
+    // the request rewritten.
+    const lost = ask ? [] : lostQuantities(source, mentionsToPlain(segments));
     cards = [
         {
             entryKey,
-            segments: splitMentions(english, mentions),
+            segments,
             // notMentioned only where it was asked for: the model may add it anyway.
-            checks: parsed ? buildChecks({ ...parsed, notMentioned: askMissing ? parsed.notMentioned : [] }, rows) : null,
+            checks: parsed
+                ? [...lost, ...buildChecks({ ...parsed, notMentioned: askMissing ? parsed.notMentioned : [] }, rows)]
+                : lost.length ? lost : null,
             hasTable: rows.length > 0,
             source,
             sourceLabel,
@@ -259,6 +297,8 @@ export async function askAboutEntry(request) {
     const entryKey = currentEntry()?.key;
     const startedAt = Date.now();
     try {
+        // Not a recording: no button's own progress to show.
+        setState({ origin: null });
         step("translating", "");
         const { rows, mentions } = await tableForContext(null);
         await toEnglishCard({
@@ -299,6 +339,8 @@ export async function polishSelection(text, blockEl, instruction = "") {
     const entryKey = currentEntry()?.key;
     const startedAt = Date.now();
     try {
+        // Not a recording: no button's own progress to show.
+        setState({ origin: null });
         step("translating", "");
         const { rows, mentions } = await tableForContext(null);
         await toEnglishCard({
@@ -361,6 +403,7 @@ async function start(origin) {
 export function toggleDictation(origin = null) {
     if (state.phase === "recording") stop();
     else if (state.phase === "idle") void start(origin);
+    else if (requestId) void chrome.runtime.sendMessage({ type: AI_CANCEL_MESSAGE, id: requestId });
 }
 
 // ---------------------------------------------------------------- tab UI
@@ -374,10 +417,26 @@ function cardNode(card) {
     const title = document.createElement("div");
     title.className = "cdd-wu-card__title";
     title.textContent = card.label;
-    head.append(title, cardActions(card.segments, () => {
+    const actions = cardActions(card.segments, () => {
         cards = cards.filter((c) => c !== card);
         setState({});
-    }));
+    });
+    // A request that failed: Retry sends the same again, this card goes.
+    if (card.retry) {
+        const retry = document.createElement("button");
+        retry.type = "button";
+        retry.textContent = "Retry";
+        retry.title = "Send it to CERIT again";
+        retry.addEventListener("click", (event) => {
+            event.stopPropagation();
+            if (state.phase !== "idle") return;
+            cards = cards.filter((c) => c !== card);
+            setState({});
+            void card.retry().catch(() => step("idle", aiErrorMessage({ error: "network" })));
+        });
+        actions.prepend(retry);
+    }
+    head.append(title, actions);
 
     // Checks under the text, only when there is something to say; filling a
     // placeholder redraws them.
@@ -399,6 +458,12 @@ function cardNode(card) {
     heard.textContent = `${card.sourceLabel}: “${card.source}”`;
 
     box.append(head, text, checks, heard);
+    if (card.failed) {
+        const failed = document.createElement("div");
+        failed.className = "cdd-wu-heard";
+        failed.textContent = card.failed;
+        box.append(failed);
+    }
     if (card.instruction) {
         const asked = document.createElement("div");
         asked.className = "cdd-wu-heard";
@@ -446,9 +511,11 @@ export function mountDictation(bar, list) {
     let shown = null;
     const paint = () => {
         const busy = state.phase === "transcribing" || state.phase === "translating";
+        mic.disabled = false;
         // The tab's button shows a reaction's recording too: one microphone.
         mic.textContent = dictationLabel("🎤 Dictate");
-        mic.disabled = busy;
+        // Busy, the button cancels (✕ on its label).
+        mic.title = busy ? "Cancel" : "Dictate about the whole entry. Stop when done: the English appears below, ready to copy.";
         status.textContent = state.status || "";
         const key = currentEntry()?.key;
         if (shown?.cards !== cards || shown?.key !== key) {

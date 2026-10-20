@@ -106,13 +106,22 @@ async function listModels(apiKey) {
     return { ok: true, models };
 }
 
+// Every Write-up prompt asks for JSON, so the request says so too; a model
+// that does not take response_format answers 400, and is asked again without.
 async function chat(id, messages) {
     const { model } = await aiSettings();
-    const result = await aiRequest(id, "/chat/completions", {
+    const ask = (json) => aiRequest(id, "/chat/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model, messages, temperature: 0.2 }),
+        body: JSON.stringify({
+            model,
+            messages,
+            temperature: 0.2,
+            ...(json ? { response_format: { type: "json_object" } } : {}),
+        }),
     });
+    let result = await ask(true);
+    if (!result.ok && result.error === "http" && result.status === 400) result = await ask(false);
     if (!result.ok) return result;
     const content = result.data?.choices?.[0]?.message?.content;
     // Reasoning models can spend the whole answer thinking and return no text.

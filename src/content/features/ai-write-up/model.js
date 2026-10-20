@@ -148,6 +148,7 @@ const UNITS = {
     nmol: ["amount", 1e-9], umol: ["amount", 1e-6], "µmol": ["amount", 1e-6], "μmol": ["amount", 1e-6],
     mmol: ["amount", 1e-3], mol: ["amount", 1],
     eq: ["eq", 1], "eq.": ["eq", 1], equiv: ["eq", 1], "equiv.": ["eq", 1], equivalents: ["eq", 1],
+    ekv: ["eq", 1], "ekv.": ["eq", 1],
     "%": ["percent", 1],
 };
 
@@ -177,9 +178,14 @@ export function parseQuantity(input) {
 
 const TOLERANCE = 0.02;
 
+// The text's rounding counts, but never past 5 %: "1 equiv" stands for
+// 0.95–1.05, not 0.5–1.5.
+const MAX_ROUNDING = 0.05;
+
 function agrees(textQty, tableValue) {
     if (tableValue == null) return true;
-    const allowed = Math.max(TOLERANCE * Math.abs(tableValue), textQty.step);
+    const rounding = Math.min(textQty.step, MAX_ROUNDING * Math.abs(textQty.value));
+    const allowed = Math.max(TOLERANCE * Math.abs(tableValue), rounding);
     return Math.abs(textQty.value - tableValue) <= allowed + 1e-15;
 }
 
@@ -196,7 +202,8 @@ function formatIn(value, unit, factor) {
 const PLACEHOLDER_RULE =
     "Where a sentence needs a fact the text does not give (temperature, time, a volume, the yield…), " +
     'write a placeholder [[?short name]] in its place, e.g. "stirred at [[?temperature]] for [[?time]]". ' +
-    "Never invent the value. At most 5 placeholders, only where the sentence needs one.";
+    "Never invent the value. At most 5 placeholders, only where the sentence needs one. " +
+    "Notes must not repeat what a placeholder already asks for.";
 
 const SYSTEM_PROMPT = `You edit electronic lab notebook (ELN) entries for synthetic chemists.
 The entry may be dictated and may mix Slovak, Czech and English.
@@ -404,12 +411,22 @@ export function withHouseRules(messages, rules = []) {
 // them, or that IS the transcript, was not translated.
 const SLAVIC_LETTERS = /[áäčďéěíĺľňóôŕřšťúůýž]/i;
 
-export function looksUntranslated(answer, transcript) {
-    const squash = (s) => s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
-    if (squash(answer) === squash(transcript)) return true;
+// An answer equal to the source is fine — an English dictation may need no
+// change. Only Slovak/Czech left in it is refused. (`_source` kept for callers.)
+// Short Slovak/Czech words English never uses — a text without diacritics
+// ("pridali sme 20 mg a miesali cez noc") still shows its language by them.
+const SLAVIC_WORDS = new Set([
+    "sme", "som", "sa", "je", "sú", "su", "bol", "bola", "bolo", "boli", "pri", "cez", "pre", "na", "že", "ze",
+    "aby", "alebo", "potom", "ešte", "este", "ktorý", "ktorá", "ktoré", "jsme", "jsem", "byl", "byla", "bylo",
+    "se", "ve", "až", "az", "pak", "které", "který", "nebo", "keď", "ked", "kde",
+]);
+
+export function looksUntranslated(answer, _source) {
     const words = answer.split(/\s+/).filter(Boolean);
-    const slavic = words.filter((w) => SLAVIC_LETTERS.test(w)).length;
-    return words.length > 0 && slavic / words.length > 0.15;
+    if (!words.length) return false;
+    const bare = (w) => w.toLowerCase().replace(/[^\p{L}]/gu, "");
+    const slavic = words.filter((w) => SLAVIC_LETTERS.test(w) || SLAVIC_WORDS.has(bare(w))).length;
+    return slavic / words.length > 0.15;
 }
 
 /** The model's text with any wrapping quotes or fences taken off. */
@@ -422,6 +439,29 @@ export function cleanDictationAnswer(content) {
 }
 
 // ---------------------------------------------------------------- answer
+
+/**
+ * The English out of an answer: the JSON's "text"; failing that, the "text"
+ * string dug out of JSON that does not parse (cut off, a stray quote); and
+ * only for an answer that is not JSON at all, the answer itself. A raw "{…"
+ * is never shown as if it were the English.
+ */
+export function answerText(content, parsed = parseLlmJson(content)) {
+    if (typeof parsed?.text === "string") return parsed.text;
+    if (parsed) return "";
+    const raw = String(content || "");
+    const m = raw.match(/"text"\s*:\s*"((?:[^"\\]|\\.)*)/);
+    if (m) {
+        // A cut-off string may end inside an escape: drop a lone trailing "\".
+        const body = m[1].replace(/\\$/, "");
+        try {
+            return JSON.parse(`"${body}"`);
+        } catch {
+            return body.replace(/\\n/g, NL).replace(/\\"/g, '"');
+        }
+    }
+    return raw.trim().startsWith("{") ? "" : raw;
+}
 
 /** The first balanced {…} in the answer, fences and chatter ignored. */
 export function parseLlmJson(content) {
@@ -470,22 +510,19 @@ function amountChecks(item, row) {
     return checks;
 }
 
-function limitingMol(rows) {
-    const reactants = rows.filter((r) => r.role === "reactant" && r.mol);
-    const flagged = reactants.find((r) => r.limiting);
-    if (flagged) return flagged.mol;
-    const oneEq = reactants.find((r) => r.eq === 1);
-    if (oneEq) return oneEq.mol;
-    return reactants.length ? Math.min(...reactants.map((r) => r.mol)) : null;
-}
-
+// The yield is the product's own reaction's: its row marked limiting in the
+// table (reactant or reagent), scaled by the equivalents of both. No row
+// marked limiting — no yield; a guess here is a red dot nobody trusts.
 function yieldCheck(product, rows) {
-    const row = rows.find((r) => r.row === product?.row) || rows.find((r) => r.role === "product");
+    const row = rows.find((r) => r.row === product?.row && r.role === "product")
+        || rows.find((r) => r.role === "product");
     const mass = parseQuantity(product?.mass);
-    const limiting = limitingMol(rows);
-    if (!row?.mw || mass?.kind !== "mass" || !limiting) return [];
+    if (!row?.mw || mass?.kind !== "mass") return [];
+    const limiting = rows.find((r) => r.reaction === row.reaction && r.limiting && r.role !== "product" && r.mol);
+    if (!limiting) return [];
 
-    const calculated = (mass.value / row.mw / limiting) * 100;
+    const theoreticalMol = (limiting.mol * (row.eq || 1)) / (limiting.eq || 1);
+    const calculated = (mass.value / row.mw / theoreticalMol) * 100;
     const calcText = `${Math.round(calculated)} %`;
     const stated = parseQuantity(product?.yield);
     if (!stated || stated.kind !== "percent") {
@@ -494,6 +531,37 @@ function yieldCheck(product, rows) {
     // Percentage points, not relative: 78 vs 77 is fine, 90 vs 77 is not.
     if (Math.abs(stated.value - calculated) <= 2) return [];
     return [{ kind: "yield", label: "Yield", text: String(product.yield).trim(), table: calcText }];
+}
+
+// ---------------------------------------------------------------- lost numbers
+
+// Every number with a unit in what was written must still be in the English:
+// "keep every fact" is only a request to the model, this is the check.
+// Units are compared by value, so 0.5 g → 500 mg is the same number.
+const QUANTITY_IN_TEXT =
+    /(\d+(?:[.,]\d+)?)\s*(µg|μg|ug|mg|kg|g|µl|μl|ul|ml|l|nmol|µmol|μmol|umol|mmol|mol|equiv\.?|eq\.?|ekv\.?|%|°\s?c|hours?|hrs?|h|minutes?|mins?|min)(?![\p{L}])/giu;
+const TIME_UNITS = { hour: "h", hours: "h", hr: "h", hrs: "h", h: "h", minute: "min", minutes: "min", mins: "min", min: "min" };
+
+function quantityKeys(text) {
+    const keys = new Map();
+    for (const m of String(text || "").matchAll(QUANTITY_IN_TEXT)) {
+        const number = parseFloat(m[1].replace(",", "."));
+        const unit = m[2].toLowerCase().replace(/\s/g, "");
+        const q = parseQuantity(`${m[1]} ${m[2]}`);
+        const key = q
+            ? `${q.kind}:${Number(q.value.toPrecision(6))}`
+            : `${TIME_UNITS[unit] || unit}:${number}`;
+        if (!keys.has(key)) keys.set(key, m[0].trim());
+    }
+    return keys;
+}
+
+/** The quantities written in `source` that `english` no longer has: [{ kind: "lost", text }]. */
+export function lostQuantities(source, english) {
+    const kept = quantityKeys(english);
+    return [...quantityKeys(source)]
+        .filter(([key]) => !kept.has(key))
+        .map(([, text]) => ({ kind: "lost", text }));
 }
 
 /** The LLM's answer + the table → what the Checks card lists. */

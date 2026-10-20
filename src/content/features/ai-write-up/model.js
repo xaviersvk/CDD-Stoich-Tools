@@ -96,7 +96,9 @@ function rowNames(row) {
     const names = [row?.name, row?.sample?.name, row?.moleculeName]
         .filter((n) => typeof n === "string" && n.trim())
         .map((n) => n.trim());
-    if (!names.length && typeof row?.batch?.name === "string" && row.batch.name.trim()) names.push(row.batch.name.trim());
+    // "Unspecified Batch" is CDD's stand-in, not a name.
+    const batch = typeof row?.batch?.name === "string" ? row.batch.name.trim() : "";
+    if (!names.length && batch && !/^unspecified batch$/i.test(batch)) names.push(batch);
     return [...new Set(names)];
 }
 
@@ -210,7 +212,9 @@ const PLACEHOLDER_RULE =
     "Where a sentence needs a fact the text does not give (temperature, time, a volume, the yield…), " +
     'write a placeholder [[?short name]] in its place, e.g. "stirred at [[?temperature]] for [[?time]]". ' +
     "Never invent the value. At most 5 placeholders, only where the sentence needs one. " +
-    "Notes must not repeat what a placeholder already asks for.";
+    "Never a placeholder for what the STOICHIOMETRY TABLE or the text already gives (a mass, an amount, " +
+    "equivalents, the product's mass) — write that value. Notes must not repeat what a placeholder already asks for. " +
+    "Never add a compound the text does not mention: a table row is not an ingredient unless the text says it was used.";
 
 const SYSTEM_PROMPT = `You edit electronic lab notebook (ELN) entries for synthetic chemists.
 The entry may be dictated and may mix Slovak, Czech and English.
@@ -623,6 +627,24 @@ export function lostQuantities(source, english) {
     return [...quantityKeys(source)]
         .filter(([key]) => !kept.has(key))
         .map(([, text]) => ({ kind: "lost", text }));
+}
+
+// ---------------------------------------------------------------- slots the table answers
+
+/** The product's mass from the table, as a slot would read it — "" unless exactly one product has one. */
+export function productMassText(rows) {
+    const products = rows.filter((r) => r.role === "product" && (r.sampleText || r.massG != null));
+    if (products.length !== 1) return "";
+    const [p] = products;
+    return p.sampleText || (p.massG >= 1 ? formatIn(p.massG, "g", 1) : formatIn(p.massG, "mg", 1e-3));
+}
+
+/** The yield the table gives (product mass, limiting row), "" when it gives none. */
+export function tableYieldText(rows) {
+    const mass = productMassText(rows);
+    const product = rows.find((r) => r.role === "product" && (r.sampleText || r.massG != null));
+    if (!mass || !product) return "";
+    return yieldCheck({ row: product.row, mass }, rows)[0]?.table || "";
 }
 
 /** The LLM's answer + the table → what the Checks card lists. */

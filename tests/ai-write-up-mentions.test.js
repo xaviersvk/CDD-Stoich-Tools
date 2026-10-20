@@ -11,6 +11,7 @@ import {
     unfilledPlaceholders,
     segmentLines,
     mentionsToTokens,
+    prefillSlots,
 } from "../src/content/features/ai-write-up/mentions.js";
 
 const ENTRY_URL = "https://eu.collaborativedrug.com/vaults/1/eln/entries/2";
@@ -312,4 +313,17 @@ test("a card's English goes back to the model with its tokens and filled values"
     const segments = splitMentions("[[R1]] was stirred at [[?temperature]] for [[?time]].", mentions());
     segments.find((s) => s.placeholder?.what === "temperature").placeholder.value = "90 °C";
     assert.equal(mentionsToTokens(segments), "[[R1]] was stirred at 90 °C for [[?time]].");
+});
+
+test("slots the table answers come filled: the product's mass after 'affording', the yield", () => {
+    const segments = splitMentions(
+        "The product was isolated, affording [[?mass]] of product, a [[?yield]] yield, at [[?temperature]].",
+        []
+    );
+    prefillSlots(segments, { yieldText: "9 %", productMass: "1.2 g" });
+    assert.deepEqual(segments.filter((s) => s.placeholder).map((s) => s.placeholder.value), ["1.2 g", "9 %", ""]);
+    // A mass slot that is not about the product stays empty.
+    const other = splitMentions("The catalyst [[?mass]] was added.", []);
+    prefillSlots(other, { productMass: "1.2 g" });
+    assert.equal(other.find((s) => s.placeholder).placeholder.value, "");
 });

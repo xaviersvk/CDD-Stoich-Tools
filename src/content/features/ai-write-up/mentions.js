@@ -316,6 +316,28 @@ function placeholderText(p) {
 }
 
 /**
+ * Slots the table can answer come filled in, still editable: a yield slot
+ * with the calculated yield, a mass slot about the product ("affording
+ * [mass?] of product", "[product mass?]") with the product's mass. The model
+ * is told not to ask for these; this is for when it does anyway.
+ */
+export function prefillSlots(segments, { yieldText = "", productMass = "" } = {}) {
+    segments.forEach((seg, i) => {
+        const p = seg.placeholder;
+        if (!p || p.value.trim()) return;
+        const what = p.what.toLowerCase();
+        const before = String(segments[i - 1]?.text || "");
+        const after = String(segments[i + 1]?.text || "");
+        const aboutProduct = /product/.test(what)
+            || /^\s*of (the )?(desired |title |crude )?(product|compound)/i.test(after)
+            || /(afford(ed|ing)?|gave|giving|obtained|isolated|yield(ed|ing)?)\s*$/i.test(before);
+        if (yieldText && /yield/.test(what)) p.value = yieldText;
+        else if (productMass && /\b(mass|weight|amount)\b/.test(what) && aboutProduct) p.value = productMass;
+    });
+    return segments;
+}
+
+/**
  * The card's English as the model wrote it — mentions back as their tokens,
  * placeholders as their value or "[[?what]]" — for a Reply to revise.
  */

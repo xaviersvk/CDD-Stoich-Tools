@@ -26,10 +26,19 @@ import {
     withHouseRules,
     lostQuantities,
     answerText,
+    productMassText,
+    tableYieldText,
 } from "./model.js";
 import { currentEntry, entryUrl, fetchEntry, textFromEditor } from "./entry.js";
 import { mountDictation, newestCardAt, onDictationChanged, refreshDictation } from "./dictation.js";
-import { entityMentions, mentionPromptBlock, mentionsToDom, mentionsToPlain, splitMentions } from "./mentions.js";
+import {
+    entityMentions,
+    mentionPromptBlock,
+    mentionsToDom,
+    mentionsToPlain,
+    prefillSlots,
+    splitMentions,
+} from "./mentions.js";
 import { checksList } from "./checks-view.js";
 import { mountAskBox, ASK_BOX_STYLES } from "./ask-box.js";
 import { answerMeta, cardActions, copyParagraphOnCtrlClick } from "./copy-button.js";
@@ -169,6 +178,8 @@ async function polish() {
         const english = answerText(answer.content, parsed).trim();
         const at = Date.now();
         const segments = splitMentions(english, mentions);
+        // Slots the table answers (yield, the product's mass) come filled in.
+        prefillSlots(segments, { yieldText: tableYieldText(rows), productMass: productMassText(rows) });
         // Numbers the rewrite dropped, whether or not the JSON came through.
         const lost = english ? lostQuantities(text, mentionsToPlain(segments)) : [];
         result = {

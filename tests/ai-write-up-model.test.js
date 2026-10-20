@@ -13,6 +13,8 @@ import {
     buildReviseMessages,
     lostQuantities,
     answerText,
+    productMassText,
+    tableYieldText,
     cleanDictationAnswer,
     looksUntranslated,
     sectionContext,
@@ -354,4 +356,16 @@ test("Reply sends the draft, its open points and the reply, and asks for the dra
     assert.deepEqual([...order].sort((a, b) => a - b), order);
     assert.ok(user.content.includes("- detail workup procedure"));
     assert.match(user.content, /whole DRAFT revised with the REPLY, in English\. Reply in English only\.$/);
+});
+
+test("the table's product mass and yield, and 'Unspecified Batch' is no name", () => {
+    const rows = [
+        { row: 1, reaction: 1, role: "reactant", limiting: true, mol: 0.0402, eq: 1 },
+        { row: 2, reaction: 1, role: "product", mw: 335.2, eq: 1, sampleText: "1.2 g", massG: 1.2 },
+    ];
+    assert.equal(productMassText(rows), "1.2 g");
+    assert.equal(tableYieldText(rows), "9 %");
+    const e = entry();
+    e.feature_map[77].data.stoichiometryTable.rows.push({ role: "agent", batch: { name: "Unspecified Batch" }, mole: 0.04 });
+    assert.equal(tableRowsFromEntry(e).at(-1).name, "Unnamed");
 });

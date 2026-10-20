@@ -42,6 +42,8 @@ import {
     cleanDictationAnswer,
     lostQuantities,
     answerText,
+    productMassText,
+    tableYieldText,
     parseLlmJson,
     withHouseRules,
     looksUntranslated,
@@ -55,6 +57,7 @@ import {
     mentionsToDom,
     mentionsToPlain,
     mentionsToTokens,
+    prefillSlots,
     splitMentions,
     unfilledPlaceholders,
 } from "./mentions.js";
@@ -277,6 +280,8 @@ async function toEnglishCard(args) {
     }
     const at = Date.now();
     const segments = splitMentions(english, mentions);
+    // Slots the table answers (yield, the product's mass) come filled in.
+    prefillSlots(segments, { yieldText: tableYieldText(rows), productMass: productMassText(rows) });
     // Numbers the English dropped. Not for Ask: its answer is new text, not
     // the request rewritten.
     // A revision must keep what the draft said and add what the reply said.

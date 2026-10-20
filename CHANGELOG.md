@@ -69,6 +69,12 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 - An answer equal to its source is no longer refused as untranslated (an
   English dictation may need no change); refusal is for Slovak/Czech left in
   it, now also recognised by common words when diacritics are missing.
+- Slots the table answers come filled in (still editable): a yield slot
+  with the calculated yield, a mass slot about the product with the
+  product's mass. The prompts now forbid placeholders for what the table or
+  text gives and adding compounds the text never mentions (a reply about
+  "reactants 1 to 4" had the model list the product and empty rows).
+  "Unspecified Batch" is no longer taken for a compound name.
 - Notes that repeat a placeholder ("Add the temperature" next to a
   temperature slot) are dropped, and the prompts ask for that too.
 

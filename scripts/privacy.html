@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Privacy — CDD Stoich Tools</title>
-<meta name="description" content="Privacy policy for the CDD Stoichiometric Table Tools browser extension: runs only on CDD Vault pages, keeps settings in your browser, sends nothing anywhere." />
+<meta name="description" content="Privacy policy for the CDD Stoichiometric Table Tools browser extension: runs only on CDD Vault pages, keeps settings in your browser, sends nothing anywhere unless you switch on the optional AI write-up." />
 <link rel="icon" type="image/png" href="./icon.png?v=__ICON__" />
 <link rel="stylesheet" href="./style.css?v=__STYLE__" />
 </head>
@@ -17,7 +17,7 @@
     </div>
 
     <h1>Privacy policy</h1>
-    <p class="lede">The short version: the extension works inside your browser on CDD Vault pages and sends nothing anywhere.</p>
+    <p class="lede">The short version: the extension works inside your browser on CDD Vault pages and sends nothing anywhere — unless you switch on the optional AI write-up, which sends the text you ask it to polish to CERIT-SC, and never a structure.</p>
 
     <p class="actions">
       <a class="btn btn--quiet" href="./">What's new</a>
@@ -34,7 +34,8 @@
       <p>
         Only on pages under <code>collaborativedrug.com</code>, the CDD Vault
         web application. It does not load on any other site and has no access
-        to other tabs.
+        to other tabs. With AI write-up switched on it also talks to one more
+        server, <code>llm.ai.e-infra.cz</code> — see below.
       </p>
 
       <h2>What it reads</h2>
@@ -49,19 +50,48 @@
       <h2>What it stores</h2>
       <p>
         Your settings: which panel fields you show, prefix colours, the width
-        of a panel, saved phrases, and similar preferences. They are kept with
-        the browser's extension storage (the only permission the extension
-        asks for) and stay on your computer. Uninstalling the extension removes
-        them.
+        of a panel, saved phrases, and similar preferences — and, if you use AI
+        write-up, your CERIT API key and house rules. They are kept with the
+        browser's extension storage and stay on your computer. Uninstalling the
+        extension removes them.
       </p>
 
       <h2>What leaves your browser</h2>
       <p>
-        Nothing. There is no backend, no analytics, no crash reporting, no
-        account, and no remote code. The only network requests the extension
-        makes are to the CDD Vault server you are already logged into, on your
-        behalf, for actions you triggered — the same requests the CDD page
-        itself would make.
+        By default, nothing. There is no backend, no analytics, no crash
+        reporting, no account of ours, and no remote code. The extension's
+        requests go to the CDD Vault server you are already logged into, on
+        your behalf, for actions you triggered — the same requests the CDD page
+        itself would make. The one exception is AI write-up, below, and only
+        while you have it switched on.
+      </p>
+
+      <h2>AI write-up (optional, off by default)</h2>
+      <p>
+        AI write-up polishes ELN text into English and checks it against the
+        stoichiometry table, using the language models of
+        <a href="https://docs.cerit-sc.cz/en/docs/ai-as-a-service/ai-api">CERIT-SC AI as a Service</a>
+        (<code>llm.ai.e-infra.cz</code>, run by Masaryk University within
+        e-INFRA CZ) under your own CERIT account and API key. Switching it on
+        asks the browser for access to that one server; switching it off gives
+        the access back.
+      </p>
+      <p>
+        <strong>What is sent, and only when you click</strong> 🎤, Polish or
+        Polish entry: the text of the ELN entry (or the part you selected), the
+        stoichiometry table as compound names, amounts and equivalents, the
+        names of records the entry links to, your house rules, and — for
+        dictation — the audio you recorded.
+      </p>
+      <p>
+        <strong>What is never sent:</strong> structures in any form — no
+        SMILES, mol or MRV files, reaction images or molecular weights — nor
+        attached files, nor your CDD login. The API key goes only to CERIT.
+      </p>
+      <p>
+        What CERIT does with requests is governed by CERIT-SC's own terms and
+        AI data policy. The answers are shown in the extension's panel for you
+        to copy; nothing is written into your ELN entry.
       </p>
 
       <h2>Not a CDD product</h2>
@@ -79,7 +109,7 @@
         The source code is public, so every claim on this page can be checked.
       </p>
 
-      <p><em>Last updated 7 September 2026.</em></p>
+      <p><em>Last updated 20 October 2026.</em></p>
     </div>
   </article>
 </main>

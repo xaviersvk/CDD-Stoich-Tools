@@ -76,3 +76,9 @@ export const EVENTS = {
   DOSE_RESPONSE_DRAG_ENABLED: "DOSE_RESPONSE_DRAG_ENABLED",
   DOSE_RESPONSE_DRAG_HELLO: "DOSE_RESPONSE_DRAG_HELLO",
 };
+// Content/options -> background: the Write-up tab's requests to the CERIT LLM
+// service. background.js repeats these literals (it ships unbundled).
+export const AI_MODELS_MESSAGE = "CDD_STOICH_TOOLS_AI_MODELS";
+export const AI_CHAT_MESSAGE = "CDD_STOICH_TOOLS_AI_CHAT";
+export const AI_TRANSCRIBE_MESSAGE = "CDD_STOICH_TOOLS_AI_TRANSCRIBE";
+export const AI_CANCEL_MESSAGE = "CDD_STOICH_TOOLS_AI_CANCEL";

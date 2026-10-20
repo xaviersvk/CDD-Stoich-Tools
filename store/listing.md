@@ -29,7 +29,7 @@ The Chrome dashboard strips markup. Headings are a line on their own with a
 blank line above.
 
 ```
-CDD Stoichiometric Table Tools adds small, practical helpers to the CDD Vault pages you already use. It began as a floating sample panel for ELN stoichiometry tables and has grown into a set of shortcuts for the ELN, Inventory, Search and Registration pages. Everything runs locally in your browser.
+CDD Stoichiometric Table Tools adds small, practical helpers to the CDD Vault pages you already use. It began as a floating sample panel for ELN stoichiometry tables and has grown into a set of shortcuts for the ELN, Inventory, Search and Registration pages. Everything runs locally in your browser — except the optional AI write-up, which you switch on yourself.
 
 ELN entries
 - A floating panel lists every sample in the entry's reaction tables, grouped by reaction. Click any value to copy it; concentrations come out in CDD-ready units.
@@ -37,6 +37,7 @@ ELN entries
 - Print a clean A4 stoichiometry sheet per reaction: scheme, masses, volumes, equivalents, yield.
 - Work out the HPLC injection volume in the panel, and keep phrases you type often.
 - Register a product straight from the entry — the form fills itself in and the batch gets the entry ID as its Internal ID.
+- Optional AI write-up (off by default): dictate in Slovak, Czech or English, or select text, and get polished English back from the CERIT-SC language models — checked against the stoichiometry table, with compounds as CDD mentions, ready to copy.
 
 Inventory and plates
 - Pick Location: create several samples at once from empty wells, hover a well to see its structure, colour wells by sample-ID prefix.
@@ -59,7 +60,7 @@ Not a CDD product
 This is an open-source extension written by CDD Vault users. Collaborative Drug Discovery does not build, endorse or support it. If something in CDD looks wrong, disable the extension, reload the page and check again before contacting CDD support. Report problems on GitHub: https://github.com/xaviersvk/CDD-Stoich-Tools/issues
 
 Privacy
-Runs only on CDD Vault pages. No accounts, no backend, no analytics — nothing leaves your browser. The only permission is "storage", for your own settings. Full policy: https://xaviersvk.github.io/CDD-Stoich-Tools/privacy.html
+Runs only on CDD Vault pages. No accounts, no backend, no analytics — nothing leaves your browser, unless you switch on AI write-up: then the text you ask it to polish (and dictated audio) goes to CERIT-SC (llm.ai.e-infra.cz) under your own API key, only when you click. Structures are never sent. Full policy: https://xaviersvk.github.io/CDD-Stoich-Tools/privacy.html
 
 What changed in each version: https://xaviersvk.github.io/CDD-Stoich-Tools/
 ```
@@ -70,7 +71,7 @@ Same words. AMO escapes raw HTML in the dev hub; it takes Markdown instead
 (`**bold**`, `- item`, `[text](url)`).
 
 ```markdown
-CDD Stoichiometric Table Tools adds small, practical helpers to the CDD Vault pages you already use. It began as a floating sample panel for ELN stoichiometry tables and has grown into a set of shortcuts for the ELN, Inventory, Search and Registration pages. Everything runs locally in your browser.
+CDD Stoichiometric Table Tools adds small, practical helpers to the CDD Vault pages you already use. It began as a floating sample panel for ELN stoichiometry tables and has grown into a set of shortcuts for the ELN, Inventory, Search and Registration pages. Everything runs locally in your browser — except the optional AI write-up, which you switch on yourself.
 
 **ELN entries**
 
@@ -79,6 +80,7 @@ CDD Stoichiometric Table Tools adds small, practical helpers to the CDD Vault pa
 - Print a clean A4 stoichiometry sheet per reaction: scheme, masses, volumes, equivalents, yield.
 - Work out the HPLC injection volume in the panel, and keep phrases you type often.
 - Register a product straight from the entry — the form fills itself in and the batch gets the entry ID as its Internal ID.
+- Optional AI write-up (off by default): dictate in Slovak, Czech or English, or select text, and get polished English back from the CERIT-SC language models — checked against the stoichiometry table, with compounds as CDD mentions, ready to copy.
 
 **Inventory and plates**
 
@@ -107,7 +109,7 @@ This is an open-source extension written by CDD Vault users. Collaborative Drug 
 
 **Privacy**
 
-Runs only on CDD Vault pages. No accounts, no backend, no analytics — nothing leaves your browser. The only permission is *storage*, for your own settings. [Full policy](https://xaviersvk.github.io/CDD-Stoich-Tools/privacy.html).
+Runs only on CDD Vault pages. No accounts, no backend, no analytics — nothing leaves your browser, unless you switch on AI write-up: then the text you ask it to polish (and dictated audio) goes to CERIT-SC (llm.ai.e-infra.cz) under your own API key, only when you click. Structures are never sent. [Full policy](https://xaviersvk.github.io/CDD-Stoich-Tools/privacy.html).
 
 [What changed in each version](https://xaviersvk.github.io/CDD-Stoich-Tools/)
 ```
@@ -122,6 +124,7 @@ Done by hand, once per wording change.
 - [ ] Support URL → `https://github.com/xaviersvk/CDD-Stoich-Tools/issues`
 - [ ] Homepage URL → `https://xaviersvk.github.io/CDD-Stoich-Tools/`
 - [ ] *Privacy* tab → Privacy policy URL → `https://xaviersvk.github.io/CDD-Stoich-Tools/privacy.html`
+- [ ] *Privacy practices* (19.0.0) → justify the optional host permission `https://llm.ai.e-infra.cz/*`: "AI write-up, off by default: sends ELN text the user chooses to the CERIT-SC language model API, under the user's own API key." Data usage → tick *Website content*; certify it is not sold or used for anything else
 - [ ] Save draft → *Submit for review* (listing-only changes still go through review)
 
 **Firefox Add-ons** — Developer Hub → add-on → *Edit Product Page*
@@ -131,6 +134,7 @@ Done by hand, once per wording change.
 - [ ] *Experimental* → unticked
 - [ ] Support *Web Site* (same form) → `https://github.com/xaviersvk/CDD-Stoich-Tools/issues`
 - [ ] *Additional Details* → Homepage → `https://xaviersvk.github.io/CDD-Stoich-Tools/`
+- [ ] (19.0.0) The manifest now declares *websiteContent* as optional data collection — AMO shows it; nothing to set by hand, but expect the review to read the policy
 - [ ] *Manage Authors & Licence* → *This add-on has a Privacy Policy* → paste the
       text of `scripts/privacy.html` as plain paragraphs, first line linking to
       the full page (AMO takes text here, not a URL)

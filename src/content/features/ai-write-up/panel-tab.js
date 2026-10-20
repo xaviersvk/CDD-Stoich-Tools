@@ -151,13 +151,14 @@ async function polish() {
             return;
         }
 
-        const mentions = entityMentions(rows, elnEntry, entryUrl(entry));
+        const style = getAiWriteUpView().mentionStyle;
+        const mentions = entityMentions(rows, elnEntry, entryUrl(entry), { style });
 
         setStatus("Polishing… (CERIT, usually under a minute)");
         const answer = await chrome.runtime.sendMessage({
             type: AI_CHAT_MESSAGE,
             id,
-            messages: withHouseRules(buildMessages(text, rows, mentionPromptBlock(mentions)), getAiWriteUpView().rules),
+            messages: withHouseRules(buildMessages(text, rows, mentionPromptBlock(mentions, { style })), getAiWriteUpView().rules),
         });
         if (!answer?.ok) {
             setStatus(aiErrorMessage(answer));

@@ -35,6 +35,7 @@ const modelSelect = document.getElementById("aiModel");
 const testButton = document.getElementById("aiTest");
 const statusLine = document.getElementById("aiStatus");
 const timeoutInput = document.getElementById("aiTimeout");
+const mentionStyleSelect = document.getElementById("aiMentionStyle");
 const rulesList = document.getElementById("aiRules");
 const ruleNewInput = document.getElementById("aiRuleNew");
 const ruleAddButton = document.getElementById("aiRuleAdd");
@@ -147,6 +148,9 @@ export async function initAiWriteUpUI() {
     enabledBox.checked = settings.enabled && granted;
     keyInput.value = settings.apiKey;
     fillModels([], settings.model);
+
+    mentionStyleSelect.value = settings.mentionStyle;
+    mentionStyleSelect.addEventListener("change", () => void saveAiSettings({ mentionStyle: mentionStyleSelect.value }));
 
     timeoutInput.value = String(settings.timeoutS);
     timeoutInput.addEventListener("change", () => {

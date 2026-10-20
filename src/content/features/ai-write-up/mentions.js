@@ -24,12 +24,47 @@
 // CDD creates the feature when the fragment is pasted. A reaction row's
 // mention points at "#attached_structures/<structure>%23reaction_components/
 // <n>" within the entry — n counts the reaction's rows in table order,
-// products left out (model.js) — and it shows the name only.
+// products left out (model.js) — and it reads as MENTION_STYLES says.
 
 const NL = "\n";
 // [[R3]] / [[L1]] — an entity; [[?temperature]] — a fact the text is missing.
 const TOKEN = /\[\[(?:([RL])(\d+)|\?([^\][\n]{1,40}))]]/g;
 const MAX_PLACEHOLDERS = 8;
+
+// ---------------------------------------------------------------- labels
+
+function sig3(n) {
+    return n >= 100 ? n.toFixed(0) : Number(n.toPrecision(3)).toString();
+}
+
+function massText(grams) {
+    if (grams == null) return "";
+    return grams >= 1 ? `${sig3(grams)} g` : `${sig3(grams * 1e3)} mg`;
+}
+
+function molText(mol) {
+    if (mol == null) return "";
+    if (mol >= 1) return `${sig3(mol)} mol`;
+    if (mol >= 1e-3) return `${sig3(mol * 1e3)} mmol`;
+    return `${sig3(mol * 1e6)} µmol`;
+}
+
+function volumeText(litres) {
+    if (litres == null) return "";
+    return litres >= 1e-3 ? `${sig3(litres * 1e3)} mL` : `${sig3(litres * 1e6)} µL`;
+}
+
+/**
+ * CDD's label for a reaction row: "ab123 (20 mg, 14.5 µmol)", a liquid by
+ * its volume ("pyridine (25.6 mL, 318 mmol)"). Only used when the entry has
+ * no mention of the row yet — otherwise CDD's own label is reused (and CDD
+ * recomputes it from the table when the mention is saved).
+ */
+export function rowMentionLabel(row) {
+    const amount = row.sampleText || (row.volumeL != null ? volumeText(row.volumeL) : massText(row.massG));
+    const amounts = [amount, molText(row.mol)].filter(Boolean);
+    return amounts.length ? `${row.name} (${amounts.join(", ")})` : row.name;
+}
 
 // Link features of the entry by their target id.
 function linkFeatures(elnEntry) {
@@ -43,10 +78,19 @@ function linkFeatures(elnEntry) {
 // ---------------------------------------------------------------- the list
 
 /**
- * Every entity the model may mention: `[{ token, label, names, data }]`.
+ * How a row's mention reads — Settings → AI write-up → "Compound links":
+ *   "label" (default) — like an @-mention: CDD's "Tenofovir (36.8 mg, 128 µmol)",
+ *                       amounts from the table; the token stands for the name
+ *                       AND the amounts after it;
+ *   "name"            — the name only; the amounts the text gives stay text.
+ */
+export const MENTION_STYLES = ["label", "name"];
+
+/**
+ * Every entity the model may mention: `[{ token, label, promptLabel, names, data }]`.
  * `entryUrl` is the entry's absolute URL, which a row's mention lives under.
  */
-export function entityMentions(rows, elnEntry, entryUrl) {
+export function entityMentions(rows, elnEntry, entryUrl, { style = "label" } = {}) {
     const mentions = [];
     const existing = linkFeatures(elnEntry);
 
@@ -54,20 +98,25 @@ export function entityMentions(rows, elnEntry, entryUrl) {
         if (row.component == null || row.structureId == null || row.displayName === "Unnamed") continue;
         const id = `#attached_structures/${row.structureId}%23reaction_components/${row.component}`;
         const known = existing.get(id);
-        // A row's mention shows the NAME only: the token stands for the name,
-        // and the amounts after it stay as the text wrote them — a label with
-        // the table's "(20 mg, …)" would swap the chemist's numbers for the
-        // table's. `label` (pasted) may be the IUPAC name, which is local;
-        // `promptLabel` (sent) never is.
-        const label = row.displayName;
-        const promptLabel = row.name !== "Unnamed" ? row.name : `row ${row.row}`;
+        // `label` (pasted) may be the IUPAC name, which is local;
+        // `promptLabel` (sent) never is. A mention already in the entry is in
+        // the entry's text anyway.
+        const named = { ...row, name: row.name !== "Unnamed" ? row.name : `row ${row.row}` };
+        const label = style === "name"
+            ? row.displayName
+            : known?.defaultLabel || rowMentionLabel({ ...row, name: row.displayName });
+        const promptLabel = style === "name" ? named.name : known?.defaultLabel || rowMentionLabel(named);
         mentions.push({
             token: `R${row.row}`,
             label,
             promptLabel,
             names: [...(row.name !== "Unnamed" ? [row.name] : []), ...(row.aliases || [])],
             data: known
-                ? { ...known, href: known.href || `${entryUrl}${id}`, display: "defaultLabel", defaultLabel: label, label }
+                ? {
+                    ...known,
+                    href: known.href || `${entryUrl}${id}`,
+                    ...(style === "name" ? { display: "defaultLabel", defaultLabel: label, label } : {}),
+                }
                 : {
                     dataVersion: 1,
                     id,
@@ -108,11 +157,13 @@ export function entityMentions(rows, elnEntry, entryUrl) {
 }
 
 /** The lines that tell the model which tokens exist (empty when none do). */
-export function mentionPromptBlock(mentions) {
+export function mentionPromptBlock(mentions, { style = "label" } = {}) {
     if (!mentions.length) return "";
     return [
         "ENTITY TOKENS — where your English names one of these, write its token instead of the name.",
-        "Keep any amounts the text gives after the name, as written. Use only these tokens.",
+        style === "name"
+            ? "Keep any amounts the text gives after the name, as written. Use only these tokens."
+            : "The token prints as the label shown, amounts included: write it instead of the name AND the amounts in brackets after it. Use only these tokens.",
         ...mentions.map((m) => `[[${m.token}]] = ${m.promptLabel ?? m.label}`),
     ].join(NL);
 }

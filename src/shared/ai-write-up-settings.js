@@ -56,6 +56,9 @@ const DEFAULTS = {
     language: "auto",
     timeoutS: AI_TIMEOUT_DEFAULT_S,
     rules: AI_DEFAULT_RULES,
+    // How a compound link reads: "label" like an @-mention, "Tenofovir
+    // (36.8 mg, 128 µmol)"; "name" — the name only, the text keeps its amounts.
+    mentionStyle: "label",
 };
 
 function normalizeTimeout(value) {
@@ -80,6 +83,7 @@ function normalize(raw) {
         language: AI_LANGUAGES.some(([code]) => code === value.language) ? value.language : DEFAULTS.language,
         timeoutS: value.timeoutS == null ? DEFAULTS.timeoutS : normalizeTimeout(value.timeoutS),
         rules: normalizeRules(value.rules),
+        mentionStyle: value.mentionStyle === "name" ? "name" : "label",
     };
 }
 
@@ -114,6 +118,7 @@ function publicView(settings) {
         language: settings.language,
         // Only the texts of the rules that are on — what the prompts add.
         rules: settings.rules.filter((r) => r.on).map((r) => r.text),
+        mentionStyle: settings.mentionStyle,
     };
 }
 

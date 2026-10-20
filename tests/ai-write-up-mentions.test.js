@@ -46,13 +46,22 @@ function mentions() {
     return entityMentions(tableRowsFromEntry(e), e, ENTRY_URL);
 }
 
-test("a row's mention shows its name only — the text keeps its own amounts", () => {
+test("by default a row's mention reads like an @-mention: CDD's name (amount, mol)", () => {
     const [ab123, acetate] = entityMentions(tableRowsFromEntry(entry()), entry(), ENTRY_URL);
+    assert.equal(ab123.label, "ab123 (20 mg, 14.5 µmol)");          // the entry's own mention
+    assert.equal(acetate.label, "Acetyl Acetate (1.48 mg, 14.5 µmol)"); // made from the table
+    assert.equal(ab123.data.id, "#attached_structures/1000149090%23reaction_components/1");
+    assert.match(mentionPromptBlock([ab123]), /AND the amounts in brackets after it/);
+});
+
+test("'name' style: the mention is the name only and the text keeps its own amounts", () => {
+    const e = entry();
+    const [ab123, acetate] = entityMentions(tableRowsFromEntry(e), e, ENTRY_URL, { style: "name" });
     assert.equal(ab123.label, "ab123");
     assert.equal(acetate.label, "Acetyl Acetate");
     // An existing mention's data is reused, its amounts are not.
     assert.equal(ab123.data.defaultLabel, "ab123");
-    assert.equal(ab123.data.id, "#attached_structures/1000149090%23reaction_components/1");
+    assert.match(mentionPromptBlock([ab123], { style: "name" }), /Keep any amounts the text gives/);
 });
 
 test("rows with a name become row mentions; links in the text become link mentions, once", () => {
@@ -67,7 +76,7 @@ test("rows with a name become row mentions; links in the text become link mentio
 
 test("the token list reaches both prompts", () => {
     const block = mentionPromptBlock(mentions());
-    assert.match(block, /\[\[R2\]\] = Acetyl Acetate\n/);
+    assert.match(block, /\[\[R2\]\] = Acetyl Acetate \(1\.48 mg, 14\.5 µmol\)/);
     assert.ok(buildMessages("t", tableRowsFromEntry(entry()), block)[1].content.includes(block));
     assert.ok(buildDictationMessages("t", { mentionBlock: block })[1].content.includes(block));
     assert.equal(mentionPromptBlock([]), "");
@@ -77,7 +86,7 @@ test("tokens split out of the text; unknown ones are dropped", () => {
     const segments = splitMentions("Then [[R2]] was added to [[R9]]the vial.", mentions());
     assert.equal(segments.length, 3);
     assert.equal(segments[1].mention.token, "R2");
-    assert.equal(mentionsToPlain(segments), "Then Acetyl Acetate was added to the vial.");
+    assert.equal(mentionsToPlain(segments), "Then Acetyl Acetate (1.48 mg, 14.5 µmol) was added to the vial.");
 });
 
 test("the clipboard HTML carries a Slate fragment with mention nodes", () => {
@@ -90,9 +99,9 @@ test("the clipboard HTML carries a Slate fragment with mention nodes", () => {
     assert.deepEqual(lead, { text: "" });
     assert.equal(link.type, "a");
     assert.equal(link.data.id, "#attached_structures/1000149090%23reaction_components/1");
-    assert.deepEqual(link.children, [{ text: "ab123" }]);
+    assert.deepEqual(link.children, [{ text: "ab123 (20 mg, 14.5 µmol)" }]);
     assert.deepEqual(rest, { text: " was dissolved." });
-    assert.match(html, /<h2>Procedure<\/h2><p><a href="[^"]+">ab123<\/a> was dissolved\.<\/p>/);
+    assert.match(html, /<h2>Procedure<\/h2><p><a href="[^"]+">ab123 \(20 mg, 14\.5 µmol\)<\/a> was dissolved\.<\/p>/);
 });
 
 test("names written without a token are linked, first time only, as written", () => {
@@ -154,9 +163,9 @@ test("the row's own name is the one prose uses; components skip the product", ()
     const byName = Object.fromEntries(list.map((m) => [m.names[0], m]));
     assert.equal(byName.Tenofovir.data.id, "#attached_structures/1000518590%23reaction_components/1");
     assert.equal(byName.pyridine.data.id, "#attached_structures/1000518590%23reaction_components/4");
-    assert.equal(byName.pyridine.label, "pyridine");
-    // An existing mention of the row: its data reused, with the name only.
-    assert.equal(byName.DIPEA.label, "DIPEA");
+    assert.equal(byName.pyridine.label, "pyridine (25.6 mL, 318 mmol)");
+    // An existing mention of the row: CDD's own label and data.
+    assert.equal(byName.DIPEA.label, "DIPEA (22.3 µL, 1 eq., 128 µmol)");
     assert.equal(byName.DIPEA.data.href, "/x");
 
     const segments = splitMentions("Tenofovir (36.8 mg, 128 µmol) was suspended in pyridine.", list);
@@ -211,7 +220,7 @@ test("one paragraph copies alone, with its mentions and the placeholder's value"
     assert.equal(paragraphs.length, 3);
     segments.find((s) => s.placeholder).placeholder.value = "0 °C";
     const second = segmentLines(segments)[1];
-    assert.equal(mentionsToPlain(second), "ab123 was dissolved at 0 °C.");
+    assert.equal(mentionsToPlain(second), "ab123 (20 mg, 14.5 µmol) was dissolved at 0 °C.");
     const nodes = JSON.parse(decodeURIComponent(atob(mentionsToClipboardHtml(second).match(/data-slate-fragment="([^"]+)"/)[1])));
     assert.equal(nodes.length, 1);
     assert.equal(nodes[0].children[1].type, "a");

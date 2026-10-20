@@ -141,7 +141,8 @@ async function tableForContext(origin) {
         const elnEntry = await fetchEntry(entry);
         const all = tableRowsFromEntry(elnEntry);
         const rows = origin?.reactionIndex != null ? all.filter((r) => r.reaction === origin.reactionIndex + 1) : all;
-        return { rows, mentions: entityMentions(rows, elnEntry, entryUrl(entry)) };
+        const style = getAiWriteUpView().mentionStyle;
+        return { rows, mentions: entityMentions(rows, elnEntry, entryUrl(entry), { style }) };
     } catch {
         return { rows: [], mentions: [] };   // dictation works without the table
     }
@@ -210,7 +211,7 @@ async function toEnglishCard(args) {
         instruction = "", mayBeEnglish = false, askMissing = false, ask = false,
     } = args;
     step("translating", `${sourceLabel}: “${source}”`);
-    const mentionBlock = mentionPromptBlock(mentions);
+    const mentionBlock = mentionPromptBlock(mentions, { style: getAiWriteUpView().mentionStyle });
     const messages = ask
         ? buildAskMessages(source, { rows, entryText, mentionBlock })
         : buildDictationMessages(source, { rows, entryText, mentionBlock, instruction, askMissing });

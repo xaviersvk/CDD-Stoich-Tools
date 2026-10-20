@@ -998,6 +998,14 @@
                     <select id="aiModel" class="select"></select>
                 </label>
                 <label class="field-item purity-threshold-row">
+                    <span><strong>Compound links</strong> — how a compound
+                    from the table reads once pasted into the entry.</span>
+                    <select id="aiMentionStyle" class="select">
+                        <option value="label">Like an @-mention — Tenofovir (36.8 mg, 128 µmol)</option>
+                        <option value="name">Only the name — the text keeps its own amounts</option>
+                    </select>
+                </label>
+                <label class="field-item purity-threshold-row">
                     <span><strong>Wait for an answer (s)</strong> — then give
                     up. A long entry on a big model can take minutes.</span>
                     <input type="number" id="aiTimeout" min="15" max="1800" step="15"

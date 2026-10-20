@@ -35,8 +35,10 @@ import {
 import { AI_CHAT_MESSAGE, AI_TRANSCRIBE_MESSAGE } from "../../../shared/event-types.js";
 import {
     ENTRY_CONTEXT_CHARS,
+    buildChecks,
     buildDictationMessages,
     cleanDictationAnswer,
+    parseLlmJson,
     withHouseRules,
     looksUntranslated,
     sectionContext,
@@ -45,6 +47,7 @@ import {
 import { currentEntry, entryUrl, fetchEntry, sectionAroundBlock, textFromEditor } from "./entry.js";
 import { entityMentions, mentionPromptBlock, mentionsToDom, splitMentions } from "./mentions.js";
 import { answerMeta, cardActions, copyParagraphOnCtrlClick } from "./copy-button.js";
+import { checksList } from "./checks-view.js";
 
 const MAX_SECONDS = 300;
 const MAX_CARDS = 10;
@@ -168,6 +171,9 @@ async function runDictation(blob, origin, entryText, entryKey) {
             entryText,
             entryKey,
             startedAt,
+            // A reaction's dictation is meant to cover the reaction: say
+            // what it leaves out. One sentence about the entry would not.
+            askMissing: !!origin,
         });
     } catch (err) {
         console.debug("[CDD Stoich Tools] dictation failed", err);
@@ -180,7 +186,8 @@ async function runDictation(blob, origin, entryText, entryKey) {
 // "Selected"). A selection may already be English, so for it an answer that
 // matches the source is fine; only one still in Slovak/Czech is refused.
 async function toEnglishCard({
-    source, sourceLabel, label, rows, mentions, entryText, entryKey, startedAt, instruction = "", mayBeEnglish = false,
+    source, sourceLabel, label, rows, mentions, entryText, entryKey, startedAt,
+    instruction = "", mayBeEnglish = false, askMissing = false,
 }) {
     step("translating", `${sourceLabel}: “${source}”`);
     const answer = await chrome.runtime.sendMessage({
@@ -192,15 +199,22 @@ async function toEnglishCard({
                 entryText,
                 mentionBlock: mentionPromptBlock(mentions),
                 instruction,
+                askMissing,
             }),
             getAiWriteUpView().rules
         ),
     });
     if (!answer?.ok) return step("idle", `${aiErrorMessage(answer)} ${sourceLabel}: “${source}”`);
 
+    // JSON like Polish entry's: the English and what it says about the
+    // table. An answer that is not JSON is most likely the English itself —
+    // shown, with no Checks.
+    const parsed = parseLlmJson(answer.content);
+    const english = cleanDictationAnswer(
+        typeof parsed?.text === "string" ? parsed.text : parsed ? "" : answer.content
+    );
     // A model that echoes the source back (small models do) is reported
     // rather than shown as if it were the translation.
-    const english = cleanDictationAnswer(answer.content);
     if (!english || looksUntranslated(english, mayBeEnglish ? "" : source)) {
         return step("idle", `${aiErrorMessage({ error: "untranslated", model: answer.model })} ${sourceLabel}: “${source}”`);
     }
@@ -209,6 +223,9 @@ async function toEnglishCard({
         {
             entryKey,
             segments: splitMentions(english, mentions),
+            // notMentioned only where it was asked for: the model may add it anyway.
+            checks: parsed ? buildChecks({ ...parsed, notMentioned: askMissing ? parsed.notMentioned : [] }, rows) : null,
+            hasTable: rows.length > 0,
             source,
             sourceLabel,
             label,
@@ -316,16 +333,26 @@ function cardNode(card) {
         setState({});
     }));
 
+    // Checks under the text, only when there is something to say; filling a
+    // placeholder redraws them.
+    const checks = document.createElement("div");
+    checks.className = "cdd-wu-card-checks";
+    const drawChecks = () => {
+        const list = checksList(card, { quiet: true });
+        checks.replaceChildren(...(list ? [list] : []));
+    };
+    drawChecks();
+
     const text = document.createElement("div");
     text.className = "cdd-wu-text";
-    text.append(mentionsToDom(card.segments));
+    text.append(mentionsToDom(card.segments, { onChange: drawChecks }));
     copyParagraphOnCtrlClick(text, card.segments);
 
     const heard = document.createElement("div");
     heard.className = "cdd-wu-heard";
     heard.textContent = `${card.sourceLabel}: “${card.source}”`;
 
-    box.append(head, text, heard);
+    box.append(head, text, checks, heard);
     if (card.instruction) {
         const asked = document.createElement("div");
         asked.className = "cdd-wu-heard";
@@ -433,5 +460,6 @@ export const DICTATION_STYLES = (panelId) => `
   #${panelId} .cdd-wu-dictation-status:empty { display: none; }
   #${panelId} .cdd-wu-dictations { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
   #${panelId} .cdd-wu-dictations:empty { display: none; }
+  #${panelId} .cdd-wu-card-checks:not(:empty) { margin-top: 6px; padding-top: 6px; border-top: 1px solid #1f2937; }
   #${panelId} .cdd-wu-heard { font-size: 11px; color: #cbd5e1; margin-top: 6px; font-style: italic; }
 `;

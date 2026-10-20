@@ -27,7 +27,8 @@ import {
 } from "./model.js";
 import { currentEntry, entryUrl, fetchEntry, textFromEditor } from "./entry.js";
 import { mountDictation, newestCardAt, onDictationChanged, refreshDictation } from "./dictation.js";
-import { entityMentions, mentionPromptBlock, mentionsToDom, splitMentions, unfilledPlaceholders } from "./mentions.js";
+import { entityMentions, mentionPromptBlock, mentionsToDom, splitMentions } from "./mentions.js";
+import { checksList } from "./checks-view.js";
 import { answerMeta, cardActions, copyParagraphOnCtrlClick } from "./copy-button.js";
 
 let pane = null;
@@ -53,33 +54,6 @@ function setStatus(text) {
 
 // ---------------------------------------------------------------- rendering
 
-// The Checks card is a list, most important first. The dot's colour says how
-// much it matters — the text stays one colour:
-//   fix   (red)   text and table disagree in the numbers
-//   add   (amber) something to fill in or mention
-//   note  (blue)  advice, a calculated value nobody stated
-const SEVERITY_ORDER = { fix: 0, add: 1, note: 2 };
-
-// [severity, ...parts]; a part is a string, or [string] for bold.
-function checkItems({ checks, hasTable, segments }) {
-    const items = unfilledPlaceholders(segments).map((what) => ["add", "Fill in the ", [what]]);
-    if (!hasTable) {
-        items.push(["note", "No stoichiometry table in this entry — text polished only."]);
-    } else if (checks == null) {
-        items.push(["note", "Checks unavailable — the answer had no readable data. Polish again."]);
-    } else {
-        for (const c of checks) {
-            if (c.kind === "mismatch") items.push(["fix", [c.label], ` text ${c.text} · table ${c.table}`]);
-            else if (c.kind === "yield" && c.text != null) items.push(["fix", [c.label], ` text ${c.text} · calculated ${c.table}`]);
-            else if (c.kind === "yield") items.push(["note", [c.label], ` calculated ${c.table} — add it to the text`]);
-            else if (c.kind === "missing") items.push(["add", "Mention ", [c.label], " in the text"]);
-            else if (c.kind === "note") items.push(["note", c.message]);
-        }
-    }
-    // Stable: within a severity the order stays as found.
-    return items.sort((a, b) => SEVERITY_ORDER[a[0]] - SEVERITY_ORDER[b[0]]);
-}
-
 // ✕ on the result: the English text and its checks go together.
 function closeResult() {
     result = null;
@@ -96,20 +70,8 @@ function renderChecks(card, result) {
         head.append(el("div", "cdd-wu-card__title", "Checks"), cardActions(null, closeResult));
         card.replaceChildren(head);
     }
-    const items = checkItems(result);
-    if (!items.length) {
-        card.append(el("div", "cdd-wu-check", "Text and table agree."));
-        return;
-    }
-    const list = el("ul", "cdd-wu-checks");
-    for (const [severity, ...parts] of items) {
-        const item = el("li", `cdd-wu-checks__item cdd-wu-checks__item--${severity}`);
-        for (const part of parts) {
-            item.append(Array.isArray(part) ? el("strong", null, part[0]) : document.createTextNode(part));
-        }
-        list.append(item);
-    }
-    card.append(list);
+    const list = checksList(result);
+    if (list) card.append(list);
 }
 
 // Newest first, whatever made it: Polish entry's result goes above the

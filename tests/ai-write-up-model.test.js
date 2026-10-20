@@ -227,3 +227,25 @@ test("no structure in any form reaches either prompt, however much of it the tab
     ]);
     assert.ok(!/ZZ|<cml|999\.111|998\.222|base64/.test(sent), "a structure field leaked into a prompt");
 });
+
+test("a dictation asks for JSON like Polish entry; notMentioned only for a reaction's dictation", () => {
+    const rows = tableRowsFromEntry(entry());
+    const [plain] = buildDictationMessages("text", { rows });
+    assert.match(plain.content, /"amounts"/);
+    assert.match(plain.content, /"notes"/);
+    assert.ok(!plain.content.includes("notMentioned"));
+
+    const [reaction] = buildDictationMessages("text", { rows, askMissing: true });
+    assert.match(reaction.content, /"notMentioned": \[<row numbers/);
+
+    // Without a table there is nothing to be missing from.
+    const [noTable] = buildDictationMessages("text", { askMissing: true });
+    assert.ok(!noTable.content.includes("notMentioned"));
+});
+
+test("a dictation's JSON answer gives checks against its table", () => {
+    const rows = tableRowsFromEntry(entry());
+    const answer = parseLlmJson('{"text":"Acetyl acetate (29 µmol) was added.","amounts":[{"row":2,"amount":"29 µmol"}],"product":null,"notes":["Add the reaction time"]}');
+    const checks = buildChecks({ ...answer, notMentioned: [] }, rows);
+    assert.deepEqual(checks.map((c) => c.kind), ["mismatch", "note"]);
+});

@@ -47,6 +47,11 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
     Print and ⤳) sends that reaction's rows and the section it sits in.
   - **Polish / Polish +** beside *Save phrase* on a selection: the same step
     for written text; ＋ takes an instruction ("make it a bullet list").
+  - Dictation and selections come back as JSON too, so their cards get
+    Checks: amounts and yield against the table they were sent with, placeholders
+    to fill in, notes on what the passage leaves out — and, for 🎤 on a
+    reaction only, the rows it never mentions. A card with nothing to report
+    shows no Checks.
   - Results are cards with **Copy** and **✕** (*Clear all* once there are
     several) and a foot saying when the answer came, how long it took from
     the click and which model gave it. Newest first across the tab — Polish

@@ -252,15 +252,36 @@ export function buildMessages(text, rows, mentionBlock = "") {
 
 // ---------------------------------------------------------------- dictation
 
-const DICTATION_PROMPT = `You turn a dictated lab notebook passage into English for a synthetic chemist's ELN.
+// Like Polish entry, a dictation (or a selection) comes back as JSON: its
+// English and what it says about the table, so its card gets Checks too.
+// "notMentioned" is asked only when the passage is meant to cover a whole
+// reaction (🎤 on a reaction) — one dictated sentence never names everything.
+const NOT_MENTIONED_LINE =
+    '   "notMentioned": [<row numbers of reactants/reagents/solvents the dictation never mentions>]' + "\n";
+
+function dictationPrompt({ askMissing }) {
+    return `You turn a dictated lab notebook passage into English for a synthetic chemist's ELN.
 The dictation was transcribed by speech recognition and may be Slovak, Czech or English, with recognition errors.
-Rewrite it as clear, factual English experimental prose: past tense, passive voice, standard units (mg, mL, mmol, °C, h).
-Keep every fact and number exactly; do not add anything. Fix misheard chemical names when the table clearly matches.
-${PLACEHOLDER_RULE}
 You may be given CONTEXT — the reaction's stoichiometry table and the entry text the dictation continues.
 Use it only to understand the dictation and to match its names, abbreviations and style.
 Never translate, repeat or summarise the context itself.
-Answer with the English text of the DICTATION only — no quotes, no comments.`;
+
+Do two things and answer with ONE JSON object only, no prose around it:
+
+1. "text": the DICTATION only, as clear, factual English experimental prose: past tense, passive voice,
+   standard units (mg, mL, mmol, °C, h). Keep every fact and number exactly; do not add anything.
+   Fix misheard chemical names when the table clearly matches.
+   ${PLACEHOLDER_RULE}
+
+2. Report what the DICTATION says about the stoichiometry table rows. Do NOT calculate anything:
+   copy quantities exactly as written, with their units.
+   "amounts": [{"row": <table row number>, "mass": "<e.g. 20 mg>", "volume": "<e.g. 0.5 mL>",
+               "amount": "<e.g. 1.2 mmol>", "eq": "<e.g. 1.1 equiv>"}]  (only rows the dictation gives quantities for)
+   "product": {"row": <product row number>, "mass": "<isolated mass as written>", "yield": "<e.g. 78 %>"} or null
+${askMissing ? NOT_MENTIONED_LINE : ""}   "notes": ["<short imperative advice: what this passage leaves out — temperature, time, workup, a suspicious unit — at most 5>"]
+
+JSON shape: {"text": "...", "amounts": [...], "product": {...}|null, ${askMissing ? '"notMentioned": [...], ' : ""}"notes": [...]}`;
+}
 
 // How much of the entry goes with a dictation: a reaction's section, or
 // (the panel's 🎤) a cap on the whole entry.
@@ -288,12 +309,16 @@ export function sectionContext(text, maxChars = SECTION_CONTEXT_CHARS) {
 }
 
 /**
- * `rows` (the table), `entryText` and `mentionBlock` (mentions.js's token
- * list) are all optional. Small models follow the LAST instruction they
- * read, so the order to translate is repeated after the dictation, not only
- * in the system prompt.
+ * `rows` (the table), `entryText`, `mentionBlock` (mentions.js's token
+ * list) and `instruction` (Polish +) are all optional; `askMissing` asks
+ * which table rows the passage never mentions. Small models follow the LAST
+ * instruction they read, so the order to translate is repeated after the
+ * dictation, not only in the system prompt.
  */
-export function buildDictationMessages(transcript, { rows = [], entryText = "", mentionBlock = "", instruction = "" } = {}) {
+export function buildDictationMessages(
+    transcript,
+    { rows = [], entryText = "", mentionBlock = "", instruction = "", askMissing = false } = {}
+) {
     const context = [];
     if (rows.length) context.push(["STOICHIOMETRY TABLE", ...rows.map(tableLine)].join(NL));
     if (entryText.trim()) context.push(["ENTRY TEXT BEFORE THE DICTATION", entryText.trim()].join(NL));
@@ -304,12 +329,18 @@ export function buildDictationMessages(transcript, { rows = [], entryText = "", 
     // Polish + on a selection: what the chemist wants done with it.
     if (instruction.trim()) {
         parts.push(["EXTRA INSTRUCTION FOR THIS TEXT", instruction.trim()].join(NL));
-        parts.push("Rewrite only the DICTATION above in English, following the extra instruction. Reply in English only.");
+        parts.push(
+            'Answer with the JSON object. Its "text" is only the DICTATION above, rewritten in English, ' +
+                "following the extra instruction. Reply in English only."
+        );
     } else {
-        parts.push("Translate only the DICTATION above into English lab-notebook prose. Reply in English only.");
+        parts.push(
+            'Answer with the JSON object. Its "text" is only the DICTATION above, translated into English ' +
+                "lab-notebook prose. Reply in English only."
+        );
     }
     return [
-        { role: "system", content: DICTATION_PROMPT },
+        { role: "system", content: dictationPrompt({ askMissing: askMissing && rows.length > 0 }) },
         { role: "user", content: parts.join(NL + NL) },
     ];
 }

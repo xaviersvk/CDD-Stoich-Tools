@@ -347,7 +347,8 @@ export async function replyToCard(card, reply) {
         }),
     ].filter(Boolean);
     const { rows, mentions, entryText, askMissing, baseLabel } = card.context;
-    setState({ origin: null });
+    // The card's Send shows the clock (and cancels) while this runs.
+    setState({ origin: { replyTo: card } });
     try {
         return await toEnglishCard({
             source: reply.trim(),
@@ -537,6 +538,11 @@ function replyBoxNode(card) {
     };
     send.addEventListener("click", (event) => {
         event.stopPropagation();
+        // Busy with this reply, Send cancels it — a second click must not send it twice.
+        if (getDictationState().origin?.replyTo === card && getDictationState().phase !== "idle") {
+            toggleDictation();
+            return;
+        }
         void go();
     });
     field.addEventListener("keydown", (event) => {
@@ -559,7 +565,10 @@ function replyBoxNode(card) {
         if (!box.isConnected) return unsubscribe();
         const mine = state.origin?.field === card;
         mic.textContent = mine ? dictationLabel("🎤") : "🎤";
-        send.disabled = state.phase !== "idle";
+        const sending = state.origin?.replyTo === card && state.phase !== "idle";
+        send.textContent = sending ? dictationLabel("Send") : "Send";
+        send.title = sending ? "Cancel" : "Send the reply";
+        send.disabled = state.phase !== "idle" && !sending;
     });
     return box;
 }

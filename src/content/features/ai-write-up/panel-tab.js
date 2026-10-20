@@ -50,55 +50,49 @@ function setStatus(text) {
 
 // ---------------------------------------------------------------- rendering
 
-function checkLine(check) {
-    const line = el("div", "cdd-wu-check");
-    if (check.kind === "mismatch" || check.kind === "yield") {
-        line.append(el("strong", null, check.label));
-        line.append(document.createTextNode(
-            check.text == null
-                ? ` calculated ${check.table} — add it to the text`
-                : ` text ${check.text} · ${check.kind === "yield" ? "calculated" : "table"} ${check.table}`
-        ));
+// The Checks card is a list, most important first. The dot's colour says how
+// much it matters — the text stays one colour:
+//   fix   (red)   text and table disagree in the numbers
+//   add   (amber) something to fill in or mention
+//   note  (blue)  advice, a calculated value nobody stated
+const SEVERITY_ORDER = { fix: 0, add: 1, note: 2 };
+
+// [severity, ...parts]; a part is a string, or [string] for bold.
+function checkItems({ checks, hasTable, segments }) {
+    const items = unfilledPlaceholders(segments).map((what) => ["add", "Fill in the ", [what]]);
+    if (!hasTable) {
+        items.push(["note", "No stoichiometry table in this entry — text polished only."]);
+    } else if (checks == null) {
+        items.push(["note", "Checks unavailable — the answer had no readable data. Polish again."]);
     } else {
-        line.textContent = check.message;
+        for (const c of checks) {
+            if (c.kind === "mismatch") items.push(["fix", [c.label], ` text ${c.text} · table ${c.table}`]);
+            else if (c.kind === "yield" && c.text != null) items.push(["fix", [c.label], ` text ${c.text} · calculated ${c.table}`]);
+            else if (c.kind === "yield") items.push(["note", [c.label], ` calculated ${c.table} — add it to the text`]);
+            else if (c.kind === "missing") items.push(["add", "Mention ", [c.label], " in the text"]);
+            else if (c.kind === "note") items.push(["note", c.message]);
+        }
     }
-    return line;
+    // Stable: within a severity the order stays as found.
+    return items.sort((a, b) => SEVERITY_ORDER[a[0]] - SEVERITY_ORDER[b[0]]);
 }
 
-function renderChecks(card, { checks, hasTable, segments }) {
+function renderChecks(card, result) {
     card.replaceChildren(el("div", "cdd-wu-card__title", "Checks"));
-    // The placeholders in the text, until each is filled in.
-    const unfilled = unfilledPlaceholders(segments);
-    if (unfilled.length) {
-        const line = el("div", "cdd-wu-check cdd-wu-check--fill");
-        line.append(el("strong", null, "Fill in: "), document.createTextNode(unfilled.join(", ")));
-        card.append(line);
-    }
-    if (!hasTable) {
-        card.append(el("div", "cdd-wu-check", "No stoichiometry table in this entry — text polished only."));
-        return;
-    }
-    if (checks == null) {
-        card.append(el("div", "cdd-wu-check", "Checks unavailable — the answer had no readable data. Polish again."));
-        return;
-    }
-    const numbers = checks.filter((c) => c.kind === "mismatch" || c.kind === "yield");
-    const missing = checks.filter((c) => c.kind === "missing");
-    const notes = checks.filter((c) => c.kind === "note");
-
-    if (!checks.length) {
+    const items = checkItems(result);
+    if (!items.length) {
         card.append(el("div", "cdd-wu-check", "Text and table agree."));
         return;
-    }    if (numbers.length) {
-        card.append(el("div", "cdd-wu-check cdd-wu-check--lead", "Correct the text or the table:"));
-        for (const c of numbers) card.append(checkLine(c));
     }
-    if (missing.length) {
-        const line = el("div", "cdd-wu-check");
-        line.append(el("strong", null, "Mention in the text: "), document.createTextNode(missing.map((c) => c.label).join(", ")));
-        card.append(line);
+    const list = el("ul", "cdd-wu-checks");
+    for (const [severity, ...parts] of items) {
+        const item = el("li", `cdd-wu-checks__item cdd-wu-checks__item--${severity}`);
+        for (const part of parts) {
+            item.append(Array.isArray(part) ? el("strong", null, part[0]) : document.createTextNode(part));
+        }
+        list.append(item);
     }
-    for (const c of notes) card.append(checkLine(c));
+    card.append(list);
 }
 
 function render() {
@@ -252,9 +246,19 @@ export const WRITE_UP_PANE_STYLES = (panelId) => `
     user-select: text;
   }
   #${panelId} .cdd-wu-check { font-size: 12px; line-height: 1.45; padding: 2px 0; }
-  #${panelId} .cdd-wu-check--lead { font-weight: 700; }
+  #${panelId} .cdd-wu-checks { list-style: none; margin: 0; padding: 0; }
+  #${panelId} .cdd-wu-checks__item {
+    position: relative; margin: 0; padding: 2px 0 2px 14px;
+    font-size: 12px; line-height: 1.45; list-style: none;
+  }
+  #${panelId} .cdd-wu-checks__item::before {
+    content: ""; position: absolute; left: 2px; top: 7px;
+    width: 7px; height: 7px; border-radius: 50%;
+  }
+  #${panelId} .cdd-wu-checks__item--fix::before { background: #ef4444; }
+  #${panelId} .cdd-wu-checks__item--add::before { background: #f59e0b; }
+  #${panelId} .cdd-wu-checks__item--note::before { background: #60a5fa; }
   #${panelId} .cdd-wu-mention { color: #93c5fd; text-decoration: underline; }
-  #${panelId} .cdd-wu-check--fill { margin-bottom: 4px; }
   /* A placeholder: dashed amber while empty, solid green once filled. */
   #${panelId} .cdd-wu-slot {
     display: inline; padding: 0 4px; margin: 0 1px;

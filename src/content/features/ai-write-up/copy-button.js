@@ -5,7 +5,7 @@
 // Used by the Polish entry result and by every dictation card.
 
 import { copyRichText } from "../../utils/clipboard.js";
-import { mentionsToClipboardHtml, mentionsToPlain } from "./mentions.js";
+import { mentionsToClipboardHtml, mentionsToPlain, segmentLines } from "./mentions.js";
 
 export function copyButton(segments) {
     const copy = document.createElement("button");
@@ -56,4 +56,27 @@ export function answerMeta({ at, tookMs, model }) {
     meta.textContent = [time, took, model].filter(Boolean).join(" · ");
     meta.title = "Answered at · time from your click to the answer · model";
     return meta;
+}
+
+/**
+ * Ctrl+click (Cmd on a Mac) on a paragraph of `container` — the English
+ * drawn by mentionsToDom — copies just that paragraph, mentions and filled
+ * placeholders included, the same way Copy copies the whole text.
+ */
+export function copyParagraphOnCtrlClick(container, segments) {
+    container.title = "Ctrl+click a paragraph to copy just that one";
+    container.addEventListener("click", async (event) => {
+        if (!event.ctrlKey && !event.metaKey) return;
+        const block = event.target.closest?.(".cdd-wu-line");
+        if (!block || !container.contains(block)) return;
+        // Not the link's new tab, not the slot's input: the paragraph.
+        event.preventDefault();
+        event.stopPropagation();
+        const line = segmentLines(segments)[Number(block.dataset.line)];
+        if (!line?.length) return;
+        const ok = await copyRichText(mentionsToClipboardHtml(line), mentionsToPlain(line));
+        block.dataset.copied = ok ? "✓ copied" : "✗ failed";
+        block.classList.add("cdd-wu-line--copied");
+        setTimeout(() => block.classList.remove("cdd-wu-line--copied"), 900);
+    }, true);
 }

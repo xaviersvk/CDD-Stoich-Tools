@@ -44,7 +44,7 @@ import {
 } from "./model.js";
 import { currentEntry, entryUrl, fetchEntry, sectionAroundBlock, textFromEditor } from "./entry.js";
 import { entityMentions, mentionPromptBlock, mentionsToDom, splitMentions } from "./mentions.js";
-import { answerMeta, cardActions } from "./copy-button.js";
+import { answerMeta, cardActions, copyParagraphOnCtrlClick } from "./copy-button.js";
 
 const MAX_SECONDS = 300;
 const MAX_CARDS = 10;
@@ -319,6 +319,7 @@ function cardNode(card) {
     const text = document.createElement("div");
     text.className = "cdd-wu-text";
     text.append(mentionsToDom(card.segments));
+    copyParagraphOnCtrlClick(text, card.segments);
 
     const heard = document.createElement("div");
     heard.className = "cdd-wu-heard";

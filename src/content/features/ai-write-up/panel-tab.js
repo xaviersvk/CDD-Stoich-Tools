@@ -28,7 +28,7 @@ import {
 import { currentEntry, entryUrl, fetchEntry, textFromEditor } from "./entry.js";
 import { mountDictation, newestCardAt, onDictationChanged, refreshDictation } from "./dictation.js";
 import { entityMentions, mentionPromptBlock, mentionsToDom, splitMentions, unfilledPlaceholders } from "./mentions.js";
-import { answerMeta, cardActions } from "./copy-button.js";
+import { answerMeta, cardActions, copyParagraphOnCtrlClick } from "./copy-button.js";
 
 let pane = null;
 let runButton = null;
@@ -138,6 +138,7 @@ function render() {
         // Filling a placeholder redraws the checks only: the text keeps its
         // scroll position and the slot just typed into.
         text.append(mentionsToDom(result.segments, { onChange: () => renderChecks(checksCard, result) }));
+        copyParagraphOnCtrlClick(text, result.segments);
         card.append(head, text);
         resultEl.append(card);
     }
@@ -280,6 +281,14 @@ export const WRITE_UP_PANE_STYLES = (panelId) => `
   #${panelId} .cdd-wu-pane > .cdd-wu-hint { order: 0; }
   #${panelId} .cdd-wu-pane > .cdd-wu-bar { order: 1; }
   #${panelId} .cdd-wu-pane > .cdd-wu-status { order: 2; }
+  #${panelId} .cdd-wu-line { position: relative; border-radius: 4px; }
+  #${panelId} .cdd-wu-line--blank { min-height: 0.7em; }
+  /* Ctrl+click copied this paragraph. */
+  #${panelId} .cdd-wu-line--copied { outline: 1px solid #22c55e; outline-offset: 1px; }
+  #${panelId} .cdd-wu-line--copied::after {
+    content: attr(data-copied); position: absolute; right: 0; top: -1px;
+    padding: 0 4px; font-size: 10px; color: #f9fafb; background: #166534; border-radius: 3px;
+  }
   #${panelId} .cdd-wu-meta { margin-top: 6px; font-size: 11px; color: #cbd5e1; text-align: right; }
   #${panelId} .cdd-wu-card__actions { display: inline-flex; gap: 4px; align-items: center; }
   #${panelId} .cdd-wu-close { padding: 2px 7px; }

@@ -360,6 +360,8 @@ function slotNode(p, doc, onChange) {
     };
     slot.addEventListener("mousedown", (event) => event.stopPropagation());
     slot.addEventListener("click", (event) => {
+        // Ctrl+click copies the paragraph the slot is in (copy-button.js).
+        if (event.ctrlKey || event.metaKey) return;
         event.stopPropagation();
         const input = doc.createElement("input");
         input.type = "text";
@@ -392,15 +394,28 @@ function slotNode(p, doc, onChange) {
 }
 
 /**
- * The panel's view: text nodes, links and placeholder slots, "## " lines in
+ * The segments of each paragraph (line), in order — what Ctrl+click on one
+ * paragraph copies. Placeholders are the same objects as in `segments`, so a
+ * value filled in later is in here too.
+ */
+export function segmentLines(segments) {
+    return lines(segments);
+}
+
+/**
+ * The panel's view: one block per paragraph (`data-line` = its index in
+ * segmentLines), with text, links and placeholder slots; "## " lines in
  * bold. `onChange` runs when a placeholder is filled in.
  */
 export function mentionsToDom(segments, { doc = document, onChange } = {}) {
     const fragment = doc.createDocumentFragment();
     lines(segments).forEach((line, i) => {
-        if (i > 0) fragment.append(doc.createTextNode(NL));
+        const block = doc.createElement("div");
+        block.className = line.length ? "cdd-wu-line" : "cdd-wu-line cdd-wu-line--blank";
+        block.dataset.line = String(i);
+        fragment.append(block);
         const heading = headingOf(line);
-        const target = heading ? doc.createElement("strong") : fragment;
+        const target = heading ? doc.createElement("strong") : block;
         for (const s of heading || line) {
             if (s.placeholder) {
                 target.append(slotNode(s.placeholder, doc, onChange));
@@ -416,7 +431,7 @@ export function mentionsToDom(segments, { doc = document, onChange } = {}) {
                 target.append(doc.createTextNode(s.text));
             }
         }
-        if (heading) fragment.append(target);
+        if (heading) block.append(target);
     });
     return fragment;
 }

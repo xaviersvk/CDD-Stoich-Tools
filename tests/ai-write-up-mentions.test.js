@@ -10,6 +10,7 @@ import {
     mentionsToPlain,
     mentionsToClipboardHtml,
     unfilledPlaceholders,
+    segmentLines,
 } from "../src/content/features/ai-write-up/mentions.js";
 
 const ENTRY_URL = "https://eu.collaborativedrug.com/vaults/1/eln/entries/2";
@@ -199,4 +200,16 @@ test("placeholders do not stop names from being linked, and are capped", () => {
     const many = splitMentions(Array.from({ length: 10 }, (_, i) => `[[?x${i}]]`).join(" "), []);
     assert.equal(many.filter((s) => s.placeholder).length, 8);
     assert.match(mentionsToPlain(many), /x8 x9$/);
+});
+
+test("one paragraph copies alone, with its mentions and the placeholder's value", () => {
+    const segments = splitMentions("## Procedure\n[[R1]] was dissolved at [[?temperature]].\nThe mixture was stirred.", mentions());
+    const paragraphs = segmentLines(segments);
+    assert.equal(paragraphs.length, 3);
+    segments.find((s) => s.placeholder).placeholder.value = "0 °C";
+    const second = segmentLines(segments)[1];
+    assert.equal(mentionsToPlain(second), "ab123 (20 mg, 14.5 µmol) was dissolved at 0 °C.");
+    const nodes = JSON.parse(decodeURIComponent(atob(mentionsToClipboardHtml(second).match(/data-slate-fragment="([^"]+)"/)[1])));
+    assert.equal(nodes.length, 1);
+    assert.equal(nodes[0].children[1].type, "a");
 });

@@ -51,7 +51,8 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
     several) and a foot saying when the answer came, how long it took from
     the click and which model gave it. Newest first across the tab — Polish
     entry's result sits above the dictation cards when it is the newer; per
-    entry; nothing is
+    entry; Ctrl+click (Cmd on a Mac) on a paragraph copies just that one;
+    nothing is
     written into the entry. Copy puts a Slate fragment in `text/html`
     (`data-slate-fragment`, as CDD's own Copy does), so Ctrl+V makes real
     content in CDD and ordinary HTML elsewhere.

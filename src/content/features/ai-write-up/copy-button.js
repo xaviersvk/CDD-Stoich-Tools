@@ -45,3 +45,15 @@ export function cardActions(segments, onClose) {
     actions.append(closeButton(onClose));
     return actions;
 }
+
+/** A card's foot: when the answer came, how long it took, which model — "14:32 · 18 s · mini". */
+export function answerMeta({ at, tookMs, model }) {
+    const meta = document.createElement("div");
+    meta.className = "cdd-wu-meta";
+    const time = new Date(at).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+    const s = Math.max(1, Math.round(tookMs / 1000));
+    const took = s < 60 ? `${s} s` : `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, "0")} s`;
+    meta.textContent = [time, took, model].filter(Boolean).join(" · ");
+    meta.title = "Answered at · time from your click to the answer · model";
+    return meta;
+}

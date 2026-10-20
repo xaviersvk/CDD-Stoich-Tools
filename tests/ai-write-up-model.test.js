@@ -201,3 +201,29 @@ test("a Polish + instruction comes after the text, and the last line says to fol
     assert.ok(user.content.includes(["EXTRA INSTRUCTION FOR THIS TEXT", "make it a bullet list"].join("\n")));
     assert.match(user.content, /following the extra instruction\. Reply in English only\.$/);
 });
+
+test("no structure in any form reaches either prompt, however much of it the table carries", () => {
+    const e = entry();
+    const STRUCTURE = {
+        mrv: "<cml><MDocument>ZZMRV</MDocument></cml>",
+        structureMrv: "ZZSTRUCTUREMRV",
+        smiles: "ZZSMILES c1ccccc1",
+        molfile: "ZZMOLFILE\n  -ISIS-",
+        originalMolfile: "ZZORIGINALMOLFILE",
+        image: "data:image/png;base64,ZZIMAGE",
+        molecularWeight: 999.111,
+        formulaWeight: 999.111,
+        exactMass: 998.222,
+        formula: "C99H99ZZ",
+    };
+    const feature = e.feature_map[77].data;
+    Object.assign(feature, { mrv: "ZZREACTIONMRV", image: "ZZREACTIONIMAGE", structureMrv: { a: "ZZSTRUCTMAP" } });
+    for (const row of feature.stoichiometryTable.rows) Object.assign(row, STRUCTURE);
+
+    const rows = tableRowsFromEntry(e);
+    const sent = JSON.stringify([
+        buildMessages(entryTextFromBody(e.body), rows),
+        buildDictationMessages("text", { rows, entryText: entryTextFromBody(e.body) }),
+    ]);
+    assert.ok(!/ZZ|<cml|999\.111|998\.222|base64/.test(sent), "a structure field leaked into a prompt");
+});

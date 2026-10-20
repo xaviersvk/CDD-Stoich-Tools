@@ -44,7 +44,7 @@ import {
 } from "./model.js";
 import { currentEntry, entryUrl, fetchEntry, sectionAroundBlock, textFromEditor } from "./entry.js";
 import { entityMentions, mentionPromptBlock, mentionsToDom, splitMentions } from "./mentions.js";
-import { cardActions } from "./copy-button.js";
+import { answerMeta, cardActions } from "./copy-button.js";
 
 const MAX_SECONDS = 300;
 const MAX_CARDS = 10;
@@ -143,6 +143,7 @@ function step(phase, status = state.status) {
 }
 
 async function runDictation(blob, origin, entryText, entryKey) {
+    const startedAt = Date.now();
     step("transcribing", "");
     try {
         const [heard, { rows, mentions }] = await Promise.all([
@@ -166,6 +167,7 @@ async function runDictation(blob, origin, entryText, entryKey) {
             mentions,
             entryText,
             entryKey,
+            startedAt,
         });
     } catch (err) {
         console.debug("[CDD Stoich Tools] dictation failed", err);
@@ -178,7 +180,7 @@ async function runDictation(blob, origin, entryText, entryKey) {
 // "Selected"). A selection may already be English, so for it an answer that
 // matches the source is fine; only one still in Slovak/Czech is refused.
 async function toEnglishCard({
-    source, sourceLabel, label, rows, mentions, entryText, entryKey, instruction = "", mayBeEnglish = false,
+    source, sourceLabel, label, rows, mentions, entryText, entryKey, startedAt, instruction = "", mayBeEnglish = false,
 }) {
     step("translating", `${sourceLabel}: “${source}”`);
     const answer = await chrome.runtime.sendMessage({
@@ -202,8 +204,20 @@ async function toEnglishCard({
     if (!english || looksUntranslated(english, mayBeEnglish ? "" : source)) {
         return step("idle", `${aiErrorMessage({ error: "untranslated", model: answer.model })} ${sourceLabel}: “${source}”`);
     }
+    const at = Date.now();
     cards = [
-        { entryKey, segments: splitMentions(english, mentions), source, sourceLabel, label, instruction: instruction.trim() },
+        {
+            entryKey,
+            segments: splitMentions(english, mentions),
+            source,
+            sourceLabel,
+            label,
+            instruction: instruction.trim(),
+            // The whole wait, from the click: recording stopped or Polish.
+            at,
+            tookMs: at - startedAt,
+            model: answer.model,
+        },
         ...cards,
     ].slice(0, MAX_CARDS);
     step("idle", "");
@@ -220,6 +234,7 @@ export async function polishSelection(text, blockEl, instruction = "") {
     if (state.phase !== "idle" || !text.trim()) return;
     if (!getAiWriteUpView().hasKey) return step("idle", aiErrorMessage({ error: "no-key" }));
     const entryKey = currentEntry()?.key;
+    const startedAt = Date.now();
     try {
         step("translating", "");
         const { rows, mentions } = await tableForContext(null);
@@ -231,6 +246,7 @@ export async function polishSelection(text, blockEl, instruction = "") {
             mentions,
             entryText: blockEl ? sectionContext(sectionAroundBlock(blockEl)) : "",
             entryKey,
+            startedAt,
             instruction,
             mayBeEnglish: true,
         });
@@ -315,6 +331,7 @@ function cardNode(card) {
         asked.textContent = `Asked: ${card.instruction}`;
         box.append(asked);
     }
+    box.append(answerMeta(card));
     return box;
 }
 
@@ -383,6 +400,12 @@ export function mountDictation(bar, list) {
     unsubscribeTab?.();
     unsubscribeTab = onDictationChanged(paint);
     paint();
+}
+
+/** When this entry's newest card came, 0 for none — the tab puts the newer of these and Polish entry's result first. */
+export function newestCardAt() {
+    const key = currentEntry()?.key;
+    return cards.find((c) => c.entryKey === key)?.at || 0;
 }
 
 /** Repaints the dictation UI — after the panel moved to another entry. */

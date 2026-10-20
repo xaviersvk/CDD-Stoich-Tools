@@ -48,7 +48,10 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   - **Polish / Polish +** beside *Save phrase* on a selection: the same step
     for written text; ＋ takes an instruction ("make it a bullet list").
   - Results are cards with **Copy** and **✕** (*Clear all* once there are
-    several), newest first, per entry; nothing is
+    several) and a foot saying when the answer came, how long it took from
+    the click and which model gave it. Newest first across the tab — Polish
+    entry's result sits above the dictation cards when it is the newer; per
+    entry; nothing is
     written into the entry. Copy puts a Slate fragment in `text/html`
     (`data-slate-fragment`, as CDD's own Copy does), so Ctrl+V makes real
     content in CDD and ordinary HTML elsewhere.
@@ -69,7 +72,8 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 - Privacy policy and store copy describe what is sent: entry text (or the
   selection), table names, amounts and equivalents, linked record names,
   house rules, dictated audio — only on a click. Never structures: no SMILES,
-  mol/MRV, images or molecular weights (MW was dropped from the prompt).
+  mol/MRV, images or molecular weights (MW was dropped from the prompt); a
+  test feeds rows full of structure fields and checks none reaches a prompt.
 
 ## [18.16.0] — 2026-10-16
 

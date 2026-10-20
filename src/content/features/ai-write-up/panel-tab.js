@@ -26,14 +26,16 @@ import {
     withHouseRules,
 } from "./model.js";
 import { currentEntry, entryUrl, fetchEntry, textFromEditor } from "./entry.js";
-import { mountDictation, refreshDictation } from "./dictation.js";
+import { mountDictation, newestCardAt, onDictationChanged, refreshDictation } from "./dictation.js";
 import { entityMentions, mentionPromptBlock, mentionsToDom, splitMentions, unfilledPlaceholders } from "./mentions.js";
-import { cardActions } from "./copy-button.js";
+import { answerMeta, cardActions } from "./copy-button.js";
 
 let pane = null;
 let runButton = null;
 let statusEl = null;
 let resultEl = null;
+let dictationsEl = null;
+let arrangeSubscribed = false;
 let running = null;     // { id } while a request is out
 let result = null;      // { entryKey, segments, checks, hasTable }
 
@@ -110,9 +112,20 @@ function renderChecks(card, result) {
     card.append(list);
 }
 
+// Newest first, whatever made it: Polish entry's result goes above the
+// dictation cards when it is newer than all of them, below otherwise. The
+// pane is a flex column; `order` moves the two blocks without rebuilding them.
+function arrange() {
+    if (!resultEl || !dictationsEl) return;
+    const resultNewer = result?.entryKey === currentEntry()?.key && (result?.at || 0) > newestCardAt();
+    resultEl.style.order = resultNewer ? "3" : "4";
+    dictationsEl.style.order = resultNewer ? "4" : "3";
+}
+
 function render() {
     if (!resultEl) return;
     resultEl.replaceChildren();
+    arrange();
     const key = currentEntry()?.key;
     if (!result || result.entryKey !== key) return;
     const checksCard = el("div", "cdd-wu-card");
@@ -130,6 +143,7 @@ function render() {
     }
 
     renderChecks(checksCard, result);
+    checksCard.append(answerMeta(result));
     resultEl.append(checksCard);
 }
 
@@ -153,6 +167,7 @@ async function polish() {
     }
 
     const id = crypto.randomUUID();
+    const startedAt = Date.now();
     setRunning({ id });
     setStatus("Reading the entry…");
     try {
@@ -186,8 +201,12 @@ async function polish() {
         const parsed = parseLlmJson(answer.content);
         // An answer that is not JSON is most likely the text itself.
         const english = typeof parsed?.text === "string" ? parsed.text.trim() : parsed ? "" : answer.content.trim();
+        const at = Date.now();
         result = {
             entryKey: entry.key,
+            at,
+            tookMs: at - startedAt,
+            model: answer.model,
             segments: splitMentions(english, mentions),
             checks: parsed ? buildChecks(parsed, rows) : null,
             hasTable: rows.length > 0,
@@ -227,13 +246,20 @@ export function mountWriteUpPane(target) {
         void polish();
     });
     bar.append(runButton);
-    const dictations = el("div", "cdd-wu-dictations");
-    mountDictation(bar, dictations);
+    dictationsEl = el("div", "cdd-wu-dictations");
+    mountDictation(bar, dictationsEl);
 
+    // The status right under the buttons it reports on; the two result
+    // blocks after it, newest first (arrange).
     statusEl = el("div", "cdd-wu-status");
     statusEl.hidden = true;
     resultEl = el("div", "cdd-wu-result");
-    pane.append(bar, dictations, statusEl, resultEl);
+    pane.classList.add("cdd-wu-pane");
+    pane.append(bar, statusEl, dictationsEl, resultEl);
+    if (!arrangeSubscribed) {
+        arrangeSubscribed = true;
+        onDictationChanged(arrange);
+    }
     render();
 }
 
@@ -250,6 +276,11 @@ export const WRITE_UP_PANE_STYLES = (panelId) => `
     background: #0f172a;
   }
   #${panelId} .cdd-wu-card__head { display: flex; justify-content: space-between; align-items: center; }
+  #${panelId} .cdd-wu-pane { display: flex; flex-direction: column; }
+  #${panelId} .cdd-wu-pane > .cdd-wu-hint { order: 0; }
+  #${panelId} .cdd-wu-pane > .cdd-wu-bar { order: 1; }
+  #${panelId} .cdd-wu-pane > .cdd-wu-status { order: 2; }
+  #${panelId} .cdd-wu-meta { margin-top: 6px; font-size: 11px; color: #cbd5e1; text-align: right; }
   #${panelId} .cdd-wu-card__actions { display: inline-flex; gap: 4px; align-items: center; }
   #${panelId} .cdd-wu-close { padding: 2px 7px; }
   #${panelId} .cdd-wu-clear { display: block; margin: 0 0 6px auto; font-size: 11px; }

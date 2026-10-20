@@ -112,6 +112,10 @@ export function aiErrorMessage(result) {
             return "CERIT did not answer — try again.";
         case "cancelled":
             return "Cancelled.";
+        case "empty":
+            return `${result?.model || "The model"} returned no text — pick another model in Settings → AI write-up.`;
+        case "untranslated":
+            return `${result?.model || "The model"} did not translate it — pick another model in Settings → AI write-up.`;
         default:
             return `CERIT returned an error${result?.status ? ` (${result.status})` : ""} — try again or pick another model.`;
     }

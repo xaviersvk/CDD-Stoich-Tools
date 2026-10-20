@@ -17,7 +17,14 @@
 import { copyRichText } from "../../utils/clipboard.js";
 import { getAiWriteUpView, aiErrorMessage } from "../../../shared/ai-write-up-settings.js";
 import { AI_CHAT_MESSAGE, AI_CANCEL_MESSAGE } from "../../../shared/event-types.js";
-import { entryTextFromBody, tableRowsFromEntry, buildMessages, parseLlmJson, buildChecks } from "./model.js";
+import {
+    entryTextFromBody,
+    tableRowsFromEntry,
+    buildMessages,
+    parseLlmJson,
+    buildChecks,
+    looksUntranslated,
+} from "./model.js";
 import { currentEntry, fetchEntry, textFromEditor } from "./entry.js";
 import { mountDictation } from "./dictation.js";
 
@@ -182,7 +189,9 @@ async function polish() {
             checks: parsed ? buildChecks(parsed, rows) : null,
             hasTable: rows.length > 0,
         };
-        setStatus(`Polished with ${answer.model}. Check it before you paste it in.`);
+        setStatus(result.text && looksUntranslated(result.text, text)
+            ? aiErrorMessage({ error: "untranslated", model: answer.model })
+            : `Polished with ${answer.model}. Check it before you paste it in.`);
         render();
     } catch (err) {
         console.debug("[CDD Stoich Tools] write-up failed", err);

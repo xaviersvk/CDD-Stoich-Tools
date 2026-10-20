@@ -25,7 +25,7 @@ import {
     saveAiSettings,
 } from "../../../shared/ai-write-up-settings.js";
 import { AI_CHAT_MESSAGE, AI_TRANSCRIBE_MESSAGE } from "../../../shared/event-types.js";
-import { buildDictationMessages, cleanDictationAnswer, tableRowsFromEntry } from "./model.js";
+import { buildDictationMessages, cleanDictationAnswer, looksUntranslated, tableRowsFromEntry } from "./model.js";
 import { currentEntry, fetchEntry, insertIntoEditor } from "./entry.js";
 
 const MAX_SECONDS = 300;
@@ -87,8 +87,23 @@ async function tableRows() {
     }
 }
 
+// While the recording is processed the 🎤 button itself says which step it
+// is on and for how long — the status line below it is easy to miss, and a
+// translation can take a while.
+function showStep(label) {
+    const since = Date.now();
+    const paint = () => {
+        const s = Math.floor((Date.now() - since) / 1000);
+        micButton.textContent = `⏳ ${label} ${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+    };
+    clearInterval(tick);
+    paint();
+    tick = setInterval(paint, 500);
+}
+
 async function transcribe(blob) {
-    setStatus("Transcribing…");
+    setStatus("");
+    showStep("Transcribing…");
     micButton.disabled = true;
     try {
         const [heard, rows] = await Promise.all([
@@ -110,7 +125,8 @@ async function transcribe(blob) {
             return;
         }
 
-        setStatus(`Translating… Heard: “${heard.text}”`);
+        showStep("Translating…");
+        setStatus(`Heard: “${heard.text}”`);
         const answer = await chrome.runtime.sendMessage({
             type: AI_CHAT_MESSAGE,
             id: crypto.randomUUID(),
@@ -122,11 +138,22 @@ async function transcribe(blob) {
             setStatus(`${aiErrorMessage(answer)} What was heard is on the clipboard.`);
             return;
         }
-        await deliver(cleanDictationAnswer(answer.content) || heard.text, heard.text);
+        // Never type the untranslated transcript in: a model that echoes it
+        // back (small models do) is reported, and the transcript is on the
+        // clipboard for whoever wants it anyway.
+        const english = cleanDictationAnswer(answer.content);
+        if (!english || looksUntranslated(english, heard.text)) {
+            await copyText(heard.text);
+            setStatus(`${aiErrorMessage({ error: "untranslated", model: answer.model })} What was heard is on the clipboard.`);
+            return;
+        }
+        await deliver(english, heard.text);
     } catch (err) {
         console.debug("[CDD Stoich Tools] transcription failed", err);
         setStatus(aiErrorMessage({ error: "network" }));
     } finally {
+        clearInterval(tick);
+        micButton.textContent = "🎤 Dictate";
         micButton.disabled = false;
     }
 }

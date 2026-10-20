@@ -200,7 +200,12 @@ export function buildMessages(text, rows) {
         : "(this entry has no stoichiometry table — return empty amounts, product null)";
     return [
         { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: `STOICHIOMETRY TABLE\n${table}\n\nENTRY TEXT\n${text}` },
+        {
+            role: "user",
+            content:
+                `STOICHIOMETRY TABLE\n${table}\n\nENTRY TEXT\n${text}\n\n` +
+                'Answer with the JSON object. The "text" field must be in English, whatever language the entry is in.',
+        },
     ];
 }
 
@@ -212,13 +217,30 @@ Rewrite it as clear, factual English experimental prose: past tense, passive voi
 Keep every fact and number exactly; do not add anything. Fix misheard chemical names using the compound list when one clearly matches.
 Answer with the English text only — no quotes, no comments.`;
 
+// Small models follow the LAST instruction they read, so the order to
+// translate is repeated after the dictation, not only in the system prompt.
 export function buildDictationMessages(transcript, rows) {
     const names = [...new Set(rows.map((r) => r.name).filter((n) => n && n !== "Unnamed"))];
     const compounds = names.length ? `COMPOUNDS IN THIS REACTION: ${names.join(", ")}\n\n` : "";
     return [
         { role: "system", content: DICTATION_PROMPT },
-        { role: "user", content: `${compounds}DICTATION\n${transcript}` },
+        {
+            role: "user",
+            content: `${compounds}DICTATION\n${transcript}\n\nTranslate the dictation above into English lab-notebook prose. Reply in English only.`,
+        },
     ];
+}
+
+// Slovak and Czech letters English never uses. An answer that still carries
+// them, or that IS the transcript, was not translated.
+const SLAVIC_LETTERS = /[áäčďéěíĺľňóôŕřšťúůýž]/i;
+
+export function looksUntranslated(answer, transcript) {
+    const squash = (s) => s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
+    if (squash(answer) === squash(transcript)) return true;
+    const words = answer.split(/\s+/).filter(Boolean);
+    const slavic = words.filter((w) => SLAVIC_LETTERS.test(w)).length;
+    return words.length > 0 && slavic / words.length > 0.15;
 }
 
 /** The model's text with any wrapping quotes or fences taken off. */

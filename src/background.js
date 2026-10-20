@@ -111,7 +111,8 @@ async function chat(id, messages) {
     });
     if (!result.ok) return result;
     const content = result.data?.choices?.[0]?.message?.content;
-    return typeof content === "string" ? { ok: true, content, model } : { ok: false, error: "http", detail: "Empty answer" };
+    // Reasoning models can spend the whole answer thinking and return no text.
+    return typeof content === "string" && content.trim() ? { ok: true, content, model } : { ok: false, error: "empty", model };
 }
 
 // The audio crosses the message channel as base64 — runtime messages are

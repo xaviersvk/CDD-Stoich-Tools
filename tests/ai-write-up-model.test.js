@@ -10,6 +10,7 @@ import {
     buildChecks,
     buildDictationMessages,
     cleanDictationAnswer,
+    looksUntranslated,
 } from "../src/content/features/ai-write-up/model.js";
 
 // The shape of /vaults/<v>/eln/v2/entries/<id> → eln_entry, trimmed to what
@@ -144,10 +145,23 @@ test("dictation messages list the reaction's compounds for misheard names", () =
     const [system, user] = buildDictationMessages("pridali sme acetyl acetát", tableRowsFromEntry(entry()));
     assert.match(system.content, /English/);
     assert.match(user.content, /COMPOUNDS IN THIS REACTION: ab123, Acetyl Acetate, aspirin, toluene/);
-    assert.match(user.content, /pridali sme acetyl acetát$/);
+    assert.match(user.content, /DICTATION\npridali sme acetyl acetát\n/);
 });
 
 test("dictation answers lose fences and quotes", () => {
     assert.equal(cleanDictationAnswer('```\n"Acetyl acetate was added."\n```'), "Acetyl acetate was added.");
     assert.equal(cleanDictationAnswer("  The mixture was stirred.  "), "The mixture was stirred.");
+});
+
+test("an echoed or still-Slovak answer counts as untranslated", () => {
+    const heard = "Do banky sme pridali 20 mg zlúčeniny a miešali cez noc pri izbovej teplote.";
+    assert.equal(looksUntranslated(heard, heard), true);
+    assert.equal(looksUntranslated("Do banky sme pridali 20 mg zlúčeniny, miešali cez noc.", heard), true);
+    assert.equal(looksUntranslated("The compound (20 mg) was added to the flask and stirred overnight at room temperature.", heard), false);
+});
+
+test("both prompts end with the order to answer in English", () => {
+    const rows = tableRowsFromEntry(entry());
+    assert.match(buildMessages("text", rows)[1].content, /must be in English[^\n]*$/);
+    assert.match(buildDictationMessages("text", rows)[1].content, /Reply in English only\.$/);
 });

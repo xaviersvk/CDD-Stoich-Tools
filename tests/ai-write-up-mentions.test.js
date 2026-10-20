@@ -41,9 +41,9 @@ function entry() {
     };
 }
 
-function mentions() {
+function mentions(style = "label") {
     const e = entry();
-    return entityMentions(tableRowsFromEntry(e), e, ENTRY_URL);
+    return entityMentions(tableRowsFromEntry(e), e, ENTRY_URL, { style });
 }
 
 test("by default a row's mention reads like an @-mention: CDD's name (amount, mol)", () => {
@@ -105,7 +105,7 @@ test("the clipboard HTML carries a Slate fragment with mention nodes", () => {
 });
 
 test("names written without a token are linked, first time only, as written", () => {
-    const segments = splitMentions("The acetyl acetate (1.48 mg, 14.5 µmol) was added, then more acetyl acetate.", mentions());
+    const segments = splitMentions("The acetyl acetate (1.48 mg, 14.5 µmol) was added, then more acetyl acetate.", mentions("name"));
     const linked = segments.filter((s) => s.mention);
     assert.equal(linked.length, 1);
     assert.equal(linked[0].mention.label, "acetyl acetate (1.48 mg, 14.5 µmol)");
@@ -121,13 +121,13 @@ test("a name already linked by its token is not linked again; parts of words are
 });
 
 test("a bare name keeps the sentence as it was", () => {
-    const segments = splitMentions("It was dissolved in ab123.", mentions());
+    const segments = splitMentions("It was dissolved in ab123.", mentions("name"));
     assert.equal(segments[1].mention.label, "ab123");
     assert.equal(mentionsToPlain(segments), "It was dissolved in ab123.");
 });
 
 test("a row is also found by its molecule code", () => {
-    const segments = splitMentions("IXX-DEMO-0000011 was weighed out.", mentions());
+    const segments = splitMentions("IXX-DEMO-0000011 was weighed out.", mentions("name"));
     assert.equal(segments[0].mention.token, "R1");
     assert.equal(segments[0].mention.label, "IXX-DEMO-0000011");
 });
@@ -153,11 +153,12 @@ function tenofovirEntry() {
     };
 }
 
-test("the row's own name is the one prose uses; components skip the product", () => {
+test("the row's own name is the one prose uses; products are numbered last", () => {
     const e = tenofovirEntry();
     const rows = tableRowsFromEntry(e);
     assert.equal(rows[0].name, "Tenofovir");
-    assert.deepEqual(rows.map((r) => r.component), [1, null, 2, 3, 4]);
+    // Products are numbered after all the other rows.
+    assert.deepEqual(rows.map((r) => r.component), [1, 5, 2, 3, 4]);
 
     const list = entityMentions(rows, e, ENTRY_URL);
     const byName = Object.fromEntries(list.map((m) => [m.names[0], m]));
@@ -171,7 +172,7 @@ test("the row's own name is the one prose uses; components skip the product", ()
     const segments = splitMentions("Tenofovir (36.8 mg, 128 µmol) was suspended in pyridine.", list);
     assert.deepEqual(segments.filter((s) => s.mention).map((s) => s.mention.label), [
         "Tenofovir (36.8 mg, 128 µmol)",
-        "pyridine",
+        "pyridine (25.6 mL, 318 mmol)",   // CDD's label, the default style
     ]);
 });
 
@@ -251,4 +252,44 @@ test("an IUPAC name never reaches a prompt, but still links the compound locally
     // Locally the compound is still found and linked by it.
     const segments = splitMentions("It was quenched with zziupac-phenol.", list);
     assert.equal(segments.find((s) => s.mention)?.mention.token, "R1");
+});
+
+test("by default a name the model wrote becomes CDD's own label — a sample ID turns into the compound", () => {
+    const segments = splitMentions("IXX-DEMO-0000011 was weighed out.", mentions());
+    assert.equal(segments[0].mention.label, "ab123 (20 mg, 14.5 µmol)");
+    assert.equal(mentionsToPlain(segments), "ab123 (20 mg, 14.5 µmol) was weighed out.");
+});
+
+test("the product is a component too, numbered after the other rows (entry 1000000814)", () => {
+    const e = {
+        body: JSON.stringify([{ type: "p", children: [{ text: "x" }] }]),
+        feature_map: {
+            60: { type: "reaction", data: { attachedStructureId: 1000646098, stoichiometryTable: { rows: [
+                { uid: 1, role: "reactant", sample: { name: "DEMO-0000006-001-SM000002" }, userInput: {} },
+                { uid: 3, role: "product", sample: { name: "DEMO-0000010-001-SM000007" }, iupacName: "tert-butyl 2-aryl-1-pyrrolecarboxylate", userInput: {} },
+                { uid: 6, role: "agent", name: "Pd(PPh3)4", userInput: {} },
+            ] } } },
+        },
+    };
+    const rows = tableRowsFromEntry(e);
+    assert.deepEqual(rows.map((r) => r.component), [1, 3, 2]);
+    const product = entityMentions(rows, e, ENTRY_URL).find((m) => m.token === "R2");
+    assert.equal(product.data.id, "#attached_structures/1000646098%23reaction_components/3");
+    // Found by its IUPAC name in the English, locally.
+    const segments = splitMentions("affording tert-butyl 2-aryl-1-pyrrolecarboxylate (1.2 g).", entityMentions(rows, e, ENTRY_URL));
+    assert.equal(segments.find((s) => s.mention)?.mention.token, "R2");
+});
+
+test("links with no id (a paper, a patent) are told apart by their href", () => {
+    const e = {
+        body: JSON.stringify([{ type: "p", children: [
+            { type: "a", data: { feature_id: "0" }, children: [{ text: "paper" }] },
+            { type: "a", data: { feature_id: "1" }, children: [{ text: "patent" }] },
+        ] }]),
+        feature_map: {
+            0: { type: "link", data: { id: null, href: "https://doi.org/x", defaultLabel: "Discovery of …", display: "defaultLabel" } },
+            1: { type: "link", data: { id: null, href: "https://patents/y", defaultLabel: "Patent WO2006063167", display: "defaultLabel" } },
+        },
+    };
+    assert.deepEqual(entityMentions([], e, ENTRY_URL).map((m) => m.label), ["Discovery of …", "Patent WO2006063167"]);
 });

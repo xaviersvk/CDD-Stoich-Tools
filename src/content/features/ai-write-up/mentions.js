@@ -108,6 +108,7 @@ export function entityMentions(rows, elnEntry, entryUrl, { style = "label" } = {
         const promptLabel = style === "name" ? named.name : known?.defaultLabel || rowMentionLabel(named);
         mentions.push({
             token: `R${row.row}`,
+            style,
             label,
             promptLabel,
             names: [...(row.name !== "Unnamed" ? [row.name] : []), ...(row.aliases || [])],
@@ -144,8 +145,10 @@ export function entityMentions(rows, elnEntry, entryUrl, { style = "label" } = {
         for (const node of Array.isArray(nodes) ? nodes : []) {
             const feature = node?.type === "a" ? featureMap[node?.data?.feature_id] : null;
             const data = feature?.type === "link" ? feature.data : null;
-            if (data && !String(data.id).includes("reaction_components") && !seen.has(String(data.id))) {
-                seen.add(String(data.id));
+            // A link to a paper or a patent has no id — its href tells it apart.
+            const key = String(data?.id ?? data?.href ?? data?.label ?? "");
+            if (data && !key.includes("reaction_components") && !seen.has(key)) {
+                seen.add(key);
                 const label = (data.display === "label" ? data.label : data.defaultLabel) || data.label || "";
                 if (label) mentions.push({ token: `L${seen.size}`, label, names: [label], data: { ...data } });
             }
@@ -220,7 +223,14 @@ function linkNames(segments, mentions) {
             linked.add(m.token);
             const written = match[0];
             pushText(next, seg.text.slice(0, match.index));
-            next.push({ mention: { ...m, label: written, data: { ...m.data, defaultLabel: written, label: written } } });
+            // Like an @-mention (the default): CDD's own label in place of
+            // the words — a sample ID becomes "N-methyl… (10 g, 40.2 mmol)".
+            // Name only: the words as the model wrote them.
+            next.push({
+                mention: m.style === "label" && m.token.startsWith("R")
+                    ? m
+                    : { ...m, label: written, data: { ...m.data, defaultLabel: written, label: written } },
+            });
             pushText(next, seg.text.slice(match.index + written.length));
         }
         out = next;

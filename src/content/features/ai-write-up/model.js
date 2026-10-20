@@ -103,11 +103,15 @@ function rowNames(row) {
 export function tableRowsFromEntry(elnEntry) {
     const rows = [];
     getReactionFeatures({ eln_entry: elnEntry }).forEach((feature, reactionIndex) => {
-        // CDD numbers a reaction's mentionable components 1, 2, 3… over its
-        // rows in table order, products left out — NOT by the row's uid
-        // (entry 1000017498: pyridine, uid 13, is component 4).
+        // CDD numbers a reaction's components 1, 2, 3… over its rows in table
+        // order, the products AFTER all the others — NOT by the row's uid.
+        // Entry 1000017498: pyridine (uid 13) is component 4; entry
+        // 1000000814: eight rows, then the product as component 9.
+        const tableRows = feature.data.stoichiometryTable.rows || [];
+        const others = tableRows.filter((r) => r?.role !== "product").length;
         let component = 0;
-        for (const row of feature.data.stoichiometryTable.rows || []) {
+        let productComponent = others;
+        for (const row of tableRows) {
             const sample = parseQuantity(row?.userInput?.msample);
             const [name = "Unnamed", ...aliases] = rowNames(row);
             const iupac = typeof row?.iupacName === "string" ? row.iupacName.trim() : "";
@@ -116,7 +120,7 @@ export function tableRowsFromEntry(elnEntry) {
                 row: rows.length + 1,
                 reaction: reactionIndex + 1,
                 // What an @-mention of this row points at (mentions.js).
-                component: isProduct ? null : ++component,
+                component: isProduct ? ++productComponent : ++component,
                 structureId: feature.data.attachedStructureId ?? null,
                 sampleText: typeof row?.userInput?.msample === "string" ? row.userInput.msample.trim() : "",
                 // What the prompt calls the row — never its IUPAC name.

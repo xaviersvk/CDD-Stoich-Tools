@@ -11,6 +11,7 @@ import { initRowNameEnrichment } from "./features/name-enrichment.js";
 import { initNamePicker } from "./features/name-picker.js";
 import { initNameWatch } from "./features/name-watch.js";
 import { initPhraseCapture } from "./features/phrases/capture.js";
+import { initAiWriteUp } from "../shared/ai-write-up-settings.js";
 import { initSamplePickerHints } from "./features/sample-picker-hints.js";
 import { initSampleDuplicate } from "./features/sample-duplicate.js";
 import {
@@ -130,6 +131,7 @@ function init() {
   initNamePicker();
   initNameWatch();
   initPhraseCapture();
+  void initAiWriteUp();   // the panel's Write-up tab follows it via onAiWriteUpChanged
 
   window.addEventListener("message", handleMessage);
 

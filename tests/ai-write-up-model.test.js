@@ -8,6 +8,8 @@ import {
     parseLlmJson,
     parseQuantity,
     buildChecks,
+    buildDictationMessages,
+    cleanDictationAnswer,
 } from "../src/content/features/ai-write-up/model.js";
 
 // The shape of /vaults/<v>/eln/v2/entries/<id> → eln_entry, trimmed to what
@@ -136,4 +138,16 @@ test("rows not in the text and LLM notes are listed", () => {
         { kind: "missing", label: "toluene" },
         { kind: "note", message: "Add the reaction temperature" },
     ]);
+});
+
+test("dictation messages list the reaction's compounds for misheard names", () => {
+    const [system, user] = buildDictationMessages("pridali sme acetyl acetát", tableRowsFromEntry(entry()));
+    assert.match(system.content, /English/);
+    assert.match(user.content, /COMPOUNDS IN THIS REACTION: ab123, Acetyl Acetate, aspirin, toluene/);
+    assert.match(user.content, /pridali sme acetyl acetát$/);
+});
+
+test("dictation answers lose fences and quotes", () => {
+    assert.equal(cleanDictationAnswer('```\n"Acetyl acetate was added."\n```'), "Acetyl acetate was added.");
+    assert.equal(cleanDictationAnswer("  The mixture was stirred.  "), "The mixture was stirred.");
 });

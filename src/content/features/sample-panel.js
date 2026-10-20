@@ -53,6 +53,9 @@ import {
     HPLC_BLOCK_STYLES,
 } from "./hplc-injection-block.js";
 import { mountPhrasesPane, PHRASES_PANE_STYLES } from "./phrases/panel-tab.js";
+import { mountWriteUpPane, WRITE_UP_PANE_STYLES } from "./ai-write-up/panel-tab.js";
+import { DICTATION_STYLES } from "./ai-write-up/dictation.js";
+import { isAiWriteUpEnabled, onAiWriteUpChanged } from "../../shared/ai-write-up-settings.js";
 
 // Visible-field map, kept in sync with chrome.storage by initSamplePanelFields().
 // Starts from the registry defaults so the first paint is correct even before
@@ -143,16 +146,26 @@ export function shouldShowPanel() {
     return isElnEntryPage();
 }
 
-// "entities" (the sample cards) or "phrases". Remembered with the panel's
-// other furniture so the tab last used is the one that opens.
-function currentPanelTab() {
-    return loadPanelState().tab === "phrases" ? "phrases" : "entities";
+// "entities" (the sample cards), "phrases" or "writeup" (only while AI
+// write-up is on). Remembered with the panel's other furniture so the tab
+// last used is the one that opens.
+function validTab(tab) {
+    if (tab === "phrases") return "phrases";
+    if (tab === "writeup" && isAiWriteUpEnabled()) return "writeup";
+    return "entities";
 }
 
-export function setPanelTab(tab) {
+function currentPanelTab() {
+    return validTab(loadPanelState().tab);
+}
+
+// `remember: false` shows a tab without storing it — used when the panel is
+// built, before the Write-up setting has loaded: falling back to Entities
+// then must not overwrite a remembered Write-up.
+export function setPanelTab(tab, { remember = true } = {}) {
     const panel = document.getElementById(PANEL_ID);
     if (!panel) return;
-    const next = tab === "phrases" ? "phrases" : "entities";
+    const next = validTab(tab);
     panel.dataset.tab = next;
     for (const btn of panel.querySelectorAll(".cdd-stoich-tab")) {
         const active = btn.dataset.tab === next;
@@ -162,7 +175,29 @@ export function setPanelTab(tab) {
     if (next === "phrases") {
         mountPhrasesPane(panel.querySelector(".cdd-phrases-pane"));
     }
-    savePanelState({ tab: next });
+    if (next === "writeup") {
+        mountWriteUpPane(panel.querySelector(".cdd-writeup-pane"));
+    }
+    if (remember) savePanelState({ tab: next });
+}
+
+// The Write-up tab comes and goes with its setting; turned off while open,
+// the panel falls back to Entities.
+let writeUpSubscribed = false;
+function syncWriteUpTab(panel) {
+    const tab = panel.querySelector('.cdd-stoich-tab[data-tab="writeup"]');
+    if (tab) tab.hidden = !isAiWriteUpEnabled();
+    if (!isAiWriteUpEnabled() && panel.dataset.tab === "writeup") setPanelTab("entities", { remember: false });
+    if (!writeUpSubscribed) {
+        writeUpSubscribed = true;
+        onAiWriteUpChanged(() => {
+            const current = document.getElementById(PANEL_ID);
+            if (!current) return;
+            syncWriteUpTab(current);
+            // The remembered tab may be Write-up, unreadable until the setting loaded.
+            if (isAiWriteUpEnabled() && loadPanelState().tab === "writeup") setPanelTab("writeup", { remember: false });
+        });
+    }
 }
 
 export function ensurePanel() {
@@ -197,7 +232,7 @@ export function ensurePanel() {
     tabs.className = "cdd-stoich-tabs";
     tabs.setAttribute("role", "tablist");
     tabs.addEventListener("mousedown", (event) => event.stopPropagation());
-    for (const [key, label] of [["entities", "Entities"], ["phrases", "Phrases"]]) {
+    for (const [key, label] of [["entities", "Entities"], ["phrases", "Phrases"], ["writeup", "Write-up"]]) {
         const tab = document.createElement("button");
         tab.type = "button";
         tab.className = "cdd-stoich-tab";
@@ -326,8 +361,12 @@ export function ensurePanel() {
     const phrasesPane = document.createElement("div");
     phrasesPane.className = "cdd-phrases-pane";
 
+    const writeUpPane = document.createElement("div");
+    writeUpPane.className = "cdd-writeup-pane";
+
     body.appendChild(entitiesPane);
     body.appendChild(phrasesPane);
+    body.appendChild(writeUpPane);
 
     panel.appendChild(header);
     panel.appendChild(body);
@@ -729,13 +768,16 @@ ${HPLC_BLOCK_STYLES.replace(/^ {2}\./gm, `  #${PANEL_ID} .`)}
     color: #f9fafb;
     background: #374151;
   }
-  #${PANEL_ID}[data-tab="phrases"] .cdd-entities-pane,
-  #${PANEL_ID}[data-tab="phrases"] #${PANEL_ID}-print,
-  #${PANEL_ID}[data-tab="phrases"] .cdd-csv-split,
-  #${PANEL_ID}:not([data-tab="phrases"]) .cdd-phrases-pane {
+  #${PANEL_ID}:is([data-tab="phrases"], [data-tab="writeup"]) .cdd-entities-pane,
+  #${PANEL_ID}:is([data-tab="phrases"], [data-tab="writeup"]) #${PANEL_ID}-print,
+  #${PANEL_ID}:is([data-tab="phrases"], [data-tab="writeup"]) .cdd-csv-split,
+  #${PANEL_ID}:not([data-tab="phrases"]) .cdd-phrases-pane,
+  #${PANEL_ID}:not([data-tab="writeup"]) .cdd-writeup-pane {
     display: none;
   }
 ${PHRASES_PANE_STYLES(PANEL_ID)}
+${WRITE_UP_PANE_STYLES(PANEL_ID)}
+${DICTATION_STYLES(PANEL_ID)}
 `;
 
     document.documentElement.appendChild(style);
@@ -819,7 +861,8 @@ ${PHRASES_PANE_STYLES(PANEL_ID)}
         });
     });
 
-    setPanelTab(currentPanelTab());
+    setPanelTab(currentPanelTab(), { remember: false });
+    syncWriteUpTab(panel);
 
     updatePanelVisibilityForOverlays();
     return panel;

@@ -61,17 +61,20 @@ function blockLines(node, lines) {
     lines.push(HEADINGS.has(node.type) ? `## ${text}` : text);
 }
 
+/** Slate nodes (the saved body, or the live editor read back into nodes). */
+export function entryTextFromNodes(nodes) {
+    if (!Array.isArray(nodes)) return "";
+    const lines = [];
+    for (const node of nodes) blockLines(node, lines);
+    return lines.join("\n");
+}
+
 export function entryTextFromBody(body) {
-    let doc;
     try {
-        doc = JSON.parse(body);
+        return entryTextFromNodes(JSON.parse(body));
     } catch {
         return "";
     }
-    if (!Array.isArray(doc)) return "";
-    const lines = [];
-    for (const node of doc) blockLines(node, lines);
-    return lines.join("\n");
 }
 
 // ---------------------------------------------------------------- table rows
@@ -199,6 +202,32 @@ export function buildMessages(text, rows) {
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: `STOICHIOMETRY TABLE\n${table}\n\nENTRY TEXT\n${text}` },
     ];
+}
+
+// ---------------------------------------------------------------- dictation
+
+const DICTATION_PROMPT = `You turn a dictated lab notebook passage into English for a synthetic chemist's ELN.
+The dictation was transcribed by speech recognition and may be Slovak, Czech or English, with recognition errors.
+Rewrite it as clear, factual English experimental prose: past tense, passive voice, standard units (mg, mL, mmol, °C, h).
+Keep every fact and number exactly; do not add anything. Fix misheard chemical names using the compound list when one clearly matches.
+Answer with the English text only — no quotes, no comments.`;
+
+export function buildDictationMessages(transcript, rows) {
+    const names = [...new Set(rows.map((r) => r.name).filter((n) => n && n !== "Unnamed"))];
+    const compounds = names.length ? `COMPOUNDS IN THIS REACTION: ${names.join(", ")}\n\n` : "";
+    return [
+        { role: "system", content: DICTATION_PROMPT },
+        { role: "user", content: `${compounds}DICTATION\n${transcript}` },
+    ];
+}
+
+/** The model's text with any wrapping quotes or fences taken off. */
+export function cleanDictationAnswer(content) {
+    return String(content || "")
+        .replace(/^```\w*\n?|\n?```$/g, "")
+        .trim()
+        .replace(/^"(.*)"$/s, "$1")
+        .trim();
 }
 
 // ---------------------------------------------------------------- answer

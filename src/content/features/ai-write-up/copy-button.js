@@ -21,3 +21,27 @@ export function copyButton(segments) {
     });
     return copy;
 }
+
+/** ✕ that closes a result card — the card's own `onClose` drops it. */
+export function closeButton(onClose) {
+    const close = document.createElement("button");
+    close.type = "button";
+    close.className = "cdd-wu-close";
+    close.textContent = "✕";
+    close.title = "Close";
+    close.setAttribute("aria-label", "Close");
+    close.addEventListener("click", (event) => {
+        event.stopPropagation();
+        onClose();
+    });
+    return close;
+}
+
+/** The right-hand end of a card's head: Copy (when there is text) and ✕. */
+export function cardActions(segments, onClose) {
+    const actions = document.createElement("span");
+    actions.className = "cdd-wu-card__actions";
+    if (segments) actions.append(copyButton(segments));
+    actions.append(closeButton(onClose));
+    return actions;
+}

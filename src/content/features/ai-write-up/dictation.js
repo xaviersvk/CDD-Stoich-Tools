@@ -44,7 +44,7 @@ import {
 } from "./model.js";
 import { currentEntry, entryUrl, fetchEntry, sectionAroundBlock, textFromEditor } from "./entry.js";
 import { entityMentions, mentionPromptBlock, mentionsToDom, splitMentions } from "./mentions.js";
-import { copyButton } from "./copy-button.js";
+import { cardActions } from "./copy-button.js";
 
 const MAX_SECONDS = 300;
 const MAX_CARDS = 10;
@@ -295,7 +295,10 @@ function cardNode(card) {
     const title = document.createElement("div");
     title.className = "cdd-wu-card__title";
     title.textContent = card.label;
-    head.append(title, copyButton(card.segments));
+    head.append(title, cardActions(card.segments, () => {
+        cards = cards.filter((c) => c !== card);
+        setState({});
+    }));
 
     const text = document.createElement("div");
     text.className = "cdd-wu-text";
@@ -359,7 +362,22 @@ export function mountDictation(bar, list) {
         const key = currentEntry()?.key;
         if (shown?.cards !== cards || shown?.key !== key) {
             shown = { cards, key };
-            list.replaceChildren(...cards.filter((c) => c.entryKey === key).map(cardNode));
+            const mine = cards.filter((c) => c.entryKey === key);
+            const nodes = mine.map(cardNode);
+            // They pile up: one click empties this entry's.
+            if (mine.length > 1) {
+                const clear = document.createElement("button");
+                clear.type = "button";
+                clear.className = "cdd-wu-clear";
+                clear.textContent = `Clear all ${mine.length}`;
+                clear.addEventListener("click", (event) => {
+                    event.stopPropagation();
+                    cards = cards.filter((c) => c.entryKey !== key);
+                    setState({});
+                });
+                nodes.unshift(clear);
+            }
+            list.replaceChildren(...nodes);
         }
     };
     unsubscribeTab?.();

@@ -28,7 +28,7 @@ import {
 import { currentEntry, entryUrl, fetchEntry, textFromEditor } from "./entry.js";
 import { mountDictation, refreshDictation } from "./dictation.js";
 import { entityMentions, mentionPromptBlock, mentionsToDom, splitMentions, unfilledPlaceholders } from "./mentions.js";
-import { copyButton } from "./copy-button.js";
+import { cardActions } from "./copy-button.js";
 
 let pane = null;
 let runButton = null;
@@ -78,8 +78,22 @@ function checkItems({ checks, hasTable, segments }) {
     return items.sort((a, b) => SEVERITY_ORDER[a[0]] - SEVERITY_ORDER[b[0]]);
 }
 
+// ✕ on the result: the English text and its checks go together.
+function closeResult() {
+    result = null;
+    setStatus("");
+    render();
+}
+
 function renderChecks(card, result) {
-    card.replaceChildren(el("div", "cdd-wu-card__title", "Checks"));
+    // With no English text card above, the ✕ sits here.
+    if (result.segments.length) {
+        card.replaceChildren(el("div", "cdd-wu-card__title", "Checks"));
+    } else {
+        const head = el("div", "cdd-wu-card__head");
+        head.append(el("div", "cdd-wu-card__title", "Checks"), cardActions(null, closeResult));
+        card.replaceChildren(head);
+    }
     const items = checkItems(result);
     if (!items.length) {
         card.append(el("div", "cdd-wu-check", "Text and table agree."));
@@ -106,8 +120,7 @@ function render() {
     if (result.segments.length) {
         const card = el("div", "cdd-wu-card");
         const head = el("div", "cdd-wu-card__head");
-        head.append(el("div", "cdd-wu-card__title", "English text"));
-        head.append(copyButton(result.segments));
+        head.append(el("div", "cdd-wu-card__title", "English text"), cardActions(result.segments, closeResult));
         const text = el("div", "cdd-wu-text");
         // Filling a placeholder redraws the checks only: the text keeps its
         // scroll position and the slot just typed into.
@@ -237,6 +250,9 @@ export const WRITE_UP_PANE_STYLES = (panelId) => `
     background: #0f172a;
   }
   #${panelId} .cdd-wu-card__head { display: flex; justify-content: space-between; align-items: center; }
+  #${panelId} .cdd-wu-card__actions { display: inline-flex; gap: 4px; align-items: center; }
+  #${panelId} .cdd-wu-close { padding: 2px 7px; }
+  #${panelId} .cdd-wu-clear { display: block; margin: 0 0 6px auto; font-size: 11px; }
   #${panelId} .cdd-wu-card__title { font-size: 12px; font-weight: 700; margin-bottom: 6px; }
   #${panelId} .cdd-wu-text {
     font-size: 12px;

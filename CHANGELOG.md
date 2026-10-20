@@ -47,7 +47,8 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
     Print and ⤳) sends that reaction's rows and the section it sits in.
   - **Polish / Polish +** beside *Save phrase* on a selection: the same step
     for written text; ＋ takes an instruction ("make it a bullet list").
-  - Results are cards with **Copy**, newest first, per entry; nothing is
+  - Results are cards with **Copy** and **✕** (*Clear all* once there are
+    several), newest first, per entry; nothing is
     written into the entry. Copy puts a Slate fragment in `text/html`
     (`data-slate-fragment`, as CDD's own Copy does), so Ctrl+V makes real
     content in CDD and ordinary HTML elsewhere.

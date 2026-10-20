@@ -89,8 +89,11 @@ function num(value) {
 // leads with the sample; prose names the compound).
 // The batch name ("008") only names a row nothing else names: as an alias
 // it would match every "008" in the text.
+//
+// Never the IUPAC name: it describes the structure, and these names go to
+// the model. It is kept apart (iupacName below) for what stays local.
 function rowNames(row) {
-    const names = [row?.name, row?.sample?.name, row?.moleculeName, row?.iupacName]
+    const names = [row?.name, row?.sample?.name, row?.moleculeName]
         .filter((n) => typeof n === "string" && n.trim())
         .map((n) => n.trim());
     if (!names.length && typeof row?.batch?.name === "string" && row.batch.name.trim()) names.push(row.batch.name.trim());
@@ -107,6 +110,7 @@ export function tableRowsFromEntry(elnEntry) {
         for (const row of feature.data.stoichiometryTable.rows || []) {
             const sample = parseQuantity(row?.userInput?.msample);
             const [name = "Unnamed", ...aliases] = rowNames(row);
+            const iupac = typeof row?.iupacName === "string" ? row.iupacName.trim() : "";
             const isProduct = row?.role === "product";
             rows.push({
                 row: rows.length + 1,
@@ -115,9 +119,12 @@ export function tableRowsFromEntry(elnEntry) {
                 component: isProduct ? null : ++component,
                 structureId: feature.data.attachedStructureId ?? null,
                 sampleText: typeof row?.userInput?.msample === "string" ? row.userInput.msample.trim() : "",
+                // What the prompt calls the row — never its IUPAC name.
                 name,
-                // Other names the same compound may be written under.
-                aliases,
+                // Local only — the panel's checks, and finding the compound
+                // in the model's English to link it: the IUPAC name may help.
+                displayName: name !== "Unnamed" ? name : iupac || name,
+                aliases: iupac && !aliases.includes(iupac) ? [...aliases, iupac] : aliases,
                 role: String(row?.role || ""),
                 massG: num(row?.mass),
                 sampleG: sample?.kind === "mass" ? sample.value : null,
@@ -381,7 +388,7 @@ function amountChecks(item, row) {
         if (agrees(qty, tableValue)) continue;
         checks.push({
             kind: "mismatch",
-            label: row.name,
+            label: row.displayName,
             text: String(item[field]).trim(),
             table: formatIn(tableValue, qty.unit === "eq" ? DISPLAY.eq[0] : qty.unit, qty.factor),
         });
@@ -429,7 +436,7 @@ export function buildChecks(result, rows) {
 
     for (const n of Array.isArray(result?.notMentioned) ? result.notMentioned : []) {
         const row = byRow.get(Number(n));
-        if (row) checks.push({ kind: "missing", label: row.name });
+        if (row) checks.push({ kind: "missing", label: row.displayName });
     }
 
     for (const note of Array.isArray(result?.notes) ? result.notes : []) {

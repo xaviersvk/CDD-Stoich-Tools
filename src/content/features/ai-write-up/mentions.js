@@ -85,14 +85,19 @@ export function entityMentions(rows, elnEntry, entryUrl) {
     const existing = linkFeatures(elnEntry);
 
     for (const row of rows) {
-        if (row.component == null || row.structureId == null || row.name === "Unnamed") continue;
+        if (row.component == null || row.structureId == null || row.displayName === "Unnamed") continue;
         const id = `#attached_structures/${row.structureId}%23reaction_components/${row.component}`;
         const known = existing.get(id);
-        const label = known?.defaultLabel || rowMentionLabel(row);
+        // `label` is what gets pasted and may use the IUPAC name (local);
+        // `promptLabel` is what the model is told, and never does. A mention
+        // already in the entry is in the entry's text anyway.
+        const label = known?.defaultLabel || rowMentionLabel({ ...row, name: row.displayName });
+        const promptLabel = known?.defaultLabel || rowMentionLabel(row);
         mentions.push({
             token: `R${row.row}`,
             label,
-            names: [row.name, ...(row.aliases || [])],
+            promptLabel,
+            names: [...(row.name !== "Unnamed" ? [row.name] : []), ...(row.aliases || [])],
             data: known
                 ? { ...known, href: known.href || `${entryUrl}${id}` }
                 : {
@@ -140,7 +145,7 @@ export function mentionPromptBlock(mentions) {
     return [
         "ENTITY TOKENS — where your English names one of these, write its token instead of the name",
         "(and instead of the amounts in brackets after it: the token prints as the label shown). Use only these tokens.",
-        ...mentions.map((m) => `[[${m.token}]] = ${m.label}`),
+        ...mentions.map((m) => `[[${m.token}]] = ${m.promptLabel ?? m.label}`),
     ].join(NL);
 }
 

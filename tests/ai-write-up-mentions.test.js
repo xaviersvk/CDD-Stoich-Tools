@@ -213,3 +213,30 @@ test("one paragraph copies alone, with its mentions and the placeholder's value"
     assert.equal(nodes.length, 1);
     assert.equal(nodes[0].children[1].type, "a");
 });
+
+test("an IUPAC name never reaches a prompt, but still links the compound locally", () => {
+    const e = {
+        body: JSON.stringify([{ type: "p", children: [{ text: "x" }] }]),
+        feature_map: {
+            9: { type: "reaction", data: { attachedStructureId: 7, stoichiometryTable: { rows: [
+                // Only an IUPAC name — the phenol row of entry 1000017498, sample left out.
+                { uid: 10, role: "agent", iupacName: "ZZIUPAC-phenol", mass: 0.012, mole: 0.000128, userInput: {} },
+                { uid: 11, role: "agent", name: "DIPEA", iupacName: "N-ethyl-ZZIUPAC-diisopropylamine", userInput: {} },
+            ] } } },
+        },
+    };
+    const rows = tableRowsFromEntry(e);
+    assert.equal(rows[0].name, "Unnamed");
+    assert.equal(rows[0].displayName, "ZZIUPAC-phenol");
+
+    const list = entityMentions(rows, e, ENTRY_URL);
+    const sent = JSON.stringify([
+        buildMessages("text", rows, mentionPromptBlock(list)),
+        buildDictationMessages("text", { rows, mentionBlock: mentionPromptBlock(list) }),
+    ]);
+    assert.ok(!sent.includes("ZZIUPAC"), "an IUPAC name went to the model");
+
+    // Locally the compound is still found and linked by it.
+    const segments = splitMentions("It was quenched with zziupac-phenol.", list);
+    assert.equal(segments.find((s) => s.mention)?.mention.token, "R1");
+});

@@ -73,8 +73,11 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 - Privacy policy and store copy describe what is sent: entry text (or the
   selection), table names, amounts and equivalents, linked record names,
   house rules, dictated audio — only on a click. Never structures: no SMILES,
-  mol/MRV, images or molecular weights (MW was dropped from the prompt); a
-  test feeds rows full of structure fields and checks none reaches a prompt.
+  mol/MRV, images, molecular weights (MW was dropped from the prompt) or the
+  table's IUPAC names — a row known only by its IUPAC name goes as
+  "Unnamed"; the IUPAC name is used only locally, to link the compound and
+  label the checks. Tests feed rows full of structure fields and IUPAC names
+  and check none reaches a prompt.
 
 ## [18.16.0] — 2026-10-16
 

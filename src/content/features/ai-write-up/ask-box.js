@@ -66,7 +66,7 @@ export function mountAskBox() {
     // One microphone and one request at a time, shared with dictation.
     const paint = () => {
         const state = getDictationState();
-        const mine = typeof state.origin?.onText === "function";
+        const mine = state.origin?.field === "ask";
         mic.textContent = mine ? dictationLabel("🎤") : "🎤";
         mic.disabled = state.phase !== "idle" && !mine;
         askButton.disabled = state.phase !== "idle";

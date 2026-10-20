@@ -10,6 +10,7 @@ import {
     buildChecks,
     buildDictationMessages,
     buildAskMessages,
+    buildReviseMessages,
     lostQuantities,
     answerText,
     cleanDictationAnswer,
@@ -337,4 +338,20 @@ test("a note's 'row 2' becomes the row's name", () => {
     assert.deepEqual(buildChecks({ notes: ["Clarify the volume unit for row 2"] }, rows), [
         { kind: "note", message: "Clarify the volume unit for Acetyl Acetate" },
     ]);
+});
+
+test("Reply sends the draft, its open points and the reply, and asks for the draft revised", () => {
+    const rows = tableRowsFromEntry(entry());
+    const [system, user] = buildReviseMessages("[[R1]] was stirred at [[?temperature]].", "teplota bola 90 °C", {
+        openPoints: ["Fill in the temperature", "detail workup procedure"],
+        rows,
+        askMissing: true,
+    });
+    assert.match(system.content, /revise a draft passage/);
+    assert.match(system.content, /fill \[\[\?…\]\] placeholders the reply answers/);
+    assert.match(system.content, /"notMentioned"/);
+    const order = ["DRAFT", "OPEN POINTS", "REPLY"].map((h) => user.content.indexOf(`${h}\n`));
+    assert.deepEqual([...order].sort((a, b) => a - b), order);
+    assert.ok(user.content.includes("- detail workup procedure"));
+    assert.match(user.content, /whole DRAFT revised with the REPLY, in English\. Reply in English only\.$/);
 });

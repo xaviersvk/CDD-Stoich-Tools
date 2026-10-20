@@ -315,6 +315,20 @@ function placeholderText(p) {
     return p.value.trim() || `[${p.what}?]`;
 }
 
+/**
+ * The card's English as the model wrote it — mentions back as their tokens,
+ * placeholders as their value or "[[?what]]" — for a Reply to revise.
+ */
+export function mentionsToTokens(segments) {
+    return segments
+        .map((s) => {
+            if (s.mention) return `[[${s.mention.token}]]`;
+            if (s.placeholder) return s.placeholder.value.trim() || `[[?${s.placeholder.what}]]`;
+            return s.text;
+        })
+        .join("");
+}
+
 export function mentionsToPlain(segments) {
     return lines(segments)
         .map((line) => {

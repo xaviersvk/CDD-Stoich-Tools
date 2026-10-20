@@ -15,7 +15,7 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ## 19.1.0 — 2026-10-20
 
-Ask the AI about the whole entry — "add a workup paragraph: 3× EtOAc", "what is missing before the purification?" — from the new field in the panel's *Write-up* tab.
+Ask the AI about the whole entry — "add a workup paragraph: 3× EtOAc", "what is missing before the purification?" — from the new field in the panel's *Write-up* tab, and **Reply** on any card to answer what it asks, typed or dictated.
 
 - Checks now flag a number the English dropped, and check whole numbers like "1 equiv" to 5 %.
 - The product gets a link too. *Settings → AI write-up → Compound links*: CDD's label (default) or the name only.

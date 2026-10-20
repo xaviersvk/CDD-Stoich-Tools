@@ -402,6 +402,60 @@ export function buildAskMessages(request, { rows = [], entryText = "", mentionBl
     ];
 }
 
+// ---------------------------------------------------------------- revise
+
+// Reply on a card: the chemist answers the open points (or adds what was
+// missing) and the draft comes back revised — same JSON as a dictation, so
+// the revised card gets Checks again.
+function revisePrompt({ askMissing }) {
+    return `You revise a draft passage of a synthetic chemist's electronic lab notebook (ELN) entry.
+You get the DRAFT (English), the OPEN POINTS raised about it, and the chemist's REPLY
+(Slovak, Czech or English) — answers to those points or facts to add.
+
+Do two things and answer with ONE JSON object only, no prose around it:
+
+1. "text": the DRAFT revised with what the REPLY says: work each new fact into the right sentence,
+   fill [[?…]] placeholders the reply answers, keep everything else — every other fact, number and token as it is.
+   Clear, factual English: past tense, passive voice, standard units. Do not invent anything.
+   ${PLACEHOLDER_RULE}
+
+2. Report what the revised text says about the stoichiometry table rows. Do NOT calculate anything:
+   "amounts": [{"row": <table row number>, "mass": "...", "volume": "...", "amount": "...", "eq": "..."}]
+   "product": {"row": <product row number>, "mass": "<as written>", "yield": "<as written>"} or null
+${askMissing ? NOT_MENTIONED_LINE : ""}   "notes": ["<short imperative advice: what is still missing — at most 5; nothing the reply already answered>"]
+
+JSON shape: {"text": "...", "amounts": [...], "product": {...}|null, ${askMissing ? '"notMentioned": [...], ' : ""}"notes": [...]}`;
+}
+
+/**
+ * The card's draft (tokens and placeholders in, as mentions.js writes them
+ * back), its open points and the reply → messages. `rows`, `entryText` and
+ * `mentionBlock` as the card was made with.
+ */
+export function buildReviseMessages(
+    draft,
+    reply,
+    { openPoints = [], rows = [], entryText = "", mentionBlock = "", askMissing = false } = {}
+) {
+    const parts = [];
+    const context = [];
+    if (rows.length) context.push(["STOICHIOMETRY TABLE", ...rows.map(tableLine)].join(NL));
+    if (entryText.trim()) context.push(["ENTRY TEXT AROUND IT", entryText.trim()].join(NL));
+    if (context.length) parts.push("CONTEXT (for understanding only — do not translate or repeat it)", ...context);
+    if (mentionBlock) parts.push(mentionBlock);
+    parts.push(["DRAFT", draft.trim()].join(NL));
+    if (openPoints.length) parts.push(["OPEN POINTS", ...openPoints.map((p) => `- ${p}`)].join(NL));
+    parts.push(["REPLY", reply.trim()].join(NL));
+    parts.push(
+        'Answer with the JSON object. Its "text" is the whole DRAFT revised with the REPLY, in English. ' +
+            "Reply in English only."
+    );
+    return [
+        { role: "system", content: revisePrompt({ askMissing: askMissing && rows.length > 0 }) },
+        { role: "user", content: parts.join(NL + NL) },
+    ];
+}
+
 /**
  * Settings → AI write-up → House rules: the ones switched on, added to the
  * system prompt of any request built above.

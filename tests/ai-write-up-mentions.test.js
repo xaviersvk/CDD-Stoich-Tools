@@ -10,6 +10,7 @@ import {
     mentionsToClipboardHtml,
     unfilledPlaceholders,
     segmentLines,
+    mentionsToTokens,
 } from "../src/content/features/ai-write-up/mentions.js";
 
 const ENTRY_URL = "https://eu.collaborativedrug.com/vaults/1/eln/entries/2";
@@ -305,4 +306,10 @@ test("a label mention swallows the bracket of amounts the model wrote after its 
     assert.equal(mentionsToPlain(named), "The Acetyl Acetate (1.48 mg) was added.");
     // The prompt says where a token does not belong.
     assert.match(mentionPromptBlock(mentions()), /not, e\.g\., water or a solvent used later in the workup/);
+});
+
+test("a card's English goes back to the model with its tokens and filled values", () => {
+    const segments = splitMentions("[[R1]] was stirred at [[?temperature]] for [[?time]].", mentions());
+    segments.find((s) => s.placeholder?.what === "temperature").placeholder.value = "90 °C";
+    assert.equal(mentionsToTokens(segments), "[[R1]] was stirred at 90 °C for [[?time]].");
 });

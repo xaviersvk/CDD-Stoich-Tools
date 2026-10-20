@@ -37,6 +37,7 @@ import {
     ENTRY_CONTEXT_CHARS,
     buildAskMessages,
     buildChecks,
+    buildReviseMessages,
     buildDictationMessages,
     cleanDictationAnswer,
     lostQuantities,
@@ -48,7 +49,15 @@ import {
     tableRowsFromEntry,
 } from "./model.js";
 import { currentEntry, entryUrl, fetchEntry, sectionAroundBlock, textFromEditor } from "./entry.js";
-import { entityMentions, mentionPromptBlock, mentionsToDom, mentionsToPlain, splitMentions } from "./mentions.js";
+import {
+    entityMentions,
+    mentionPromptBlock,
+    mentionsToDom,
+    mentionsToPlain,
+    mentionsToTokens,
+    splitMentions,
+    unfilledPlaceholders,
+} from "./mentions.js";
 import { answerMeta, cardActions, copyParagraphOnCtrlClick } from "./copy-button.js";
 import { checksList } from "./checks-view.js";
 
@@ -208,13 +217,20 @@ async function runDictation(blob, origin, entryText, entryKey) {
 async function toEnglishCard(args) {
     const {
         source, sourceLabel, label, rows, mentions, entryText, entryKey, startedAt,
-        instruction = "", mayBeEnglish = false, askMissing = false, ask = false,
+        instruction = "", mayBeEnglish = false, askMissing = false, ask = false, revise = null,
     } = args;
     step("translating", `${sourceLabel}: “${source}”`);
     const mentionBlock = mentionPromptBlock(mentions, { style: getAiWriteUpView().mentionStyle });
-    const messages = ask
-        ? buildAskMessages(source, { rows, entryText, mentionBlock })
-        : buildDictationMessages(source, { rows, entryText, mentionBlock, instruction, askMissing });
+    let messages;
+    if (revise) {
+        messages = buildReviseMessages(revise.draft, source, {
+            openPoints: revise.openPoints, rows, entryText, mentionBlock, askMissing,
+        });
+    } else if (ask) {
+        messages = buildAskMessages(source, { rows, entryText, mentionBlock });
+    } else {
+        messages = buildDictationMessages(source, { rows, entryText, mentionBlock, instruction, askMissing });
+    }
     const answer = await chrome.runtime.sendMessage({
         type: AI_CHAT_MESSAGE,
         id: newRequestId(),
@@ -223,7 +239,8 @@ async function toEnglishCard(args) {
     if (!answer?.ok) {
         // What was heard or selected is not lost: a card keeps it, with Retry
         // — nobody should have to dictate it again.
-        if (answer?.error !== "cancelled") {
+        // A reply that failed leaves its card as it was (and the reply in its box).
+        if (answer?.error !== "cancelled" && !revise) {
             cards = [
                 {
                     entryKey,
@@ -262,33 +279,91 @@ async function toEnglishCard(args) {
     const segments = splitMentions(english, mentions);
     // Numbers the English dropped. Not for Ask: its answer is new text, not
     // the request rewritten.
-    const lost = ask ? [] : lostQuantities(source, mentionsToPlain(segments));
-    cards = [
-        {
-            entryKey,
-            segments,
-            // notMentioned only where it was asked for: the model may add it anyway.
-            checks: parsed
-                ? [...lost, ...buildChecks(
-                    { ...parsed, notMentioned: askMissing ? parsed.notMentioned : [] },
-                    rows,
-                    { texts: [source, entryText, english] }
-                )]
-                : lost.length ? lost : null,
-            hasTable: rows.length > 0,
-            source,
-            sourceLabel,
-            label,
-            instruction: instruction.trim(),
-            // The whole wait, from the click: recording stopped or Polish.
-            at,
-            tookMs: at - startedAt,
-            model: answer.model,
-        },
-        ...cards,
-    ].slice(0, MAX_CARDS);
+    // A revision must keep what the draft said and add what the reply said.
+    const lostFrom = revise ? `${revise.draftPlain}
+${source}` : source;
+    const lost = ask ? [] : lostQuantities(lostFrom, mentionsToPlain(segments));
+    const card = {
+        entryKey,
+        segments,
+        // notMentioned only where it was asked for: the model may add it anyway.
+        checks: parsed
+            ? [...lost, ...buildChecks(
+                { ...parsed, notMentioned: askMissing ? parsed.notMentioned : [] },
+                rows,
+                { texts: [source, entryText, english, revise?.draftPlain || ""] }
+            )]
+            : lost.length ? lost : null,
+        hasTable: rows.length > 0,
+        source,
+        sourceLabel,
+        label,
+        instruction: instruction.trim(),
+        // The whole wait, from the click: recording stopped or Polish.
+        at,
+        tookMs: at - startedAt,
+        model: answer.model,
+        // What the card was made with — a Reply revises it with the same.
+        context: { rows, mentions, entryText, askMissing, baseLabel: revise?.baseLabel || label },
+    };
+    // A revision takes the place of the card it revises; anything else goes on top.
+    cards = revise?.replaces && cards.includes(revise.replaces)
+        ? cards.map((c) => (c === revise.replaces ? card : c))
+        : [card, ...cards].slice(0, MAX_CARDS);
     step("idle", "");
     return true;
+}
+
+/**
+ * Reply on a card: `reply` (typed or dictated) answers its open points or
+ * adds facts; the draft comes back revised in the card's place, with Checks
+ * against the same table. True when it did; on failure the card stays.
+ */
+export async function replyToCard(card, reply) {
+    if (state.phase !== "idle" || !reply.trim() || !card?.context) return false;
+    if (!getAiWriteUpView().hasKey) {
+        step("idle", aiErrorMessage({ error: "no-key" }));
+        return false;
+    }
+    // What the reply answers: the checks still open, the empty slots.
+    const openPoints = [
+        ...unfilledPlaceholders(card.segments).map((what) => `Fill in the ${what}`),
+        ...(card.checks || []).map((c) => {
+            if (c.kind === "note") return c.message;
+            if (c.kind === "missing") return `Mention ${c.label}`;
+            if (c.kind === "lost") return `Put back ${c.text}`;
+            if (c.kind === "yield") return `Yield: calculated ${c.table}${c.text ? `, text says ${c.text}` : ""}`;
+            if (c.kind === "mismatch") return `${c.label}: text ${c.text}, table ${c.table}`;
+            return "";
+        }),
+    ].filter(Boolean);
+    const { rows, mentions, entryText, askMissing, baseLabel } = card.context;
+    setState({ origin: null });
+    try {
+        return await toEnglishCard({
+            source: reply.trim(),
+            sourceLabel: "Replied",
+            label: `${baseLabel} · revised`,
+            rows,
+            mentions,
+            entryText,
+            entryKey: card.entryKey,
+            startedAt: Date.now(),
+            askMissing,
+            mayBeEnglish: true,
+            revise: {
+                draft: mentionsToTokens(card.segments),
+                draftPlain: mentionsToPlain(card.segments),
+                openPoints,
+                replaces: card,
+                baseLabel,
+            },
+        });
+    } catch (err) {
+        console.debug("[CDD Stoich Tools] reply failed", err);
+        step("idle", aiErrorMessage({ error: "network" }));
+        return false;
+    }
 }
 
 /**
@@ -329,9 +404,12 @@ export async function askAboutEntry(request) {
     }
 }
 
-/** 🎤 at the Ask field: record, transcribe, hand the words to `onText`. */
-export function dictateInto(onText) {
-    toggleDictation({ onText });
+/**
+ * 🎤 at a field (Ask, a card's Reply): record, transcribe, hand the words to
+ * `onText`. `field` tells the buttons apart, so only that one shows ■ Stop.
+ */
+export function dictateInto(onText, field = "ask") {
+    toggleDictation({ onText, field });
 }
 
 /**
@@ -416,6 +494,67 @@ export function toggleDictation(origin = null) {
 
 // ---------------------------------------------------------------- tab UI
 
+// The Reply box under a card: a field (typed, or 🎤 dictated into it) and
+// Send. What is typed survives a redraw of the cards (card.replyDraft).
+function replyBoxNode(card) {
+    const box = document.createElement("div");
+    box.className = "cdd-wu-reply";
+    box.hidden = !card.replyOpen;
+
+    const field = document.createElement("textarea");
+    field.className = "cdd-wu-ask__field";
+    field.rows = 2;
+    field.placeholder = "e.g. 90 °C; worked up with 3× EtOAc; isolated 1.2 g";
+    field.value = card.replyDraft || "";
+    field.addEventListener("mousedown", (event) => event.stopPropagation());
+    field.addEventListener("input", () => { card.replyDraft = field.value; });
+
+    const actions = document.createElement("div");
+    actions.className = "cdd-wu-ask__actions";
+    const mic = document.createElement("button");
+    mic.type = "button";
+    mic.textContent = "🎤";
+    mic.title = "Dictate the reply into the field";
+    const send = document.createElement("button");
+    send.type = "button";
+    send.className = "cdd-wu-run";
+    send.textContent = "Send";
+    actions.append(mic, send);
+    box.append(field, actions);
+
+    const go = async () => {
+        if (!field.value.trim()) return field.focus();
+        if (await replyToCard(card, field.value)) card.replyDraft = "";
+    };
+    send.addEventListener("click", (event) => {
+        event.stopPropagation();
+        void go();
+    });
+    field.addEventListener("keydown", (event) => {
+        event.stopPropagation();
+        if (event.key === "Enter" && !event.shiftKey) {
+            event.preventDefault();
+            void go();
+        }
+    });
+    mic.addEventListener("click", (event) => {
+        event.stopPropagation();
+        dictateInto((text) => {
+            card.replyDraft = field.value.trim() ? `${field.value.trim()} ${text}` : text;
+            field.value = card.replyDraft;
+            field.focus();
+        }, card);
+    });
+    // Its own progress on its own button; gone with the box.
+    const unsubscribe = onDictationChanged((state) => {
+        if (!box.isConnected) return unsubscribe();
+        const mine = state.origin?.field === card;
+        mic.textContent = mine ? dictationLabel("🎤") : "🎤";
+        send.disabled = state.phase !== "idle";
+    });
+    return box;
+}
+
 function cardNode(card) {
     const box = document.createElement("div");
     box.className = "cdd-wu-card";
@@ -443,6 +582,22 @@ function cardNode(card) {
             void card.retry().catch(() => step("idle", aiErrorMessage({ error: "network" })));
         });
         actions.prepend(retry);
+    }
+    // Reply: answer the open points or add facts, typed or dictated.
+    let replyBox = null;
+    if (card.context) {
+        const replyButton = document.createElement("button");
+        replyButton.type = "button";
+        replyButton.textContent = "Reply";
+        replyButton.title = "Answer the points below or add what is missing — the text comes back revised";
+        replyButton.addEventListener("click", (event) => {
+            event.stopPropagation();
+            card.replyOpen = !card.replyOpen;
+            replyBox.hidden = !card.replyOpen;
+            if (card.replyOpen) replyBox.querySelector("textarea").focus();
+        });
+        actions.prepend(replyButton);
+        replyBox = replyBoxNode(card);
     }
     head.append(title, actions);
 
@@ -479,6 +634,7 @@ function cardNode(card) {
         box.append(asked);
     }
     box.append(answerMeta(card));
+    if (replyBox) box.append(replyBox);
     return box;
 }
 
@@ -583,5 +739,6 @@ export const DICTATION_STYLES = (panelId) => `
   #${panelId} .cdd-wu-dictations { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
   #${panelId} .cdd-wu-dictations:empty { display: none; }
   #${panelId} .cdd-wu-card-checks:not(:empty) { margin-top: 6px; padding-top: 6px; border-top: 1px solid #1f2937; }
+  #${panelId} .cdd-wu-reply { margin-top: 8px; padding-top: 6px; border-top: 1px solid #1f2937; }
   #${panelId} .cdd-wu-heard { font-size: 11px; color: #cbd5e1; margin-top: 6px; font-style: italic; }
 `;

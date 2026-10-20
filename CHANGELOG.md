@@ -28,6 +28,12 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   only what was asked for — new text or an answer, never the entry
   rewritten — as JSON like a dictation's, so the "Ask" card gets mentions,
   placeholders and Checks.
+- **Reply** on a dictation, selection or Ask card: a field (typed, or 🎤
+  dictated into it) whose answer goes with the card's draft (its tokens and
+  filled placeholders, `mentionsToTokens`) and its open points — unfilled
+  slots, notes, missing compounds — to `buildReviseMessages`. The revised
+  draft takes the card's place ("… · revised", "Replied: …") with Checks
+  against the same table; a failed reply leaves the card and the typed text.
 - **Lost numbers** (`lostQuantities`): every number with a unit written in
   the source (entry text, transcript, selection) must still be in the
   English, compared by value (0.5 g = 500 mg; °C, h, min, %, equiv/ekv).

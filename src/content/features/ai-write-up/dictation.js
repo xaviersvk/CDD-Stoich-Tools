@@ -266,7 +266,11 @@ async function toEnglishCard(args) {
             segments,
             // notMentioned only where it was asked for: the model may add it anyway.
             checks: parsed
-                ? [...lost, ...buildChecks({ ...parsed, notMentioned: askMissing ? parsed.notMentioned : [] }, rows)]
+                ? [...lost, ...buildChecks(
+                    { ...parsed, notMentioned: askMissing ? parsed.notMentioned : [] },
+                    rows,
+                    { texts: [source, entryText, english] }
+                )]
                 : lost.length ? lost : null,
             hasTable: rows.length > 0,
             source,

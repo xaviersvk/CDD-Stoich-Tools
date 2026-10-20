@@ -539,7 +539,7 @@ function yieldCheck(product, rows) {
 // "keep every fact" is only a request to the model, this is the check.
 // Units are compared by value, so 0.5 g → 500 mg is the same number.
 const QUANTITY_IN_TEXT =
-    /(\d+(?:[.,]\d+)?)\s*(µg|μg|ug|mg|kg|g|µl|μl|ul|ml|l|nmol|µmol|μmol|umol|mmol|mol|equiv\.?|eq\.?|ekv\.?|%|°\s?c|hours?|hrs?|h|minutes?|mins?|min)(?![\p{L}])/giu;
+    /(\d+(?:[.,]\d+)?)\s*(mol\s?%|µg|μg|ug|mg|kg|g|µl|μl|ul|ml|l|nmol|µmol|μmol|umol|mmol|mol|equiv\.?|eq\.?|ekv\.?|%|°\s?c|hours?|hrs?|h|minutes?|mins?|min)(?![\p{L}])/giu;
 const TIME_UNITS = { hour: "h", hours: "h", hr: "h", hrs: "h", h: "h", minute: "min", minutes: "min", mins: "min", min: "min" };
 
 function quantityKeys(text) {
@@ -565,9 +565,18 @@ export function lostQuantities(source, english) {
 }
 
 /** The LLM's answer + the table → what the Checks card lists. */
-export function buildChecks(result, rows) {
+/**
+ * `texts`: what was written and what came back. A row the model calls
+ * "not mentioned" while one of its names is right there in them is not
+ * reported — a small model's "never mentions" is a guess; products are
+ * never asked for.
+ */
+export function buildChecks(result, rows, { texts = [] } = {}) {
     const byRow = new Map(rows.map((r) => [r.row, r]));
     const checks = [];
+    const written = texts.join(" ").toLowerCase();
+    const named = (row) => [row.name, row.displayName, ...(row.aliases || [])]
+        .some((n) => n && n !== "Unnamed" && n.length >= 3 && written.includes(n.toLowerCase()));
 
     for (const item of Array.isArray(result?.amounts) ? result.amounts : []) {
         const row = byRow.get(Number(item?.row));
@@ -578,11 +587,13 @@ export function buildChecks(result, rows) {
 
     for (const n of Array.isArray(result?.notMentioned) ? result.notMentioned : []) {
         const row = byRow.get(Number(n));
-        if (row) checks.push({ kind: "missing", label: row.displayName });
+        if (row && row.role !== "product" && !named(row)) checks.push({ kind: "missing", label: row.displayName });
     }
 
     for (const note of Array.isArray(result?.notes) ? result.notes : []) {
-        const message = typeof note === "string" ? note.trim() : "";
+        // "row 1" is the prompt's numbering, not the chemist's: the row's name.
+        const message = (typeof note === "string" ? note.trim() : "")
+            .replace(/\brow (\d+)\b/gi, (m, n) => byRow.get(Number(n))?.displayName || m);
         if (message) checks.push({ kind: "note", message });
     }
 

@@ -26,8 +26,14 @@ function checkItems({ checks, hasTable, segments }, { quiet }) {
     for (const c of checks || []) {
         if (c.kind === "lost") items.push(["fix", "Put back ", [c.text], " — the English dropped it"]);
     }
-    // "Add the temperature" next to a temperature slot says it twice.
-    const repeatsSlot = (message) => placeholders.some((what) => message.toLowerCase().includes(what));
+    // "Add the temperature" next to a temperature slot says it twice; so does
+    // "specify ZnO mass" next to "ZnO amount" — any telling word of a slot.
+    const GENERIC = new Set(["amount", "the", "of", "and", "for", "used", "value"]);
+    const slotWords = placeholders.flatMap((what) => what.split(/[^\p{L}\p{N}]+/u)).filter((w) => w.length >= 3 && !GENERIC.has(w));
+    const repeatsSlot = (message) => {
+        const words = new Set(message.toLowerCase().split(/[^\p{L}\p{N}]+/u));
+        return slotWords.some((w) => words.has(w));
+    };
     if (!hasTable) {
         if (!quiet) items.push(["note", "No stoichiometry table in this entry — text polished only."]);
     } else if (checks == null) {

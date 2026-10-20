@@ -320,3 +320,21 @@ test("an English dictation the model leaves as it was is accepted", () => {
     assert.equal(looksUntranslated(heard, heard), false);
     assert.equal(looksUntranslated("Pridali sme 20 mg a miesali cez noc.", ""), true);
 });
+
+test("mol % is a percentage, not an amount in mol", () => {
+    assert.deepEqual(lostQuantities("5–10 mol % ZnO", "ZnO (10 mol%)"), []);
+    assert.deepEqual(lostQuantities("10 mol % ZnO", "ZnO"), [{ kind: "lost", text: "10 mol %" }]);
+});
+
+test("'not mentioned' is dropped when the row is right there in the text, and never for a product", () => {
+    const rows = tableRowsFromEntry(entry());
+    const checks = buildChecks({ notMentioned: [2, 3, 4] }, rows, { texts: ["acetyl acetate (1.48 mg) was added"] });
+    assert.deepEqual(checks, [{ kind: "missing", label: "toluene" }]);
+});
+
+test("a note's 'row 2' becomes the row's name", () => {
+    const rows = tableRowsFromEntry(entry());
+    assert.deepEqual(buildChecks({ notes: ["Clarify the volume unit for row 2"] }, rows), [
+        { kind: "note", message: "Clarify the volume unit for Acetyl Acetate" },
+    ]);
+});

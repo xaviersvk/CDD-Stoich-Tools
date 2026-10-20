@@ -176,7 +176,7 @@ async function polish() {
             tookMs: at - startedAt,
             model: answer.model,
             segments,
-            checks: parsed ? [...lost, ...buildChecks(parsed, rows)] : lost.length ? lost : null,
+            checks: parsed ? [...lost, ...buildChecks(parsed, rows, { texts: [text, english] })] : lost.length ? lost : null,
             hasTable: rows.length > 0,
         };
         setStatus(english && looksUntranslated(english, text)

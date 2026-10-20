@@ -46,7 +46,10 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   @-mention" (default) pastes CDD's own label, "Tenofovir (36.8 mg, 128
   µmol)" — the token stands for the name and the amounts after it, and a
   name the model writes (often a sample ID for a row with no name) links
-  with that label too; "only the name" keeps the text's own amounts. With
+  with that label too, and a "(10 g, 40.2 mmol)" the model still writes
+  right after a token is dropped instead of showing the amounts twice; the
+  prompt also says a token is not for workup water or solvents. "Only the
+  name" keeps the text's own amounts. With
   the default, amounts in the text that differ from the table show up as
   "Put back …".
 - Products get mentions: CDD numbers components over the other rows

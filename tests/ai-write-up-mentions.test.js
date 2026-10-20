@@ -293,3 +293,16 @@ test("links with no id (a paper, a patent) are told apart by their href", () => 
     };
     assert.deepEqual(entityMentions([], e, ENTRY_URL).map((m) => m.label), ["Discovery of …", "Patent WO2006063167"]);
 });
+
+test("a label mention swallows the bracket of amounts the model wrote after its token", () => {
+    const segments = splitMentions("The [[R2]] (1.48 mg, 14.5 µmol), and [[R1]] (20 mg) were mixed (2 h).", mentions());
+    assert.equal(
+        mentionsToPlain(segments),
+        "The Acetyl Acetate (1.48 mg, 14.5 µmol), and ab123 (20 mg, 14.5 µmol) were mixed (2 h)."
+    );
+    // Name only: the text's own bracket stays.
+    const named = splitMentions("The [[R2]] (1.48 mg) was added.", mentions("name"));
+    assert.equal(mentionsToPlain(named), "The Acetyl Acetate (1.48 mg) was added.");
+    // The prompt says where a token does not belong.
+    assert.match(mentionPromptBlock(mentions()), /not, e\.g\., water or a solvent used later in the workup/);
+});

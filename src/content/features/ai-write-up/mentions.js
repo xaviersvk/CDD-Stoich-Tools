@@ -30,6 +30,8 @@ const NL = "\n";
 // [[R3]] / [[L1]] — an entity; [[?temperature]] — a fact the text is missing.
 const TOKEN = /\[\[(?:([RL])(\d+)|\?([^\][\n]{1,40}))]]/g;
 const MAX_PLACEHOLDERS = 8;
+// " (10 g, 1.1 equiv, 44.3 mmol)" right after a mention: a bracket with a number in it.
+const AMOUNT_BRACKET = /^\s*\([^()\n]*\d[^()\n]*\)/;
 
 // ---------------------------------------------------------------- labels
 
@@ -167,6 +169,7 @@ export function mentionPromptBlock(mentions, { style = "label" } = {}) {
         style === "name"
             ? "Keep any amounts the text gives after the name, as written. Use only these tokens."
             : "The token prints as the label shown, amounts included: write it instead of the name AND the amounts in brackets after it. Use only these tokens.",
+        "Use a token only where the text means that very row of the table — not, e.g., water or a solvent used later in the workup.",
         ...mentions.map((m) => `[[${m.token}]] = ${m.promptLabel ?? m.label}`),
     ].join(NL);
 }
@@ -251,8 +254,16 @@ export function splitMentions(text, mentions) {
     const segments = [];
     let placeholders = 0;
     let last = 0;
+    // A label mention already carries "(10 g, 40.2 mmol)": the bracket of
+    // amounts the model still wrote after its token would say it twice.
+    let afterLabel = false;
+    const textAt = (from, to) => {
+        const piece = source.slice(from, to);
+        return afterLabel ? piece.replace(AMOUNT_BRACKET, "") : piece;
+    };
     for (const match of source.matchAll(TOKEN)) {
-        pushText(segments, source.slice(last, match.index));
+        pushText(segments, textAt(last, match.index));
+        afterLabel = false;
         if (match[3] != null) {
             const what = match[3].trim();
             // Past the cap a placeholder reads as its plain words.
@@ -261,10 +272,11 @@ export function splitMentions(text, mentions) {
         } else {
             const mention = byToken.get(`${match[1]}${match[2]}`);
             if (mention) segments.push({ mention });
+            afterLabel = mention?.style === "label" && mention.token.startsWith("R");
         }
         last = match.index + match[0].length;
     }
-    pushText(segments, source.slice(last));
+    pushText(segments, textAt(last));
     return linkNames(segments, mentions);
 }
 

@@ -152,7 +152,11 @@ async function tableForContext(origin) {
     try {
         const elnEntry = await fetchEntry(entry);
         const all = tableRowsFromEntry(elnEntry);
-        const rows = origin?.reactionIndex != null ? all.filter((r) => r.reaction === origin.reactionIndex + 1) : all;
+        // A reaction's own rows carry the numbers its table shows (1, 2, 3…),
+        // so "reactant 1" over the second reaction is its first row.
+        const rows = origin?.reactionIndex != null
+            ? all.filter((r) => r.reaction === origin.reactionIndex + 1).map((r) => ({ ...r, row: r.component }))
+            : all;
         const style = getAiWriteUpView().mentionStyle;
         return { rows, mentions: entityMentions(rows, elnEntry, entryUrl(entry), { style }) };
     } catch {

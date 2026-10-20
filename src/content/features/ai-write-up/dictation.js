@@ -311,20 +311,19 @@ export function refreshDictation() {
 }
 
 export const DICTATION_STYLES = (panelId) => `
+  /* Light, not the panel's dark: CDD styles every <select> on the page with
+     "background: #fff url(<arrow>) … !important", so a dark select ends up
+     with light text on CDD's white. Dark text on that white, and CDD's arrow. */
   #${panelId} .cdd-wu-lang {
     font: 12px Arial, sans-serif;
-    color: #f9fafb;
-    background: #0b1220;
+    color: #111827;
     border: 1px solid #374151;
     border-radius: 6px;
-    padding: 3px 4px;
-    color-scheme: dark;
+    padding: 3px 22px 3px 6px;
   }
-  /* The open list is drawn by the browser, which does not take the select's
-     dark colours for its options everywhere — white on white without this. */
   #${panelId} .cdd-wu-lang option {
-    color: #f9fafb;
-    background: #0b1220;
+    color: #111827;
+    background: #ffffff;
   }
   #${panelId} .cdd-wu-dictation-status { flex-basis: 100%; font-size: 11px; color: #cbd5e1; }
   #${panelId} .cdd-wu-dictation-status:empty { display: none; }

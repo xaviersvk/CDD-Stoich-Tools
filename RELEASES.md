@@ -13,6 +13,14 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 19.0.0 — 2026-10-20
+
+Dictate or select ELN text in Slovak, Czech or English and get polished English back, checked against the stoichiometry table. Switch it on in *Settings → AI write-up* with your CERIT-SC API key.
+
+- **🎤** in the panel's *Write-up* tab dictates about the whole entry, **🎤** on a reaction about that reaction; select text for **Polish**, or **＋** to say what to do with it.
+- **Polish entry** rewrites the whole entry and lists where text and table disagree. Compounds come back as CDD mentions, missing facts as slots to fill in — **Copy**, then paste.
+- Text and audio go to CERIT-SC only when you click; structures never do.
+
 ## 18.16.0 — 2026-10-16
 
 - **Bulk import of protocol data:** when CDD says *You must map Buffer…* for a pick list readout, its values are now buttons under the message — click one to use it for the whole file.

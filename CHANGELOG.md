@@ -19,6 +19,57 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [19.0.0] — 2026-10-20
+
+### Added
+- **AI write-up** (off by default; *Settings → AI write-up*). Uses the
+  OpenAI-compatible CERIT-SC AI as a Service API (`https://llm.ai.e-infra.cz/v1`)
+  under the user's own API key. Turning it on requests the optional host
+  permission `https://llm.ai.e-infra.cz/*` (Firefox: plus the optional
+  `websiteContent` data collection); turning it off removes it. All requests
+  go through `background.js`, so the key never reaches the CDD page. Settings:
+  key, chat model (from `/v1/models`, default `mini`), dictation language,
+  how long to wait (15 s – 30 min, default 180 s), and *house rules* —
+  instructions added to every system prompt while ticked (six starters, all
+  off). *Test connection* lists the models and whether `whisper-large-v3` is
+  there.
+- **Write-up tab** in the floating panel (shown only while the feature is on):
+  - **Polish entry**: the entry's text, read from the editor DOM (the saved
+    body can lag — autosave was seen to 409) and the stoichiometry tables from
+    `/vaults/{v}/eln/v2/entries/{id}` go to the chat model, which returns JSON:
+    English text plus the quantities it read per table row. The plugin
+    converts units and compares them with the table (2 % or the text's
+    rounding, whichever is wider) and calculates the yield itself from the
+    product mass, MW and the limiting reactant — the model does no arithmetic.
+  - **Dictation**: record → `whisper-large-v3` (`sk`/`cs`/`en`) → the chat model
+    turns the transcript into English. 🎤 in the tab sends every table and the
+    entry text (last 12 000 characters) as context; 🎤 on a reaction (next to
+    Print and ⤳) sends that reaction's rows and the section it sits in.
+  - **Polish / Polish +** beside *Save phrase* on a selection: the same step
+    for written text; ＋ takes an instruction ("make it a bullet list").
+  - Results are cards with **Copy**, newest first, per entry; nothing is
+    written into the entry. Copy puts a Slate fragment in `text/html`
+    (`data-slate-fragment`, as CDD's own Copy does), so Ctrl+V makes real
+    content in CDD and ordinary HTML elsewhere.
+  - **Mentions**: table rows and records the entry links to are given to the
+    model as tokens (`[[R3]]`, `[[L1]]`); tokens, and failing those the first
+    time an entity is *named* (row name, sample, molecule code, IUPAC name),
+    become CDD @-mentions. A row mention points at
+    `#attached_structures/{structure}%23reaction_components/{n}`, n being the
+    row's position among the reaction's non-product rows — not its uid.
+    An existing mention of the row is reused with CDD's own label.
+  - **Placeholders**: the model writes `[[?temperature]]` where a sentence
+    needs a fact nobody gave (≤ 5); the panel shows a slot to fill in, Copy
+    prints the value or a bold `[temperature?]`.
+  - **Checks**: one bullet per finding, red (text vs table), amber (fill in,
+    mention), blue (advice, a yield nobody stated).
+  - Answers that are empty, echo the source or are still Slovak/Czech are
+    reported instead of shown.
+- Privacy policy and store copy describe what is sent: entry text (or the
+  selection), table names, amounts and equivalents, linked record names,
+  house rules, dictated audio — only on a click. Never structures: no SMILES,
+  mol/MRV, images or molecular weights (MW was dropped from the prompt).
+
 ## [18.16.0] — 2026-10-16
 
 ### Added

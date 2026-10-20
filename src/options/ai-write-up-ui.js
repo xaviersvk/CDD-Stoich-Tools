@@ -17,6 +17,7 @@
 import {
     AI_DEFAULT_MODEL,
     AI_PERMISSION,
+    aiPermissionRequest,
     AI_TRANSCRIBE_MODEL,
     AI_TIMEOUT_DEFAULT_S,
     AI_TIMEOUT_MAX_S,
@@ -167,7 +168,7 @@ export async function initAiWriteUpUI() {
     enabledBox.addEventListener("change", async () => {
         if (enabledBox.checked) {
             // Must run inside the click's user gesture — no await before it.
-            const ok = await chrome.permissions.request(AI_PERMISSION).catch(() => false);
+            const ok = await chrome.permissions.request(aiPermissionRequest()).catch(() => false);
             if (!ok) {
                 enabledBox.checked = false;
                 setStatus("Access to llm.ai.e-infra.cz was not allowed, so the Write-up tab stays off.");
@@ -175,7 +176,7 @@ export async function initAiWriteUpUI() {
             }
             setStatus("");
         } else {
-            await chrome.permissions.remove(AI_PERMISSION).catch(() => false);
+            await chrome.permissions.remove(aiPermissionRequest()).catch(() => false);
         }
         await saveAiSettings({ enabled: enabledBox.checked });
     });

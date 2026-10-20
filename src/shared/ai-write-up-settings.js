@@ -12,6 +12,13 @@ export const AI_SETTINGS_STORAGE_KEY = "cddAiWriteUp";
 // CERIT-SC AI as a Service, OpenAI-compatible.
 export const AI_ORIGIN = "https://llm.ai.e-infra.cz";
 export const AI_PERMISSION = { origins: [`${AI_ORIGIN}/*`] };
+// What switching AI write-up on asks for. Firefox also asks for the data
+// collection the manifest declares as optional ("websiteContent" — the ELN
+// text that goes to CERIT); Chrome has no such key and rejects it.
+export function aiPermissionRequest() {
+    const firefox = typeof navigator !== "undefined" && /firefox/i.test(navigator.userAgent);
+    return firefox ? { ...AI_PERMISSION, data_collection: ["websiteContent"] } : AI_PERMISSION;
+}
 // "mini" is CERIT's small fast model alias — the one their own docs call.
 export const AI_DEFAULT_MODEL = "mini";
 export const AI_TRANSCRIBE_MODEL = "whisper-large-v3";

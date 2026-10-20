@@ -20,7 +20,10 @@
 //   - 🎤 on a reaction (reaction-buttons.js) — about that reaction: its own
 //     table and the section the reaction sits in.
 //
-// Both buttons draw themselves from the one state below (onDictationChanged).
+// Polish on a selection in the entry (polishSelection) takes the same last
+// two steps for text that is already written, and makes a "Selection" card.
+//
+// The buttons draw themselves from the one state below (onDictationChanged).
 // The browser asks for the microphone the first time, for the CDD site.
 
 import {
@@ -54,7 +57,7 @@ const listeners = new Set();
 let recorder = null;
 let chunks = [];
 let tick = null;
-// [{ entryKey, segments, heard, label }], newest first. Module state, not
+// [{ entryKey, segments, source, sourceLabel, label }], newest first. Module state, not
 // DOM: the pane is rebuilt when the panel is.
 let cards = [];
 
@@ -154,36 +157,76 @@ async function runDictation(blob, origin, entryText, entryKey) {
         if (!heard?.ok) return step("idle", aiErrorMessage(heard));
         if (!heard.text) return step("idle", "Heard nothing — speak closer to the microphone.");
 
-        step("translating", `Heard: “${heard.text}”`);
-        const answer = await chrome.runtime.sendMessage({
-            type: AI_CHAT_MESSAGE,
-            id: crypto.randomUUID(),
-            messages: buildDictationMessages(heard.text, {
-                rows,
-                entryText,
-                mentionBlock: mentionPromptBlock(mentions),
-            }),
+        await toEnglishCard({
+            source: heard.text,
+            sourceLabel: "Heard",
+            label: origin ? `Reaction ${origin.reactionIndex + 1}` : "Dictation",
+            rows,
+            mentions,
+            entryText,
+            entryKey,
         });
-        if (!answer?.ok) return step("idle", `${aiErrorMessage(answer)} Heard: “${heard.text}”`);
-
-        // A model that echoes the transcript back (small models do) is
-        // reported rather than shown as if it were the translation.
-        const english = cleanDictationAnswer(answer.content);
-        if (!english || looksUntranslated(english, heard.text)) {
-            return step("idle", `${aiErrorMessage({ error: "untranslated", model: answer.model })} Heard: “${heard.text}”`);
-        }
-        cards = [
-            {
-                entryKey,
-                segments: splitMentions(english, mentions),
-                heard: heard.text,
-                label: origin ? `Reaction ${origin.reactionIndex + 1}` : "Dictation",
-            },
-            ...cards,
-        ].slice(0, MAX_CARDS);
-        step("idle", "");
     } catch (err) {
         console.debug("[CDD Stoich Tools] dictation failed", err);
+        step("idle", aiErrorMessage({ error: "network" }));
+    }
+}
+
+// The step dictation and Polish on a selection share: `source` → polished
+// English → a card. `sourceLabel` names the original on the card ("Heard",
+// "Selected"). A selection may already be English, so for it an answer that
+// matches the source is fine; only one still in Slovak/Czech is refused.
+async function toEnglishCard({ source, sourceLabel, label, rows, mentions, entryText, entryKey, mayBeEnglish = false }) {
+    step("translating", `${sourceLabel}: “${source}”`);
+    const answer = await chrome.runtime.sendMessage({
+        type: AI_CHAT_MESSAGE,
+        id: crypto.randomUUID(),
+        messages: buildDictationMessages(source, {
+            rows,
+            entryText,
+            mentionBlock: mentionPromptBlock(mentions),
+        }),
+    });
+    if (!answer?.ok) return step("idle", `${aiErrorMessage(answer)} ${sourceLabel}: “${source}”`);
+
+    // A model that echoes the source back (small models do) is reported
+    // rather than shown as if it were the translation.
+    const english = cleanDictationAnswer(answer.content);
+    if (!english || looksUntranslated(english, mayBeEnglish ? "" : source)) {
+        return step("idle", `${aiErrorMessage({ error: "untranslated", model: answer.model })} ${sourceLabel}: “${source}”`);
+    }
+    cards = [
+        { entryKey, segments: splitMentions(english, mentions), source, sourceLabel, label },
+        ...cards,
+    ].slice(0, MAX_CARDS);
+    step("idle", "");
+}
+
+/**
+ * Polish on a selection (phrases/capture.js): the selected text → a
+ * "Selection" card, with every table of the entry and the section the
+ * selection starts in (`blockEl`) as context. Ignored while a recording or
+ * another polish is running.
+ */
+export async function polishSelection(text, blockEl) {
+    if (state.phase !== "idle" || !text.trim()) return;
+    if (!getAiWriteUpView().hasKey) return step("idle", aiErrorMessage({ error: "no-key" }));
+    const entryKey = currentEntry()?.key;
+    try {
+        step("translating", "");
+        const { rows, mentions } = await tableForContext(null);
+        await toEnglishCard({
+            source: text.trim(),
+            sourceLabel: "Selected",
+            label: "Selection",
+            rows,
+            mentions,
+            entryText: blockEl ? sectionContext(sectionAroundBlock(blockEl)) : "",
+            entryKey,
+            mayBeEnglish: true,
+        });
+    } catch (err) {
+        console.debug("[CDD Stoich Tools] polish selection failed", err);
         step("idle", aiErrorMessage({ error: "network" }));
     }
 }
@@ -251,7 +294,7 @@ function cardNode(card) {
 
     const heard = document.createElement("div");
     heard.className = "cdd-wu-heard";
-    heard.textContent = `Heard: “${card.heard}”`;
+    heard.textContent = `${card.sourceLabel}: “${card.source}”`;
 
     box.append(head, text, heard);
     return box;

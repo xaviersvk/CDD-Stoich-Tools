@@ -6,6 +6,10 @@
 //
 // Only on ELN entry pages, only for selections inside the Slate editor, and
 // never for selections inside the plugin's own panel.
+//
+// While AI write-up is on, a "Polish" button sits beside it: the selection
+// goes to the LLM and comes back as English on a card in the panel's
+// Write-up tab (ai-write-up/dictation.js), which this opens.
 
 import { isElnEntryPage } from "../../../shared/page-detection.js";
 import {
@@ -16,14 +20,18 @@ import {
 } from "../../../shared/phrases.js";
 import { COMBO_STYLES } from "../../../shared/combo-input.js";
 import { makeCategoriesEditor, PLACES_STYLES } from "../../../shared/places-editor.js";
-import { getPanelRoot } from "../sample-panel.js";
+import { getPanelRoot, setPanelTab } from "../sample-panel.js";
+import { isAiWriteUpEnabled } from "../../../shared/ai-write-up-settings.js";
+import { polishSelection } from "../ai-write-up/dictation.js";
 import { readSelection, selectionInEditor } from "./selection-html.js";
 
 const BUTTON_ID = "cdd-phrase-save-btn";
+const POLISH_ID = "cdd-phrase-polish-btn";
 const DIALOG_ID = "cdd-phrase-save-dialog";
 const STYLE_ID = "cdd-phrase-capture-style";
 
 let button = null;
+let polishButton = null;
 let dialog = null;
 let currentRange = null;
 let positionRaf = 0;
@@ -33,7 +41,7 @@ function ensureStyle() {
     const style = document.createElement("style");
     style.id = STYLE_ID;
     style.textContent = `
-  #${BUTTON_ID} {
+  #${BUTTON_ID}, #${POLISH_ID} {
     position: fixed;
     z-index: 2147483646;
     padding: 4px 10px;
@@ -46,7 +54,7 @@ function ensureStyle() {
     cursor: pointer;
     user-select: none;
   }
-  #${BUTTON_ID}:hover { background: #374151; }
+  #${BUTTON_ID}:hover, #${POLISH_ID}:hover { background: #374151; }
 
   #${DIALOG_ID} {
     position: fixed;
@@ -135,8 +143,33 @@ function ensureButton() {
     return button;
 }
 
+function ensurePolishButton() {
+    if (polishButton) return polishButton;
+    polishButton = document.createElement("button");
+    polishButton.id = POLISH_ID;
+    polishButton.type = "button";
+    polishButton.textContent = "Polish";
+    polishButton.title = "Polish the selected text into English — it appears in the panel's Write-up tab, ready to copy.";
+    polishButton.hidden = true;
+    polishButton.addEventListener("mousedown", (event) => event.preventDefault());
+    polishButton.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (!currentRange) return;
+        const { text } = readSelection(currentRange);
+        const start = currentRange.startContainer;
+        const block = (start.nodeType === 1 ? start : start.parentElement)?.closest('[data-slate-node="element"]');
+        setPanelTab("writeup");
+        void polishSelection(text, block);
+        hideButton();
+    });
+    document.documentElement.appendChild(polishButton);
+    return polishButton;
+}
+
 function hideButton() {
     if (button) button.hidden = true;
+    if (polishButton) polishButton.hidden = true;
     currentRange = null;
 }
 
@@ -157,6 +190,21 @@ function placeButton(range) {
     if (top + height > window.innerHeight - 8) top = rect.top - height - 6;
     btn.style.left = `${Math.max(8, left)}px`;
     btn.style.top = `${Math.max(8, top)}px`;
+
+    // Polish to the right of Save phrase, or to its left when that runs
+    // off the window.
+    if (!isAiWriteUpEnabled()) {
+        if (polishButton) polishButton.hidden = true;
+        return;
+    }
+    const polish = ensurePolishButton();
+    polish.hidden = false;
+    const saveLeft = Math.max(8, left);
+    const polishWidth = polish.offsetWidth || 60;
+    let polishLeft = saveLeft + width + 6;
+    if (polishLeft + polishWidth > window.innerWidth - 8) polishLeft = saveLeft - polishWidth - 6;
+    polish.style.left = `${Math.max(8, polishLeft)}px`;
+    polish.style.top = btn.style.top;
 }
 
 function onSelectionChanged() {

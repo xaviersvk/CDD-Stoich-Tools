@@ -214,20 +214,54 @@ export function buildMessages(text, rows) {
 const DICTATION_PROMPT = `You turn a dictated lab notebook passage into English for a synthetic chemist's ELN.
 The dictation was transcribed by speech recognition and may be Slovak, Czech or English, with recognition errors.
 Rewrite it as clear, factual English experimental prose: past tense, passive voice, standard units (mg, mL, mmol, °C, h).
-Keep every fact and number exactly; do not add anything. Fix misheard chemical names using the compound list when one clearly matches.
-Answer with the English text only — no quotes, no comments.`;
+Keep every fact and number exactly; do not add anything. Fix misheard chemical names when the table clearly matches.
+You may be given CONTEXT — the reaction's stoichiometry table and the entry text the dictation continues.
+Use it only to understand the dictation and to match its names, abbreviations and style.
+Never translate, repeat or summarise the context itself.
+Answer with the English text of the DICTATION only — no quotes, no comments.`;
 
-// Small models follow the LAST instruction they read, so the order to
-// translate is repeated after the dictation, not only in the system prompt.
-export function buildDictationMessages(transcript, rows) {
-    const names = [...new Set(rows.map((r) => r.name).filter((n) => n && n !== "Unnamed"))];
-    const compounds = names.length ? `COMPOUNDS IN THIS REACTION: ${names.join(", ")}\n\n` : "";
+// How much of the entry goes with a dictation: a reaction's section, or
+// (the panel's 🎤) a cap on the whole entry.
+export const SECTION_CONTEXT_CHARS = 1500;
+export const ENTRY_CONTEXT_CHARS = 12000;
+const NL = "\n";
+
+/**
+ * A section's text for the prompt: from the last "## " heading in `text` to
+ * its end, kept to the last `maxChars` with the heading always in front.
+ */
+export function sectionContext(text, maxChars = SECTION_CONTEXT_CHARS) {
+    const lines = String(text || "").split(NL);
+    let start = 0;
+    for (let i = lines.length - 1; i >= 0; i--) {
+        if (lines[i].startsWith("## ")) {
+            start = i;
+            break;
+        }
+    }
+    const heading = lines[start].startsWith("## ") ? lines[start] : "";
+    const body = lines.slice(heading ? start + 1 : start).join(NL).trim();
+    const kept = body.length > maxChars ? "…" + body.slice(-maxChars) : body;
+    return [heading, kept].filter(Boolean).join(NL);
+}
+
+/**
+ * `rows` (the table) and `entryText` are both optional — the dictation
+ * context setting decides which the caller passes. Small models follow the
+ * LAST instruction they read, so the order to translate is repeated after
+ * the dictation, not only in the system prompt.
+ */
+export function buildDictationMessages(transcript, { rows = [], entryText = "" } = {}) {
+    const context = [];
+    if (rows.length) context.push(["STOICHIOMETRY TABLE", ...rows.map(tableLine)].join(NL));
+    if (entryText.trim()) context.push(["ENTRY TEXT BEFORE THE DICTATION", entryText.trim()].join(NL));
+    const parts = [];
+    if (context.length) parts.push("CONTEXT (for understanding only — do not translate or repeat it)", ...context);
+    parts.push(["DICTATION", transcript].join(NL));
+    parts.push("Translate only the DICTATION above into English lab-notebook prose. Reply in English only.");
     return [
         { role: "system", content: DICTATION_PROMPT },
-        {
-            role: "user",
-            content: `${compounds}DICTATION\n${transcript}\n\nTranslate the dictation above into English lab-notebook prose. Reply in English only.`,
-        },
+        { role: "user", content: parts.join(NL + NL) },
     ];
 }
 

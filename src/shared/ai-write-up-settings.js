@@ -57,7 +57,11 @@ let listenerAttached = false;
 const changeListeners = new Set();
 
 function publicView(settings) {
-    return { enabled: settings.enabled, hasKey: !!settings.apiKey, language: settings.language };
+    return {
+        enabled: settings.enabled,
+        hasKey: !!settings.apiKey,
+        language: settings.language,
+    };
 }
 
 function notify() {

@@ -10,6 +10,7 @@ import { enrichRowNameSynonyms } from "./features/name-enrichment.js";
 import { onSamplePayload, scheduleAutoFill } from "./features/auto-fill.js";
 import { ensurePrintButtons } from "./features/print-buttons.js";
 import { ensureNextStepButtons } from "./features/next-step-reaction.js";
+import { ensureDictateButtons } from "./features/ai-write-up/reaction-buttons.js";
 import { markDepletedSamplesInSelector } from "./features/depleted-marker.js";
 import { noteMoleculeSamples, notePickedMolecule } from "./features/sample-picker-hints.js";
 import { prefetchMolecules } from "./api/molecule-image.js";
@@ -120,6 +121,8 @@ export function handleMessage(event) {
             setTimeout(() => {
                 ensurePrintButtons();
                 ensureNextStepButtons();
+
+                ensureDictateButtons();
                 markDepletedSamplesInSelector();
             }, 50);
             break;

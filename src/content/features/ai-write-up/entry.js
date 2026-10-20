@@ -1,22 +1,19 @@
 // content/features/ai-write-up/entry.js
 //
-// The ELN entry on screen, as the Write-up tab reads and writes it.
+// The ELN entry on screen, as the Write-up tab reads it. Nothing here writes
+// to it: results are copied out of the panel by hand.
 //
 // TEXT is read from the editor, not from the saved entry: what was just
 // dictated may not be saved yet (CDD's autosave can lag, or fail with a 409
 // when the entry is open elsewhere). The TABLE comes from the saved entry —
 // the editor shows it as a rendered widget, not as data.
-//
-// Writing goes through a `beforeinput` event, which CDD's editor (Slate)
-// handles like typing. document.execCommand("insertText") is NOT an option:
-// it changes the DOM behind Slate's back, and Slate drops the text on its
-// next render.
 
 import { entryTextFromNodes } from "./model.js";
 
 const ENTRY_PATH = /\/vaults\/(\d+)\/eln\/entries\/(\d+)/;
 const EDITOR_SELECTOR = '[data-slate-editor="true"]';
-const ZERO_WIDTH = /[﻿​]/g;
+// Slate's zero-width placeholders (BOM, zero-width space) in empty leaves.
+const ZERO_WIDTH = new RegExp(`[${String.fromCharCode(0xfeff, 0x200b)}]`, "g");
 
 export function currentEntry() {
     const m = location.pathname.match(ENTRY_PATH);
@@ -67,19 +64,25 @@ export function textFromEditor() {
     return entryTextFromNodes([...blocks].map(nodeFromDom));
 }
 
-/** Types `text` at the cursor in the entry. False when the cursor is not in it. */
-export function insertIntoEditor(text) {
-    const active = document.activeElement;
-    const editor = active?.closest?.(EDITOR_SELECTOR);
-    if (!editor) return false;
-    const event = new InputEvent("beforeinput", {
-        inputType: "insertText",
-        data: text,
-        bubbles: true,
-        cancelable: true,
-        composed: true,
-    });
-    editor.dispatchEvent(event);
-    // Slate cancels the events it applies itself.
-    return event.defaultPrevented;
+/**
+ * The text of the section a block sits in — from the heading before it to
+ * the next heading — without the block itself. For a dictation started on a
+ * reaction: the procedure written around that reaction.
+ */
+export function sectionAroundBlock(blockEl) {
+    const editor = blockEl?.closest?.(EDITOR_SELECTOR);
+    if (!editor) return "";
+    const blocks = [...editor.querySelectorAll(':scope > [data-slate-node="element"]')];
+    const index = blocks.findIndex((block) => block === blockEl || block.contains(blockEl));
+    if (index < 0) return "";
+    const isHeading = (block) => /\bslate-h\d\b/.test(String(block.className));
+
+    let start = index;
+    while (start > 0 && !isHeading(blocks[start])) start--;
+    let end = index + 1;
+    while (end < blocks.length && !isHeading(blocks[end])) end++;
+
+    return entryTextFromNodes(
+        blocks.slice(start, end).filter((block) => block !== blocks[index]).map(nodeFromDom)
+    );
 }

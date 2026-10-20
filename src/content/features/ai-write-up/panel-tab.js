@@ -10,7 +10,7 @@
 //
 // Polish entry writes nothing into the entry. The result belongs to the
 // entry it was made for and is dropped when the panel moves to another one.
-// (Dictation, next to it, does type into the entry — see dictation.js.)
+// Dictation, next to it, shows its English as cards here too — see dictation.js.
 //
 // Where the text and the table are read from: entry.js.
 
@@ -26,7 +26,7 @@ import {
     looksUntranslated,
 } from "./model.js";
 import { currentEntry, fetchEntry, textFromEditor } from "./entry.js";
-import { mountDictation } from "./dictation.js";
+import { mountDictation, refreshDictation } from "./dictation.js";
 
 let pane = null;
 let runButton = null;
@@ -205,14 +205,16 @@ async function polish() {
 
 export function mountWriteUpPane(target) {
     if (pane === target && resultEl?.isConnected) {
-        render();   // the entry may have changed since the tab was last shown
+        // The entry may have changed since the tab was last shown.
+        render();
+        refreshDictation();
         return;
     }
     pane = target;
     pane.replaceChildren();
 
     pane.append(el("div", "cdd-wu-hint",
-        "Dictate or type the entry, then Polish entry: English write-up plus a check against the table. Nothing is written into the entry."));
+        "🎤 turns what you say into English, ready to copy. Polish entry rewrites the whole entry in English and checks it against the table. Nothing is written into the entry."));
 
     const bar = el("div", "cdd-wu-bar");
     runButton = el("button", "cdd-wu-run", "Polish entry");
@@ -222,12 +224,13 @@ export function mountWriteUpPane(target) {
         void polish();
     });
     bar.append(runButton);
-    mountDictation(bar);
+    const dictations = el("div", "cdd-wu-dictations");
+    mountDictation(bar, dictations);
 
     statusEl = el("div", "cdd-wu-status");
     statusEl.hidden = true;
     resultEl = el("div", "cdd-wu-result");
-    pane.append(bar, statusEl, resultEl);
+    pane.append(bar, dictations, statusEl, resultEl);
     render();
 }
 

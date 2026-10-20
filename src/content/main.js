@@ -6,12 +6,13 @@ import { watchKetcherDialog } from "./overlay-watcher.js";
 import { ensurePanel, renderFromState, initSamplePanelFields, clearElnIdToBatchWrites } from "./features/sample-panel.js";
 import { ensurePrintButtons } from "./features/print-buttons.js";
 import { ensureNextStepButtons } from "./features/next-step-reaction.js";
+import { ensureDictateButtons } from "./features/ai-write-up/reaction-buttons.js";
 import { initSynonymEnrichment } from "./features/synonym-enrichment.js";
 import { initRowNameEnrichment } from "./features/name-enrichment.js";
 import { initNamePicker } from "./features/name-picker.js";
 import { initNameWatch } from "./features/name-watch.js";
 import { initPhraseCapture } from "./features/phrases/capture.js";
-import { initAiWriteUp } from "../shared/ai-write-up-settings.js";
+import { initAiWriteUp, onAiWriteUpChanged } from "../shared/ai-write-up-settings.js";
 import { initSamplePickerHints } from "./features/sample-picker-hints.js";
 import { initSampleDuplicate } from "./features/sample-duplicate.js";
 import {
@@ -131,7 +132,9 @@ function init() {
   initNamePicker();
   initNameWatch();
   initPhraseCapture();
-  void initAiWriteUp();   // the panel's Write-up tab follows it via onAiWriteUpChanged
+  // The panel's Write-up tab follows it on its own; the reactions' 🎤 here.
+  void initAiWriteUp();
+  onAiWriteUpChanged(() => ensureDictateButtons());
 
   window.addEventListener("message", handleMessage);
 
@@ -148,6 +151,8 @@ function init() {
   renderFromState();
   ensurePrintButtons();
   ensureNextStepButtons();
+
+  ensureDictateButtons();
   markDepletedSamplesInSelector();
   applyFileDialogFixes();
   injectAssociateFileBarStyles();
@@ -168,6 +173,8 @@ function init() {
 
     ensurePrintButtons();
     ensureNextStepButtons();
+
+    ensureDictateButtons();
     markDepletedSamplesInSelector();
   });
 

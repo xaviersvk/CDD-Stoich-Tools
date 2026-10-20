@@ -1,20 +1,26 @@
 // content/features/ai-write-up/dictation.js
 //
-// Dictate in the Write-up tab: 🎤 records from the microphone, ■ stops, and
+// Dictation: record from the microphone, then
 //
 //   1. CERIT's whisper-large-v3 transcribes it in the chosen language
 //      (Slovak, Czech, English),
-//   2. the chat model turns the transcript into polished English, fixing
-//      misheard compound names against the reaction's table,
-//   3. the English is typed in where the cursor is in the entry (with no
-//      cursor in the entry it goes to the clipboard instead).
+//   2. the chat model turns the transcript into polished English, with part
+//      of the entry for context,
+//   3. the English shows up as a card in the Write-up tab, with Copy.
 //
-// What was heard stays in the status line, so a mistranslation can be
-// checked against it; Ctrl+Z in the entry takes the insert back.
+// Nothing is typed into the entry: people copy what they want and paste it
+// themselves. Cards pile up newest first, per entry, so an earlier dictation
+// is still there after the next one. What was heard stays on each card, so a
+// mistranslation can be checked against it.
 //
-// The buttons keep the entry's focus (mousedown is cancelled), so the cursor
-// the user left in the text is still there when the text arrives.
+// Two places start a recording, one at a time:
 //
+//   - 🎤 in the Write-up tab — about the whole entry: every table and the
+//     entry's text go along as context;
+//   - 🎤 on a reaction (reaction-buttons.js) — about that reaction: its own
+//     table and the section the reaction sits in.
+//
+// Both buttons draw themselves from the one state below (onDictationChanged).
 // The browser asks for the microphone the first time, for the CDD site.
 
 import { copyText } from "../../utils/clipboard.js";
@@ -25,33 +31,69 @@ import {
     saveAiSettings,
 } from "../../../shared/ai-write-up-settings.js";
 import { AI_CHAT_MESSAGE, AI_TRANSCRIBE_MESSAGE } from "../../../shared/event-types.js";
-import { buildDictationMessages, cleanDictationAnswer, looksUntranslated, tableRowsFromEntry } from "./model.js";
-import { currentEntry, fetchEntry, insertIntoEditor } from "./entry.js";
+import {
+    ENTRY_CONTEXT_CHARS,
+    buildDictationMessages,
+    cleanDictationAnswer,
+    looksUntranslated,
+    sectionContext,
+    tableRowsFromEntry,
+} from "./model.js";
+import { currentEntry, fetchEntry, sectionAroundBlock, textFromEditor } from "./entry.js";
 
 const MAX_SECONDS = 300;
+const MAX_CARDS = 10;
 
+// ---------------------------------------------------------------- state
+
+// phase: idle | recording | transcribing | translating. `origin` is
+// { reactionIndex, reactionEl } for a reaction's button, null for the tab's.
+let state = { phase: "idle", since: 0, origin: null, status: "" };
+const listeners = new Set();
 let recorder = null;
 let chunks = [];
-let startedAt = 0;
 let tick = null;
-let micButton = null;
-let statusEl = null;
+// [{ entryKey, english, heard, label }], newest first. Module state, not
+// DOM: the pane is rebuilt when the panel is.
+let cards = [];
 
-function setStatus(text) {
-    if (!statusEl) return;
-    statusEl.textContent = text || "";
+function setState(patch) {
+    state = { ...state, ...patch };
+    for (const cb of listeners) {
+        try {
+            cb(state);
+        } catch {
+            /* a misbehaving listener must not break the others */
+        }
+    }
 }
 
-function keepFocus(button) {
-    button.addEventListener("mousedown", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-    });
+export function getDictationState() {
+    return state;
 }
 
-function elapsed() {
-    const s = Math.floor((Date.now() - startedAt) / 1000);
+export function onDictationChanged(cb) {
+    listeners.add(cb);
+    return () => listeners.delete(cb);
+}
+
+function clock(since) {
+    const s = Math.floor((Date.now() - since) / 1000);
     return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+}
+
+/** What a dictate button says in the current state — "■ 0:12", "⏳ Translating… 0:04". */
+export function dictationLabel(idleLabel) {
+    switch (state.phase) {
+        case "recording":
+            return `■ Stop ${clock(state.since)}`;
+        case "transcribing":
+            return `⏳ Transcribing… ${clock(state.since)}`;
+        case "translating":
+            return `⏳ Translating… ${clock(state.since)}`;
+        default:
+            return idleLabel;
+    }
 }
 
 function toBase64(buffer) {
@@ -63,48 +105,36 @@ function toBase64(buffer) {
     return btoa(binary);
 }
 
-async function deliver(english, heard) {
-    // A space between this and whatever the cursor sits after.
-    if (insertIntoEditor(`${english} `)) {
-        setStatus(`Typed into the entry. Heard: “${heard}”`);
-        return;
-    }
-    const copied = await copyText(english);
-    setStatus(copied
-        ? `Click into the entry and paste (Ctrl+V). Heard: “${heard}”`
-        : english);
+// ---------------------------------------------------------------- context
+
+// Read when the recording stops — the entry as it is then.
+function entryTextForContext(origin) {
+    if (origin?.reactionEl) return sectionContext(sectionAroundBlock(origin.reactionEl));
+    return (textFromEditor() ?? "").slice(-ENTRY_CONTEXT_CHARS);
 }
 
-// The reaction's compound names, so "acetyl acetát" comes back as the
-// table's "Acetyl Acetate". Dictation works without them.
-async function tableRows() {
+async function tableRowsForContext(origin) {
     const entry = currentEntry();
     if (!entry) return [];
     try {
-        return tableRowsFromEntry(await fetchEntry(entry));
+        const rows = tableRowsFromEntry(await fetchEntry(entry));
+        // A reaction's button: that reaction only (both count in display order).
+        return origin ? rows.filter((r) => r.reaction === origin.reactionIndex + 1) : rows;
     } catch {
-        return [];
+        return [];   // dictation works without the table
     }
 }
 
-// While the recording is processed the 🎤 button itself says which step it
-// is on and for how long — the status line below it is easy to miss, and a
-// translation can take a while.
-function showStep(label) {
-    const since = Date.now();
-    const paint = () => {
-        const s = Math.floor((Date.now() - since) / 1000);
-        micButton.textContent = `⏳ ${label} ${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
-    };
+// ---------------------------------------------------------------- pipeline
+
+function step(phase, status = state.status) {
     clearInterval(tick);
-    paint();
-    tick = setInterval(paint, 500);
+    setState({ phase, since: Date.now(), status });
+    if (phase !== "idle") tick = setInterval(() => setState({}), 500);
 }
 
-async function transcribe(blob) {
-    setStatus("");
-    showStep("Transcribing…");
-    micButton.disabled = true;
+async function runDictation(blob, origin, entryText, entryKey) {
+    step("transcribing", "");
     try {
         const [heard, rows] = await Promise.all([
             chrome.runtime.sendMessage({
@@ -114,47 +144,33 @@ async function transcribe(blob) {
                 mimeType: blob.type || "audio/webm",
                 language: getAiWriteUpView().language,
             }),
-            tableRows(),
+            tableRowsForContext(origin),
         ]);
-        if (!heard?.ok) {
-            setStatus(aiErrorMessage(heard));
-            return;
-        }
-        if (!heard.text) {
-            setStatus("Heard nothing — speak closer to the microphone.");
-            return;
-        }
+        if (!heard?.ok) return step("idle", aiErrorMessage(heard));
+        if (!heard.text) return step("idle", "Heard nothing — speak closer to the microphone.");
 
-        showStep("Translating…");
-        setStatus(`Heard: “${heard.text}”`);
+        step("translating", `Heard: “${heard.text}”`);
         const answer = await chrome.runtime.sendMessage({
             type: AI_CHAT_MESSAGE,
             id: crypto.randomUUID(),
-            messages: buildDictationMessages(heard.text, rows),
+            messages: buildDictationMessages(heard.text, { rows, entryText }),
         });
-        if (!answer?.ok) {
-            // The transcript is not lost: it is on the clipboard.
-            await copyText(heard.text);
-            setStatus(`${aiErrorMessage(answer)} What was heard is on the clipboard.`);
-            return;
-        }
-        // Never type the untranslated transcript in: a model that echoes it
-        // back (small models do) is reported, and the transcript is on the
-        // clipboard for whoever wants it anyway.
+        if (!answer?.ok) return step("idle", `${aiErrorMessage(answer)} Heard: “${heard.text}”`);
+
+        // A model that echoes the transcript back (small models do) is
+        // reported rather than shown as if it were the translation.
         const english = cleanDictationAnswer(answer.content);
         if (!english || looksUntranslated(english, heard.text)) {
-            await copyText(heard.text);
-            setStatus(`${aiErrorMessage({ error: "untranslated", model: answer.model })} What was heard is on the clipboard.`);
-            return;
+            return step("idle", `${aiErrorMessage({ error: "untranslated", model: answer.model })} Heard: “${heard.text}”`);
         }
-        await deliver(english, heard.text);
+        cards = [
+            { entryKey, english, heard: heard.text, label: origin ? `Reaction ${origin.reactionIndex + 1}` : "Dictation" },
+            ...cards,
+        ].slice(0, MAX_CARDS);
+        step("idle", "");
     } catch (err) {
-        console.debug("[CDD Stoich Tools] transcription failed", err);
-        setStatus(aiErrorMessage({ error: "network" }));
-    } finally {
-        clearInterval(tick);
-        micButton.textContent = "🎤 Dictate";
-        micButton.disabled = false;
+        console.debug("[CDD Stoich Tools] dictation failed", err);
+        step("idle", aiErrorMessage({ error: "network" }));
     }
 }
 
@@ -162,17 +178,13 @@ function stop() {
     if (recorder?.state === "recording") recorder.stop();
 }
 
-async function start() {
-    if (!getAiWriteUpView().hasKey) {
-        setStatus(aiErrorMessage({ error: "no-key" }));
-        return;
-    }
+async function start(origin) {
+    if (!getAiWriteUpView().hasKey) return step("idle", aiErrorMessage({ error: "no-key" }));
     let stream;
     try {
         stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     } catch {
-        setStatus("Allow the microphone for this site (the icon in the address bar), then try again.");
-        return;
+        return step("idle", "Allow the microphone for this site (the icon in the address bar), then try again.");
     }
 
     chunks = [];
@@ -181,38 +193,81 @@ async function start() {
         if (event.data?.size) chunks.push(event.data);
     });
     recorder.addEventListener("stop", () => {
-        clearInterval(tick);
         for (const track of stream.getTracks()) track.stop();
-        micButton.textContent = "🎤 Dictate";
         const blob = new Blob(chunks, { type: recorder.mimeType });
         recorder = null;
-        void transcribe(blob);
+        void runDictation(blob, origin, entryTextForContext(origin), currentEntry()?.key);
     });
 
     recorder.start();
-    startedAt = Date.now();
-    micButton.textContent = "■ Stop 0:00";
-    setStatus("Recording — click Stop when done.");
+    clearInterval(tick);
+    setState({ phase: "recording", since: Date.now(), origin, status: "Recording — click Stop when done." });
     tick = setInterval(() => {
-        micButton.textContent = `■ Stop ${elapsed()}`;
-        if (Date.now() - startedAt >= MAX_SECONDS * 1000) stop();
+        if (Date.now() - state.since >= MAX_SECONDS * 1000) stop();
+        setState({});
     }, 500);
 }
 
-/** Adds 🎤 and the language picker to `bar`, a status line after it. */
-export function mountDictation(bar) {
-    if (recorder) stop();
+/**
+ * The one entry point for both buttons: starts a recording from `origin`
+ * (null = the Write-up tab), stops the running one, or does nothing while a
+ * recording is being processed.
+ */
+export function toggleDictation(origin = null) {
+    if (state.phase === "recording") stop();
+    else if (state.phase === "idle") void start(origin);
+}
 
-    micButton = document.createElement("button");
-    micButton.type = "button";
-    micButton.className = "cdd-wu-mic";
-    micButton.textContent = "🎤 Dictate";
-    micButton.title = "Record, then Stop: the English text is typed where the cursor is in the entry.";
-    keepFocus(micButton);
-    micButton.addEventListener("click", (event) => {
+// ---------------------------------------------------------------- tab UI
+
+function cardNode(card) {
+    const box = document.createElement("div");
+    box.className = "cdd-wu-card";
+
+    const head = document.createElement("div");
+    head.className = "cdd-wu-card__head";
+    const title = document.createElement("div");
+    title.className = "cdd-wu-card__title";
+    title.textContent = card.label;
+    const copy = document.createElement("button");
+    copy.type = "button";
+    copy.className = "cdd-wu-copy";
+    copy.textContent = "Copy";
+    copy.addEventListener("click", async (event) => {
         event.stopPropagation();
-        if (recorder) stop();
-        else void start();
+        const ok = await copyText(card.english);
+        copy.textContent = ok ? "✓ copied" : "✗ failed";
+        setTimeout(() => { copy.textContent = "Copy"; }, 1200);
+    });
+    head.append(title, copy);
+
+    const text = document.createElement("div");
+    text.className = "cdd-wu-text";
+    text.textContent = card.english;
+
+    const heard = document.createElement("div");
+    heard.className = "cdd-wu-heard";
+    heard.textContent = `Heard: “${card.heard}”`;
+
+    box.append(head, text, heard);
+    return box;
+}
+
+let unsubscribeTab = null;
+
+/**
+ * Adds 🎤, the language picker and a status line to `bar`, and the
+ * dictation cards to `list`. Called again whenever the pane is rebuilt.
+ */
+export function mountDictation(bar, list) {
+    const mic = document.createElement("button");
+    mic.type = "button";
+    mic.className = "cdd-wu-mic";
+    mic.title = "Dictate about the whole entry. Stop when done: the English appears below, ready to copy.";
+    mic.addEventListener("mousedown", (event) => event.stopPropagation());
+    mic.addEventListener("click", (event) => {
+        event.stopPropagation();
+        toggleDictation(null);
     });
 
     const language = document.createElement("select");
@@ -228,10 +283,31 @@ export function mountDictation(bar) {
     language.addEventListener("mousedown", (event) => event.stopPropagation());
     language.addEventListener("change", () => void saveAiSettings({ language: language.value }));
 
-    statusEl = document.createElement("div");
-    statusEl.className = "cdd-wu-dictation-status";
+    const status = document.createElement("div");
+    status.className = "cdd-wu-dictation-status";
+    bar.append(mic, language, status);
 
-    bar.append(micButton, language, statusEl);
+    let shown = null;
+    const paint = () => {
+        const busy = state.phase === "transcribing" || state.phase === "translating";
+        // The tab's button shows a reaction's recording too: one microphone.
+        mic.textContent = dictationLabel("🎤 Dictate");
+        mic.disabled = busy;
+        status.textContent = state.status || "";
+        const key = currentEntry()?.key;
+        if (shown?.cards !== cards || shown?.key !== key) {
+            shown = { cards, key };
+            list.replaceChildren(...cards.filter((c) => c.entryKey === key).map(cardNode));
+        }
+    };
+    unsubscribeTab?.();
+    unsubscribeTab = onDictationChanged(paint);
+    paint();
+}
+
+/** Repaints the dictation UI — after the panel moved to another entry. */
+export function refreshDictation() {
+    setState({});
 }
 
 export const DICTATION_STYLES = (panelId) => `
@@ -242,7 +318,17 @@ export const DICTATION_STYLES = (panelId) => `
     border: 1px solid #374151;
     border-radius: 6px;
     padding: 3px 4px;
+    color-scheme: dark;
+  }
+  /* The open list is drawn by the browser, which does not take the select's
+     dark colours for its options everywhere — white on white without this. */
+  #${panelId} .cdd-wu-lang option {
+    color: #f9fafb;
+    background: #0b1220;
   }
   #${panelId} .cdd-wu-dictation-status { flex-basis: 100%; font-size: 11px; color: #cbd5e1; }
   #${panelId} .cdd-wu-dictation-status:empty { display: none; }
+  #${panelId} .cdd-wu-dictations { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+  #${panelId} .cdd-wu-dictations:empty { display: none; }
+  #${panelId} .cdd-wu-heard { font-size: 11px; color: #cbd5e1; margin-top: 6px; font-style: italic; }
 `;

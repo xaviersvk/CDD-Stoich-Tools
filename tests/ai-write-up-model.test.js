@@ -11,6 +11,7 @@ import {
     buildDictationMessages,
     cleanDictationAnswer,
     looksUntranslated,
+    sectionContext,
 } from "../src/content/features/ai-write-up/model.js";
 
 // The shape of /vaults/<v>/eln/v2/entries/<id> → eln_entry, trimmed to what
@@ -141,11 +142,26 @@ test("rows not in the text and LLM notes are listed", () => {
     ]);
 });
 
-test("dictation messages list the reaction's compounds for misheard names", () => {
-    const [system, user] = buildDictationMessages("pridali sme acetyl acetát", tableRowsFromEntry(entry()));
+test("dictation messages carry the table and entry text as context, the dictation last", () => {
+    const [system, user] = buildDictationMessages("pridali sme acetyl acetát", {
+        rows: tableRowsFromEntry(entry()),
+        entryText: ["## Procedure", "The vial was charged."].join("\n"),
+    });
     assert.match(system.content, /English/);
-    assert.match(user.content, /COMPOUNDS IN THIS REACTION: ab123, Acetyl Acetate, aspirin, toluene/);
-    assert.match(user.content, /DICTATION\npridali sme acetyl acetát\n/);
+    assert.ok(user.content.startsWith("CONTEXT (for understanding only"));
+    assert.ok(user.content.includes("Row 2 | Acetyl Acetate"));
+    assert.ok(user.content.includes(["ENTRY TEXT BEFORE THE DICTATION", "## Procedure"].join("\n")));
+    assert.ok(user.content.includes(["DICTATION", "pridali sme acetyl acetát", ""].join("\n")));
+});
+
+test("a dictation without context sends the dictation alone", () => {
+    const [, user] = buildDictationMessages("text");
+    assert.ok(user.content.startsWith(["DICTATION", "text"].join("\n")));
+});
+
+test("section context keeps its heading and the end of a long section", () => {
+    assert.equal(sectionContext(["## A", "x", "## B", "y"].join("\n")), ["## B", "y"].join("\n"));
+    assert.equal(sectionContext(["## B", "a".repeat(20) + "END"].join("\n"), 5), ["## B", "…aaEND"].join("\n"));
 });
 
 test("dictation answers lose fences and quotes", () => {

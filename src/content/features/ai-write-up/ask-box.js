@@ -9,7 +9,14 @@
 // Enter asks, Shift+Enter is a new line. The field empties once the request
 // is on its way; the card shows what was asked.
 
-import { askAboutEntry, dictateInto, dictationLabel, getDictationState, onDictationChanged } from "./dictation.js";
+import {
+    askAboutEntry,
+    dictateInto,
+    dictationLabel,
+    getDictationState,
+    onDictationChanged,
+    toggleDictation,
+} from "./dictation.js";
 
 let unsubscribe = null;
 
@@ -46,6 +53,12 @@ export function mountAskBox() {
     };
     askButton.addEventListener("click", (event) => {
         event.stopPropagation();
+        // Busy with this request, Ask cancels it rather than sending it twice.
+        const state = getDictationState();
+        if (state.origin?.asking && state.phase !== "idle") {
+            toggleDictation();
+            return;
+        }
         void send();
     });
     field.addEventListener("keydown", (event) => {
@@ -69,7 +82,10 @@ export function mountAskBox() {
         const mine = state.origin?.field === "ask";
         mic.textContent = mine ? dictationLabel("🎤") : "🎤";
         mic.disabled = state.phase !== "idle" && !mine;
-        askButton.disabled = state.phase !== "idle";
+        const asking = state.origin?.asking && state.phase !== "idle";
+        askButton.textContent = asking ? dictationLabel("Ask") : "Ask";
+        askButton.title = asking ? "Cancel" : "Send the request with the whole entry as background";
+        askButton.disabled = state.phase !== "idle" && !asking;
     };
     unsubscribe?.();
     unsubscribe = onDictationChanged(paint);

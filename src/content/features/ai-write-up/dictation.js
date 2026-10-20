@@ -391,7 +391,7 @@ export async function askAboutEntry(request) {
     const startedAt = Date.now();
     try {
         // Not a recording: no button's own progress to show.
-        setState({ origin: null });
+        setState({ origin: { asking: true } });   // Ask's own button shows the clock
         step("translating", "");
         const { rows, mentions } = await tableForContext(null);
         // Only a request that became a card empties the field.

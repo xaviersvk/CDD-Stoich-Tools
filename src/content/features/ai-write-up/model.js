@@ -609,13 +609,15 @@ function yieldCheck(product, rows) {
 
 // Every number with a unit in what was written must still be in the English:
 // "keep every fact" is only a request to the model, this is the check.
-// Units are compared by value, so 0.5 g → 500 mg is the same number.
+// Units are compared by value, so 0.5 g → 500 mg is the same number, and
+// as written: a compound link carries the table's "3.01 mmol", which keeps
+// the "3.0 mmol" that was said.
 const QUANTITY_IN_TEXT =
     /(\d+(?:[.,]\d+)?)\s*(mol\s?%|µg|μg|ug|mg|kg|g|µl|μl|ul|ml|l|nmol|µmol|μmol|umol|mmol|mol|equiv\.?|eq\.?|ekv\.?|%|°\s?c|hours?|hrs?|h|minutes?|mins?|min)(?!\p{L})/giu;
 const TIME_UNITS = { hour: "h", hours: "h", hr: "h", hrs: "h", h: "h", minute: "min", minutes: "min", mins: "min", min: "min" };
 
-function quantityKeys(text) {
-    const keys = new Map();
+function quantitiesIn(text) {
+    const found = new Map();
     for (const m of String(text || "").matchAll(QUANTITY_IN_TEXT)) {
         const number = parseFloat(m[1].replace(",", "."));
         const unit = m[2].toLowerCase().replace(/\s/g, "");
@@ -623,17 +625,18 @@ function quantityKeys(text) {
         const key = q
             ? `${q.kind}:${Number(q.value.toPrecision(6))}`
             : `${TIME_UNITS[unit] || unit}:${number}`;
-        if (!keys.has(key)) keys.set(key, m[0].trim());
+        if (!found.has(key)) found.set(key, { key, q, text: m[0].trim() });
     }
-    return keys;
+    return [...found.values()];
 }
 
 /** The quantities written in `source` that `english` no longer has: [{ kind: "lost", text }]. */
 export function lostQuantities(source, english) {
-    const kept = quantityKeys(english);
-    return [...quantityKeys(source)]
-        .filter(([key]) => !kept.has(key))
-        .map(([, text]) => ({ kind: "lost", text }));
+    const kept = quantitiesIn(english);
+    const keeps = (s) => kept.some((k) => k.key === s.key || (s.q && k.q?.kind === s.q.kind && agrees(s.q, k.q.value)));
+    return quantitiesIn(source)
+        .filter((s) => !keeps(s))
+        .map(({ text }) => ({ kind: "lost", text }));
 }
 
 // ---------------------------------------------------------------- slots the table answers

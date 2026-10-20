@@ -313,6 +313,13 @@ test("numbers the English dropped are found; unit changes are not losses", () =>
     assert.deepEqual(lostQuantities("no numbers here", "none"), []);
 });
 
+test("a compound link's table amount keeps the rounder number that was said", () => {
+    assert.deepEqual(lostQuantities("pridali sme 3.0 mmol aminu", "the amine (402 mg, 3.01 mmol) was added"), []);
+    assert.deepEqual(lostQuantities("pridali sme 3.0 mmol aminu", "the amine (402 mg, 3.5 mmol) was added"), [
+        { kind: "lost", text: "3.0 mmol" },
+    ]);
+});
+
 test("the English comes out of broken JSON, and raw JSON is never shown", () => {
     assert.equal(answerText('{"text": "Line \\"one\\".\nTwo", "amounts": ['), 'Line "one".\nTwo');
     assert.equal(answerText('{"amounts": ['), "");

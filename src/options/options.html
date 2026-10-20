@@ -973,10 +973,14 @@
                     the entry — copy what you want.
                 </p>
                 <p class="note">
-                    The entry's text and table go to <strong>CERIT-SC</strong>
+                    The entry's text and its stoichiometry table — compound
+                    names, amounts, equivalents — go to <strong>CERIT-SC</strong>
                     (llm.ai.e-infra.cz, Masaryk University), dictated audio
-                    too. Get a key at <em>chat.ai.e-infra.cz → Settings →
-                    Account → API keys</em> (MetaCentrum or MUNI account).
+                    too, only when you click 🎤, Polish or Polish entry.
+                    <strong>Structures never do</strong>: no SMILES, mol files,
+                    reaction images or molecular weights. Get a key at
+                    <em>chat.ai.e-infra.cz → Settings → Account → API keys</em>
+                    (MetaCentrum or MUNI account).
                 </p>
                 <label class="field-item auto-fill-toggle">
                     <input type="checkbox" id="aiWriteUpEnabled" />
@@ -992,10 +996,30 @@
                     <span><strong>Model</strong> — a small one is fast enough.</span>
                     <select id="aiModel" class="select"></select>
                 </label>
+                <label class="field-item purity-threshold-row">
+                    <span><strong>Wait for an answer (s)</strong> — then give
+                    up. A long entry on a big model can take minutes.</span>
+                    <input type="number" id="aiTimeout" min="15" max="1800" step="15"
+                           class="purity-threshold-input" />
+                </label>
                 <div class="phrase-tools">
                     <button id="aiTest" type="button" class="btn">Test connection</button>
                 </div>
                 <p id="aiStatus" class="note" hidden></p>
+            </div>
+
+            <div class="card__body">
+                <p class="eyebrow">House rules</p>
+                <p class="note">
+                    Sent with every request while ticked — how your group
+                    writes things. Edit a rule in place; ✕ removes it.
+                </p>
+                <div id="aiRules" class="stack"></div>
+                <div class="phrase-filters">
+                    <input id="aiRuleNew" type="text" class="text-input"
+                           placeholder="Add a rule, e.g. Name the TLC eluent and Rf." />
+                    <button id="aiRuleAdd" type="button" class="btn">Add</button>
+                </div>
             </div>
         </section>
         <section class="card" aria-labelledby="col-inventoryscan-heading">

@@ -19,7 +19,8 @@
 // A mention is a Slate `a` node whose `data` is the mention's feature data;
 // CDD creates the feature when the fragment is pasted. A reaction row's
 // mention points at "#attached_structures/<structure>%23reaction_components/
-// <row uid>" within the entry, and its label is CDD's "name (amount, mol)".
+// <n>" within the entry — n counts the reaction's rows in table order,
+// products left out (model.js) — and its label is CDD's "name (amount, mol)".
 
 const NL = "\n";
 const TOKEN = /\[\[([RL])(\d+)\]\]/g;
@@ -42,39 +43,62 @@ function molText(mol) {
     return `${sig3(mol * 1e6)} µmol`;
 }
 
-/** CDD's label for a reaction row: "ab123 (20 mg, 14.5 µmol)". */
+function volumeText(litres) {
+    if (litres == null) return "";
+    return litres >= 1e-3 ? `${sig3(litres * 1e3)} mL` : `${sig3(litres * 1e6)} µL`;
+}
+
+/**
+ * CDD's label for a reaction row: "ab123 (20 mg, 14.5 µmol)", a liquid by
+ * its volume ("pyridine (25.6 mL, 318 mmol)"). Only used when the entry has
+ * no mention of the row yet — otherwise CDD's own label is reused.
+ */
 export function rowMentionLabel(row) {
-    const amounts = [row.sampleText || massText(row.massG), molText(row.mol)].filter(Boolean);
+    const amount = row.sampleText || (row.volumeL != null ? volumeText(row.volumeL) : massText(row.massG));
+    const amounts = [amount, molText(row.mol)].filter(Boolean);
     return amounts.length ? `${row.name} (${amounts.join(", ")})` : row.name;
+}
+
+// Link features of the entry by their target id.
+function linkFeatures(elnEntry) {
+    const byId = new Map();
+    for (const feature of Object.values(elnEntry?.feature_map || {})) {
+        if (feature?.type === "link" && feature.data?.id != null) byId.set(String(feature.data.id), feature.data);
+    }
+    return byId;
 }
 
 // ---------------------------------------------------------------- the list
 
 /**
- * Every entity the model may mention: `[{ token, label, data }]`.
+ * Every entity the model may mention: `[{ token, label, names, data }]`.
  * `entryUrl` is the entry's absolute URL, which a row's mention lives under.
  */
 export function entityMentions(rows, elnEntry, entryUrl) {
     const mentions = [];
+    const existing = linkFeatures(elnEntry);
 
     for (const row of rows) {
-        if (row.uid == null || row.structureId == null || row.name === "Unnamed") continue;
-        const id = `#attached_structures/${row.structureId}%23reaction_components/${row.uid}`;
-        const label = rowMentionLabel(row);
+        if (row.component == null || row.structureId == null || row.name === "Unnamed") continue;
+        const id = `#attached_structures/${row.structureId}%23reaction_components/${row.component}`;
+        const known = existing.get(id);
+        const label = known?.defaultLabel || rowMentionLabel(row);
         mentions.push({
             token: `R${row.row}`,
             label,
             names: [row.name, ...(row.aliases || [])],
-            data: {
-                dataVersion: 1,
-                id,
-                href: `${entryUrl}${id}`,
-                display: "defaultLabel",
-                defaultLabel: label,
-                label,
-                synonyms: [],
-                sampleWasDeleted: false,
-            },
+            data: known
+                ? { ...known, href: known.href || `${entryUrl}${id}` }
+                : {
+                    dataVersion: 1,
+                    id,
+                    href: `${entryUrl}${id}`,
+                    display: "defaultLabel",
+                    defaultLabel: label,
+                    label,
+                    synonyms: [],
+                    sampleWasDeleted: false,
+                },
         });
     }
 

@@ -118,3 +118,51 @@ test("a row is also found by its molecule code", () => {
     assert.equal(segments[0].mention.token, "R1");
     assert.equal(segments[0].mention.label, "IXX-DEMO-0000011");
 });
+
+// Entry 1000017498 (vault 8158), trimmed: the row is named "Tenofovir" but
+// its sample is I34-SM-…; components count rows in table order without the
+// product, not by uid (pyridine, uid 13, is component 4).
+function tenofovirEntry() {
+    return {
+        body: JSON.stringify([{ type: "p", children: [{ text: "x" }] }]),
+        feature_map: {
+            15: { type: "reaction", data: { attachedStructureId: 1000518590, stoichiometryTable: { rows: [
+                { uid: 1, role: "reactant", name: "Tenofovir", sample: { name: "I34-SM-0037292-008-I34S016471" },
+                  moleculeName: "I34-SM-0037292", batch: { name: "008" }, mass: 0.0368, mole: 0.000128, userInput: { msample: "36.8 mg" } },
+                { uid: 8, role: "product", moleculeName: "I34-SM-0000082", batch: { name: "Unspecified Batch" }, userInput: {} },
+                { uid: 10, role: "agent", sample: { name: "I34-SM-0037102-001-I34S001676" }, iupacName: "phenol", userInput: {} },
+                { uid: 11, role: "agent", name: "DIPEA", userInput: {} },
+                { uid: 13, role: "agent", name: "pyridine", volume: 0.0256, mole: 0.318, userInput: {} },
+            ] } } },
+            20: { type: "link", data: { id: "#attached_structures/1000518590%23reaction_components/3", href: "/x", display: "defaultLabel",
+                  defaultLabel: "DIPEA (22.3 µL, 1 eq., 128 µmol)", label: "DIPEA (22.3 µL, 1 eq., 128 µmol)" } },
+        },
+    };
+}
+
+test("the row's own name is the one prose uses; components skip the product", () => {
+    const e = tenofovirEntry();
+    const rows = tableRowsFromEntry(e);
+    assert.equal(rows[0].name, "Tenofovir");
+    assert.deepEqual(rows.map((r) => r.component), [1, null, 2, 3, 4]);
+
+    const list = entityMentions(rows, e, ENTRY_URL);
+    const byName = Object.fromEntries(list.map((m) => [m.names[0], m]));
+    assert.equal(byName.Tenofovir.data.id, "#attached_structures/1000518590%23reaction_components/1");
+    assert.equal(byName.pyridine.data.id, "#attached_structures/1000518590%23reaction_components/4");
+    assert.equal(byName.pyridine.label, "pyridine (25.6 mL, 318 mmol)");
+    // An existing mention of the row: CDD's own label and data.
+    assert.equal(byName.DIPEA.label, "DIPEA (22.3 µL, 1 eq., 128 µmol)");
+
+    const segments = splitMentions("Tenofovir (36.8 mg, 128 µmol) was suspended in pyridine.", list);
+    assert.deepEqual(segments.filter((s) => s.mention).map((s) => s.mention.label), [
+        "Tenofovir (36.8 mg, 128 µmol)",
+        "pyridine",
+    ]);
+});
+
+test("a batch name is never matched as a compound name", () => {
+    const e = tenofovirEntry();
+    const list = entityMentions(tableRowsFromEntry(e), e, ENTRY_URL);
+    assert.ok(!list.some((m) => m.names.includes("008")));
+});

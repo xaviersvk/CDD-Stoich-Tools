@@ -84,25 +84,40 @@ function num(value) {
     return Number.isFinite(n) ? n : null;
 }
 
-function rowName(row) {
-    return row?.sample?.name || row?.name || row?.iupacName || row?.moleculeName || row?.batch?.name || "Unnamed";
+// Every name a row goes by, the one the chemist typed in the table first —
+// "Tenofovir", not its sample "I34-SM-0037292-008-I34S016471" (the panel
+// leads with the sample; prose names the compound).
+// The batch name ("008") only names a row nothing else names: as an alias
+// it would match every "008" in the text.
+function rowNames(row) {
+    const names = [row?.name, row?.sample?.name, row?.moleculeName, row?.iupacName]
+        .filter((n) => typeof n === "string" && n.trim())
+        .map((n) => n.trim());
+    if (!names.length && typeof row?.batch?.name === "string" && row.batch.name.trim()) names.push(row.batch.name.trim());
+    return [...new Set(names)];
 }
 
 export function tableRowsFromEntry(elnEntry) {
     const rows = [];
     getReactionFeatures({ eln_entry: elnEntry }).forEach((feature, reactionIndex) => {
+        // CDD numbers a reaction's mentionable components 1, 2, 3… over its
+        // rows in table order, products left out — NOT by the row's uid
+        // (entry 1000017498: pyridine, uid 13, is component 4).
+        let component = 0;
         for (const row of feature.data.stoichiometryTable.rows || []) {
             const sample = parseQuantity(row?.userInput?.msample);
+            const [name = "Unnamed", ...aliases] = rowNames(row);
+            const isProduct = row?.role === "product";
             rows.push({
                 row: rows.length + 1,
                 reaction: reactionIndex + 1,
                 // What an @-mention of this row points at (mentions.js).
-                uid: row?.uid ?? null,
+                component: isProduct ? null : ++component,
                 structureId: feature.data.attachedStructureId ?? null,
                 sampleText: typeof row?.userInput?.msample === "string" ? row.userInput.msample.trim() : "",
-                name: rowName(row),
+                name,
                 // Other names the same compound may be written under.
-                aliases: [row?.moleculeName, row?.iupacName].filter((a) => typeof a === "string" && a.trim()),
+                aliases,
                 role: String(row?.role || ""),
                 massG: num(row?.mass),
                 sampleG: sample?.kind === "mass" ? sample.value : null,

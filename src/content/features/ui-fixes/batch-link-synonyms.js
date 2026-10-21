@@ -3,10 +3,10 @@
 // A field that links to a batch (e.g. "Vector CDD ID", or a run's "Probe")
 // shows only the linked batch's name: "NUC-0000131-001". Which vector that is
 // lives on the other molecule's page, often in another vault. This prints the
-// linked molecule's synonyms after the link, cut to 18 characters with the
+// linked molecule's synonyms after the link, cut to 22 characters with the
 // whole list in the tooltip:
 //
-//     NUC-0000131-001 (hA3A_E72A_FL_in_pS...)
+//     NUC-0000131-001 (hA3A_E72A_FL_in_pSqrl0...)
 //
 // Three places, two shapes:
 //   - molecule page, batch fields, and protocol page, Runs table: the <a>
@@ -31,7 +31,7 @@ const LINK_SELECTOR = [
 const MOLECULE_PATTERN = /\/vaults\/(\d+)\/molecules\/(\d+)/;
 const SUFFIX_CLASS = "cdd-batch-link-synonyms";
 // Characters shown inside the bracket before "...".
-const MAX_CHARS = 18;
+const MAX_CHARS = 22;
 
 // batch id -> Promise<{ vaultId, moleculeId } | null>
 const moleculeByBatch = new Map();

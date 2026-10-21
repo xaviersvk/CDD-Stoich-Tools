@@ -3,9 +3,10 @@
 // A field that links to a batch (e.g. "Vector CDD ID", or a run's "Probe")
 // shows only the linked batch's name: "NUC-0000131-001". Which vector that is
 // lives on the other molecule's page, often in another vault. This prints the
-// linked molecule's synonyms after the link:
+// linked molecule's synonyms after the link, cut to 18 characters with the
+// whole list in the tooltip:
 //
-//     NUC-0000131-001 (hA3A_E72A_FL_in_pSqrl004, hA3A_E72A_BactOpt_in_pSqrl004)
+//     NUC-0000131-001 (hA3A_E72A_FL_in_pS...)
 //
 // Three places, two shapes:
 //   - molecule page, batch fields, and protocol page, Runs table: the <a>
@@ -29,6 +30,8 @@ const LINK_SELECTOR = [
 ].join(", ");
 const MOLECULE_PATTERN = /\/vaults\/(\d+)\/molecules\/(\d+)/;
 const SUFFIX_CLASS = "cdd-batch-link-synonyms";
+// Characters shown inside the bracket before "...".
+const MAX_CHARS = 18;
 
 // batch id -> Promise<{ vaultId, moleculeId } | null>
 const moleculeByBatch = new Map();
@@ -61,6 +64,12 @@ async function moleculeOfLink(link) {
     return batchId ? moleculeOfBatch(batchId) : null;
 }
 
+// A long list widened the run page's Details table; the whole list is in the
+// bracket's tooltip.
+function shorten(text) {
+    return text.length > MAX_CHARS ? `${text.slice(0, MAX_CHARS).trimEnd()}...` : text;
+}
+
 function hasSuffix(link) {
     return link.nextElementSibling?.classList.contains(SUFFIX_CLASS) ?? false;
 }
@@ -69,7 +78,9 @@ function addSuffix(link, synonyms) {
     if (!synonyms.length || !link.isConnected || hasSuffix(link)) return;
     const span = document.createElement("span");
     span.className = SUFFIX_CLASS;
-    span.textContent = ` (${synonyms.join(", ")})`;
+    const full = synonyms.join(", ");
+    span.textContent = ` (${shorten(full)})`;
+    if (full.length > MAX_CHARS) span.title = full;
     link.after(span);
 }
 

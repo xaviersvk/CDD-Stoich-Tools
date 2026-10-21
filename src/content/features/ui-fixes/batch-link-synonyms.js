@@ -8,9 +8,9 @@
 //
 //     NUC-0000131-001 (hA3A_E72A_FL_in_pSqrl0...)
 //
-// Three places, two shapes:
-//   - molecule page, batch fields, and protocol page, Runs table: the <a>
-//     carries the molecule's URL;
+// Four places, two shapes:
+//   - molecule page, batch fields; protocol page, Runs table; search
+//     results, readout columns: the <a> carries the molecule's URL;
 //   - run page, Details: the <a> has no href at all, only the batch id, which
 //     the page-world bridge (inject/hooks/batch-link-id-bridge.js) stamps on
 //     it. `/vaults/<vault>/batches/<id>` redirects to the molecule's page —
@@ -26,6 +26,7 @@ import { loadSynonyms } from "../../api/molecule-synonyms.js";
 const LINK_SELECTOR = [
     'td[data-field-id] a[href*="#molecule-batches/"]',
     'td[data-column-id^="run_fields."] a[href*="#molecule-batches/"]',
+    'tr[id^="molecule_"] > td a[href*="#molecule-batches/"]',
     "a[data-cdd-batch-link-id]",
 ].join(", ");
 const MOLECULE_PATTERN = /\/vaults\/(\d+)\/molecules\/(\d+)/;
@@ -70,6 +71,13 @@ function shorten(text) {
     return text.length > MAX_CHARS ? `${text.slice(0, MAX_CHARS).trimEnd()}...` : text;
 }
 
+// A search result row (<tr id="molecule_<id>_row_…">) linking to a batch of
+// its own molecule: its synonyms are already the row's Synonyms column.
+function isOwnRow(link) {
+    const rowMolecule = /^molecule_(\d+)_/.exec(link.closest("tr")?.id || "")?.[1];
+    return !!rowMolecule && MOLECULE_PATTERN.exec(link.getAttribute("href") || "")?.[2] === rowMolecule;
+}
+
 function hasSuffix(link) {
     return link.nextElementSibling?.classList.contains(SUFFIX_CLASS) ?? false;
 }
@@ -86,7 +94,7 @@ function addSuffix(link, synonyms) {
 
 function check() {
     for (const link of document.querySelectorAll(LINK_SELECTOR)) {
-        if (hasSuffix(link)) continue;
+        if (hasSuffix(link) || isOwnRow(link)) continue;
         // Both lookups are cached after the first answer, and a failing
         // molecule page is asked for a bounded number of times — safe to call
         // on every scan.

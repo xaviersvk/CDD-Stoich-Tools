@@ -19,6 +19,37 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [19.2.0] — 2026-10-21
+
+### Added
+- **Synonyms after batch links** (`content/features/ui-fixes/batch-link-synonyms.js`):
+  a link to another molecule's batch is followed by that molecule's synonyms
+  in brackets, cut to 22 characters + "..." with the whole list in the
+  tooltip — `NUC-0000131-001 (hA3A_E72A_FL_in_pSqrl0...)`. Four places:
+  batch fields on the molecule page (e.g. "Vector CDD ID"), the protocol's
+  Runs table, the run's Details, and readout columns in search results.
+  Synonyms come from one read of the linked molecule's page per page session
+  (`api/molecule-synonyms.js`, shared with the panel), in whatever vault it
+  lives. A molecule with no synonyms, or a page that will not load, adds
+  nothing; a search row linking to its own molecule is skipped (its Synonyms
+  column says it already). Ctrl+click copy still copies the link text alone.
+- Run Details' BatchLink fields are `<a>` with no href; the page-world
+  bridge `inject/hooks/batch-link-id-bridge.js` stamps the batch id from the
+  field's React props (`field.value.batch_link_id`) as
+  `data-cdd-batch-link-id`, and a HEAD of `/vaults/<vault>/batches/<id>`
+  follows CDD's redirect to the molecule page.
+
+### Changed
+- Write-up: the answer timeout defaults to 300 s (was 180 s, which a
+  5-minute dictation could exceed). A stored 180 — the old default — is
+  lifted to 300 once on install/update; a 180 set after that is kept.
+
+### Fixed
+- Write-up Checks: a compound link carries the table's amount ("3.01 mmol")
+  and the model's own bracket is dropped, so "3.0 mmol" was flagged as lost.
+  A number now counts as kept when the English has the same kind of quantity
+  agreeing with it to the precision it was written in.
+
 ## [19.1.0] — 2026-10-20
 
 ### Added

@@ -13,6 +13,13 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 19.2.0 — 2026-10-21
+
+A link to another batch now shows that molecule's synonyms in brackets — `NUC-0000131-001 (hA3A_E72A_FL_in_pSqrl0...)` — on the molecule page, the protocol's *Runs*, the run's *Details* and in search results. Hover the bracket for the full list.
+
+- Write-up waits up to 5 minutes for an answer, enough for a long dictation.
+- Checks no longer flag "3.0 mmol" as lost when the table says 3.01 mmol.
+
 ## 19.1.0 — 2026-10-20
 
 Ask the AI about the whole entry — "add a workup paragraph: 3× EtOAc", "what is missing before the purification?" — from the new field in the panel's *Write-up* tab, and **Reply** on any card to answer what it asks, typed or dictated.

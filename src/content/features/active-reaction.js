@@ -77,7 +77,7 @@ let flagStarted = false;
 function startFlag() {
     if (flagStarted) return;
     flagStarted = true;
-    initActiveReactionFlag();
+    void initActiveReactionFlag();
     // Switching it on scrolls the panel to the reaction in view at once.
     onActiveReactionChanged((enabled) => markActiveReaction({ scroll: enabled }));
 }

@@ -270,7 +270,7 @@ function buildBar(view) {
             status.textContent = `Copy failed: ${error.message}`;
         }
         setBusy(false);
-        refresh();
+        void refresh();
     });
 
     pasteButton.addEventListener("click", async () => {
@@ -309,7 +309,7 @@ function buildBar(view) {
     }
 
     refreshers.add(refresh);
-    refresh();
+    void refresh();
     return bar;
 }
 

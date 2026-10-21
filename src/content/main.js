@@ -72,7 +72,6 @@ import {initStoichRoleQuickPick} from "./features/ui-fixes/stoich-role-quick-pic
 import {initLinkStructureDefault} from "./features/ui-fixes/link-structure-default";
 import {initLinkSearchRank} from "./features/ui-fixes/link-search-rank";
 import {initLinkAlias} from "./features/ui-fixes/link-alias";
-import {initInventoryExactTable} from "./features/ui-fixes/inventory-exact-table";
 import {initSlurpTypeDefault} from "./features/ui-fixes/slurp-type-default";
 import {initSlurpPicklistDefaults} from "./features/ui-fixes/slurp-picklist-defaults";
 import {initSlurpProtocolPicklistDefaults} from "./features/ui-fixes/slurp-protocol-picklist-defaults";
@@ -266,7 +265,7 @@ function init() {
   // also shown in a view-only "Exact" table above CDD's results.
   // OFF since 18.14.0, together with installInventoryExactFirst() in
   // inject/main.js — the table has nothing to show without it.
-  // initInventoryExactTable();
+  // initInventoryExactTable();  (import it from ./features/ui-fixes/inventory-exact-table)
 
   // Selecting text in a stoichiometry table: CDD's Slate void turns
   // user-select off and hijacks the mouse into a block drag, so nothing in

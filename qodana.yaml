@@ -27,6 +27,14 @@ exclude:
 #
 # moderate: a RATCHET, not a target. The agreed ceiling is 20.
 #
+# 2026-10-21: red since 2026-10-09 at 89 (CI run 39577699387). The 10 new
+# findings, against the last green run (f3ff26d): two imports of the parked
+# inventory exact-first pair (removed; the comments say where to import them
+# from) and eight ignored promises — options-page change handlers and inits
+# for Active reaction and Link name, the content-side flag inits, and the
+# readout clipboard's button refresh. Every callee catches its own storage
+# failure; each now says fire-and-forget with `void`. Back to 79, unchanged.
+#
 # 79 on 2026-09-30 (CI run 36721809997: 76 ignored promises, 3 deprecated,
 # 0 clones), after 93 earlier the same day, up from 84. The check had been red since 2026-08-25 (at
 # 112) and nobody was reading it, so a month of releases went in unchecked.

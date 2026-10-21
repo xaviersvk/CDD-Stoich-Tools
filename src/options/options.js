@@ -1144,7 +1144,7 @@ async function initElnShiftLeftUI() {
 const activeReactionCheckbox = document.getElementById("activeReaction");
 
 activeReactionCheckbox.addEventListener("change", () => {
-    saveActiveReactionEnabled(activeReactionCheckbox.checked);
+    void saveActiveReactionEnabled(activeReactionCheckbox.checked);
 });
 
 async function initActiveReactionUI() {
@@ -1155,7 +1155,7 @@ const linkAliasFieldInput = document.getElementById("linkAliasField");
 
 // Saved as you type; a blank box goes back to the default on blur.
 linkAliasFieldInput.addEventListener("input", () => {
-    saveLinkAliasField(linkAliasFieldInput.value);
+    void saveLinkAliasField(linkAliasFieldInput.value);
 });
 
 linkAliasFieldInput.addEventListener("blur", async () => {
@@ -1566,8 +1566,8 @@ initFillRowNameUI();
 initPurityThresholdUI();
 initShowProductsUI();
 initElnShiftLeftUI();
-initActiveReactionUI();
-initLinkAliasUI();
+void initActiveReactionUI();
+void initLinkAliasUI();
 initElnIdToBatchUI();
 initPanelSourcesUI();
 initHeatMapFieldsUI();

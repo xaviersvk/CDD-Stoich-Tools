@@ -168,6 +168,6 @@ function check() {
 }
 
 export function initLinkAlias() {
-    initLinkAliasField();
+    void initLinkAliasField();
     watchDocument(check);
 }

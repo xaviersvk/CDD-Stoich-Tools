@@ -17,7 +17,6 @@ import { installFieldRowsBridge } from "./hooks/field-rows-bridge.js";
 import { installFormStoreBridge } from "./hooks/form-store-bridge.js";
 import { installBatchLinkIdBridge } from "./hooks/batch-link-id-bridge.js";
 import { installDoseResponseDrag } from "./hooks/dose-response-drag.js";
-import { installInventoryExactFirst } from "./hooks/inventory-exact-first.js";
 import { installPrintDispatcher } from "./print/dispatcher.js";
 
 
@@ -163,7 +162,8 @@ const tryParseText = createTextParser(processJsonPayload);
   // After the XHR hook, so it wraps it: inventory search answered exact-first.
   // OFF since 18.14.0 — parked until inventory search is looked at again
   // (text search returned nothing with all projects selected; not ours, but
-  // not to be mixed up with it). One line restores it.
+  // not to be mixed up with it). Restore the call and its import from
+  // ./hooks/inventory-exact-first.js.
   // installInventoryExactFirst();
 
   // An opening ELN entry puts no payload on the wire; ask for it ourselves and

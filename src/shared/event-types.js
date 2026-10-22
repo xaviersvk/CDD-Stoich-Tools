@@ -75,6 +75,11 @@ export const EVENTS = {
   // posted again.
   DOSE_RESPONSE_DRAG_ENABLED: "DOSE_RESPONSE_DRAG_ENABLED",
   DOSE_RESPONSE_DRAG_HELLO: "DOSE_RESPONSE_DRAG_HELLO",
+  // Content -> page world: { enabled } — the Settings switch for Shift/Ctrl-drag
+  // outlier flagging on run heat maps (inject/hooks/heat-map-outlier-drag.js,
+  // which needs CDD.HeatMap and CDD.ConnectionPool). HELLO as above.
+  HEAT_MAP_OUTLIER_DRAG_ENABLED: "HEAT_MAP_OUTLIER_DRAG_ENABLED",
+  HEAT_MAP_OUTLIER_DRAG_HELLO: "HEAT_MAP_OUTLIER_DRAG_HELLO",
 };
 // Content/options -> background: the Write-up tab's requests to the CERIT LLM
 // service. background.js repeats these literals (it ships unbundled).

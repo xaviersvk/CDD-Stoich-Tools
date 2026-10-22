@@ -393,6 +393,16 @@
                     <input type="checkbox" id="assayWindow" />
                     <span>Show <strong>Plate QC</strong> on run pages</span>
                 </label>
+                <p class="note">
+                    On a run heat map: <strong>Shift</strong>-drag a box to flag
+                    the wells in it as outliers, <strong>Ctrl</strong>-drag to
+                    unflag them. Applies to the readout the heat map shows and
+                    is saved at once, like CDD's own flag.
+                </p>
+                <label class="field-item show-products-toggle">
+                    <input type="checkbox" id="heatMapOutlierDrag" />
+                    <span>Flag outliers by <strong>dragging</strong> on heat maps</span>
+                </label>
             </div>
         </section>
         <section class="card" aria-labelledby="col-doseresponse-heading">

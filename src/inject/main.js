@@ -17,6 +17,7 @@ import { installFieldRowsBridge } from "./hooks/field-rows-bridge.js";
 import { installFormStoreBridge } from "./hooks/form-store-bridge.js";
 import { installBatchLinkIdBridge } from "./hooks/batch-link-id-bridge.js";
 import { installDoseResponseDrag } from "./hooks/dose-response-drag.js";
+import { installHeatMapOutlierDrag } from "./hooks/heat-map-outlier-drag.js";
 import { installPrintDispatcher } from "./print/dispatcher.js";
 
 
@@ -175,6 +176,7 @@ const tryParseText = createTextParser(processJsonPayload);
   installFormStoreBridge();
   installBatchLinkIdBridge();
   installDoseResponseDrag();
+  installHeatMapOutlierDrag();
 
   // Snapshot outgoing create-sample requests (read-only) so the content side has
   // a faithful payload template, AND tap their responses so the batch

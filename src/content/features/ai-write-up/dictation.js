@@ -30,6 +30,7 @@ import {
     AI_LANGUAGES,
     aiErrorMessage,
     getAiWriteUpView,
+    onAiWriteUpChanged,
     saveAiSettings,
 } from "../../../shared/ai-write-up-settings.js";
 import { AI_CANCEL_MESSAGE, AI_CHAT_MESSAGE, AI_TRANSCRIBE_MESSAGE } from "../../../shared/event-types.js";
@@ -106,6 +107,22 @@ export function onDictationChanged(cb) {
     listeners.add(cb);
     return () => listeners.delete(cb);
 }
+
+/**
+ * Why 🎤 cannot work, or "" when it can: no key for the service that
+ * transcribes. The buttons grey out and say this rather than fail on a click.
+ * With Claude writing, that is the "Dictation by" service.
+ */
+export function dictationUnavailable() {
+    const view = getAiWriteUpView();
+    if (view.hasDictationKey) return "";
+    return view.provider === view.dictationProvider
+        ? `Dictation needs a ${view.dictationProvider} API key — Settings → AI write-up`
+        : `Dictation needs a CERIT-SC or OpenAI API key — Settings → AI write-up → Dictation by`;
+}
+
+// A key added or removed in the settings repaints every 🎤.
+onAiWriteUpChanged(() => setState({}));
 
 function clock(since) {
     const s = Math.floor((Date.now() - since) / 1000);
@@ -528,6 +545,7 @@ function replyBoxNode(card) {
     mic.type = "button";
     mic.textContent = "🎤";
     mic.title = "Dictate the reply into the field";
+    mic.disabled = !!dictationUnavailable();
     const send = document.createElement("button");
     send.type = "button";
     send.className = "cdd-wu-run";
@@ -568,6 +586,9 @@ function replyBoxNode(card) {
         if (!box.isConnected) return unsubscribe();
         const mine = state.origin?.field === card;
         mic.textContent = mine ? dictationLabel("🎤") : "🎤";
+        const unavailable = dictationUnavailable();
+        mic.disabled = !!unavailable;
+        mic.title = unavailable || "Dictate the reply into the field";
         const sending = state.origin?.replyTo === card && state.phase !== "idle";
         send.textContent = sending ? dictationLabel("Send") : "Send";
         send.title = sending ? "Cancel" : "Send the reply";
@@ -696,11 +717,12 @@ export function mountDictation(bar, list) {
     let shown = null;
     const paint = () => {
         const busy = state.phase === "transcribing" || state.phase === "translating";
-        mic.disabled = false;
+        const unavailable = dictationUnavailable();
+        mic.disabled = !!unavailable;
         // The tab's button shows a reaction's recording too: one microphone.
         mic.textContent = dictationLabel("🎤 Dictate");
         // Busy, the button cancels (✕ on its label).
-        mic.title = busy ? "Cancel" : "Dictate about the whole entry. Stop when done: the English appears below, ready to copy.";
+        mic.title = unavailable || (busy ? "Cancel" : "Dictate about the whole entry. Stop when done: the English appears below, ready to copy.");
         status.textContent = state.status || "";
         const key = currentEntry()?.key;
         if (shown?.cards !== cards || shown?.key !== key) {

@@ -46,10 +46,13 @@ export function transcribeProviderOf(settings) {
     return AI_PROVIDERS[settings.provider].transcribeModel ? settings.provider : settings.dictationProvider;
 }
 
-// The host permissions these settings need — the writing service and the
-// transcribing one.
+// The host permissions these settings need — the writing service, and the
+// transcribing one once it has a key: someone with only a Claude key is not
+// asked for access to a dictation service they cannot use.
 export function aiPermissionFor(settings) {
-    const ids = [...new Set([settings.provider, transcribeProviderOf(settings)])];
+    const transcriber = transcribeProviderOf(settings);
+    const ids = [settings.provider];
+    if (transcriber !== settings.provider && settings.apiKeys?.[transcriber]) ids.push(transcriber);
     return { origins: ids.map((id) => `${AI_PROVIDERS[id].origin}/*`) };
 }
 export const AI_ALL_PERMISSIONS = { origins: AI_PROVIDER_IDS.map((id) => `${AI_PROVIDERS[id].origin}/*`) };

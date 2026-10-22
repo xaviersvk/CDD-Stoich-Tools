@@ -35,9 +35,13 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   speech-to-text, so with Claude writing a *Dictation by* row picks CERIT-SC
   or OpenAI, with its own key.
 - Host permissions: `api.openai.com` and `api.anthropic.com` join the
-  optional ones. Only the hosts of the picked services are requested;
-  picking another service while it is on asks for the new one and gives
-  back the old; switching off gives back all.
+  optional ones. Only the hosts of the picked services are requested — the
+  dictation service only once its key is entered, so a Claude-only setup
+  asks for `api.anthropic.com` alone; picking another service while it is
+  on asks for the new one and gives back the old; switching off gives back all.
+- Without a key for the dictation service every 🎤 (Write-up tab, reaction,
+  Ask, Reply) is greyed out and its tooltip says which key is missing
+  (`dictationUnavailable()` in `dictation.js`), instead of failing on a click.
 - Error messages, the Polish status and Test connection name the service
   in use instead of CERIT. Privacy policy, README and store copy updated.
 

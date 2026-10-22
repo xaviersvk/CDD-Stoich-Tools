@@ -10,7 +10,7 @@
 
 import { isAiWriteUpEnabled } from "../../../shared/ai-write-up-settings.js";
 import { setPanelTab } from "../sample-panel.js";
-import { dictationLabel, getDictationState, onDictationChanged, toggleDictation } from "./dictation.js";
+import { dictationLabel, dictationUnavailable, getDictationState, onDictationChanged, toggleDictation } from "./dictation.js";
 
 const BTN_CLASS = "cdd-stoich-dictate-button";
 const STYLE_ID = "cdd-stoich-dictate-button-styles";
@@ -23,8 +23,13 @@ function paint(btn) {
     const mine = state.origin?.reactionIndex === Number(btn.dataset.reactionIndex);
     btn.textContent = mine ? dictationLabel("🎤") : "🎤";
     btn.classList.toggle(`${BTN_CLASS}--active`, mine && state.phase !== "idle");
-    // Busy, the button that started it cancels; the others wait.
-    btn.disabled = state.phase !== "idle" && !mine;
+    // No dictation key: grey, saying why. Busy, the button that started it
+    // cancels; the others wait.
+    const unavailable = dictationUnavailable();
+    btn.classList.toggle(`${BTN_CLASS}--unavailable`, !!unavailable);
+    btn.disabled = !!unavailable || (state.phase !== "idle" && !mine);
+    btn.title = unavailable || TITLE;
+    btn.setAttribute("aria-label", btn.title);
 }
 
 function paintAll() {
@@ -78,6 +83,8 @@ function ensureStyles() {
         .${BTN_CLASS}:hover { background: #f9fafb; border-color: #bfc6cf; }
         .${BTN_CLASS}--active { border-color: #dc2626; color: #dc2626; }
         .${BTN_CLASS}:disabled { cursor: progress; }
+        .${BTN_CLASS}--unavailable { color: #9ca3af; }
+        .${BTN_CLASS}--unavailable:disabled { cursor: not-allowed; }
     `;
     document.head.appendChild(style);
 }

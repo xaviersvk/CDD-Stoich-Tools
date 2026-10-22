@@ -23,9 +23,15 @@ test("an unknown service falls back to CERIT", () => {
 });
 
 test("Claude writes, the dictation service transcribes", () => {
-    const s = normalize({ provider: "anthropic", dictationProvider: "openai" });
+    const s = normalize({ provider: "anthropic", dictationProvider: "openai", apiKeys: { openai: "sk-o" } });
     assert.equal(transcribeProviderOf(s), "openai");
     assert.deepEqual(aiPermissionFor(s).origins, ["https://api.anthropic.com/*", "https://api.openai.com/*"]);
+});
+
+test("with only a Claude key, no dictation host is asked for", () => {
+    const s = normalize({ provider: "anthropic", apiKeys: { anthropic: "sk-a" } });
+    assert.equal(transcribeProviderOf(s), "cerit");
+    assert.deepEqual(aiPermissionFor(s).origins, ["https://api.anthropic.com/*"]);
 });
 
 test("a service that transcribes does both, and needs one permission", () => {

@@ -158,6 +158,17 @@ function saveKey(provider, value) {
     void saveAiSettings({ apiKeys: current.apiKeys });
 }
 
+// The dictation key with Claude writing: a key added asks for its service's
+// host, a key emptied gives it back. A refusal keeps the key, and says so.
+async function saveDictationKey(value) {
+    const provider = transcribeProviderOf(current);
+    const next = { ...current, apiKeys: { ...current.apiKeys, [provider]: value.trim() } };
+    if (!(await regrant(next))) {
+        setStatus(`Access to ${AI_PROVIDERS[provider].label} was not allowed, so dictation will not work.`);
+    }
+    saveKey(provider, value);
+}
+
 // A change of service while the feature is on: ask for what the new pick
 // needs (inside the change's user gesture — no await before the request),
 // then give back what it no longer does. False when the browser refused.
@@ -274,7 +285,7 @@ export async function initAiWriteUpUI() {
     providerSelect.addEventListener("change", () => void changeProvider("provider", providerSelect.value));
     dictationSelect.addEventListener("change", () => void changeProvider("dictationProvider", dictationSelect.value));
     keyInput.addEventListener("change", () => saveKey(current.provider, keyInput.value));
-    dictationKeyInput.addEventListener("change", () => saveKey(transcribeProviderOf(current), dictationKeyInput.value));
+    dictationKeyInput.addEventListener("change", () => void saveDictationKey(dictationKeyInput.value));
     modelSelect.addEventListener("change", () => {
         current.models = { ...current.models, [current.provider]: modelSelect.value };
         void saveAiSettings({ models: current.models });

@@ -13,6 +13,10 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 19.3.0 — 2026-10-22
+
+Flag outliers on a run heat map in one go: **Shift**-drag a box over the wells, **Ctrl**-drag to unflag. It applies to the readout the heat map shows and saves at once, like CDD's own flag. Switch off in *Settings → Plate QC*.
+
 ## 19.2.0 — 2026-10-21
 
 A link to another batch now shows that molecule's synonyms in brackets — `NUC-0000131-001 (hA3A_E72A_FL_in_pSqrl0...)` — on the molecule page, the protocol's *Runs*, the run's *Details* and in search results. Hover the bracket for the full list.

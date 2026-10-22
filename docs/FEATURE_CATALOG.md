@@ -356,6 +356,19 @@ printed in the page world via a hidden iframe.
   of CDD's bundle; if any is missing the drag is left to CDD.
 - **Regression risk:** low — it only changes CDD's unsaved edit state.
 
+### 4.3 Drag to flag outliers on heat maps
+- **User value:** On a run heat map, Shift-drag flags every well in a box as an
+  outlier for the shown readout, Ctrl-drag unflags them. Saved at once.
+- **Entry point:** `src/inject/hooks/heat-map-outlier-drag.js`
+  (`installHeatMapOutlierDrag`); switch in `shared/heat-map-outlier-drag-flag.js`,
+  passed in by `content/features/ui-fixes/heat-map-outlier-drag.js`.
+- **Data source:** `CDD.HeatMap.wellDetails` (flag link per well), CDD's
+  `flag_as_outlier` PUT, `CDD.ConnectionPool.enqueue` to reload the plate.
+- **Maintenance difficulty:** medium — relies on the popup's flag link and
+  CDD's heat map globals; a well without a readable link is skipped.
+- **Regression risk:** medium — it **writes outlier flags to CDD**, though only
+  through the endpoint CDD's own flag link uses, and Ctrl-drag undoes it.
+
 ---
 
 ## 5. Saved Searches

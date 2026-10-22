@@ -88,6 +88,10 @@ import {
     saveDoseResponseDragEnabled,
 } from "../shared/dose-response-drag-flag.js";
 import {
+    getHeatMapOutlierDragEnabled,
+    saveHeatMapOutlierDragEnabled,
+} from "../shared/heat-map-outlier-drag-flag.js";
+import {
     getElnIdToBatchEnabled,
     saveElnIdToBatchEnabled,
 } from "../shared/eln-id-to-batch.js";
@@ -1190,6 +1194,16 @@ async function initDoseResponseDragUI() {
     refreshRailChips();
 }
 
+const heatMapOutlierDragCheckbox = document.getElementById("heatMapOutlierDrag");
+
+heatMapOutlierDragCheckbox.addEventListener("change", () => {
+    void saveHeatMapOutlierDragEnabled(heatMapOutlierDragCheckbox.checked);
+});
+
+async function initHeatMapOutlierDragUI() {
+    heatMapOutlierDragCheckbox.checked = await getHeatMapOutlierDragEnabled();
+}
+
 const elnIdToBatchCheckbox = document.getElementById("elnIdToBatch");
 
 elnIdToBatchCheckbox.addEventListener("change", () => {
@@ -1573,6 +1587,7 @@ initPanelSourcesUI();
 initHeatMapFieldsUI();
 void initAssayWindowUI();
 void initDoseResponseDragUI();
+void initHeatMapOutlierDragUI();
 initHplcInjectionUI();
 void initInventoryScanUI();
 initRegistrationDefaultsUI();

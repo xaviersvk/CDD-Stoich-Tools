@@ -23,6 +23,7 @@ import {
 import {resetState} from "./state";
 import {initDoseResponseOverride} from "./features/dose-response-override/init";
 import {initDoseResponseDragSelect} from "./features/dose-response-override/drag-select";
+import {initHeatMapOutlierDragSelect} from "./features/ui-fixes/heat-map-outlier-drag";
 import {
   applyFileDialogFixes,
   fixAssociateFileBar,
@@ -124,6 +125,7 @@ function init() {
 
   // Before the page script loads, so its hello finds a listener.
   initDoseResponseDragSelect();
+  initHeatMapOutlierDragSelect();
   injectPageScript();
   initDoseResponseOverride();
   initSamplePanelFields();

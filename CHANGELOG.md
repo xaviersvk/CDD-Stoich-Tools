@@ -19,6 +19,24 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [19.3.0] — 2026-10-22
+
+### Added
+- **Drag to flag outliers on run heat maps** (`inject/hooks/heat-map-outlier-drag.js`,
+  switch `shared/heat-map-outlier-drag-flag.js` passed in by
+  `content/features/ui-fixes/heat-map-outlier-drag.js`): Shift-drag a box
+  over a heat map to flag every well it touches as an outlier for the
+  readout the viewer shows; Ctrl-drag unflags; Shift/Ctrl-click acts on one
+  well. Unlike the dose-response drag this saves at once — the same
+  `PUT /vaults/<v>/readouts/<id>/flag_as_outlier?outlier_type=1|0` CDD's
+  flag link in the well popup sends, four at a time, readout ids read from
+  `CDD.HeatMap.wellDetails`. Only wells not already in the wanted state are
+  sent. Each touched plate is then reloaded once through
+  `CDD.ConnectionPool.enqueue` with the wrapper's `data-run-heat-map-path`,
+  as CDD does after a single flag, so X marks and Z′ follow. A label at the
+  cursor shows progress and the result. *Settings → Plate QC*, on by default.
+
+---
 ## [19.2.0] — 2026-10-21
 
 ### Added

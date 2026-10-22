@@ -2,7 +2,7 @@
 //
 // The "Write-up" tab of the floating panel (off unless Settings → AI write-up
 // is on). Polish entry sends the entry's text and stoichiometry table to the
-// CERIT LLM through background.js, and shows
+// AI service through background.js, and shows
 //
 //   - the English write-up, with Copy (as rich text: the "## " headings come
 //     back as headings when pasted into the entry), and
@@ -163,7 +163,7 @@ async function polish() {
         const style = getAiWriteUpView().mentionStyle;
         const mentions = entityMentions(rows, elnEntry, entryUrl(entry), { style });
 
-        setStatus("Polishing… (CERIT, usually under a minute)");
+        setStatus(`Polishing… (${getAiWriteUpView().provider}, usually under a minute)`);
         const answer = await chrome.runtime.sendMessage({
             type: AI_CHAT_MESSAGE,
             id,

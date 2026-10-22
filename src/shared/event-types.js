@@ -81,8 +81,8 @@ export const EVENTS = {
   HEAT_MAP_OUTLIER_DRAG_ENABLED: "HEAT_MAP_OUTLIER_DRAG_ENABLED",
   HEAT_MAP_OUTLIER_DRAG_HELLO: "HEAT_MAP_OUTLIER_DRAG_HELLO",
 };
-// Content/options -> background: the Write-up tab's requests to the CERIT LLM
-// service. background.js repeats these literals (it ships unbundled).
+// Content/options -> background: the Write-up tab's requests to the AI service
+// (CERIT-SC, OpenAI or Anthropic). background.js repeats these literals (it ships unbundled).
 export const AI_MODELS_MESSAGE = "CDD_STOICH_TOOLS_AI_MODELS";
 export const AI_CHAT_MESSAGE = "CDD_STOICH_TOOLS_AI_CHAT";
 export const AI_TRANSCRIBE_MESSAGE = "CDD_STOICH_TOOLS_AI_TRANSCRIBE";

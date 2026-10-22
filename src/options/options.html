@@ -984,24 +984,42 @@
                 </p>
                 <p class="note">
                     The entry's text and its stoichiometry table — compound
-                    names, amounts, equivalents — go to <strong>CERIT-SC</strong>
-                    (llm.ai.e-infra.cz, Masaryk University), dictated audio
-                    too, only when you click 🎤, Polish or Polish entry.
-                    <strong>Structures never do</strong>: no SMILES, mol files,
-                    reaction images, molecular weights or the table's IUPAC
-                    names — only what you typed goes as written. Get a key at
-                    <em>chat.ai.e-infra.cz → Settings → Account → API keys</em>
-                    (MetaCentrum or MUNI account).
+                    names, amounts, equivalents — go to the <strong>AI
+                    service</strong> you pick below, dictated audio too, only
+                    when you click 🎤, Polish or Polish entry, under your own
+                    API key. <strong>Structures never do</strong>: no SMILES,
+                    mol files, reaction images, molecular weights or the
+                    table's IUPAC names — only what you typed goes as written.
                 </p>
                 <label class="field-item auto-fill-toggle">
                     <input type="checkbox" id="aiWriteUpEnabled" />
                     <span>Show the <strong>Write-up</strong> tab. Off by
                     default; turning it on asks the browser for access to
-                    llm.ai.e-infra.cz.</span>
+                    the service you pick.</span>
                 </label>
                 <label class="field-item purity-threshold-row">
-                    <span><strong>API key</strong></span>
+                    <span><strong>AI service</strong></span>
+                    <select id="aiProvider" class="select">
+                        <option value="cerit">CERIT-SC — Masaryk University (llm.ai.e-infra.cz)</option>
+                        <option value="openai">OpenAI (api.openai.com)</option>
+                        <option value="anthropic">Anthropic — Claude (api.anthropic.com)</option>
+                    </select>
+                </label>
+                <label class="field-item purity-threshold-row">
+                    <span><strong>API key</strong> — <span id="aiKeyHint"></span></span>
                     <input type="password" id="aiApiKey" class="text-input" autocomplete="off" spellcheck="false" />
+                </label>
+                <label class="field-item purity-threshold-row" id="aiDictationRow" hidden>
+                    <span><strong>Dictation by</strong> — Claude does not
+                    transcribe speech, so 🎤 goes to this service.</span>
+                    <select id="aiDictationProvider" class="select">
+                        <option value="cerit">CERIT-SC</option>
+                        <option value="openai">OpenAI</option>
+                    </select>
+                </label>
+                <label class="field-item purity-threshold-row" id="aiDictationKeyRow" hidden>
+                    <span><strong>Dictation API key</strong> — <span id="aiDictationKeyHint"></span></span>
+                    <input type="password" id="aiDictationKey" class="text-input" autocomplete="off" spellcheck="false" />
                 </label>
                 <label class="field-item purity-threshold-row">
                     <span><strong>Model</strong> — a small one is fast enough.</span>

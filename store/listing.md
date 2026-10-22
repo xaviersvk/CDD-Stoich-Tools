@@ -60,7 +60,7 @@ Not a CDD product
 This is an open-source extension written by CDD Vault users. Collaborative Drug Discovery does not build, endorse or support it. If something in CDD looks wrong, disable the extension, reload the page and check again before contacting CDD support. Report problems on GitHub: https://github.com/xaviersvk/CDD-Stoich-Tools/issues
 
 Privacy
-Runs only on CDD Vault pages. No accounts, no backend, no analytics — nothing leaves your browser, unless you switch on AI write-up: then the text you ask it to polish (and dictated audio) goes to CERIT-SC (llm.ai.e-infra.cz) under your own API key, only when you click. Structures are never sent. Full policy: https://xaviersvk.github.io/CDD-Stoich-Tools/privacy.html
+Runs only on CDD Vault pages. No accounts, no backend, no analytics — nothing leaves your browser, unless you switch on AI write-up: then the text you ask it to polish (and dictated audio) goes to the AI service you pick — CERIT-SC (llm.ai.e-infra.cz), OpenAI or Anthropic — under your own API key, only when you click. Structures are never sent. Full policy: https://xaviersvk.github.io/CDD-Stoich-Tools/privacy.html
 
 What changed in each version: https://xaviersvk.github.io/CDD-Stoich-Tools/
 ```
@@ -109,7 +109,7 @@ This is an open-source extension written by CDD Vault users. Collaborative Drug 
 
 **Privacy**
 
-Runs only on CDD Vault pages. No accounts, no backend, no analytics — nothing leaves your browser, unless you switch on AI write-up: then the text you ask it to polish (and dictated audio) goes to CERIT-SC (llm.ai.e-infra.cz) under your own API key, only when you click. Structures are never sent. [Full policy](https://xaviersvk.github.io/CDD-Stoich-Tools/privacy.html).
+Runs only on CDD Vault pages. No accounts, no backend, no analytics — nothing leaves your browser, unless you switch on AI write-up: then the text you ask it to polish (and dictated audio) goes to the AI service you pick — CERIT-SC (llm.ai.e-infra.cz), OpenAI or Anthropic — under your own API key, only when you click. Structures are never sent. [Full policy](https://xaviersvk.github.io/CDD-Stoich-Tools/privacy.html).
 
 [What changed in each version](https://xaviersvk.github.io/CDD-Stoich-Tools/)
 ```
@@ -125,6 +125,7 @@ Done by hand, once per wording change.
 - [ ] Homepage URL → `https://xaviersvk.github.io/CDD-Stoich-Tools/`
 - [ ] *Privacy* tab → Privacy policy URL → `https://xaviersvk.github.io/CDD-Stoich-Tools/privacy.html`
 - [ ] *Privacy practices* (19.0.0) → justify the optional host permission `https://llm.ai.e-infra.cz/*`: "AI write-up, off by default: sends ELN text the user chooses to the CERIT-SC language model API, under the user's own API key." Data usage → tick *Website content* (ELN text, dictated audio) and *Authentication information* (the user's CERIT API key, sent to CERIT); certify it is not sold or used for anything else
+- [ ] *Privacy practices* (19.4.0) → the optional host permissions now also include `https://api.openai.com/*` and `https://api.anthropic.com/*`: "AI write-up, off by default: sends ELN text the user chooses to the language model service the user picks (CERIT-SC, OpenAI or Anthropic), under the user's own API key; only the picked service is requested."
 - [ ] Save draft → *Submit for review* (listing-only changes still go through review)
 
 **Firefox Add-ons** — Developer Hub → add-on → *Edit Product Page*

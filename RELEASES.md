@@ -13,6 +13,12 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 19.4.0 — 2026-10-22
+
+AI write-up can now use your own **OpenAI** or **Anthropic (Claude)** API key, not only CERIT-SC: pick it in *Settings → AI write-up → AI service*.
+
+- Claude does not transcribe speech — with Claude, pick CERIT-SC or OpenAI under *Dictation by* and add that key too.
+
 ## 19.3.0 — 2026-10-22
 
 Flag outliers on a run heat map in one go: **Shift**-drag a box over the wells, **Ctrl**-drag to unflag. It applies to the readout the heat map shows and saves at once, like CDD's own flag. Switch off in *Settings → Plate QC*.

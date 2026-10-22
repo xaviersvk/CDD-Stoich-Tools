@@ -19,6 +19,28 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [19.4.0] — 2026-10-22
+
+### Added
+- **AI write-up works with OpenAI and Anthropic (Claude) too**, not only
+  CERIT-SC: *Settings → AI write-up → AI service* picks the one that writes.
+  Each service keeps its own API key and model in `cddAiWriteUp`
+  (`apiKeys`, `models`, `provider`), so switching back and forth loses
+  nothing; settings from before hold CERIT's as `apiKey`/`model` and are
+  read as CERIT's entries. OpenAI goes through the same OpenAI-compatible
+  path as CERIT (without `temperature`, which GPT-5 models refuse;
+  dictation by `gpt-4o-transcribe`). Anthropic goes through the Messages
+  API (`x-api-key`, `anthropic-version: 2023-06-01`, system prompt on its
+  own, no `temperature`, default `claude-haiku-5-5`). Anthropic has no
+  speech-to-text, so with Claude writing a *Dictation by* row picks CERIT-SC
+  or OpenAI, with its own key.
+- Host permissions: `api.openai.com` and `api.anthropic.com` join the
+  optional ones. Only the hosts of the picked services are requested;
+  picking another service while it is on asks for the new one and gives
+  back the old; switching off gives back all.
+- Error messages, the Polish status and Test connection name the service
+  in use instead of CERIT. Privacy policy, README and store copy updated.
+
 ## [19.3.0] — 2026-10-22
 
 ### Added

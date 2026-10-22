@@ -58,8 +58,10 @@ Here's the short version of everything it adds:
 - The sample panel can also print exactly the columns you've chosen.
 
 ### ✍️ AI write-up (optional, off by default)
-- Switch on in *Settings → AI write-up* with your own CERIT-SC API key
-  (MetaCentrum or MUNI account; key from `chat.ai.e-infra.cz`).
+- Switch on in *Settings → AI write-up* with your own API key from CERIT-SC
+  (MetaCentrum or MUNI account; key from `chat.ai.e-infra.cz`), OpenAI or
+  Anthropic (Claude). Claude has no speech-to-text, so with Claude, dictation
+  goes to CERIT-SC or OpenAI.
 - **Dictate** in Slovak, Czech or English — 🎤 in the panel's *Write-up* tab for
   the whole entry, 🎤 on a reaction for that reaction — and get polished
   English back. **Polish / Polish +** does the same for selected text,
@@ -69,7 +71,7 @@ Here's the short version of everything it adds:
   facts as slots to fill in, and **Checks** compare the text with the
   stoichiometry table (amounts, yield, lost numbers) — calculated locally,
   not by the model. Nothing is written into the entry.
-- Only text you choose (and dictated audio) goes to CERIT-SC, on a click;
+- Only text you choose (and dictated audio) goes to the service you picked, on a click;
   structures never do. See the [privacy policy](https://xaviersvk.github.io/CDD-Stoich-Tools/privacy.html).
 
 ### 🧫 Inventory & locations
@@ -316,8 +318,11 @@ without that tag.
 
 **None of its own.** The extension has no server component. The one external
 service is optional: with AI write-up switched on, `background.js` calls the
-OpenAI-compatible CERIT-SC API (`https://llm.ai.e-infra.cz/v1` — chat
-completions and `whisper-large-v3` transcriptions) with the user's API key.
+service the user picked with the user's API key — the OpenAI-compatible
+CERIT-SC API (`https://llm.ai.e-infra.cz/v1` — chat completions and
+`whisper-large-v3` transcriptions), OpenAI (`https://api.openai.com/v1` — chat
+completions and `gpt-4o-transcribe`) or Anthropic's Messages API
+(`https://api.anthropic.com/v1/messages`; dictation then goes to CERIT-SC or OpenAI).
 The code is in `src/content/features/ai-write-up/` (pipelines, prompts, checks,
 mentions) and `src/shared/ai-write-up-settings.js`. The closest thing is
 `src/content/api/cdd-api.js`, an authenticated `fetchJson` helper that talks to
@@ -331,7 +336,7 @@ No database. Persistence uses browser storage only:
 | Data | Mechanism |
 | --- | --- |
 | Field selection, ELN-title mode, discovered custom fields, prefix colors | `chrome.storage.local` (async) |
-| AI write-up: on/off, CERIT API key, model, language, wait limit, house rules, compound-link style | `chrome.storage.local` key `cddAiWriteUp` (the key is read only by `background.js`) |
+| AI write-up: on/off, service, dictation service, API key and model per service, language, wait limit, house rules, compound-link style | `chrome.storage.local` key `cddAiWriteUp` (the keys are read only by `background.js`) |
 | Panel position / collapsed state, location-tree width | `localStorage` (page origin) |
 | Last captured payload, runtime flags | in-memory `STATE` (lost on reload) |
 
@@ -454,19 +459,19 @@ keys are preserved.
 | Key | Value | Meaning |
 | --- | --- | --- |
 | `permissions` | `["storage"]` | Only `chrome.storage` — no tabs/scripting permissions. |
-| `optional_host_permissions` | `["https://llm.ai.e-infra.cz/*"]` | Requested only when AI write-up is switched on, removed when it is switched off. |
+| `optional_host_permissions` | `["https://llm.ai.e-infra.cz/*", "https://api.openai.com/*", "https://api.anthropic.com/*"]` | Only the picked AI service's host is requested, when AI write-up is switched on; all are removed when it is switched off. |
 | `content_scripts.matches` | `*://*.collaborativedrug.com/*` | The extension runs **only** on CDD. |
 | `web_accessible_resources` | `assets/inject.js` | The page script the content side injects. |
 | `gecko.strict_min_version` | `142.0` | Minimum Firefox version. |
 | `data_collection_permissions.required` | `["none"]` | No data collection / telemetry. |
-| `data_collection_permissions.optional` | `["websiteContent", "authenticationInfo"]` | Firefox: asked for with AI write-up — ELN text/audio and the API key go to CERIT. |
+| `data_collection_permissions.optional` | `["websiteContent", "authenticationInfo"]` | Firefox: asked for with AI write-up — ELN text/audio and the API key go to the picked AI service. |
 
 ### Environment variables
 
 **None.** The extension has no environment variables, `.env` files, or runtime
 configuration beyond the manifest and the browser-storage settings above. There
 is no remote endpoint to configure — it talks to the CDD origin the user is
-already on, and, only with AI write-up switched on, to CERIT-SC.
+already on, and, only with AI write-up switched on, to the AI service picked.
 
 ### Adding a new setting
 
@@ -584,10 +589,10 @@ There are no servers; "deployment" means publishing the packaged extension.
 ### Privacy & security
 
 No remote code is executed; all logic is bundled locally with Vite. The manifest
-requests only the `storage` permission, plus the optional CERIT host permission
+requests only the `storage` permission, plus the optional AI-service host permissions
 for AI write-up, which is off by default. The extension acts strictly within the
 user's existing CDD session; AI write-up sends the text the user chooses (and
-dictated audio) to CERIT-SC under the user's own key, never structures (no
+dictated audio) to the picked AI service under the user's own key, never structures (no
 SMILES, mol files, images, MW or the table's IUPAC names) — a unit test guards that.
 
 The public privacy policy the store listings link to is

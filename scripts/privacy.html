@@ -17,7 +17,7 @@
     </div>
 
     <h1>Privacy policy</h1>
-    <p class="lede">The short version: the extension works inside your browser on CDD Vault pages and sends nothing anywhere — unless you switch on the optional AI write-up, which sends the text you ask it to polish to CERIT-SC, and never a structure.</p>
+    <p class="lede">The short version: the extension works inside your browser on CDD Vault pages and sends nothing anywhere — unless you switch on the optional AI write-up, which sends the text you ask it to polish to the AI service you pick (CERIT-SC, OpenAI or Anthropic), and never a structure.</p>
 
     <p class="actions">
       <a class="btn btn--quiet" href="./">What's new</a>
@@ -34,8 +34,8 @@
       <p>
         Only on pages under <code>collaborativedrug.com</code>, the CDD Vault
         web application. It does not load on any other site and has no access
-        to other tabs. With AI write-up switched on it also talks to one more
-        server, <code>llm.ai.e-infra.cz</code> — see below.
+        to other tabs. With AI write-up switched on it also talks to the AI
+        service you picked — see below.
       </p>
 
       <h2>What it reads</h2>
@@ -51,7 +51,7 @@
       <p>
         Your settings: which panel fields you show, prefix colours, the width
         of a panel, saved phrases, and similar preferences — and, if you use AI
-        write-up, your CERIT API key and house rules. They are kept with the
+        write-up, your API keys and house rules. They are kept with the
         browser's extension storage and stay on your computer. Uninstalling the
         extension removes them.
       </p>
@@ -69,12 +69,15 @@
       <h2>AI write-up (optional, off by default)</h2>
       <p>
         AI write-up polishes ELN text into English and checks it against the
-        stoichiometry table, using the language models of
+        stoichiometry table, using the language models of the service you pick
+        in the settings, under your own account and API key:
         <a href="https://docs.cerit-sc.cz/en/docs/ai-as-a-service/ai-api">CERIT-SC AI as a Service</a>
         (<code>llm.ai.e-infra.cz</code>, run by Masaryk University within
-        e-INFRA CZ) under your own CERIT account and API key. Switching it on
-        asks the browser for access to that one server; switching it off gives
-        the access back.
+        e-INFRA CZ), OpenAI (<code>api.openai.com</code>) or Anthropic
+        (<code>api.anthropic.com</code>). Anthropic does not transcribe speech,
+        so with Claude, dictated audio goes to CERIT-SC or OpenAI, as you pick.
+        Switching it on asks the browser for access to the service you use;
+        switching it off gives the access back.
       </p>
       <p>
         <strong>What is sent, and only when you click</strong> 🎤, Polish or
@@ -88,11 +91,11 @@
         <strong>What is never sent:</strong> structures in any form — no
         SMILES, mol or MRV files, reaction images, molecular weights or the
         table's IUPAC names — nor attached files, nor your CDD login. (What
-        you typed into the entry's text goes as written.) The API key goes only to CERIT.
+        you typed into the entry's text goes as written.) Each API key goes only to its own service.
       </p>
       <p>
-        What CERIT does with requests is governed by CERIT-SC's own terms and
-        AI data policy. The answers are shown in the extension's panel for you
+        What the service does with requests is governed by its own terms and
+        data policy. The answers are shown in the extension's panel for you
         to copy; nothing is written into your ELN entry.
       </p>
 

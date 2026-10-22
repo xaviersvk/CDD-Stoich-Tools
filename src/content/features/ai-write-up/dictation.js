@@ -2,8 +2,8 @@
 //
 // Dictation: record from the microphone, then
 //
-//   1. CERIT's whisper-large-v3 transcribes it in the chosen language
-//      (Slovak, Czech, English),
+//   1. the dictation service (CERIT's whisper-large-v3, or OpenAI) transcribes
+//      it in the chosen language (Slovak, Czech, English),
 //   2. the chat model turns the transcript into polished English, with part
 //      of the entry for context,
 //   3. the English shows up as a card in the Write-up tab, with Copy.
@@ -79,7 +79,7 @@ let tick = null;
 // [{ entryKey, segments, source, sourceLabel, label }], newest first. Module state, not
 // DOM: the pane is rebuilt when the panel is.
 let cards = [];
-// The request out at CERIT right now — a click on the busy button cancels it.
+// The request out at the AI service right now — a click on the busy button cancels it.
 let requestId = null;
 
 function newRequestId() {
@@ -462,7 +462,10 @@ function stop() {
 }
 
 async function start(origin) {
-    if (!getAiWriteUpView().hasKey) return step("idle", aiErrorMessage({ error: "no-key" }));
+    const view = getAiWriteUpView();
+    if (!view.hasKey) return step("idle", aiErrorMessage({ error: "no-key" }));
+    // With Claude writing, another service transcribes, with its own key.
+    if (!view.hasDictationKey) return step("idle", aiErrorMessage({ error: "no-key", provider: view.dictationProvider }));
     let stream;
     try {
         stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -591,7 +594,7 @@ function cardNode(card) {
         const retry = document.createElement("button");
         retry.type = "button";
         retry.textContent = "Retry";
-        retry.title = "Send it to CERIT again";
+        retry.title = "Send it again";
         retry.addEventListener("click", (event) => {
             event.stopPropagation();
             if (state.phase !== "idle") return;

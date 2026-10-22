@@ -643,6 +643,11 @@ body {
     background: var(--paper);
 }
 
+/* display:flex above beats the UA [hidden] rule, as on .card. */
+.field-item[hidden] {
+    display: none;
+}
+
 .field-item input {
     margin: 0;
     accent-color: var(--accent);

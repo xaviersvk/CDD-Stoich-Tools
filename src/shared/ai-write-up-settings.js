@@ -1,31 +1,71 @@
-// shared/ai-write-up-settings.js — the Write-up tab's settings: on/off, the
-// CERIT API key, the chat model, the dictation language, how long to wait
-// for an answer, and the house rules sent with every request. DOM-free; the
-// options page uses the async pair, the content script the sync cache.
+// shared/ai-write-up-settings.js — the Write-up tab's settings: on/off, which
+// AI service writes (CERIT-SC, OpenAI or Anthropic) and which one transcribes
+// dictation, an API key and a chat model per service, the dictation language,
+// how long to wait for an answer, and the house rules sent with every
+// request. DOM-free; the options page uses the async pair, the content script
+// the sync cache.
 //
-// The KEY is used by background.js only, which makes every request to CERIT.
-// The content script's cache below leaves it out: the panel needs to know
-// THAT a key is set, never what it is.
+// The KEYS are used by background.js only, which makes every request. The
+// content script's cache below leaves them out: the panel needs to know THAT
+// a key is set, never what it is.
 
 export const AI_SETTINGS_STORAGE_KEY = "cddAiWriteUp";
 
-// CERIT-SC AI as a Service, OpenAI-compatible.
-export const AI_ORIGIN = "https://llm.ai.e-infra.cz";
-export const AI_PERMISSION = { origins: [`${AI_ORIGIN}/*`] };
+// The services. background.js repeats origin, default model and transcription
+// model — keep in step. Anthropic has no speech-to-text, so with Claude
+// writing, dictation goes to CERIT or OpenAI (`dictationProvider`).
+export const AI_PROVIDERS = {
+    cerit: {
+        label: "CERIT-SC",
+        origin: "https://llm.ai.e-infra.cz",
+        // "mini" is CERIT's small fast model alias — the one their own docs call.
+        defaultModel: "mini",
+        transcribeModel: "whisper-large-v3",
+        keyHint: "chat.ai.e-infra.cz → Settings → Account → API keys (MetaCentrum or MUNI account)",
+    },
+    openai: {
+        label: "OpenAI",
+        origin: "https://api.openai.com",
+        defaultModel: "gpt-5-mini",
+        transcribeModel: "gpt-4o-transcribe",
+        keyHint: "platform.openai.com → API keys",
+    },
+    anthropic: {
+        label: "Anthropic (Claude)",
+        origin: "https://api.anthropic.com",
+        defaultModel: "claude-haiku-5-5",
+        transcribeModel: null,
+        keyHint: "platform.claude.com → API keys",
+    },
+};
+export const AI_PROVIDER_IDS = Object.keys(AI_PROVIDERS);
+const TRANSCRIBING_PROVIDER_IDS = AI_PROVIDER_IDS.filter((id) => AI_PROVIDERS[id].transcribeModel);
+
+// The service that transcribes dictation: the writing one when it can.
+export function transcribeProviderOf(settings) {
+    return AI_PROVIDERS[settings.provider].transcribeModel ? settings.provider : settings.dictationProvider;
+}
+
+// The host permissions these settings need — the writing service and the
+// transcribing one.
+export function aiPermissionFor(settings) {
+    const ids = [...new Set([settings.provider, transcribeProviderOf(settings)])];
+    return { origins: ids.map((id) => `${AI_PROVIDERS[id].origin}/*`) };
+}
+export const AI_ALL_PERMISSIONS = { origins: AI_PROVIDER_IDS.map((id) => `${AI_PROVIDERS[id].origin}/*`) };
+
 // What switching AI write-up on asks for. Firefox also asks for the data
 // collection the manifest declares as optional — "websiteContent" (the ELN
-// text and dictated audio that go to CERIT) and "authenticationInfo" (the
-// CERIT API key, sent to CERIT); Chrome has no such key and rejects it.
-export function aiPermissionRequest() {
+// text and dictated audio that go to the service) and "authenticationInfo"
+// (the API key, sent to that service); Chrome has no such key and rejects it.
+export function aiPermissionRequest(permission) {
     const firefox = typeof navigator !== "undefined" && /firefox/i.test(navigator.userAgent);
-    return firefox ? { ...AI_PERMISSION, data_collection: ["websiteContent", "authenticationInfo"] } : AI_PERMISSION;
+    return firefox ? { ...permission, data_collection: ["websiteContent", "authenticationInfo"] } : permission;
 }
-// "mini" is CERIT's small fast model alias — the one their own docs call.
-export const AI_DEFAULT_MODEL = "mini";
-export const AI_TRANSCRIBE_MODEL = "whisper-large-v3";
-// "auto": whisper detects the language itself — the default. Naming it
-// helps when it would guess wrong: Slovak is easily taken for Czech, and a
-// dictation that opens on "TLC showed…" for English.
+
+// "auto": the transcription model detects the language itself — the default.
+// Naming it helps when it would guess wrong: Slovak is easily taken for
+// Czech, and a dictation that opens on "TLC showed…" for English.
 export const AI_LANGUAGES = [
     ["auto", "Auto"],
     ["sk", "Slovenčina"],
@@ -51,8 +91,8 @@ export const AI_DEFAULT_RULES = [
 
 const DEFAULTS = {
     enabled: false,
-    apiKey: "",
-    model: AI_DEFAULT_MODEL,
+    provider: "cerit",
+    dictationProvider: "cerit",
     language: "auto",
     timeoutS: AI_TIMEOUT_DEFAULT_S,
     rules: AI_DEFAULT_RULES,
@@ -74,12 +114,28 @@ function normalizeRules(value) {
         .map((r, i) => ({ id: String(r.id || `rule-${i + 1}`), text: r.text.trim(), on: r.on === true }));
 }
 
-function normalize(raw) {
+// Settings saved before 19.4.0 hold one CERIT key and model as `apiKey` and
+// `model`; they become CERIT's entries.
+function perProvider(map, legacy, fallback) {
+    const source = map && typeof map === "object" ? map : {};
+    const out = {};
+    for (const id of AI_PROVIDER_IDS) {
+        const value = typeof source[id] === "string" ? source[id].trim() : "";
+        out[id] = value || (id === "cerit" && typeof legacy === "string" ? legacy.trim() : "") || fallback(id);
+    }
+    return out;
+}
+
+export function normalize(raw) {
     const value = raw && typeof raw === "object" ? raw : {};
     return {
         enabled: value.enabled === true,
-        apiKey: typeof value.apiKey === "string" ? value.apiKey.trim() : "",
-        model: typeof value.model === "string" && value.model ? value.model : DEFAULTS.model,
+        provider: AI_PROVIDER_IDS.includes(value.provider) ? value.provider : DEFAULTS.provider,
+        dictationProvider: TRANSCRIBING_PROVIDER_IDS.includes(value.dictationProvider)
+            ? value.dictationProvider
+            : DEFAULTS.dictationProvider,
+        apiKeys: perProvider(value.apiKeys, value.apiKey, () => ""),
+        models: perProvider(value.models, value.model, (id) => AI_PROVIDERS[id].defaultModel),
         language: AI_LANGUAGES.some(([code]) => code === value.language) ? value.language : DEFAULTS.language,
         timeoutS: value.timeoutS == null ? DEFAULTS.timeoutS : normalizeTimeout(value.timeoutS),
         rules: normalizeRules(value.rules),
@@ -99,6 +155,7 @@ export async function getAiSettings() {
 export async function saveAiSettings(patch) {
     try {
         const current = await getAiSettings();
+        // normalize leaves the pre-19.4.0 `apiKey`/`model` out, so they go.
         await chrome.storage.local.set({ [AI_SETTINGS_STORAGE_KEY]: normalize({ ...current, ...patch }) });
     } catch {
         // Orphaned content script — nothing useful to do.
@@ -107,14 +164,18 @@ export async function saveAiSettings(patch) {
 
 // ---- content-script cache (no key) ----
 
-let cached = { enabled: false, hasKey: false, language: DEFAULTS.language, rules: [] };
+let cached = publicView(normalize(null));
 let listenerAttached = false;
 const changeListeners = new Set();
 
 function publicView(settings) {
+    const transcriber = transcribeProviderOf(settings);
     return {
         enabled: settings.enabled,
-        hasKey: !!settings.apiKey,
+        provider: AI_PROVIDERS[settings.provider].label,
+        hasKey: !!settings.apiKeys[settings.provider],
+        dictationProvider: AI_PROVIDERS[transcriber].label,
+        hasDictationKey: !!settings.apiKeys[transcriber],
         language: settings.language,
         // Only the texts of the rules that are on — what the prompts add.
         rules: settings.rules.filter((r) => r.on).map((r) => r.text),
@@ -160,19 +221,21 @@ export async function initAiWriteUp() {
 }
 
 // One wording for a failed request (background.js's `error` codes), shared by
-// the panel and the options page.
+// the panel and the options page. background.js names the service in
+// `provider`; a check made in the panel names the one the view says.
 export function aiErrorMessage(result) {
+    const service = result?.provider || cached.provider;
     switch (result?.error) {
         case "no-key":
-            return "Add your API key in Settings → AI write-up.";
+            return `Add your ${service} API key in Settings → AI write-up.`;
         case "permission":
-            return "Turn AI write-up on in Settings and allow access to llm.ai.e-infra.cz.";
+            return `Turn AI write-up on in Settings and allow access to ${service}.`;
         case "auth":
-            return "Check the API key in Settings → AI write-up — CERIT refused it.";
+            return `Check the ${service} API key in Settings → AI write-up — ${service} refused it.`;
         case "timeout":
-            return "CERIT did not answer in time — try again, or wait longer: Settings → AI write-up.";
+            return `${service} did not answer in time — try again, or wait longer: Settings → AI write-up.`;
         case "network":
-            return "CERIT did not answer — try again.";
+            return `${service} did not answer — try again.`;
         case "cancelled":
             return "Cancelled.";
         case "empty":
@@ -180,6 +243,6 @@ export function aiErrorMessage(result) {
         case "untranslated":
             return `${result?.model || "The model"} did not translate it — pick another model in Settings → AI write-up.`;
         default:
-            return `CERIT returned an error${result?.status ? ` (${result.status})` : ""} — try again or pick another model.`;
+            return `${service} returned an error${result?.status ? ` (${result.status})` : ""} — try again or pick another model.`;
     }
 }

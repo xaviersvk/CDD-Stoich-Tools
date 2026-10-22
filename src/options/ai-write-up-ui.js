@@ -1,36 +1,49 @@
 // options/ai-write-up-ui.js
 //
-// The "AI write-up" settings card: on/off, the CERIT API key, the model, how
-// long to wait for an answer, and the house rules.
+// The "AI write-up" settings card: on/off, the AI service (CERIT-SC, OpenAI
+// or Anthropic) with its API key and model, who transcribes dictation when
+// Claude writes, how long to wait for an answer, and the house rules.
 //
-// Turning it on asks for the optional host permission for llm.ai.e-infra.cz
-// — the browser shows its own prompt, and a refusal leaves the box unticked.
-// Turning it off gives the permission back, so an extension with the feature
-// off holds no access to the service at all.
+// Turning it on asks for the optional host permission of the service picked
+// (and of the dictation service) — the browser shows its own prompt, and a
+// refusal leaves the box unticked. Picking another service while it is on
+// asks for that one and gives back the one no longer used; a refusal puts the
+// pick back. Turning it off gives every permission back, so an extension with
+// the feature off holds no access to any service at all.
 //
-// Test connection lists the models the key can see; the model select is
-// filled from that list (and keeps the saved choice when it is not in it).
+// Each service keeps its own key and model, so switching back and forth loses
+// nothing. Test connection lists the models the key in the box can see; the
+// model select is filled from that list (and keeps the saved choice when it
+// is not in it).
 //
 // House rules: one row per rule — tick to send it, edit the text in place,
 // ✕ to remove. Every change saves at once, like the rest of the page.
 
 import {
-    AI_DEFAULT_MODEL,
-    AI_PERMISSION,
-    aiPermissionRequest,
-    AI_TRANSCRIBE_MODEL,
+    AI_ALL_PERMISSIONS,
+    AI_PROVIDERS,
     AI_TIMEOUT_DEFAULT_S,
     AI_TIMEOUT_MAX_S,
     AI_TIMEOUT_MIN_S,
     aiErrorMessage,
+    aiPermissionFor,
+    aiPermissionRequest,
     getAiSettings,
     saveAiSettings,
+    transcribeProviderOf,
 } from "../shared/ai-write-up-settings.js";
 import { AI_MODELS_MESSAGE } from "../shared/event-types.js";
 import { deleteButton } from "./delete-button.js";
 
 const enabledBox = document.getElementById("aiWriteUpEnabled");
+const providerSelect = document.getElementById("aiProvider");
 const keyInput = document.getElementById("aiApiKey");
+const keyHint = document.getElementById("aiKeyHint");
+const dictationRow = document.getElementById("aiDictationRow");
+const dictationSelect = document.getElementById("aiDictationProvider");
+const dictationKeyRow = document.getElementById("aiDictationKeyRow");
+const dictationKeyInput = document.getElementById("aiDictationKey");
+const dictationKeyHint = document.getElementById("aiDictationKeyHint");
 const modelSelect = document.getElementById("aiModel");
 const testButton = document.getElementById("aiTest");
 const statusLine = document.getElementById("aiStatus");
@@ -40,7 +53,12 @@ const rulesList = document.getElementById("aiRules");
 const ruleNewInput = document.getElementById("aiRuleNew");
 const ruleAddButton = document.getElementById("aiRuleAdd");
 
+// Image, audio, embedding and moderation models are no use for writing.
+const NOT_CHAT_RE = /whisper|transcribe|embed|tts|audio|realtime|dall-e|image|moderation|sora|search|davinci|babbage/i;
+
 let rules = [];
+// What the card shows: provider, dictationProvider, apiKeys, models.
+let current = null;
 
 function saveRules() {
     void saveAiSettings({ rules });
@@ -117,22 +135,85 @@ function fillModels(models, selected) {
     modelSelect.value = selected;
 }
 
+// The rows that follow the service picked: its key and model, and — for
+// Claude — the dictation service and its key.
+function renderProvider() {
+    const provider = current.provider;
+    providerSelect.value = provider;
+    keyInput.value = current.apiKeys[provider];
+    keyHint.textContent = `get one at ${AI_PROVIDERS[provider].keyHint}.`;
+    fillModels([], current.models[provider]);
+
+    const separate = !AI_PROVIDERS[provider].transcribeModel;
+    const transcriber = transcribeProviderOf(current);
+    dictationRow.hidden = !separate;
+    dictationKeyRow.hidden = !separate;
+    dictationSelect.value = current.dictationProvider;
+    dictationKeyInput.value = current.apiKeys[transcriber];
+    dictationKeyHint.textContent = `${AI_PROVIDERS[transcriber].label}, ${AI_PROVIDERS[transcriber].keyHint}.`;
+}
+
+function saveKey(provider, value) {
+    current.apiKeys = { ...current.apiKeys, [provider]: value.trim() };
+    void saveAiSettings({ apiKeys: current.apiKeys });
+}
+
+// A change of service while the feature is on: ask for what the new pick
+// needs (inside the change's user gesture — no await before the request),
+// then give back what it no longer does. False when the browser refused.
+async function regrant(next) {
+    if (!enabledBox.checked) return true;
+    const needed = aiPermissionFor(next);
+    const ok = await chrome.permissions.request(aiPermissionRequest(needed)).catch(() => false);
+    if (!ok) return false;
+    const unused = AI_ALL_PERMISSIONS.origins.filter((o) => !needed.origins.includes(o));
+    if (unused.length) await chrome.permissions.remove({ origins: unused }).catch(() => false);
+    return true;
+}
+
+async function changeProvider(field, value) {
+    const next = { ...current, [field]: value };
+    if (!(await regrant(next))) {
+        renderProvider();
+        setStatus(`Access to ${AI_PROVIDERS[value].label} was not allowed, so the service stays as it was.`);
+        return;
+    }
+    current = next;
+    renderProvider();
+    setStatus("");
+    await saveAiSettings({ [field]: value });
+}
+
 async function testConnection() {
     testButton.disabled = true;
     setStatus("Connecting…");
+    const provider = current.provider;
     try {
-        // The key in the box, even if it has not been saved yet.
-        const result = await chrome.runtime.sendMessage({ type: AI_MODELS_MESSAGE, apiKey: keyInput.value.trim() });
+        // The service and key in the card, even if the key has not been saved yet.
+        const result = await chrome.runtime.sendMessage({
+            type: AI_MODELS_MESSAGE,
+            provider,
+            apiKey: keyInput.value.trim(),
+        });
         if (!result?.ok) {
             setStatus(aiErrorMessage(result));
             return;
         }
-        const chatModels = result.models.filter((m) => !/whisper|embed|tts/i.test(m));
-        fillModels(chatModels, modelSelect.value || AI_DEFAULT_MODEL);
-        const dictation = result.models.includes(AI_TRANSCRIBE_MODEL)
-            ? `dictation ready (${AI_TRANSCRIBE_MODEL})`
-            : `no ${AI_TRANSCRIBE_MODEL} — dictation unavailable`;
-        setStatus(`Connected: ${chatModels.length} models, ${dictation}.`);
+        const chatModels = result.models.filter((m) => !NOT_CHAT_RE.test(m));
+        fillModels(chatModels, modelSelect.value || AI_PROVIDERS[provider].defaultModel);
+        const transcribeModel = AI_PROVIDERS[provider].transcribeModel;
+        let dictation;
+        if (!transcribeModel) {
+            const transcriber = AI_PROVIDERS[transcribeProviderOf(current)].label;
+            dictation = dictationKeyInput.value.trim()
+                ? `dictation by ${transcriber}`
+                : `add a ${transcriber} key for dictation`;
+        } else {
+            dictation = result.models.includes(transcribeModel)
+                ? `dictation ready (${transcribeModel})`
+                : `no ${transcribeModel} — dictation unavailable`;
+        }
+        setStatus(`Connected to ${result.provider}: ${chatModels.length} models, ${dictation}.`);
     } finally {
         testButton.disabled = false;
     }
@@ -141,13 +222,18 @@ async function testConnection() {
 export async function initAiWriteUpUI() {
     if (!enabledBox) return;
     const settings = await getAiSettings();
+    current = {
+        provider: settings.provider,
+        dictationProvider: settings.dictationProvider,
+        apiKeys: settings.apiKeys,
+        models: settings.models,
+    };
 
     // A permission the user revoked in the browser's own settings turns the
     // feature off here too, rather than leaving a tab that cannot work.
-    const granted = await chrome.permissions.contains(AI_PERMISSION).catch(() => false);
+    const granted = await chrome.permissions.contains(aiPermissionFor(current)).catch(() => false);
     enabledBox.checked = settings.enabled && granted;
-    keyInput.value = settings.apiKey;
-    fillModels([], settings.model);
+    renderProvider();
 
     mentionStyleSelect.value = settings.mentionStyle;
     mentionStyleSelect.addEventListener("change", () => void saveAiSettings({ mentionStyle: mentionStyleSelect.value }));
@@ -172,20 +258,26 @@ export async function initAiWriteUpUI() {
     enabledBox.addEventListener("change", async () => {
         if (enabledBox.checked) {
             // Must run inside the click's user gesture — no await before it.
-            const ok = await chrome.permissions.request(aiPermissionRequest()).catch(() => false);
+            const ok = await chrome.permissions.request(aiPermissionRequest(aiPermissionFor(current))).catch(() => false);
             if (!ok) {
                 enabledBox.checked = false;
-                setStatus("Access to llm.ai.e-infra.cz was not allowed, so the Write-up tab stays off.");
+                setStatus(`Access to ${AI_PROVIDERS[current.provider].label} was not allowed, so the Write-up tab stays off.`);
                 return;
             }
             setStatus("");
         } else {
-            await chrome.permissions.remove(aiPermissionRequest()).catch(() => false);
+            await chrome.permissions.remove(aiPermissionRequest(AI_ALL_PERMISSIONS)).catch(() => false);
         }
         await saveAiSettings({ enabled: enabledBox.checked });
     });
 
-    keyInput.addEventListener("change", () => saveAiSettings({ apiKey: keyInput.value }));
-    modelSelect.addEventListener("change", () => saveAiSettings({ model: modelSelect.value }));
+    providerSelect.addEventListener("change", () => void changeProvider("provider", providerSelect.value));
+    dictationSelect.addEventListener("change", () => void changeProvider("dictationProvider", dictationSelect.value));
+    keyInput.addEventListener("change", () => saveKey(current.provider, keyInput.value));
+    dictationKeyInput.addEventListener("change", () => saveKey(transcribeProviderOf(current), dictationKeyInput.value));
+    modelSelect.addEventListener("change", () => {
+        current.models = { ...current.models, [current.provider]: modelSelect.value };
+        void saveAiSettings({ models: current.models });
+    });
     testButton.addEventListener("click", () => void testConnection());
 }

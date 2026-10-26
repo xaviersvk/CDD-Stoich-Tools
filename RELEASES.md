@@ -13,11 +13,13 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
-## Unreleased
+## 19.6.0 — 2026-10-26
 
 AI write-up can now use your own **OpenAI** or **Anthropic (Claude)** API key, not only CERIT-SC: pick it in *Settings → AI write-up → AI service*.
 
 - Claude does not transcribe speech — with Claude, pick CERIT-SC or OpenAI under *Dictation by* and add that key too. Without it, 🎤 stays grey and everything else works.
+- Write-up puts back numbers the English dropped before it shows the text.
+- Removed two table helpers CDD now does itself: the Mass/Volume unit fix and the one-click Role list.
 
 ## 19.5.0 — 2026-10-26
 

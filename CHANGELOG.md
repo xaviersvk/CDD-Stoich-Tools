@@ -19,7 +19,7 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
-## [Unreleased]
+## [19.6.0] — 2026-10-26
 
 ### Changed
 - **Write-up puts dropped numbers back itself**
@@ -57,8 +57,6 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   Role editor (`inline-input-roleDetails`) opens with its list already
   dropped. The module looked for the old `Role-input` popup and did nothing.
 
-<!-- from the ai-providers branch, untested -->
-
 ### Added
 - **AI write-up works with OpenAI and Anthropic (Claude) too**, not only
   CERIT-SC: *Settings → AI write-up → AI service* picks the one that writes.
@@ -82,6 +80,8 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   (`dictationUnavailable()` in `dictation.js`), instead of failing on a click.
 - Error messages, the Polish status and Test connection name the service
   in use instead of CERIT. Privacy policy, README and store copy updated.
+- Run with a real OpenAI key (writing and dictation) before release;
+  Anthropic has not been tried against a live key yet.
 
 ## [19.5.0] — 2026-10-26
 

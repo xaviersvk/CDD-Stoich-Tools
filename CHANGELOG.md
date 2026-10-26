@@ -19,6 +19,44 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [19.5.0] — 2026-10-26
+
+### Fixed
+- **Fills into the stoichiometry table did nothing after CDD's update**
+  (`content/features/row-fill.js`): CDD replaced the floating one-field
+  MuiPaper popup with an inline editor — the clicked value turns into
+  `<textarea data-autotest-id="inline-input-<field>">` in place, with no
+  units `<select>`. `findEditorInput` / `findEditorSelect` never found it, so
+  every fill (name, density, purity, concentration, solvent, and purity's
+  equivalent restore) gave up with "editor did not open". The editor is now
+  found by its autotest id (`findInlineEditor`), and `setNativeInputValue`
+  uses the textarea's own value setter. Verified live on entry 1000000814.
+- **Concentration unit goes into the text** (`shared/concentration-text.js`):
+  the editor accepts only `mmol/ml, mmol/l, mol/ml, mol/l, m, %w/v` typed
+  after the number and rejects "mM". Sample units are translated (mM →
+  mmol/l, M → mol/l), µM and nM are scaled into mmol/l, and a unit CDD
+  cannot take (mg/mL…) fails before "Make solution" is clicked. The write is
+  confirmed against the mol/L the field displays. Tested in
+  `tests/concentration-text.test.js`.
+- **Solvent row** (`row-fill.js`): the solution's solvent row is now a full
+  row whose solvent is its "Name:" (was "Solvent:"); the list is
+  `inline-input-name-options` and the free-text entry
+  `inline-solvent-create`. Both labels are accepted, and the write is
+  confirmed in either mode — after a pick the table can drop back to view
+  mode, which prints the solvent in `stoichiometry-role-name`.
+- **A set row Name now keeps its label** (`row-fill.js` `readRowName`,
+  `name-watch.js` `rowName`): edit mode renders `<b>Name:</b> DIPEA`, view
+  mode a `stoichiometry-role-name` span. Both readers understood only the
+  old bare value, so a name write reported "did not stick" and the panel
+  could offer a name the row already had.
+- **Edit-mode batch label** (`name-watch.js` `batchLabelOf`,
+  `row-fill.js` `readMoleculeLabel`): the prefix is the vault's own word —
+  "Molecule:" or "Entity:" — so any single word before the colon is dropped.
+- **Name picker in the inline editor** (`content/features/name-picker.js`):
+  the synonym list hangs under the inline Name box (no popup to hang it in),
+  is removed when the box loses focus, and is kept off the solvent row,
+  whose Name uses the same autotest id.
+
 ## [19.4.0] — 2026-10-26
 
 ### Added

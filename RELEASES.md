@@ -13,6 +13,13 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 19.5.0 — 2026-10-26
+
+Fixed: the panel's *Fill …* buttons and automatic fills write into the stoichiometry table again after CDD's update — name, density, purity, concentration and solvent.
+
+- A concentration in mM or µM is written in a unit CDD accepts.
+- The synonym list shows again in the row's Name editor.
+
 ## 19.4.0 — 2026-10-26
 
 Pick positions for new samples by dragging over the box: **Shift**-drag adds the empty positions, **Ctrl**-drag removes them — the same box as for outliers.

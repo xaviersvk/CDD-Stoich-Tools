@@ -113,11 +113,13 @@ function learnFromPayload() {
 }
 
 // The batch as the row PRINTS it ("RGT-0000246-001"), in either mode. Always
-// available, which is what makes it the row's identity here.
+// available, which is what makes it the row's identity here. Edit mode
+// prefixes it with the vault's own word for it — "Molecule:", "Entity:" —
+// so whatever single word stands before the colon is dropped.
 function batchLabelOf(row) {
     const printed = row
         .querySelector('[data-autotest-id="field-moleculeName"]')
-        ?.textContent?.replace(/^\s*Molecule:\s*/, "")
+        ?.textContent?.replace(/^\s*[^\s:]+:\s*/, "")
         .trim();
     if (printed) return printed;
 
@@ -180,7 +182,17 @@ function synonymsForRow(row, moleculeId) {
 //
 // The Solvent field wears the same autotest id and keeps a `<b>Solvent:</b>`;
 // that is what tells the two apart.
+//
+// Since CDD's 2026-10 update view mode prints a set name in the role cell,
+// `<span data-autotest-id="stoichiometry-role-name">Na2CO3</span>`, and no
+// field-name at all — with or without a name. Edit mode prints
+// `<b>Name:</b> Na2CO3` (handled below).
 function rowName(row) {
+    const viewName = row
+        .querySelector('[data-autotest-id="stoichiometry-role-name"]')
+        ?.textContent?.trim();
+    if (viewName) return viewName;
+
     for (const field of row.querySelectorAll('[data-autotest-id="field-name"]')) {
         const label = field.querySelector(":scope > b")?.textContent?.trim();
         if (label === "Solvent:") continue;

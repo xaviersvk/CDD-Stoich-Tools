@@ -21,6 +21,19 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 ---
 ## [Unreleased]
 
+### Changed
+- **Write-up puts dropped numbers back itself**
+  (`content/features/ai-write-up/dictation.js` `repairLostNumbers`): when
+  the lost-number check finds values the English dropped, the draft goes
+  back once more — as a Reply would, with the missing values as the reply —
+  before the card is shown. The repaired text is kept only when it loses
+  fewer numbers and is still English; whatever is still missing is listed
+  in Checks as before. Not for Ask.
+- **Quantities in digits** (`ai-write-up/model.js` `DIGITS_RULE`): the
+  dictation, Polish and Reply prompts ask for "30 min", never "thirty
+  minutes". The lost-number check reads digits only, so a spelled-out time
+  was reported as "the English dropped it" although it was there.
+
 ### Fixed
 - **Value memory could remember a typed value the record already has**
   (`shared/density-memory.js`, `content/features/inventory-sample-enrichment.js`):

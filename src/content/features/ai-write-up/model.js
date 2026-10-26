@@ -210,6 +210,12 @@ function formatIn(value, unit, factor) {
 
 // ---------------------------------------------------------------- prompt
 
+// Every prompt that writes text: quantities stay in digits. The lost-number
+// check (lostQuantities) reads digits only, so "thirty minutes" for "30 min"
+// was reported as dropped although it was not.
+const DIGITS_RULE =
+    "Write every quantity in digits with its unit (30 min, 3 h, 9 %, 2.5 mL) — never spelled out in words.";
+
 // Both prompts: where a sentence needs a fact nobody gave, a placeholder the
 // chemist fills in the panel (mentions.js) — never a guess.
 const PLACEHOLDER_RULE =
@@ -229,6 +235,7 @@ Do two things and answer with ONE JSON object only, no prose around it:
 1. "text": the whole entry rewritten as a clear, factual experimental write-up in English.
    Keep every fact, quantity, observation and section heading. Do not invent anything.
    Keep the "## " heading markers. Past tense, passive voice, standard units (mg, mL, mmol, °C, h).
+   ${DIGITS_RULE}
    ${PLACEHOLDER_RULE}
 
 2. Report what the text says about the stoichiometry table rows given below. Do NOT calculate anything:
@@ -295,6 +302,7 @@ Do two things and answer with ONE JSON object only, no prose around it:
 
 1. "text": the DICTATION only, as clear, factual English experimental prose: past tense, passive voice,
    standard units (mg, mL, mmol, °C, h). Keep every fact and number exactly; do not add anything.
+   ${DIGITS_RULE}
    Fix misheard chemical names when the table clearly matches.
    ${PLACEHOLDER_RULE}
 
@@ -428,6 +436,7 @@ Do two things and answer with ONE JSON object only, no prose around it:
 1. "text": the DRAFT revised with what the REPLY says: work each new fact into the right sentence,
    fill [[?…]] placeholders the reply answers, keep everything else — every other fact, number and token as it is.
    Clear, factual English: past tense, passive voice, standard units. Do not invent anything.
+   ${DIGITS_RULE}
    ${PLACEHOLDER_RULE}
 
 2. Report what the revised text says about the stoichiometry table rows. Do NOT calculate anything:

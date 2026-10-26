@@ -66,6 +66,15 @@ function applyInventorySample(sample, inventorySample) {
     sample.customSampleFields = collectCustomFields(getSampleFields(row));
 
     sample.inventorySampleEnriched = true;
+    sample.inventorySampleSettled = true;
+}
+
+// The lookup is over for this card, whether or not it found the sample.
+// density-memory's capture waits for this, not for success: a sample that
+// could not be read is the old "the record has no value" case, and what the
+// chemist typed is remembered as it always was.
+function settle(sample) {
+    sample.inventorySampleSettled = true;
 }
 
 function findSample(list, sample) {
@@ -92,7 +101,10 @@ export function enrichInventorySamples(samples = STATE.lastPayload?.samples) {
 
     for (const sample of samples) {
         if (!sample?.hasSample || sample.inventorySampleEnriched) continue;
-        if (sample.sampleId == null || sample.moleculeId == null) continue;
+        if (sample.sampleId == null || sample.moleculeId == null) {
+            settle(sample);
+            continue;
+        }
 
         const vaultId = sample.sampleVaultId || pageVault;
 
@@ -100,6 +112,7 @@ export function enrichInventorySamples(samples = STATE.lastPayload?.samples) {
         if (loaded) {
             const found = findSample(loaded, sample);
             if (found) applyInventorySample(sample, found);
+            else settle(sample);
             continue;
         }
 
@@ -118,13 +131,17 @@ export function enrichInventorySamples(samples = STATE.lastPayload?.samples) {
                 list = await getRawMoleculeSamples(vaultId, moleculeId);
             } catch (err) {
                 console.debug("[CDD Stoich Tools] inventory samples failed", err);
+                targets.forEach(settle);
                 return false;
             }
 
             let changed = false;
             for (const sample of targets) {
                 const found = findSample(list, sample);
-                if (!found) continue;
+                if (!found) {
+                    settle(sample);
+                    continue;
+                }
                 applyInventorySample(sample, found);
                 changed = true;
             }

@@ -78,8 +78,15 @@ function waitFor(check, timeoutMs) {
 
 // The batches tab sometimes lands read-only. Its Edit control is an ordinary
 // anchor, so a click inside OUR OWN frame is enough to open the form.
+//
+// The anchor points at `/batches/<id>/edit` since CDD's 2026-10 update (it
+// was `/specified_batches/<id>/edit`); the form it opens is unchanged —
+// `specified_batch_<id>_field_<def>` controls, PUT to `/batches/<id>`.
+// Verified on batch 1000318374 of entry 1000000814's product.
 function nudgeIntoEditMode(doc, batchId) {
-    const link = doc.querySelector(`a[href$="/specified_batches/${batchId}/edit"]`);
+    const link = doc.querySelector(
+        `a[href$="/batches/${batchId}/edit"], a[href$="/specified_batches/${batchId}/edit"]`
+    );
     if (link) link.click();
 }
 

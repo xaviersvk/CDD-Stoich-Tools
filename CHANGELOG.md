@@ -66,6 +66,13 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   `/molecules/<id>.json`, so the entity name was never mapped to an id; it
   is now also looked up in the entry payload's rows. Verified on entry
   1000000814: batch 001 and SM000002 bold, depleted SM003152 crossed out.
+- **"Write … into Internal ID on this batch" did nothing**
+  (`content/features/eln-id-to-batch-write.js`): the molecule page's batch
+  Edit link is now `/batches/<id>/edit` (was `/specified_batches/<id>/edit`),
+  so the framed page was never switched into edit mode and the write ended
+  with "the edit form never appeared". Both hrefs are accepted; the form it
+  opens is unchanged (`specified_batch_<id>_field_<def>`, PUT to
+  `/batches/<id>`). Verified on entry 1000000814's product batch 1000318374.
 
 ## [19.4.0] — 2026-10-26
 

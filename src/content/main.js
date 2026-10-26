@@ -69,8 +69,6 @@ import {initRegistrationProjectMirror} from "./features/ui-fixes/registration-pr
 import {initRegistrationFormDefault} from "./features/ui-fixes/registration-form-default";
 import {initElnIdToRegistration} from "./features/ui-fixes/eln-id-to-registration";
 import {initRegistrationDefaults} from "./features/ui-fixes/registration-defaults";
-import {initStoichAmountEditing} from "./features/ui-fixes/stoich-amount-editing";
-import {initStoichRoleQuickPick} from "./features/ui-fixes/stoich-role-quick-pick";
 import {initLinkStructureDefault} from "./features/ui-fixes/link-structure-default";
 import {initLinkSearchRank} from "./features/ui-fixes/link-search-rank";
 import {initLinkAlias} from "./features/ui-fixes/link-alias";
@@ -249,12 +247,6 @@ function init() {
   // Per-vault constants (Origin -> Synthesized) plus the amount out of the
   // stoichiometry row, both only on a registration opened FROM an ELN entry.
   initRegistrationDefaults();
-
-  initStoichAmountEditing();
-
-  // Role in a stoichiometry row: CDD's popup opens with its list already
-  // dropped, so a role is one click away instead of two.
-  initStoichRoleQuickPick();
 
   // Insert link → Display Options: "Include structure" starts unticked.
   initLinkStructureDefault();

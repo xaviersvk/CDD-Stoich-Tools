@@ -19,6 +19,31 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [Unreleased]
+
+### Fixed
+- **Value memory could remember a typed value the record already has**
+  (`shared/density-memory.js`, `content/features/inventory-sample-enrichment.js`):
+  the capture gate assumed a row with a sample carries its batch and sample
+  fields in the entry payload. Since CDD's 2026-09 update it carries a
+  stripped copy, and the panel may draw before the inventory sample arrives
+  (`HOLD_MS`), so a typed density, purity, concentration or solvent could be
+  remembered over the record's own value. Rows with a sample now wait for
+  `inventorySampleSettled` — the lookup is over, found or not. A sample that
+  cannot be read still counts as "the record has no value", and the typed
+  value is remembered as before. Concentration and solvent are gated on the
+  sample only; batch-only rows are unchanged.
+
+### Removed
+- **Mass / Volume unit safety net** (`ui-fixes/stoich-amount-editing.js`):
+  CDD's inline editor now shows the field's current unit beside the number
+  and commits a bare number in that unit (verified: "10" on a 10 g row stays
+  10 g), so the 1000× mg/g slip it guarded against no longer happens. It
+  targeted the old MuiPaper popup and had been inert since 2026-10-26.
+- **Role quick pick** (`ui-fixes/stoich-role-quick-pick.js`): CDD's inline
+  Role editor (`inline-input-roleDetails`) opens with its list already
+  dropped. The module looked for the old `Role-input` popup and did nothing.
+
 ## [19.5.0] — 2026-10-26
 
 ### Fixed

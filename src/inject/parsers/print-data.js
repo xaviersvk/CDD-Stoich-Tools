@@ -64,6 +64,17 @@ function resolveSolventRow(row) {
     return data;
 }
 
+// The sample's location as text, or "". Since CDD's 2026-09 update the entry
+// carries a stripped copy of most samples, with `location: { value: null }`;
+// falling back to that object printed "Location: [object Object]". The real
+// location is filled in content-side from the inventory sample
+// (content/features/print-buttons.js), keyed by the ids below.
+function resolveLocationText(row) {
+    const location = row?.sample?.location;
+    const text = typeof location === "string" ? location : location?.value;
+    return typeof text === "string" ? text : "";
+}
+
 function resolveRowData(row, depth = 0) {
     const amount = row?.amount ?? row?.mass ?? row?.value ?? "";
     const amountUnit = row?.amountUnit ?? row?.unit ?? row?.units ?? "";
@@ -79,10 +90,7 @@ function resolveRowData(row, depth = 0) {
     const limitingReagent = !!(row?.limitingReagent ?? row?.limiting);
     const yieldValue = row?.yield ?? "";
 
-    const location =
-        row?.sample?.location?.value ??
-        row?.sample?.location ??
-        "";
+    const location = resolveLocationText(row);
 
     const subtitle =
         row?.subtitle ??
@@ -117,6 +125,11 @@ function resolveRowData(row, depth = 0) {
         yield: formatValue(yieldValue),
 
         location: formatValue(location),
+        // Where the content side finds the full inventory sample.
+        sampleId: row?.sample?.id ?? null,
+        moleculeId: row?.moleculeId ?? null,
+        sampleVaultId:
+            String(row?.sample?.url || "").match(/\/vaults\/(\d+)\//)?.[1] ?? null,
         subtitle: formatValue(subtitle),
         casNumber: formatValue(row?.casNumber),
 

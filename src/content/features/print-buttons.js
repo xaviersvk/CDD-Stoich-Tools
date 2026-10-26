@@ -4,6 +4,7 @@ import { escapeHtml } from "../utils/dom.js";
 import { PRINT_FOOTER_TEXT, PRINT_SHEET_SHARED_CSS } from "./panel-print.js";
 import {EVENT_SOURCE, EVENTS} from "../../shared/event-types";
 import { isShowProductsEnabled } from "../../shared/show-products-flag.js";
+import { peekRawMoleculeSamples } from "../api/molecule-samples.js";
 
 const BTN_CLASS = "cdd-stoich-print-button";
 const BTN_ATTR = "data-cdd-stoich-print-button";
@@ -277,13 +278,29 @@ function buildPairBlocksHtml(pairs) {
     }).join("");
 }
 
+// The row's location, from the inventory sample when the entry's copy has
+// none. The entry carries a stripped copy of most samples; the full one is
+// already loaded for the panel (inventory-sample-enrichment.js), so this only
+// reads that cache and never waits on a request.
+function inventoryLocation(row) {
+    if (row?.location) return row.location;
+    if (row?.sampleId == null || row?.moleculeId == null) return "";
+
+    const vaultId = row.sampleVaultId || location.pathname.match(/\/vaults\/(\d+)/)?.[1];
+    const list = vaultId ? peekRawMoleculeSamples(vaultId, row.moleculeId) : null;
+    const found = list?.find((s) => String(s?.id) === String(row.sampleId));
+    const value = found?.location?.value ?? found?.location;
+    return typeof value === "string" ? value : "";
+}
+
 function buildPrintHtml(reactionPayload) {
     const reactionIndex = Number(reactionPayload?.reactionIndex ?? 0);
 
     const title = escapeHtml(reactionPayload?.title || "Stoichiometry Sheet");
     const identifier = escapeHtml(reactionPayload?.identifier || "Unknown experiment");
 
-    const rows = Array.isArray(reactionPayload?.rows) ? reactionPayload.rows : [];
+    const rows = (Array.isArray(reactionPayload?.rows) ? reactionPayload.rows : [])
+        .map((row) => ({ ...row, location: inventoryLocation(row) }));
 
     const domReactionImageHtml = getReactionImageHtmlForIndex(reactionIndex);
 

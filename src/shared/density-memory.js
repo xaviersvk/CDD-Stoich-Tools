@@ -241,12 +241,18 @@ export async function clearDensityMemory() {
  *     field (the record is authoritative and the slot is freed);
  *   - else a user-typed table value present → remember it.
  *
- * Density and purity are authoritative on the BATCH record, so batch-only
- * rows wait for enrichment (batchFieldsEnriched) — otherwise we would
- * briefly remember a value that IS on the batch, just not fetched yet.
- * Rows with a sample carry their batch fields from the payload itself.
- * Concentration is authoritative on the SAMPLE, which is in the payload
- * directly — no gate needed.
+ * Density and purity are authoritative on the BATCH record, concentration
+ * and solvent on the SAMPLE. Nothing is remembered while the record is still
+ * being read — otherwise we would remember a value that IS on the record,
+ * just not fetched yet. Batch-only rows wait for batchFieldsEnriched; rows
+ * with a sample wait for inventorySampleSettled, because since CDD's 2026-09
+ * update the entry carries only a stripped copy of the sample
+ * (`batch_fields: {}`, sample fields "Sample ID" only) and the panel may draw
+ * before the inventory sample arrives (message-router.js HOLD_MS).
+ * "Settled" means the lookup is over, found or not: a sample that could not
+ * be read counts as a record without the value, and the typed one is
+ * remembered as it always was.
+ * Forgetting needs no gate: a record value present is always authoritative.
  *
  * All writes funnel through rememberValues/forgetValues, which no-op on
  * unchanged data — calling this on every render is safe.
@@ -260,7 +266,12 @@ export function captureValuesFromSamples(samples) {
         if (!sample?.batchId) continue;
         if (sample.isProduct) continue;   // products are display-only
 
-        const gate = sample.hasSample !== false || sample.batchFieldsEnriched === true;
+        // Batch fields: read off the inventory sample, or off the molecule
+        // page for a batch-only row. Sample fields exist only on a sample.
+        const gate = sample.hasSample
+            ? sample.inventorySampleSettled === true
+            : sample.batchFieldsEnriched === true;
+        const sampleGate = !sample.hasSample || sample.inventorySampleSettled === true;
         const toForget = [];
         const toRemember = {};
 
@@ -271,7 +282,7 @@ export function captureValuesFromSamples(samples) {
         else if (has(sample.tablePurity) && gate) toRemember.purity = String(sample.tablePurity);
 
         if (has(sample.concentration)) toForget.push("concentration");
-        else if (has(sample.tableConcentration)) {
+        else if (has(sample.tableConcentration) && sampleGate) {
             toRemember.concentration = String(sample.tableConcentration);
             if (has(sample.tableConcentrationUnits)) {
                 toRemember.concentrationUnits = String(sample.tableConcentrationUnits);
@@ -279,11 +290,9 @@ export function captureValuesFromSamples(samples) {
         }
 
         // The solvent of a solution row, same rule: the sample record wins,
-        // otherwise the one picked in the table is worth keeping. It lives
-        // in the payload directly (nested under the row), so like
-        // concentration it needs no enrichment gate.
+        // otherwise the one picked in the table is worth keeping.
         if (has(sample.solvent)) toForget.push("solvent");
-        else if (has(sample.tableSolvent)) toRemember.solvent = String(sample.tableSolvent);
+        else if (has(sample.tableSolvent) && sampleGate) toRemember.solvent = String(sample.tableSolvent);
 
         if (toForget.length) forgetValues(sample.batchId, toForget);
         if (Object.keys(toRemember).length) {

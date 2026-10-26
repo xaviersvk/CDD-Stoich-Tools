@@ -242,6 +242,8 @@ async function duplicate(header, button) {
 
         const dialog = await waitFor(findCreateDialog);
         if (!dialog) throw new Error("Create a New Sample dialog did not open");
+        // Ours to fill: ui-fixes/sample-single-batch.js keeps out.
+        dialog.setAttribute("data-cdd-sample-duplicate", "1");
         // The dialog renders its options a beat after it appears.
         await wait(150);
 

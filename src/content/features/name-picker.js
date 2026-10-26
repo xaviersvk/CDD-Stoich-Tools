@@ -34,7 +34,10 @@ import {
 
 const STYLE_ID = "cdd-name-picker-style";
 const LIST_CLASS = "cdd-name-picker";
-const NAME_INPUT = 'input[placeholder="Name"]';
+// CDD's inline Name editor (2026-10). The solvent row's own Name uses the same
+// id; nameFieldFrom keeps those clicks out.
+const NAME_INPUT = '[data-autotest-id="inline-input-name"]';
+const SOLVENT_ROW = '[data-autotest-id="stoichiometry-table-solutionSolvent"]';
 
 // How long to keep looking for the popup after the click. CDD opens it in the
 // next frame or two; anything slower than this was not this click's popup.
@@ -95,10 +98,12 @@ function wait(ms) {
 
 // The clicked element's Name field, or null. Two things wear
 // `data-autotest-id="field-name"`: the row's Name, and the Solvent row's own
-// name — which keeps a `<b>Solvent:</b>` label and must be left alone.
+// name — which must be left alone. It used to be labelled `<b>Solvent:</b>`;
+// since 2026-10 it is "Name:" too, in a row of its own.
 function nameFieldFrom(target) {
     const field = target?.closest?.('[data-autotest-id="field-name"]');
     if (!field) return null;
+    if (field.closest(SOLVENT_ROW)) return null;
 
     const label = field.querySelector(":scope > b")?.textContent?.trim();
     if (label && label !== "Name:") return null;
@@ -169,24 +174,22 @@ function buildCandidates(moleculeId, row) {
     }));
 }
 
-// The popup this click opened: a MuiPaper holding a Name input. Returns the
-// input, because that is what a pick has to write into.
+// The editor this click opened: the inline Name box of a reagent row. Returns
+// the input, because that is what a pick has to write into.
 async function waitForNameInput() {
     for (let attempt = 0; attempt < POPUP_POLL_ATTEMPTS; attempt += 1) {
-        const input = document.querySelector(`.MuiPaper-root ${NAME_INPUT}`);
-        if (input) return input;
+        for (const input of document.querySelectorAll(NAME_INPUT)) {
+            if (!input.closest(SOLVENT_ROW)) return input;
+        }
         await wait(POPUP_POLL_MS);
     }
     return null;
 }
 
+// Where the list goes: the Name field the editor sits in, so it opens right
+// under the box. There is no popup of CDD's to hang it in any more.
 function paperOf(input) {
-    let box = input.parentElement;
-    for (let i = 0; i < 8 && box; i += 1) {
-        if (/MuiPaper/.test(box.className || "")) return box;
-        box = box.parentElement;
-    }
-    return null;
+    return input.closest('[data-autotest-id="field-name"]') || input.parentElement;
 }
 
 function renderList(paper, candidates, hint) {
@@ -194,9 +197,7 @@ function renderList(paper, candidates, hint) {
 
     const list = document.createElement("div");
     list.className = LIST_CLASS;
-    // Marks this as ours, so row-fill.js can read the popup's own label past
-    // it — the list is inside CDD's popup and would otherwise be read as part
-    // of the popup's text, which is the marker a fill identifies it by.
+    // Marks this as ours — it sits inside CDD's own field.
     list.dataset.cddAdded = "name-picker";
 
     if (hint) {
@@ -238,9 +239,21 @@ async function offerFor(moleculeId, row) {
     const input = await waitForNameInput();
     if (!input) return;
 
+    // Flagged on the INPUT: the field outlives the editor, a new editor is a
+    // new element.
+    if (input.dataset.cddNamePicker === "1") return;
+    input.dataset.cddNamePicker = "1";
+
     const paper = paperOf(input);
-    if (!paper || paper.dataset.cddNamePicker === "1") return;
-    paper.dataset.cddNamePicker = "1";
+    if (!paper) return;
+
+    // The list belongs to this editor only. A pick keeps focus in the box
+    // (mousedown is cancelled), so leaving the box is leaving the editor.
+    input.addEventListener(
+        "blur",
+        () => paper.querySelector(`.${LIST_CLASS}`)?.remove(),
+        { once: true }
+    );
 
     ensureStyle();
 

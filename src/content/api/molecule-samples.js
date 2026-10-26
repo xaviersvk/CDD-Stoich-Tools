@@ -22,6 +22,7 @@ function summarize(sample) {
         .sort()
         .pop() || null;
     return {
+        id: sample.id != null ? String(sample.id) : null,
         identifier: String(sample.sample_identifier || "").trim(),
         batchName: String(sample.batch_name ?? sample.batch?.name ?? "").trim(),
         depleted: sample.depleted === true,
@@ -64,7 +65,7 @@ export function getRawMoleculeSamples(vaultId, moleculeId) {
     return rawCache.get(key);
 }
 
-// → Promise<[{ identifier, batchName, depleted, debitCount, lastDebit,
+// → Promise<[{ id, identifier, batchName, depleted, debitCount, lastDebit,
 //              amount, units }]>
 export function getMoleculeSamples(vaultId, moleculeId) {
     const key = `${vaultId}:${moleculeId}`;

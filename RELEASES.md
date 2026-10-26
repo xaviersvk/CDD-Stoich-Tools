@@ -13,11 +13,31 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
-## 19.4.0 — 2026-10-22
+## Unreleased
 
 AI write-up can now use your own **OpenAI** or **Anthropic (Claude)** API key, not only CERIT-SC: pick it in *Settings → AI write-up → AI service*.
 
 - Claude does not transcribe speech — with Claude, pick CERIT-SC or OpenAI under *Dictation by* and add that key too. Without it, 🎤 stays grey and everything else works.
+
+## 19.5.0 — 2026-10-26
+
+Fixed: the panel's *Fill …* buttons and automatic fills write into the stoichiometry table again after CDD's update — name, density, purity, concentration and solvent.
+
+- A concentration in mM or µM is written in a unit CDD accepts.
+- The synonym list shows again in the row's Name editor.
+- In the batch / sample picker, the most used sample and its batch are bold again and depleted samples are crossed out.
+- *Write … into Internal ID on this batch* on product cards works again.
+- The printed stoichiometry sheet shows every sample's location again.
+
+## 19.4.0 — 2026-10-26
+
+Pick positions for new samples by dragging over the box: **Shift**-drag adds the empty positions, **Ctrl**-drag removes them — the same box as for outliers.
+
+- *Create a New Sample* chooses the batch when there is only one.
+
+## 19.3.1 — 2026-10-26
+
+Fixed: synonyms in brackets after batch links, and in the panel's Synonym field, show again after CDD changed its molecule page.
 
 ## 19.3.0 — 2026-10-22
 

@@ -48,6 +48,15 @@
 //                      NOT changed. If there is no anchor yet, behaves like a
 //                      normal click and sets the anchor.
 //
+//   Shift-drag         add every empty well the dashed box touches to the
+//                      selection (occupied ones skipped). Anchor NOT changed.
+//
+//   Ctrl / Cmd-drag    remove every well the box touches from the selection.
+//
+//                      Same box as the outlier drags (shared/drag-box.js). A
+//                      move under CLICK_SLOP is a click and goes through the
+//                      rules above; the click that ends a real drag is eaten.
+//
 //   Deselection rule   if the clicked well is ALREADY in the selection set, it
 //                      is always removed — regardless of the modifier key, and
 //                      regardless of whether the well has since become occupied.
@@ -99,6 +108,7 @@ import {
     getSelectedBoxId,
 } from "./box-grid.js";
 import { createSelectionModel } from "./selection-model.js";
+import { createDragBox, dragArea, touches } from "../../../shared/drag-box.js";
 
 const CONTEXT_PROP = "__cddSelectionContext";
 
@@ -362,6 +372,96 @@ export function attachBoxSelection(gridOrPicker, options = {}) {
         }
     }
 
+    // ----- drag (Shift adds, Ctrl removes) -----------------------------------
+    // The box only appears once the pointer has left click range; until then
+    // the press is left alone and ends as an ordinary click.
+    let drag = null;
+
+    function onPointerDown(event) {
+        if (drag || event.button !== 0 || event.pointerType === "touch") return;
+        const remove = event.ctrlKey || event.metaKey;
+        if (!remove && !event.shiftKey) return;
+        const cell = event.target.closest?.(CELL_SELECTOR);
+        if (!cell || !grid.contains(cell)) return;
+
+        // Shift-press would start a text selection; the click still fires.
+        event.preventDefault();
+        drag = { remove, x0: event.clientX, y0: event.clientY, box: null };
+        window.addEventListener("pointermove", onDragMove, true);
+        window.addEventListener("pointerup", onDragEnd, true);
+        window.addEventListener("pointercancel", stopDrag, true);
+        window.addEventListener("keydown", onDragKey, true);
+        window.addEventListener("blur", stopDrag);
+    }
+
+    function onDragMove(event) {
+        const area = dragArea(drag.x0, drag.y0, event.clientX, event.clientY);
+        if (area.isClick && !drag.box) return;
+        event.preventDefault();
+        drag.box ??= createDragBox(
+            drag.remove ? "unmark" : "select",
+            drag.remove ? "Remove positions" : "Add positions",
+            "data-cdd-box-selection-drag"
+        );
+        drag.box.draw(area);
+    }
+
+    function onDragEnd(event) {
+        const d = drag;
+        stopDrag();
+        if (!d?.box) return;
+        event.preventDefault();
+        swallowNextClick();
+
+        const area = dragArea(d.x0, d.y0, event.clientX, event.clientY);
+        const touched = [];
+        for (const cell of grid.querySelectorAll(CELL_SELECTOR)) {
+            const p = readCellPosition(cell);
+            if (p && touches(area, cell.getBoundingClientRect())) touched.push(p);
+        }
+        const current = model.getSelectedPositions();
+        if (d.remove) {
+            const out = new Set(touched);
+            model.replaceSelection(current.filter((p) => !out.has(p)));
+        } else {
+            model.replaceSelection([...current, ...selectableSubset(touched)]);
+        }
+        const n = model.count();
+        showToast(`${n} position${n === 1 ? "" : "s"} selected`);
+    }
+
+    function onDragKey(event) {
+        if (event.key !== "Escape") return;
+        event.preventDefault();
+        event.stopPropagation();
+        stopDrag();
+    }
+
+    function stopDrag() {
+        drag?.box?.remove();
+        drag = null;
+        window.removeEventListener("pointermove", onDragMove, true);
+        window.removeEventListener("pointerup", onDragEnd, true);
+        window.removeEventListener("pointercancel", stopDrag, true);
+        window.removeEventListener("keydown", onDragKey, true);
+        window.removeEventListener("blur", stopDrag);
+    }
+
+    // The click that ends a drag would toggle the well under the pointer (and
+    // reach CDD). Eat exactly that one; window capture runs before the grid.
+    function swallowNextClick() {
+        const eat = (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+            window.removeEventListener("click", eat, true);
+        };
+        window.addEventListener("click", eat, true);
+        setTimeout(() => window.removeEventListener("click", eat, true), 400);
+    }
+
+    grid.addEventListener("pointerdown", onPointerDown, true);
+
     // Capture phase so the handler fires even when CDD calls stopPropagation()
     // at the target level (which would otherwise swallow the bubble phase).
     grid.addEventListener("click", onClick, true);
@@ -431,6 +531,8 @@ export function attachBoxSelection(gridOrPicker, options = {}) {
         },
         destroy() {
             grid.removeEventListener("click", onClick, true);
+            grid.removeEventListener("pointerdown", onPointerDown, true);
+            stopDrag();
             gridObserver.disconnect();
             unsubscribeModel();
             bar?.remove();

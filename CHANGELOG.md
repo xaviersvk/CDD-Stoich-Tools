@@ -19,7 +19,32 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
-## [19.4.0] — 2026-10-22
+## [Unreleased]
+
+### Fixed
+- **Value memory could remember a typed value the record already has**
+  (`shared/density-memory.js`, `content/features/inventory-sample-enrichment.js`):
+  the capture gate assumed a row with a sample carries its batch and sample
+  fields in the entry payload. Since CDD's 2026-09 update it carries a
+  stripped copy, and the panel may draw before the inventory sample arrives
+  (`HOLD_MS`), so a typed density, purity, concentration or solvent could be
+  remembered over the record's own value. Rows with a sample now wait for
+  `inventorySampleSettled` — the lookup is over, found or not. A sample that
+  cannot be read still counts as "the record has no value", and the typed
+  value is remembered as before. Concentration and solvent are gated on the
+  sample only; batch-only rows are unchanged.
+
+### Removed
+- **Mass / Volume unit safety net** (`ui-fixes/stoich-amount-editing.js`):
+  CDD's inline editor now shows the field's current unit beside the number
+  and commits a bare number in that unit (verified: "10" on a 10 g row stays
+  10 g), so the 1000× mg/g slip it guarded against no longer happens. It
+  targeted the old MuiPaper popup and had been inert since 2026-10-26.
+- **Role quick pick** (`ui-fixes/stoich-role-quick-pick.js`): CDD's inline
+  Role editor (`inline-input-roleDetails`) opens with its list already
+  dropped. The module looked for the old `Role-input` popup and did nothing.
+
+<!-- from the ai-providers branch, untested -->
 
 ### Added
 - **AI write-up works with OpenAI and Anthropic (Claude) too**, not only
@@ -44,6 +69,108 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   (`dictationUnavailable()` in `dictation.js`), instead of failing on a click.
 - Error messages, the Polish status and Test connection name the service
   in use instead of CERIT. Privacy policy, README and store copy updated.
+
+## [19.5.0] — 2026-10-26
+
+### Fixed
+- **Fills into the stoichiometry table did nothing after CDD's update**
+  (`content/features/row-fill.js`): CDD replaced the floating one-field
+  MuiPaper popup with an inline editor — the clicked value turns into
+  `<textarea data-autotest-id="inline-input-<field>">` in place, with no
+  units `<select>`. `findEditorInput` / `findEditorSelect` never found it, so
+  every fill (name, density, purity, concentration, solvent, and purity's
+  equivalent restore) gave up with "editor did not open". The editor is now
+  found by its autotest id (`findInlineEditor`), and `setNativeInputValue`
+  uses the textarea's own value setter. Verified live on entry 1000000814.
+- **Concentration unit goes into the text** (`shared/concentration-text.js`):
+  the editor accepts only `mmol/ml, mmol/l, mol/ml, mol/l, m, %w/v` typed
+  after the number and rejects "mM". Sample units are translated (mM →
+  mmol/l, M → mol/l), µM and nM are scaled into mmol/l, and a unit CDD
+  cannot take (mg/mL…) fails before "Make solution" is clicked. The write is
+  confirmed against the mol/L the field displays. Tested in
+  `tests/concentration-text.test.js`.
+- **Solvent row** (`row-fill.js`): the solution's solvent row is now a full
+  row whose solvent is its "Name:" (was "Solvent:"); the list is
+  `inline-input-name-options` and the free-text entry
+  `inline-solvent-create`. Both labels are accepted, and the write is
+  confirmed in either mode — after a pick the table can drop back to view
+  mode, which prints the solvent in `stoichiometry-role-name`.
+- **A set row Name now keeps its label** (`row-fill.js` `readRowName`,
+  `name-watch.js` `rowName`): edit mode renders `<b>Name:</b> DIPEA`, view
+  mode a `stoichiometry-role-name` span. Both readers understood only the
+  old bare value, so a name write reported "did not stick" and the panel
+  could offer a name the row already had.
+- **Edit-mode batch label** (`name-watch.js` `batchLabelOf`,
+  `row-fill.js` `readMoleculeLabel`): the prefix is the vault's own word —
+  "Molecule:" or "Entity:" — so any single word before the colon is dropped.
+- **Name picker in the inline editor** (`content/features/name-picker.js`):
+  the synonym list hangs under the inline Name box (no popup to hang it in),
+  is removed when the box loses focus, and is kept off the solvent row,
+  whose Name uses the same autotest id.
+- **Most used sample/batch no longer bold, depleted samples not crossed out
+  at once** (`content/features/sample-picker-hints.js`): two CDD changes.
+  The sample radio's value is now `sample-<record id>` (the identifier is
+  only the label), so the "is this the molecule's picker" check never
+  passed; samples are now matched by record id (`id` added to
+  `api/molecule-samples.js`'s SampleInfo) or, as before, by identifier.
+  And opening the picker on a row already in the table no longer requests
+  `/molecules/<id>.json`, so the entity name was never mapped to an id; it
+  is now also looked up in the entry payload's rows. Verified on entry
+  1000000814: batch 001 and SM000002 bold, depleted SM003152 crossed out.
+- **"Write … into Internal ID on this batch" did nothing**
+  (`content/features/eln-id-to-batch-write.js`): the molecule page's batch
+  Edit link is now `/batches/<id>/edit` (was `/specified_batches/<id>/edit`),
+  so the framed page was never switched into edit mode and the write ended
+  with "the edit form never appeared". Both hrefs are accepted; the form it
+  opens is unchanged (`specified_batch_<id>_field_<def>`, PUT to
+  `/batches/<id>`). Verified on entry 1000000814's product batch 1000318374.
+- **Printed sheet showed "Location: [object Object]"**
+  (`inject/parsers/print-data.js`, `content/features/print-buttons.js`): the
+  entry's stripped sample copy carries `location: { value: null }`, and the
+  parser fell back to the object itself. It now takes only a string, and
+  the print fills a missing location from the inventory sample the panel
+  has already loaded (`peekRawMoleculeSamples`, by sample and molecule id),
+  so the sheet shows the full location as the panel does.
+
+## [19.4.0] — 2026-10-26
+
+### Added
+- **Drag to select positions in a box** (`content/features/box-selection/overlay.js`):
+  in the box picker of multi-position sample create, Shift-drag adds every
+  empty well the box touches to the selection and Ctrl/Cmd-drag removes the
+  wells it touches. Occupied wells are skipped as with the Shift-click
+  rectangle; a move under 3 px is still a click, so click, Ctrl-click and
+  Shift-click keep their meaning. Escape cancels; the click ending a drag is
+  swallowed. Spec: `docs/superpowers/specs/2026-10-26-box-selection-drag-design.md`.
+- **Only batch chosen in Create a New Sample** (`content/features/ui-fixes/sample-single-batch.js`):
+  when the Batch select (`[id="sample.batch_id"]`) opens empty and offers
+  exactly one batch, it is chosen. The options exist only while the MUI menu
+  is open, so the menu is opened once with its popover hidden, read, and
+  either the batch is clicked or the menu closed. Each select is tried once;
+  a dialog "Duplicate sample" fills is marked `data-cdd-sample-duplicate`
+  and left alone.
+
+### Changed
+- **One drag box for every area gesture** (`shared/drag-box.js`): the dashed
+  box and label the heat map and dose-response outlier drags each drew on
+  their own now come from one module, with the picker as third user. Red
+  marks, grey unmarks, blue selects. `dragArea` / `touches` are pure and
+  tested (`tests/drag-box.test.js`).
+
+## [19.3.1] — 2026-10-26
+
+### Fixed
+- **Synonyms after batch links came back empty** (`api/molecule-image.js`):
+  CDD no longer prints the molecule page's "Synonyms" row in the server
+  HTML — the list now travels only in the molecule-level
+  RegistrationFormRenderer's `react_props.synonyms`
+  (`[{ synonym, index, ... }]`) and React draws it. `extractSynonymList`
+  reads those props first (renderer with `resource_type: "molecule"`,
+  sorted by `index`) and keeps the old `.molecule_field` row as a fallback.
+  It replaces `extractSynonymsText`; every synonym reader shares it, so the
+  stoichiometry panel's Synonym field, row names and the inventory tooltip
+  are fixed by the same change. Entries are taken as CDD stores them, no
+  longer re-split on ", ".
 
 ## [19.3.0] — 2026-10-22
 

@@ -5,8 +5,13 @@
 //
 //   click the row (the table flips to edit mode)
 //   → click the field's value link ("Density: Optional", "Purity: 100 %"…)
-//   → set the popup input natively (React value-tracker aware) → Enter
+//   → set the inline editor natively (React value-tracker aware) → Enter
 //   → click the empty page margin to leave edit mode.
+//
+// Since CDD's 2026-10 update the editor is no longer a floating MuiPaper
+// popup: the clicked value turns into a <textarea data-autotest-id=
+// "inline-input-<field>"> in place, inside the field's own span. The field
+// keys are CDD's own (`field-density` → `inline-input-density`).
 //
 // Four public fills share that machinery: density (empty fields only),
 // purity (snapshots the row's Equivalent first and restores it after CDD's
@@ -20,6 +25,7 @@
 // loudly in the button/status).
 
 import { mouseClick } from "../utils/dom.js";
+import { concentrationText } from "../../shared/concentration-text.js";
 
 // Waiting is counted in POLL ATTEMPTS, not wall-clock: Chrome throttles
 // timers in a background tab to roughly one tick per minute, and a
@@ -137,85 +143,28 @@ function findFieldValueLink(row, label, placeholderOnly) {
     return null;
 }
 
-// A popup's own label text, with anything this extension has added to it left
-// out.
+// The open inline editor of `field` ("density", "purity", "concentration",
+// "name", "equivalent"), or null. Only one is open at a time — CDD closes
+// the previous one when another value is clicked — so the focused element is
+// the first answer and a page-wide lookup the fallback.
 //
-// The Name editor's marker is that its whole text is the bare word "Name" —
-// and name-picker.js hangs a list of candidate names inside that same popup.
-// Reading `innerText` then yields "Name DIPEA remembered …", the marker stops
-// matching, and this fill gives up on an editor it opened itself. Measured:
-// that is what "the editor opens and nothing is chosen" looked like.
-function popupLabelText(box) {
-    let text = "";
-    for (const node of box.childNodes) {
-        if (node.nodeType === Node.ELEMENT_NODE && node.closest?.("[data-cdd-added]")) {
-            continue;
-        }
-        text += node.nodeType === Node.ELEMENT_NODE ? node.innerText || "" : node.textContent || "";
-    }
-    return text;
-}
-
-// The editable text input inside the floating one-field popup whose
-// MuiPaper box text matches labelRe (e.g. /Density\s*\[/i). The input only
-// sometimes carries a placeholder, so the popup label is the reliable
-// marker.
-function findEditorInput(labelRe) {
-    const candidates = [];
-
+// The editor is a <textarea> for every field but the solvent row's Name,
+// which is an <input> with a dropdown under it.
+function findInlineEditor(field) {
+    const selector = `[data-autotest-id="inline-input-${field}"]`;
     const active = document.activeElement;
-    if (active && active.tagName === "INPUT") candidates.push(active);
-    candidates.push(...document.querySelectorAll(".MuiPaper-root input"));
-
-    for (const input of candidates) {
-        if (input.readOnly || input.type !== "text") continue;
-
-        let box = input.parentElement;
-        for (let i = 0; i < 8 && box; i++) {
-            if (/MuiPaper/.test(box.className || "")) break;
-            box = box.parentElement;
-        }
-
-        if (box && labelRe.test(popupLabelText(box))) return input;
-    }
-
-    return null;
+    if (active?.matches?.(selector)) return active;
+    return document.querySelector(selector);
 }
 
-// A <select> inside the same popup (concentration units). Null when the
-// popup has none — callers treat units as best-effort.
-function findEditorSelect(labelRe) {
-    for (const select of document.querySelectorAll(".MuiPaper-root select")) {
-        let box = select.parentElement;
-        for (let i = 0; i < 8 && box; i++) {
-            if (/MuiPaper/.test(box.className || "")) break;
-            box = box.parentElement;
-        }
-        if (box && labelRe.test(box.innerText || "")) return select;
-    }
-    return null;
-}
-
-function setNativeSelectValue(select, value) {
-    // Accept a match on option value OR visible text.
-    const option = Array.from(select.options).find(
-        (o) => o.value === value || (o.textContent || "").trim() === value
-    );
-    if (!option) return false;
-
-    const setter = Object.getOwnPropertyDescriptor(
-        window.HTMLSelectElement.prototype, "value")?.set;
-    if (setter) setter.call(select, option.value);
-    else select.value = option.value;
-    select.dispatchEvent(new Event("change", { bubbles: true }));
-    return true;
-}
-
+// React tracks the value on the DOM node; the setter has to be the one of the
+// element's own prototype — the <input> setter throws on a <textarea>.
 export function setNativeInputValue(input, value) {
-    const setter = Object.getOwnPropertyDescriptor(
-        window.HTMLInputElement.prototype,
-        "value"
-    )?.set;
+    const proto =
+        input instanceof HTMLTextAreaElement
+            ? window.HTMLTextAreaElement.prototype
+            : window.HTMLInputElement.prototype;
+    const setter = Object.getOwnPropertyDescriptor(proto, "value")?.set;
 
     if (setter) {
         setter.call(input, value);
@@ -393,10 +342,11 @@ function readEquivalent(container, name, rowNumber) {
 }
 
 // Click `label`'s value link in the sample's own row (ctx from openRow),
-// type `value` into the popup, Enter, and wait until the row text shows
-// the value. `units` (optional) is set on the popup's <select> when one
-// exists.
-async function writeFieldViaPopup(ctx, label, popupLabelRe, value, placeholderOnly, units) {
+// type `value` into the field's inline editor, Enter, and wait until the
+// row shows the value. `shows(text)` decides whether the displayed value is
+// the one written; by default it is `value` itself, but a concentration typed
+// as "15 mmol/l" comes back as "0.015 mol/L".
+async function writeFieldInline(ctx, label, field, value, placeholderOnly, shows) {
     const { container, name, rowNumber } = ctx;
     const link = await waitFor(() => {
         const tr = findTargetRow(container, name, rowNumber);
@@ -406,23 +356,29 @@ async function writeFieldViaPopup(ctx, label, popupLabelRe, value, placeholderOn
 
     mouseClick(link);
 
-    const input = await waitFor(() => findEditorInput(popupLabelRe));
+    const input = await waitFor(() => findInlineEditor(field));
     if (!input) return { ok: false, reason: `${label.replace(":", "")} editor did not open` };
 
     setNativeInputValue(input, value);
-    if (units) {
-        const select = findEditorSelect(popupLabelRe);
-        if (select) setNativeSelectValue(select, units);   // best-effort
-    }
     pressEnter(input);
 
-    // The popup closes and the field itself carries the new value.
+    // The editor closes and the field itself carries the new value.
+    const matches = shows || ((text) => valuesMatch(text, value));
     const confirmed = await waitFor(() => {
         const tr = findTargetRow(container, name, rowNumber);
         if (!tr) return null;
-        return valuesMatch(readFieldText(tr, label), value) ? tr : null;
+        const text = readFieldText(tr, label);
+        return text != null && matches(text) ? tr : null;
     });
     return confirmed ? { ok: true } : { ok: false, reason: "value did not stick" };
+}
+
+// Does the displayed concentration ("0.015 mol/L") equal `molPerL`? Relative,
+// because the field rounds what it prints.
+function showsMolarity(text, molPerL) {
+    const shown = parseFloat(String(text).replace(",", "."));
+    if (!Number.isFinite(shown)) return false;
+    return Math.abs(shown - molPerL) <= Math.abs(molPerL) * 1e-3;
 }
 
 /* ------------------------------------------------------------------ *
@@ -431,14 +387,35 @@ async function writeFieldViaPopup(ctx, label, popupLabelRe, value, placeholderOn
  * CDD renders the solvent of a solution row as a <tr> OF ITS OWN directly
  * under it: no row number, marked `data-autotest-id
  * ="stoichiometry-table-solutionSolvent"`. "Make solution" creates that row
- * (labelled "Solvent: Required") and "Remove solvent" takes it away.
- * Clicking its Solvent link opens a picker whose text box filters CDD's 38
- * built-in solvents; an EMPTY box lists them all. The list is a
- * convenience, not a constraint — CDD accepts any string through the
- * `Create "…"` entry, so a remembered "EtOAc/Hexane 1:1" is fillable too.
+ * and "Remove solvent" takes it away. Since 2026-10 the row is a full
+ * row of its own ("Role: Solvent", FW, Density, Boiling point…) whose
+ * solvent is its "Name: Required"; before, the field was "Solvent:".
+ * Clicking it opens an inline text box (`inline-input-name`) with a list
+ * under it that filters CDD's 38 built-in solvents; an EMPTY box lists them
+ * all. The list is a convenience, not a constraint — CDD accepts any string
+ * through the `Create "…"` entry, so a remembered "EtOAc/Hexane 1:1" is
+ * fillable too.
  * ------------------------------------------------------------------ */
 const SOLVENT_ROW_MARKER = "stoichiometry-table-solutionSolvent";
-const SOLVENT_PICKER_POPUP = '[data-autotest-id="solvent-row-name-selector-popup"]';
+const SOLVENT_PICKER_POPUP = '[data-autotest-id="inline-input-name-options"]';
+const SOLVENT_CREATE_ENTRY = '[data-autotest-id="inline-solvent-create"]';
+const SOLVENT_LABELS = ["Name:", "Solvent:"];
+
+function solventLabelIn(tr) {
+    return SOLVENT_LABELS.find((label) => findFieldValueLink(tr, label, false)) || null;
+}
+
+// The solvent row's solvent as it shows now. Picking one can drop the table
+// back to view mode, which prints it as `<b>Solvent:</b>` + a
+// `stoichiometry-role-name` span instead of the edit-mode field.
+function readSolventName(tr) {
+    const label = solventLabelIn(tr);
+    if (label) return readFieldText(tr, label);
+    return (
+        tr.querySelector('[data-autotest-id="stoichiometry-role-name"]')?.textContent?.trim() ||
+        null
+    );
+}
 
 function findSolventRow(container, name, rowNumber) {
     const tr = findTargetRow(container, name, rowNumber);
@@ -489,15 +466,10 @@ function findSolventOption(value) {
 // "ethanol" would be created as text next to the real Ethanol entry).
 // Nothing is added to the vault's solvent list.
 //
-// It carries no autotest id, so it is found by its own label — and only
-// when the quoted text is exactly what we typed, so a list still showing
-// the previous query can never be clicked.
+// Taken only when the quoted text is exactly what we typed, so a list still
+// showing the previous query can never be clicked.
 function findCreateEntry(value) {
-    const popup = document.querySelector(SOLVENT_PICKER_POPUP);
-    if (!popup) return null;
-
-    for (const el of popup.querySelectorAll("*")) {
-        if (el.children.length) continue;
+    for (const el of document.querySelectorAll(SOLVENT_CREATE_ENTRY)) {
         const quoted = (el.textContent || "").trim().match(/^Create\s+"(.*)"$/);
         if (quoted && quoted[1] === value) return el;
     }
@@ -509,15 +481,17 @@ function findCreateEntry(value) {
 // solution" first).
 async function writeSolventViaPicker(ctx, value) {
     const { container, name, rowNumber } = ctx;
+    let label = null;
     const link = await waitFor(() => {
         const tr = findSolventRow(container, name, rowNumber);
-        return tr ? findFieldValueLink(tr, "Solvent:", false) : null;
+        label = tr ? solventLabelIn(tr) : null;
+        return label ? findFieldValueLink(tr, label, false) : null;
     });
     if (!link) return { ok: false, reason: "row has no Solvent field" };
 
     mouseClick(link);
 
-    const input = await waitFor(() => findEditorInput(/^\s*Solvent\s*$/i));
+    const input = await waitFor(() => findInlineEditor("name"));
     if (!input) return { ok: false, reason: "solvent picker did not open" };
 
     // CDD's own list comes FIRST: a list entry brings CAS-RN, FW, density
@@ -552,7 +526,7 @@ async function writeSolventViaPicker(ctx, value) {
     const expected = option ? option.label : value;
     const confirmed = await waitFor(() => {
         const tr = findSolventRow(container, name, rowNumber);
-        const text = tr ? readFieldText(tr, "Solvent:") : null;
+        const text = tr ? readSolventName(tr) : null;
         return text && normalizeSolvent(text) === normalizeSolvent(expected) ? tr : null;
     });
     return confirmed ? { ok: true } : { ok: false, reason: "solvent did not stick" };
@@ -567,7 +541,7 @@ export async function fillDensityIntoTable(sample, value) {
     const ctx = await openRow(sample);
     if (!ctx) return { ok: false, reason: "table row not found" };
 
-    const result = await writeFieldViaPopup(ctx, "Density:", /Density\s*\[/i, value, true);
+    const result = await writeFieldInline(ctx, "Density:", "density", value, true);
     if (!result.ok) {
         pressEscape();
         return result;
@@ -579,16 +553,23 @@ export async function fillDensityIntoTable(sample, value) {
 
 // The row's CURRENT name, or null when it has none.
 //
-// NOT readFieldText(tr, "Name:"): the label only exists while the field is
-// EMPTY. Once a name is set, CDD renders the bare value —
-// `<span data-autotest-id="field-name">DIPEA</span>` with no <b> — so the
-// label the fill just clicked is gone by the time the write is confirmed.
-// The same autotest id is used by the Solvent field, which DOES carry a <b>;
-// that is what tells the two apart.
+// Two renderings of a set name: the bare value
+// (`<span data-autotest-id="field-name">DIPEA</span>`, CDD before 2026-10)
+// and `<b>Name:</b> DIPEA` (since). The blue Optional is a placeholder, never
+// a name, and the old solvent field wore the same autotest id with a
+// `<b>Solvent:</b>` label. A table that has dropped back to view mode prints
+// the name in a `stoichiometry-role-name` span instead.
 function readRowName(tr) {
+    const viewName = tr
+        .querySelector('[data-autotest-id="stoichiometry-role-name"]')
+        ?.textContent?.trim();
+    if (viewName) return viewName;
+
     for (const span of tr.querySelectorAll('[data-autotest-id="field-name"]')) {
-        if (span.querySelector(":scope > b")) continue;   // "Name: Optional" / "Solvent: …"
-        const text = (span.textContent || "").trim();
+        if (span.querySelector('[data-autotest-id="missing-label"]')) continue;
+        const label = span.querySelector(":scope > b")?.textContent?.trim();
+        if (label && label !== "Name:") continue;
+        const text = (span.textContent || "").replace(/^\s*Name:\s*/, "").trim();
         if (text) return text;
     }
     return null;
@@ -598,9 +579,8 @@ function readRowName(tr) {
 // above the molecule-batch id. EMPTY fields only: the link search is
 // placeholderOnly, so a name that is already there is never overwritten.
 //
-// Not routed through writeFieldViaPopup because that helper confirms the
-// write by re-reading "<b>Name:</b> value", which this field stops rendering
-// the moment it has a value (see readRowName).
+// Not routed through writeFieldInline because the name is confirmed by
+// readRowName, which knows both ways CDD has rendered a set name.
 export async function fillNameIntoTable(sample, value) {
     value = value != null ? String(value).trim() : "";
     if (!value) return { ok: false, reason: "no name value on this card" };
@@ -635,10 +615,7 @@ async function writeNameThroughEditor(locate, value, container) {
 
     mouseClick(link);
 
-    // The popup is a MuiPaper whose whole text is the bare word "Name"
-    // (verified live) — anchored, so a "Name" appearing inside another
-    // popup's label could never match it.
-    const input = await waitFor(() => findEditorInput(/^\s*Name\s*$/i));
+    const input = await waitFor(() => findInlineEditor("name"));
     if (!input) {
         pressEscape();
         return { ok: false, reason: "Name editor did not open" };
@@ -666,7 +643,8 @@ async function writeNameThroughEditor(locate, value, container) {
 function readMoleculeLabel(tr) {
     const printed = tr
         .querySelector?.('[data-autotest-id="field-moleculeName"]')
-        ?.textContent?.replace(/^\s*Molecule:\s*/, "")
+        // "Molecule:" or "Entity:", whichever the vault calls it.
+        ?.textContent?.replace(/^\s*[^\s:]+:\s*/, "")
         .trim();
     return printed || null;
 }
@@ -729,7 +707,7 @@ export async function fillPurityIntoTable(sample, value) {
     await waitFor(() => (readEquivalent(ctx.container, ctx.name, ctx.rowNumber) != null) || null);
     const equivalentBefore = readEquivalent(ctx.container, ctx.name, ctx.rowNumber);
 
-    const result = await writeFieldViaPopup(ctx, "Purity:", /Purity/i, value, false);
+    const result = await writeFieldInline(ctx, "Purity:", "purity", value, false);
     if (!result.ok) {
         pressEscape();
         return result;
@@ -746,8 +724,8 @@ export async function fillPurityIntoTable(sample, value) {
 
         const equivalentAfter = readEquivalent(ctx.container, ctx.name, ctx.rowNumber);
         if (equivalentAfter != null && !valuesMatch(equivalentAfter, equivalentBefore)) {
-            const restore = await writeFieldViaPopup(
-                ctx, "Equivalent:", /Equivalent/i, equivalentBefore, false);
+            const restore = await writeFieldInline(
+                ctx, "Equivalent:", "equivalent", equivalentBefore, false);
             if (!restore.ok) {
                 pressEscape();
                 // Purity IS written; the failure is visible, never silent.
@@ -779,6 +757,11 @@ export async function fillPurityIntoTable(sample, value) {
 export async function fillConcentrationIntoTable(sample, value, units, solvent) {
     value = value != null ? String(value).trim() : "";
     if (!value) return { ok: false, reason: "no concentration value on this card" };
+
+    // Before anything is clicked: a unit CDD cannot take must not leave a
+    // half-made solution row behind.
+    const typed = concentrationText(value, units);
+    if (!typed) return { ok: false, reason: `concentration unit "${units}" is not one CDD accepts` };
 
     const ctx = await openRow(sample);
     if (!ctx) return { ok: false, reason: "table row not found" };
@@ -814,8 +797,9 @@ export async function fillConcentrationIntoTable(sample, value, units, solvent) 
         }
     }
 
-    const result = await writeFieldViaPopup(
-        ctx, "Concentration:", /Concentration/i, value, false, units || null);
+    const result = await writeFieldInline(
+        ctx, "Concentration:", "concentration", typed.text, false,
+        typed.molPerL != null ? (text) => showsMolarity(text, typed.molPerL) : null);
     if (!result.ok) {
         pressEscape();
         return result;

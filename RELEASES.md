@@ -19,6 +19,7 @@ Fixed: the panel's *Fill …* buttons and automatic fills write into the stoichi
 
 - A concentration in mM or µM is written in a unit CDD accepts.
 - The synonym list shows again in the row's Name editor.
+- In the batch / sample picker, the most used sample and its batch are bold again and depleted samples are crossed out.
 
 ## 19.4.0 — 2026-10-26
 

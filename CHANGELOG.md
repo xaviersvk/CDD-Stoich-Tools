@@ -56,6 +56,16 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   the synonym list hangs under the inline Name box (no popup to hang it in),
   is removed when the box loses focus, and is kept off the solvent row,
   whose Name uses the same autotest id.
+- **Most used sample/batch no longer bold, depleted samples not crossed out
+  at once** (`content/features/sample-picker-hints.js`): two CDD changes.
+  The sample radio's value is now `sample-<record id>` (the identifier is
+  only the label), so the "is this the molecule's picker" check never
+  passed; samples are now matched by record id (`id` added to
+  `api/molecule-samples.js`'s SampleInfo) or, as before, by identifier.
+  And opening the picker on a row already in the table no longer requests
+  `/molecules/<id>.json`, so the entity name was never mapped to an id; it
+  is now also looked up in the entry payload's rows. Verified on entry
+  1000000814: batch 001 and SM000002 bold, depleted SM003152 crossed out.
 
 ## [19.4.0] — 2026-10-26
 

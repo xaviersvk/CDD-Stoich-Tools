@@ -27,6 +27,9 @@
 //   [data-autotest-id="batchInformation__radio"] input[type=radio]  value = batch name
 //   [data-autotest-id="sampleInformation__radio"] input[type=radio] value = sample_identifier
 //   each radio sits in [data-autotest-id="radio-button"].
+// Since 2026-10 the sample radio's value is "sample-<id>" and the identifier
+// is only its label text (entry 1000000814: value "sample-1000002054",
+// label "SM000002"); both are read, see sampleOf.
 
 import { STATE } from "../state.js";
 import { getMoleculeSamples, seedMoleculeSamples } from "../api/molecule-samples.js";
@@ -174,10 +177,28 @@ function setHint(radio, bold, title) {
     }
 }
 
+// The entity of a row already in the table, from the entry payload. Opening
+// the picker on such a row makes no request at all since CDD's 2026-10
+// update — the picker is drawn from the entry — so EVENTS.MOLECULE_LOADED
+// never teaches us its name. The payload's rows carry name and id together.
+function moleculeFromPayload(name) {
+    if (!name) return null;
+    const pageVault = location.pathname.match(/^\/vaults\/(\d+)/)?.[1];
+    if (!pageVault) return null;
+    for (const sample of STATE.lastPayload?.samples || []) {
+        if (!sample?.moleculeId || String(sample.moleculeName || "").trim() !== name) continue;
+        if (sample.sampleVaultId && String(sample.sampleVaultId) !== pageVault) continue;
+        return { vaultId: pageVault, moleculeId: String(sample.moleculeId) };
+    }
+    return null;
+}
+
 function decorate(root) {
     // By name; a Name field can hold a synonym instead, and then the entity
     // is the one CDD looked up last — it does so the instant one is picked.
-    const molecule = moleculesByName.get(entityName(root))
+    const name = entityName(root);
+    const molecule = moleculesByName.get(name)
+        || moleculeFromPayload(name)
         || (!root.querySelector(ENTITY_SELECTOR) && lastLooked);
     if (!molecule) return;
     const samples = loaded.get(molecule.moleculeId);
@@ -188,16 +209,23 @@ function decorate(root) {
         return;
     }
 
-    const byId = new Map(samples.map((s) => [s.identifier, s]));
+    const byIdentifier = new Map(samples.map((s) => [s.identifier, s]));
+    const byRecordId = new Map(samples.filter((s) => s.id).map((s) => [s.id, s]));
+    const sampleOf = (radio) => {
+        const value = radio.value?.trim() || "";
+        const recordId = value.match(/^sample-(\d+)$/)?.[1];
+        if (recordId) return byRecordId.get(recordId) || null;
+        return byIdentifier.get(value) || null;
+    };
     const radios = [...root.querySelectorAll(SAMPLE_SELECTOR)];
     const batchRadios = [...root.querySelectorAll(BATCH_SELECTOR)]
         .filter((r) => !/unspecified/i.test(r.value || ""));
 
     // The fallback guess can be wrong (a save makes CDD look up every row's
     // molecule): only go on when what the picker shows is this molecule's.
-    const shownSamples = radios.map((r) => r.value?.trim()).filter((v) => v && !/unspecified/i.test(v));
-    if (shownSamples.length) {
-        if (!shownSamples.every((v) => byId.has(v))) return;
+    const shownRadios = radios.filter((r) => r.value?.trim() && !/unspecified/i.test(r.value));
+    if (shownRadios.length) {
+        if (!shownRadios.every((r) => sampleOf(r))) return;
     } else if (samples.length && batchRadios.length) {
         const batches = new Set(batchRadios.map((r) => r.value?.trim()));
         if (!samples.some((s) => batches.has(s.batchName))) return;
@@ -215,10 +243,10 @@ function decorate(root) {
 
     // Bold: the most used sample of those shown (the chosen batch's). Every
     // live sample tells its usage on hover.
-    const shown = radios.map((r) => byId.get(r.value?.trim())).filter(Boolean);
+    const shown = radios.map(sampleOf).filter(Boolean);
     const best = mostUsed(shown);
     for (const radio of radios) {
-        const s = byId.get(radio.value?.trim());
+        const s = sampleOf(radio);
         let title = "";
         if (s === best && s) title = `Most used sample of this batch — ${describe(s)}`;
         else if (s && !s.depleted) title = describe(s);

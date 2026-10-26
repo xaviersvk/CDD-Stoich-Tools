@@ -27,11 +27,10 @@
 
 import { post } from "../bus.js";
 import { EVENTS, EVENT_SOURCE } from "../../shared/event-types.js";
+import { createDragBox, dragArea } from "../../shared/drag-box.js";
 
 const BRUSH_RECT_SELECTOR = 'g[class^="brush"] > rect';
 const MAX_WALK = 80;
-// Below this many pixels in both directions a drag counts as a click.
-const CLICK_SLOP = 3;
 // A click acts on points whose centre is this close to the cursor.
 const CLICK_RADIUS = 6;
 
@@ -159,51 +158,8 @@ function plotAt(x, y) {
     return null;
 }
 
-function makeBox(markOutliers) {
-    const box = document.createElement("div");
-    box.setAttribute("data-cdd-dose-response-drag", "1");
-    const colour = markOutliers ? "#c62828" : "#455a64";
-    Object.assign(box.style, {
-        position: "fixed",
-        zIndex: "2147483647",
-        pointerEvents: "none",
-        border: `1.5px dashed ${colour}`,
-        background: markOutliers ? "rgba(198, 40, 40, 0.06)" : "rgba(69, 90, 100, 0.06)",
-        boxSizing: "border-box",
-    });
-
-    const label = document.createElement("span");
-    label.textContent = markOutliers ? "Mark outliers" : "Unmark outliers";
-    Object.assign(label.style, {
-        position: "absolute",
-        left: "0",
-        top: "-18px",
-        font: "600 11px/16px system-ui, sans-serif",
-        color: colour,
-        whiteSpace: "nowrap",
-    });
-    box.appendChild(label);
-    document.body.appendChild(box);
-    return box;
-}
-
-function selection(d) {
-    return {
-        left: Math.min(d.x0, d.x1),
-        right: Math.max(d.x0, d.x1),
-        top: Math.min(d.y0, d.y1),
-        bottom: Math.max(d.y0, d.y1),
-    };
-}
-
 function drawBox(d) {
-    const s = selection(d);
-    Object.assign(d.box.style, {
-        left: `${s.left}px`,
-        top: `${s.top}px`,
-        width: `${s.right - s.left}px`,
-        height: `${s.bottom - s.top}px`,
-    });
+    d.box.draw(dragArea(d.x0, d.y0, d.x1, d.y1));
 }
 
 // Mark (or unmark) every point whose centre lies in `area`. Returns how many
@@ -283,7 +239,11 @@ function onPointerDown(event) {
         y0: event.clientY,
         x1: event.clientX,
         y1: event.clientY,
-        box: makeBox(markOutliers),
+        box: createDragBox(
+            markOutliers ? "mark" : "unmark",
+            markOutliers ? "Mark outliers" : "Unmark outliers",
+            "data-cdd-dose-response-drag"
+        ),
     };
     drawBox(drag);
 }
@@ -306,8 +266,8 @@ function onPointerUp(event) {
     d.x1 = event.clientX;
     d.y1 = event.clientY;
 
-    let area = selection(d);
-    if (area.right - area.left < CLICK_SLOP && area.bottom - area.top < CLICK_SLOP) {
+    let area = dragArea(d.x0, d.y0, d.x1, d.y1);
+    if (area.isClick) {
         area = {
             left: d.x1 - CLICK_RADIUS,
             right: d.x1 + CLICK_RADIUS,

@@ -23,12 +23,11 @@
 
 import { EVENTS, EVENT_SOURCE } from "../../shared/event-types.js";
 import { post } from "../bus.js";
+import { createDragBox, dragArea, touches } from "../../shared/drag-box.js";
 
 const WELL_SELECTOR = "td.heat-map-well";
 const WELL_ID_RE = /^plate_(\d+)_well_(\d+)_(\d+)$/;
 const FLAG_HREF_RE = /^(\/vaults\/\d+\/readouts\/\d+\/flag_as_outlier)(?:\?|$)/;
-// Below this many pixels in both directions a drag counts as a click.
-const CLICK_SLOP = 3;
 // PUTs in flight at once.
 const CONCURRENCY = 4;
 const STATUS_MS = 2500;
@@ -63,34 +62,6 @@ function wellReadout(td) {
     return null;
 }
 
-function makeBox(flag) {
-    const box = document.createElement("div");
-    box.setAttribute("data-cdd-heat-map-drag", "1");
-    const colour = flag ? "#c62828" : "#455a64";
-    Object.assign(box.style, {
-        position: "fixed",
-        zIndex: "2147483647",
-        pointerEvents: "none",
-        border: `1.5px dashed ${colour}`,
-        background: flag ? "rgba(198, 40, 40, 0.06)" : "rgba(69, 90, 100, 0.06)",
-        boxSizing: "border-box",
-    });
-
-    const label = document.createElement("span");
-    label.textContent = flag ? "Flag outliers" : "Unflag outliers";
-    Object.assign(label.style, {
-        position: "absolute",
-        left: "0",
-        top: "-18px",
-        font: "600 11px/16px system-ui, sans-serif",
-        color: colour,
-        whiteSpace: "nowrap",
-    });
-    box.appendChild(label);
-    document.body.appendChild(box);
-    return box;
-}
-
 // A small label where the drag ended: progress, then the result.
 function makeStatus(x, y) {
     const el = document.createElement("div");
@@ -121,23 +92,8 @@ function makeStatus(x, y) {
     };
 }
 
-function selection(d) {
-    return {
-        left: Math.min(d.x0, d.x1),
-        right: Math.max(d.x0, d.x1),
-        top: Math.min(d.y0, d.y1),
-        bottom: Math.max(d.y0, d.y1),
-    };
-}
-
 function drawBox(d) {
-    const s = selection(d);
-    Object.assign(d.box.style, {
-        left: `${s.left}px`,
-        top: `${s.top}px`,
-        width: `${s.right - s.left}px`,
-        height: `${s.bottom - s.top}px`,
-    });
+    d.box.draw(dragArea(d.x0, d.y0, d.x1, d.y1));
 }
 
 // Wells of `table` the area touches whose readout is not yet in the wanted
@@ -145,8 +101,7 @@ function drawBox(d) {
 function wellsToChange(table, area, flag) {
     const out = [];
     for (const td of table.querySelectorAll(WELL_SELECTOR)) {
-        const r = td.getBoundingClientRect();
-        if (r.right < area.left || r.left > area.right || r.bottom < area.top || r.top > area.bottom) continue;
+        if (!touches(area, td.getBoundingClientRect())) continue;
         const readout = wellReadout(td);
         if (readout && readout.flagged !== flag) out.push(readout);
     }
@@ -259,7 +214,7 @@ function onPointerDown(event) {
         y0: event.clientY,
         x1: event.clientX,
         y1: event.clientY,
-        box: makeBox(flag),
+        box: createDragBox(flag ? "mark" : "unmark", flag ? "Flag outliers" : "Unflag outliers", "data-cdd-heat-map-drag"),
     };
     drawBox(drag);
 }
@@ -282,10 +237,7 @@ function onPointerUp(event) {
     d.x1 = event.clientX;
     d.y1 = event.clientY;
 
-    let area = selection(d);
-    if (area.right - area.left < CLICK_SLOP && area.bottom - area.top < CLICK_SLOP) {
-        area = { left: d.x1, right: d.x1, top: d.y1, bottom: d.y1 };
-    }
+    const area = dragArea(d.x0, d.y0, d.x1, d.y1);
 
     const status = makeStatus(d.x1, d.y1);
     let wells;

@@ -29,6 +29,13 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   rectangle; a move under 3 px is still a click, so click, Ctrl-click and
   Shift-click keep their meaning. Escape cancels; the click ending a drag is
   swallowed. Spec: `docs/superpowers/specs/2026-10-26-box-selection-drag-design.md`.
+- **Only batch chosen in Create a New Sample** (`content/features/ui-fixes/sample-single-batch.js`):
+  when the Batch select (`[id="sample.batch_id"]`) opens empty and offers
+  exactly one batch, it is chosen. The options exist only while the MUI menu
+  is open, so the menu is opened once with its popover hidden, read, and
+  either the batch is clicked or the menu closed. Each select is tried once;
+  a dialog "Duplicate sample" fills is marked `data-cdd-sample-duplicate`
+  and left alone.
 
 ### Changed
 - **One drag box for every area gesture** (`shared/drag-box.js`): the dashed

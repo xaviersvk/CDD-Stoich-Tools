@@ -17,6 +17,8 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 Pick positions for new samples by dragging over the box: **Shift**-drag adds the empty positions, **Ctrl**-drag removes them — the same box as for outliers.
 
+- *Create a New Sample* chooses the batch when there is only one.
+
 ## 19.3.1 — 2026-10-26
 
 Fixed: synonyms in brackets after batch links, and in the panel's Synonym field, show again after CDD changed its molecule page.

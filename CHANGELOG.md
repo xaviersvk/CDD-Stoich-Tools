@@ -19,6 +19,24 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [19.4.0] — 2026-10-26
+
+### Added
+- **Drag to select positions in a box** (`content/features/box-selection/overlay.js`):
+  in the box picker of multi-position sample create, Shift-drag adds every
+  empty well the box touches to the selection and Ctrl/Cmd-drag removes the
+  wells it touches. Occupied wells are skipped as with the Shift-click
+  rectangle; a move under 3 px is still a click, so click, Ctrl-click and
+  Shift-click keep their meaning. Escape cancels; the click ending a drag is
+  swallowed. Spec: `docs/superpowers/specs/2026-10-26-box-selection-drag-design.md`.
+
+### Changed
+- **One drag box for every area gesture** (`shared/drag-box.js`): the dashed
+  box and label the heat map and dose-response outlier drags each drew on
+  their own now come from one module, with the picker as third user. Red
+  marks, grey unmarks, blue selects. `dragArea` / `touches` are pure and
+  tested (`tests/drag-box.test.js`).
+
 ## [19.3.1] — 2026-10-26
 
 ### Fixed

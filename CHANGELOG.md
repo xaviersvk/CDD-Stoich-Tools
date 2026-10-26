@@ -73,6 +73,13 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   with "the edit form never appeared". Both hrefs are accepted; the form it
   opens is unchanged (`specified_batch_<id>_field_<def>`, PUT to
   `/batches/<id>`). Verified on entry 1000000814's product batch 1000318374.
+- **Printed sheet showed "Location: [object Object]"**
+  (`inject/parsers/print-data.js`, `content/features/print-buttons.js`): the
+  entry's stripped sample copy carries `location: { value: null }`, and the
+  parser fell back to the object itself. It now takes only a string, and
+  the print fills a missing location from the inventory sample the panel
+  has already loaded (`peekRawMoleculeSamples`, by sample and molecule id),
+  so the sheet shows the full location as the panel does.
 
 ## [19.4.0] — 2026-10-26
 

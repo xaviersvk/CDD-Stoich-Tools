@@ -238,6 +238,28 @@ async function runDictation(blob, origin, entryText, entryKey) {
 // for them an answer unlike the source is fine; only one still in
 // Slovak/Czech is refused. `ask`: the source is a request about the entry
 // (buildAskMessages), not text to translate. True when a card came of it.
+// The numbers the English dropped, put back by the model in one more round —
+// the same revision a Reply makes, with the missing values as the reply.
+// → { english, parsed } or null when the round failed.
+async function repairLostNumbers(english, lost, { rows, entryText, mentionBlock, askMissing }) {
+    const values = lost.map((l) => l.text).join(", ");
+    step("translating", `Putting back what the English dropped: ${values}`);
+    const messages = buildReviseMessages(
+        english,
+        `The DRAFT dropped these values; put each one back where it belongs, in digits: ${values}.`,
+        { rows, entryText, mentionBlock, askMissing }
+    );
+    const answer = await chrome.runtime.sendMessage({
+        type: AI_CHAT_MESSAGE,
+        id: newRequestId(),
+        messages: withHouseRules(messages, getAiWriteUpView().rules),
+    });
+    if (!answer?.ok) return null;
+    const parsed = parseLlmJson(answer.content);
+    const text = cleanDictationAnswer(answerText(answer.content, parsed));
+    return text ? { english: text, parsed } : null;
+}
+
 async function toEnglishCard(args) {
     const {
         source, sourceLabel, label, rows, mentions, entryText, entryKey, startedAt,
@@ -291,24 +313,45 @@ async function toEnglishCard(args) {
     // JSON like Polish entry's: the English and what it says about the
     // table. An answer that is not JSON is most likely the English itself —
     // shown, with no Checks.
-    const parsed = parseLlmJson(answer.content);
-    const english = cleanDictationAnswer(answerText(answer.content, parsed));
+    let parsed = parseLlmJson(answer.content);
+    let english = cleanDictationAnswer(answerText(answer.content, parsed));
     // A model that echoes the source back (small models do) is reported
     // rather than shown as if it were the translation.
     if (!english || looksUntranslated(english, mayBeEnglish ? "" : source)) {
         step("idle", `${aiErrorMessage({ error: "untranslated", model: answer.model })} ${sourceLabel}: “${source}”`);
         return false;
     }
-    const at = Date.now();
-    const segments = splitMentions(english, mentions);
-    // Slots the table answers (yield, the product's mass) come filled in.
-    prefillSlots(segments, { yieldText: tableYieldText(rows), productMass: productMassText(rows) });
     // Numbers the English dropped. Not for Ask: its answer is new text, not
     // the request rewritten.
     // A revision must keep what the draft said and add what the reply said.
     const lostFrom = revise ? `${revise.draftPlain}
 ${source}` : source;
-    const lost = ask ? [] : lostQuantities(lostFrom, mentionsToPlain(segments));
+    const toSegments = (text) => {
+        const segs = splitMentions(text, mentions);
+        // Slots the table answers (yield, the product's mass) come filled in.
+        prefillSlots(segs, { yieldText: tableYieldText(rows), productMass: productMassText(rows) });
+        return segs;
+    };
+    let segments = toSegments(english);
+    let lost = ask ? [] : lostQuantities(lostFrom, mentionsToPlain(segments));
+
+    // One repair round before anything is shown: the English goes back with
+    // the numbers it dropped, as a Reply would send it. Kept only when it
+    // loses fewer numbers and is still English; otherwise the first answer
+    // stands and the Checks list what is missing, as before.
+    if (lost.length) {
+        const repaired = await repairLostNumbers(english, lost, { rows, entryText, mentionBlock, askMissing });
+        if (repaired && !looksUntranslated(repaired.english, mayBeEnglish ? "" : source)) {
+            const repairedSegments = toSegments(repaired.english);
+            const stillLost = lostQuantities(lostFrom, mentionsToPlain(repairedSegments));
+            if (stillLost.length < lost.length) {
+                ({ english, parsed } = repaired);
+                segments = repairedSegments;
+                lost = stillLost;
+            }
+        }
+    }
+    const at = Date.now();
     const card = {
         entryKey,
         segments,

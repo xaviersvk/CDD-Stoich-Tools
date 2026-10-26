@@ -14,7 +14,7 @@
 // from getSynonyms means nobody has asked yet.
 
 import { getMoleculePageInfo } from "./molecule-page.js";
-import { extractSynonymsText } from "./molecule-image.js";
+import { extractSynonymList } from "./molecule-image.js";
 import { readBatchFieldsByName } from "./batch-registration-props.js";
 import { splitSynonyms } from "../../shared/pretty-name.js";
 
@@ -85,7 +85,7 @@ export function loadSynonyms(vaultId, moleculeId) {
 
     const promise = getMoleculePageInfo(vaultId, id)
         .then(({ doc, batchFieldDefs }) => {
-            const list = splitSynonyms(extractSynonymsText(doc));
+            const list = extractSynonymList(doc);
             lists.set(id, list);
             batchesByMolecule.set(id, readBatchFieldsByName(doc, batchFieldDefs));
             failures.delete(id);

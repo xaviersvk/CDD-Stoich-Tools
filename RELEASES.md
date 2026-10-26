@@ -13,6 +13,10 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 19.3.1 — 2026-10-26
+
+Fixed: synonyms in brackets after batch links, and in the panel's Synonym field, show again after CDD changed its molecule page.
+
 ## 19.3.0 — 2026-10-22
 
 Flag outliers on a run heat map in one go: **Shift**-drag a box over the wells, **Ctrl**-drag to unflag. It applies to the readout the heat map shows and saves at once, like CDD's own flag. Switch off in *Settings → Plate QC*.

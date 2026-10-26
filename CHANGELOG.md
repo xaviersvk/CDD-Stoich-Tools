@@ -19,6 +19,21 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [19.3.1] — 2026-10-26
+
+### Fixed
+- **Synonyms after batch links came back empty** (`api/molecule-image.js`):
+  CDD no longer prints the molecule page's "Synonyms" row in the server
+  HTML — the list now travels only in the molecule-level
+  RegistrationFormRenderer's `react_props.synonyms`
+  (`[{ synonym, index, ... }]`) and React draws it. `extractSynonymList`
+  reads those props first (renderer with `resource_type: "molecule"`,
+  sorted by `index`) and keeps the old `.molecule_field` row as a fallback.
+  It replaces `extractSynonymsText`; every synonym reader shares it, so the
+  stoichiometry panel's Synonym field, row names and the inventory tooltip
+  are fixed by the same change. Entries are taken as CDD stores them, no
+  longer re-split on ", ".
+
 ## [19.3.0] — 2026-10-22
 
 ### Added

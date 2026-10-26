@@ -13,6 +13,7 @@
 // failures -- for the session, so repeated hovers never re-request or re-render.
 
 import { renderSmilesToSvg } from "./structure-render.js";
+import { splitSynonyms } from "../../shared/pretty-name.js";
 
 const LOG_PREFIX = "[CDD inventory plugin]";
 
@@ -115,32 +116,59 @@ function extractSmiles(doc) {
     return null;
 }
 
-// The molecule definition list carries a "Synonyms" row; read its raw value,
-// every synonym still joined the way CDD joined them. Also used by
-// molecule-page.js and by batch-fields.js, which parse the same page HTML.
-export function extractSynonymsText(doc) {
+// A molecule's synonyms, in CDD's order; [] when it has none.
+//
+// CDD used to print them as a "Synonyms" row of the molecule definition list.
+// Since 2026-10 that row is gone from the page HTML: the list only travels in
+// the molecule-level RegistrationFormRenderer's props, as
+// `synonyms: [{ synonym: "pPWWP-LEDGF", index, ... }]`, and React draws it.
+// The props are read first; the old row stays as a fallback for a page that
+// still has it. Also used by molecule-synonyms.js and by batch-fields.js,
+// which parse the same page HTML.
+export function extractSynonymList(doc) {
+    const fromProps = synonymsFromRendererProps(doc);
+    if (fromProps) return fromProps;
+
     const fields = doc.querySelectorAll(".molecule_field");
     for (const field of fields) {
         const label = field.querySelector("dt")?.textContent?.trim().toLowerCase();
         if (label === "synonyms" || label === "synonym") {
             const dd = field.querySelector("dd");
-            if (!dd) return null;
+            if (!dd) return [];
             // <br>-separated synonyms would silently concatenate through
             // textContent; turn the breaks into real separators first.
             for (const br of dd.querySelectorAll("br")) br.replaceWith(", ");
-            return dd.textContent?.trim() || null;
+            return splitSynonyms(dd.textContent);
         }
+    }
+    return [];
+}
+
+// null when no molecule-level renderer carries a synonyms array ("not on this
+// page"), as opposed to [] ("the molecule has none"). The batch, sample and
+// inventory renderers repeat the same list; the molecule one owns it.
+function synonymsFromRendererProps(doc) {
+    for (const el of doc.querySelectorAll('[component_class="RegistrationFormRenderer"]')) {
+        let props;
+        try {
+            props = JSON.parse(el.getAttribute("react_props") || "");
+        } catch {
+            continue;
+        }
+        if (props?.resource_type !== "molecule" || !Array.isArray(props.synonyms)) continue;
+
+        return props.synonyms
+            .slice()
+            .sort((a, b) => (a?.index ?? 0) - (b?.index ?? 0))
+            .map((entry) => String(entry?.synonym ?? "").trim())
+            .filter(Boolean);
     }
     return null;
 }
 
 // Only the first synonym — what the panel's Synonym field has always shown.
-// CDD joins multiple synonyms with ", " / "; ", so split on a separator
-// (comma/semicolon followed by whitespace) -- NOT a bare comma, which would
-// mangle names that contain one, e.g. "N,N-diethylhydroxylamine".
 export function extractSynonym(doc) {
-    const value = extractSynonymsText(doc);
-    return value ? value.split(/\s*[,;]\s+/)[0].trim() : null;
+    return extractSynonymList(doc)[0] ?? null;
 }
 
 async function fetchMoleculeData(vaultId, moleculeId) {

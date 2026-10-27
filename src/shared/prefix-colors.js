@@ -27,18 +27,27 @@ export const PREFIX_COLORS_STORAGE_KEY = "cddPrefixColors";
  * Prefix parsing — the ONE place that defines what a "prefix" is
  * ------------------------------------------------------------------ */
 
-// How many trailing dash-segments to strip, counting from the right.
-//   IXX-CL-0000002-001-SM003035  →  IXX-CL  (3rd dash from right)
-//   PHA-0265229-001-S001095       →  PHA     (3rd dash from right)
-const PREFIX_DASH_INDEX = 3;
+// A prefix is one or more plain dash-separated segments: no spaces, brackets
+// or commas. That rules out systematic molecule names like
+// "(E)-2-benzyl-1-..." which have dashes too.
+const PREFIX_RE = /^[A-Za-z0-9_]+(?:-[A-Za-z0-9_]+)*$/;
+
+// A full Sample ID: <prefix>-<digits>-<digits>-<letter-led sample code>.
+//   IXX-CL-0000002-001-SM003035      →  IXX-CL
+//   PHA-0265229-001-S001095          →  PHA
+//   I88-SM-0060050-005-I88S034537    →  I88-SM
+const SAMPLE_ID_RE = /^(.+)-\d+-\d+-[A-Za-z][A-Za-z0-9]*$/;
+
+export function isValidPrefix(prefix) {
+    return typeof prefix === "string" && PREFIX_RE.test(prefix.trim());
+}
 
 /**
  * extractPrefix(sampleId) — pure BUSINESS logic, no UI, no storage.
  *
  * Input : a Sample ID string, e.g. "IXX-CL-0000002-001-SM003035".
- * Output: everything before the PREFIX_DASH_INDEX-th dash from the RIGHT,
- *         or null when the id is not a string, is blank, or has fewer dashes
- *         than PREFIX_DASH_INDEX.
+ * Output: everything before the batch number, or null when the text is not
+ *         shaped like a Sample ID (a molecule name, a batch-only id, blank).
  *
  * Called by: getColorForSampleId() below, and (indirectly) every visualization.
  * Nobody should re-implement this; that is the whole point of the module.
@@ -46,24 +55,10 @@ const PREFIX_DASH_INDEX = 3;
 export function extractPrefix(sampleId) {
     if (typeof sampleId !== "string") return null;
 
-    const trimmed = sampleId.trim();
-    if (!trimmed) return null;
+    const match = SAMPLE_ID_RE.exec(sampleId.trim());
+    if (!match || !PREFIX_RE.test(match[1])) return null;
 
-    // Walk from right; cut at the PREFIX_DASH_INDEX-th dash from the end.
-    let cut = -1;
-    let seen = 0;
-    for (let i = trimmed.length - 1; i >= 0; i -= 1) {
-        if (trimmed[i] !== "-") continue;
-        seen += 1;
-        if (seen === PREFIX_DASH_INDEX) {
-            cut = i;
-            break;
-        }
-    }
-
-    if (cut <= 0) return null;
-
-    return trimmed.slice(0, cut);
+    return match[1];
 }
 
 /**
@@ -116,6 +111,10 @@ export function isValidHexColor(value) {
 // show up in the popup while waiting for the user to assign a colour — we never
 // pick a colour for them. An "" colour means "known prefix, no colour yet" and
 // getColorForSampleId() treats it as a fallback (no tint).
+//
+// A colourless entry that is not a valid prefix is dropped: older versions
+// discovered molecule names as prefixes. An entry the user coloured is kept
+// whatever its shape.
 export function sanitizePrefixColorMap(raw) {
     const out = {};
     if (!raw || typeof raw !== "object") return out;
@@ -124,7 +123,9 @@ export function sanitizePrefixColorMap(raw) {
         if (typeof prefix !== "string") continue;
         const key = prefix.trim();
         if (!key) continue;
-        out[key] = isValidHexColor(color) ? color.trim() : "";
+        const hasColor = isValidHexColor(color);
+        if (!hasColor && !isValidPrefix(key)) continue;
+        out[key] = hasColor ? color.trim() : "";
     }
 
     return out;
@@ -138,13 +139,21 @@ export function sanitizePrefixColorMap(raw) {
  * getPrefixColorMap() — INFRASTRUCTURE. Reads the saved map from
  * chrome.storage.local and returns a sanitised Record<prefix, hexColor>.
  * Returns {} on any error or when nothing has been saved yet.
+ * When sanitising dropped entries, the cleaned map is written back so the junk
+ * leaves storage too.
  *
  * Called by: the popup (to render the editor) and initPrefixColorCache() below.
  */
 export async function getPrefixColorMap() {
     try {
         const result = await chrome.storage.local.get(PREFIX_COLORS_STORAGE_KEY);
-        return sanitizePrefixColorMap(result?.[PREFIX_COLORS_STORAGE_KEY]);
+        const raw = result?.[PREFIX_COLORS_STORAGE_KEY];
+        const map = sanitizePrefixColorMap(raw);
+        if (raw && typeof raw === "object"
+            && Object.keys(raw).length !== Object.keys(map).length) {
+            await savePrefixColorMap(map);
+        }
+        return map;
     } catch {
         return {};
     }

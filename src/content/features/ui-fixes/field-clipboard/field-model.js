@@ -120,6 +120,21 @@ export function countPlan(plan) {
     return { add, skip };
 }
 
+const TYPE_LABELS = { PickList: "Pick List", LongText: "Long Text", BatchLink: "Batch Link" };
+
+export function typeLabel(type) {
+    return TYPE_LABELS[type] || type;
+}
+
+// A field in one phrase, the way the settings page would show it:
+// "Number", "Pick List, 4 values".
+export function describeField(field) {
+    const type = typeLabel(field?.type || "");
+    if (field?.type !== "PickList") return type;
+    const count = field.pickList?.length || 0;
+    return `${type}, ${count} value${count === 1 ? "" : "s"}`;
+}
+
 // The option text a pasted field needs in the target's required select.
 export function requiredChoice(field) {
     return field.required === "required" ? "is required" : "is optional";

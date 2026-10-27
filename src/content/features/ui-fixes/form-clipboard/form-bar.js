@@ -29,6 +29,14 @@
 //   resolve(neutral, map)             → { form, missing }
 //   describe(neutral, map)            → a note for a form that will be made
 //   clipboard: { read(), write(entry), onChanged(callback) }
+// Optional, for a page whose forms point at fields of its own settings pages:
+//   fieldDefinitions(neutrals, map)   → stored on the copy as entry.fieldDefinitions
+//   missingFields(plan, entry, vaultId) → [{ kind, label, href, fields: [{ name, definition }] }]
+//   copyMissingFields(groups, entry)  → puts the definitions on the field clipboard
+//
+// When a form needs fields the target lacks, Paste lists them under the
+// forms, one linked line per settings page, and offers to put them on the
+// field clipboard; making them stays a Paste and an Update on that page.
 
 import {
     buildButtonBar,
@@ -39,6 +47,7 @@ import {
     plural,
     when,
 } from "../../../utils/settings-card.js";
+import { describeField } from "../field-clipboard/field-model.js";
 import { vaultIdFromPath, vaultName } from "./api.js";
 import { PLAN_ADD, PLAN_MISSING_FIELDS, PLAN_SAME_NAME, explainProblems, suggestName } from "./form-model.js";
 
@@ -121,7 +130,9 @@ export function buildFormBar(adapter) {
 
         action.addEventListener("click", async () => {
             const kept = chosen();
-            await adapter.clipboard.write({ vaultId, vaultName: vaultName(), copiedAt: Date.now(), forms: kept });
+            const clip = { vaultId, vaultName: vaultName(), copiedAt: Date.now(), forms: kept };
+            if (adapter.fieldDefinitions) clip.fieldDefinitions = adapter.fieldDefinitions(kept, map);
+            await adapter.clipboard.write(clip);
             card.hidden = true;
             status.textContent = `Copied ${plural(kept.length, "form")} from ${vaultName() || "this vault"}. Press Paste here to duplicate them, or on ${adapter.pageName} in another vault.`;
         });
@@ -194,8 +205,58 @@ export function buildFormBar(adapter) {
         }
         judge();
 
+        const missing = adapter.missingFields ? adapter.missingFields(plan, entry, vaultId) : [];
+        if (missing.length) action.parentElement.before(missingBlock(missing, entry));
+
         action.addEventListener("click", () => runPaste(chosen(), map, action, cancel, rows));
     });
+
+    /* ----- paste: what to make first ----- */
+    // One line per settings page, linked: "Run Fields: Temperature (Number),
+    // Solvent (Pick List, 4 values)". The button hands the definitions to
+    // the field clipboard, where that page's own Paste picks them up.
+    function missingBlock(groups, entry) {
+        const source = entry.vaultName || `vault ${entry.vaultId}`;
+        const block = el("div", "cdd-fc-missing");
+        block.append(el("div", "cdd-fc-missing-head", "Missing in this vault. Make these first:"));
+        for (const group of groups) {
+            const line = el("div", "cdd-fc-missing-line");
+            const link = el("a", "", group.label);
+            link.href = group.href;
+            const words = group.fields.map(({ name, definition }) =>
+                (definition ? `${name} (${describeField(definition)})` : name));
+            line.append(link, document.createTextNode(`: ${words.join(", ")}`));
+            block.append(line);
+        }
+
+        const unknown = groups.flatMap((group) => group.fields).filter((field) => !field.definition);
+        if (unknown.length) {
+            block.append(el("div", "cdd-fc-why",
+                `No definition for ${unknown.map((field) => field.name).join(", ")}: copy the forms again in ${source}.`));
+        }
+
+        const copyable = groups.filter((group) => group.fields.some((field) => field.definition));
+        if (!copyable.length) return block;
+        const pages = copyable.map((group) => group.label).join(" and ");
+        const count = copyable.flatMap((group) => group.fields).filter((field) => field.definition).length;
+        const foot = el("div", "cdd-fc-missing-foot");
+        const button = el("button", "cdd-fc-button", `Copy ${plural(count, "missing field")}`);
+        button.type = "button";
+        foot.append(button, el("span", "cdd-fc-detail", `Replaces what the field clipboard holds for ${pages}.`));
+        block.append(foot);
+
+        button.addEventListener("click", async () => {
+            try {
+                await adapter.copyMissingFields(copyable, entry);
+            } catch (error) {
+                status.textContent = `Copy failed — ${error.message}.`;
+                return;
+            }
+            button.disabled = true;
+            status.textContent = `Copied ${plural(count, "field")}. On ${pages}: press Paste, then Update. Then come back here and press Paste again.`;
+        });
+        return block;
+    }
 
     /* ----- paste: the run ----- */
     async function runPaste(todo, map, action, cancel, rows) {

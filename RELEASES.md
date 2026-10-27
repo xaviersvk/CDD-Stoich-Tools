@@ -13,6 +13,13 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 19.7.0 — 2026-10-27
+
+When a protocol form can't be pasted because this vault lacks some of its fields, *Paste* now lists them with their type, linked to *Protocol Fields* / *Run Fields*.
+
+- *Copy N missing fields* puts them on the field clipboard: on that page press *Paste*, then *Update*, then come back and *Paste* the forms again.
+- Works for forms copied from this version on; copy older ones again.
+
 ## 19.6.0 — 2026-10-26
 
 AI write-up can now use your own **OpenAI** or **Anthropic (Claude)** API key, not only CERIT-SC: pick it in *Settings → AI write-up → AI service*.

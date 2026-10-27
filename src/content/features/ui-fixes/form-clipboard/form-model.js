@@ -11,10 +11,15 @@
 // a numeric id under a key this file does not know is not even copied,
 // because shipping an unknown id is exactly the mistake this exists to stop.
 //
-// No DOM, no storage; the one import is the tree walk shared with the
-// registration form model.
+// When the target lacks a field, the paste cannot make the form, but it can
+// say what to make first: the copy carries the definitions of the fields
+// its forms use, in the field clipboard's shape, ready to hand over.
+//
+// No DOM, no storage; the imports are the tree walk shared with the
+// registration form model and the field clipboard's row normalizer.
 
 import { formWalker } from "../../../utils/form-walk.js";
+import { normalizeRows } from "../field-clipboard/field-model.js";
 
 export const PLAN_ADD = "add";
 export const PLAN_SAME_NAME = "same-name";
@@ -158,6 +163,46 @@ export function planForms(neutralForms, targetNames, targetMap) {
         }
         return { form, status: PLAN_ADD, note: "", missing: [] };
     });
+}
+
+// The kinds of field a protocol form points at, in the order a user makes
+// them: each is a settings page of its own.
+export const FIELD_KINDS = ["protocol", "run"];
+
+// The definitions behind the fields `neutralForms` use, per kind, in the
+// field clipboard's shape. Normalized against the whole source list first:
+// a required group is "is required" or "or X is required" only once all of
+// its members are counted.
+export function usedFieldDefinitions(neutralForms, sourceMap) {
+    const used = Object.fromEntries(FIELD_KINDS.map((kind) => [kind, new Set()]));
+    for (const form of neutralForms || []) {
+        for (const { component, name } of formFieldNames(form)) used[component]?.add(name);
+    }
+    return Object.fromEntries(FIELD_KINDS.map((kind) => [
+        kind,
+        normalizeRows(sourceMap?.[kind]).filter((field) => used[kind].has(field.name)),
+    ]));
+}
+
+// What the target lacks for the forms a paste plan cannot make:
+// [{ kind, fields: [{ name, definition | null }] }], kinds with nothing
+// missing left out. `definition` is null for a clipboard copied before the
+// definitions were carried.
+export function missingFields(plan, fieldDefinitions) {
+    const out = [];
+    for (const kind of FIELD_KINDS) {
+        const names = [];
+        for (const entry of plan || []) {
+            if (entry.status !== PLAN_MISSING_FIELDS) continue;
+            for (const { component, name } of entry.missing || []) {
+                if (component === kind && !names.includes(name)) names.push(name);
+            }
+        }
+        if (!names.length) continue;
+        const known = new Map((fieldDefinitions?.[kind] || []).map((field) => [field.name, field]));
+        out.push({ kind, fields: names.map((name) => ({ name, definition: known.get(name) || null })) });
+    }
+    return out;
 }
 
 // A name for a copy that lands beside its original: "X (copy)", then

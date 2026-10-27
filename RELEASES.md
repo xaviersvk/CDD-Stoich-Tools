@@ -13,6 +13,14 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 19.8.0 — 2026-10-27
+
+When a protocol form can't be pasted because this vault lacks some of its fields, *Paste* now lists them with their type, linked to *Protocol Fields* / *Run Fields*.
+
+- *Copy N missing fields* puts them on the field clipboard: on that page press *Paste*, then *Update*, then come back and *Paste* the forms again.
+- Works for forms copied from this version on; copy older ones again.
+- *Copy forms* and *Paste* have *All* / *None* to tick or untick every form.
+
 ## 19.7.0 — 2026-10-27
 
 *Settings → Prefix colours* no longer fills up with molecule names; the ones already there are removed. Prefixes you gave a colour stay.

@@ -153,6 +153,13 @@ export function injectFieldClipboardStyles() {
     .cdd-fc-order { min-width: 14px; color: rgba(0, 0, 0, 0.6); text-align: right; }
     .cdd-fc-row[hidden] { display: none; }
 
+    /* Form paste: the fields a form needs that this vault lacks, one line
+       per settings page. The head is bold; the page names are links. */
+    .cdd-fc-missing { display: flex; flex-direction: column; gap: 4px; }
+    .cdd-fc-missing-head { font-weight: 600; }
+    .cdd-fc-missing-line a { color: #1565c0; font-weight: 600; }
+    .cdd-fc-missing-foot { display: flex; align-items: baseline; gap: 12px; margin-top: 4px; }
+
     .cdd-fc-foot { display: flex; align-items: center; gap: 14px; }
     .cdd-fc-add {
         appearance: none;

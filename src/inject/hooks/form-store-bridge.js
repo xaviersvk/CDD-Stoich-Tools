@@ -11,7 +11,8 @@
 // Protocol (window.postMessage, source EVENT_SOURCE):
 //   FORM_FIELD_MAP_REQUEST { requestId }
 //     -> FORM_FIELD_MAP    { requestId, map: { protocol: [def], run: [def] } | null }
-//        def = { id, name, data_type_name, pick_list_values: [{ id, value, hidden }], disabled }
+//        def = { id, name, data_type_name, pick_list_values: [{ id, value, hidden }], disabled,
+//                required_group_number, unique_value, overwritable, is_single_use }
 
 import { post } from "../bus.js";
 import { EVENTS, EVENT_SOURCE } from "../../shared/event-types.js";
@@ -54,6 +55,12 @@ function reduce(list) {
                 .filter((value) => value && value.id != null)
                 .map((value) => ({ id: value.id, value: String(value.value ?? ""), hidden: !!value.hidden })),
             disabled: !!entry.disabled,
+            // For a form paste that hands missing fields to the field
+            // clipboard. Not measured on this store; absent reads as off.
+            required_group_number: entry.required_group_number ?? null,
+            unique_value: entry.unique_value === true,
+            overwritable: entry.overwritable === true,
+            is_single_use: entry.is_single_use === true,
         }));
 }
 

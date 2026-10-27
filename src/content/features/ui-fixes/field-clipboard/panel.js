@@ -31,6 +31,7 @@ import {
     normalizeRows,
     planPaste,
     requiredChoice,
+    typeLabel,
 } from "./field-model.js";
 import {
     addRow,
@@ -59,12 +60,6 @@ const KNOWN_TYPES = {
     run: ["Text", "LongText", "PickList", "File", "Number", "BatchLink"],
     eln: ["Text", "Number", "Date", "PickList", "File"],
 };
-
-const TYPE_LABELS = { PickList: "Pick List", LongText: "Long Text", BatchLink: "Batch Link" };
-
-function typeLabel(type) {
-    return TYPE_LABELS[type] || type;
-}
 
 async function currentTypes(kind) {
     if (isEditing(kind)) {

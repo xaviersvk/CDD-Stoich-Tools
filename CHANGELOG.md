@@ -19,6 +19,44 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [19.8.0] — 2026-10-27
+
+### Added
+- **A form paste says which fields to make first.** Pasting a protocol form
+  into a vault that lacks some of its protocol or run fields used to stop at
+  *missing fields: A, B*, and the user had to look up each field's type and
+  pick list in the source vault. The Paste card now lists them under the
+  forms, one line per settings page — *Run Fields: Temperature (Number),
+  Solvent (Pick List, 4 values)* — with the page name linked. **Copy N
+  missing fields** writes their definitions to the field clipboard (one entry
+  per kind, replacing what was there; the card says so), so that page's own
+  **Paste** adds them and the user presses *Update*. Creating the fields
+  automatically was considered and dropped: it would write vault settings or
+  press *Update … fields* on the user's behalf.
+- **Copy forms carries the field definitions** its forms use
+  (`entry.fieldDefinitions`), normalized like a field copy: type, visible
+  pick list values, required, unique, overwritable, single use. Built-in
+  fields are left out. A clipboard copied before this version names the
+  missing fields without definitions and asks for a fresh copy.
+- **All / None on the Copy forms and Paste forms cards**, as on the field
+  clipboard's cards (`form-bar.js` `pickButtons()`). Forms that cannot be
+  copied or pasted stay unticked; on Paste, rows whose name clashes are
+  unticked again by the usual name check.
+
+### Technical notes
+- `form-model.js`: `usedFieldDefinitions()` and `missingFields()`.
+  `form-bar.js` takes optional adapter hooks `fieldDefinitions`,
+  `missingFields` and `copyMissingFields` (protocol adapter in `panel.js`;
+  registration forms unchanged).
+- `inject/hooks/form-store-bridge.js` passes `required_group_number`,
+  `unique_value`, `overwritable` and `is_single_use` through when the page
+  store has them. **Not measured** on that store: if they are absent, fields
+  arrive optional and not unique, and the field paste preview shows that.
+- `typeLabel()` moved to `field-clipboard/field-model.js`, beside the new
+  `describeField()`.
+- Tests: `tests/form-paste-missing-fields.test.js`.
+
+---
 ## [19.7.0] — 2026-10-27
 
 ### Fixed

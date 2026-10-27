@@ -83,6 +83,20 @@ export function buildFormBar(adapter) {
         return { list, action, cancel };
     }
 
+    // All / None above a list, as on the field clipboard's cards.
+    function pickButtons(list) {
+        const pick = el("span", "cdd-fc-pick");
+        const all = el("button", "cdd-fc-button", "All");
+        all.type = "button";
+        const none = el("button", "cdd-fc-button", "None");
+        none.type = "button";
+        pick.append(all, none);
+        const tools = el("div", "cdd-fc-section");
+        tools.append(pick);
+        list.before(tools);
+        return { all, none };
+    }
+
     async function load() {
         const [forms, map] = await Promise.all([adapter.list(vaultId), adapter.readMap()]);
         if (!map) throw new Error("could not read the field names behind this page");
@@ -103,6 +117,8 @@ export function buildFormBar(adapter) {
         }
 
         const { list, action } = openListCard(adapter.copyTitle, `${plural(forms.length, "form")} in ${vaultName() || "this vault"}`);
+        const { all, none } = pickButtons(list);
+
         const rows = forms.map((form) => {
             const { form: neutral, unknownIds, missingNames } = adapter.neutralize(form, map);
             const problems = [...unknownIds, ...missingNames];
@@ -126,6 +142,13 @@ export function buildFormBar(adapter) {
             action.textContent = `Copy ${plural(count, "form")}`;
             action.disabled = count === 0;
         }
+        // A form that cannot be copied stays unticked.
+        const setAll = (checked) => {
+            for (const { box } of rows) if (!box.disabled) box.checked = checked;
+            updateCount();
+        };
+        all.addEventListener("click", () => setAll(true));
+        none.addEventListener("click", () => setAll(false));
         updateCount();
 
         action.addEventListener("click", async () => {
@@ -158,6 +181,7 @@ export function buildFormBar(adapter) {
         const { list, action, cancel } = openListCard(adapter.pasteTitle,
             `${plural(entry.forms.length, "form")} from ${entry.vaultName || "vault " + entry.vaultId}, copied ${when(entry.copiedAt)}`
             + (sameVault ? " — the same vault, so each copy needs its own name" : ""));
+        const { all, none } = pickButtons(list);
 
         const rows = plan.map((item) => {
             const line = el("div", "cdd-fc-row");
@@ -203,6 +227,13 @@ export function buildFormBar(adapter) {
         function chosen() {
             return rows.filter((row) => !row.blocked && row.box.checked && !row.box.disabled);
         }
+        // judge() then unticks any row whose name clashes.
+        const setAll = (checked) => {
+            for (const row of rows) if (!row.blocked && !row.box.disabled) row.box.checked = checked;
+            judge();
+        };
+        all.addEventListener("click", () => setAll(true));
+        none.addEventListener("click", () => setAll(false));
         judge();
 
         const missing = adapter.missingFields ? adapter.missingFields(plan, entry, vaultId) : [];

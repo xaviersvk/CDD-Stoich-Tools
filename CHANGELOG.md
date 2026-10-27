@@ -38,6 +38,10 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   pick list values, required, unique, overwritable, single use. Built-in
   fields are left out. A clipboard copied before this version names the
   missing fields without definitions and asks for a fresh copy.
+- **All / None on the Copy forms and Paste forms cards**, as on the field
+  clipboard's cards (`form-bar.js` `pickButtons()`). Forms that cannot be
+  copied or pasted stay unticked; on Paste, rows whose name clashes are
+  unticked again by the usual name check.
 
 ### Technical notes
 - `form-model.js`: `usedFieldDefinitions()` and `missingFields()`.

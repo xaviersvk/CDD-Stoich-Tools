@@ -13,6 +13,10 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 19.7.0 — 2026-10-27
+
+*Settings → Prefix colours* no longer fills up with molecule names; the ones already there are removed. Prefixes you gave a colour stay.
+
 ## 19.6.0 — 2026-10-26
 
 AI write-up can now use your own **OpenAI** or **Anthropic (Claude)** API key, not only CERIT-SC: pick it in *Settings → AI write-up → AI service*.

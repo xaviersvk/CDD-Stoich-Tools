@@ -19,6 +19,22 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [19.7.0] — 2026-10-27
+
+### Fixed
+- **Prefix colours no longer collect molecule names**
+  (`shared/prefix-colors.js`): `extractPrefix` cut any text at its third dash
+  from the right, so systematic names such as `(E)-2-benzyl-1-…` were
+  discovered as Sample ID prefixes and filled *Settings → Prefix colours*. It
+  now accepts only the Sample ID shape `<prefix>-<digits>-<digits>-<letter-led
+  sample code>`, with a prefix of plain dash-separated segments (no spaces,
+  brackets or commas). The inventory box reader (`inject/main.js`
+  `pickInventoryName`) no longer falls back to `molecule_name`.
+- **Existing junk is cleaned out of storage**: `sanitizePrefixColorMap` drops
+  colourless entries that are not valid prefixes, and `getPrefixColorMap`
+  writes the cleaned map back when it dropped anything. Entries the user
+  coloured are kept whatever their shape.
+
 ## [19.6.0] — 2026-10-26
 
 ### Changed

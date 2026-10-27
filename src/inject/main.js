@@ -29,7 +29,6 @@ function pickInventoryName(item) {
     item.sample_identifier ||
     item.name ||
     item.sample_name ||
-    item.molecule_name ||
     item.identifier ||
     (item.sample && (item.sample.sample_identifier || item.sample.name)) ||
     null;

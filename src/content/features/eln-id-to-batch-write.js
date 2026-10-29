@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/eln-id-to-batch-write.js
 //
 // Writing one batch field from the ELN page, without opening a tab and
@@ -95,6 +94,9 @@ function nudgeIntoEditMode(doc, batchId) {
 // the page has to load, React has to build the form, and the form has to be
 // nudged out of read-only. A single frozen "Writing…" for that long reads as
 // a hang, which is exactly how the first live run was reported.
+/**
+ * @param {{ vaultId: any, moleculeId: any, batchId: any, fieldLabel: any, value: any, onStage?: (stage: string) => void }} options
+ */
 export async function writeElnIdToBatch({
     vaultId,
     moleculeId,

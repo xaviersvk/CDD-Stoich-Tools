@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/ui-fixes/slurp-type-default.js
 //
 // The same two conveniences as registration-form-default.js, applied to the
@@ -148,7 +147,7 @@ export async function initSlurpTypeDefault() {
     });
 
     document.addEventListener("change", (event) => {
-        if (event.target?.matches?.(SELECT_SELECTOR)) onUserPickedType(event.target);
+        if (/** @type {Element | null} */ (event.target)?.matches?.(SELECT_SELECTOR)) onUserPickedType(event.target);
     });
 
     const run = watchDocument(sync);

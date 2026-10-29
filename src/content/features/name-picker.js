@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/name-picker.js
 //
 // Puts the molecule's synonyms INSIDE CDD's own Name editor.
@@ -237,7 +236,7 @@ function renderList(paper, candidates, hint) {
 }
 
 async function offerFor(moleculeId, row) {
-    const input = await waitForNameInput();
+    const input = /** @type {HTMLInputElement | null} */ (await waitForNameInput());
     if (!input) return;
 
     // Flagged on the INPUT: the field outlives the editor, a new editor is a

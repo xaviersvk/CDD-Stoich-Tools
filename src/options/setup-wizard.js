@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // setup-wizard.js — the setup guide on the settings page.
 //
 // A short tour a newcomer can click through: each step says, in a chemist's
@@ -172,9 +171,10 @@ const STEPS = [
  * ------------------------------------------------------------------ */
 
 function realRadios(name) {
-    return [...document.querySelectorAll(`.panes input[name="${name}"]`)];
+    return [.../** @type {NodeListOf<HTMLInputElement>} */ (document.querySelectorAll(`.panes input[name="${name}"]`))];
 }
 
+/** @returns {HTMLInputElement | null} */
 function realControl(selector) {
     return document.querySelector(`.panes ${selector}`);
 }
@@ -416,7 +416,7 @@ function buildStep(i) {
         link.type = "button";
         link.addEventListener("click", () => {
             close();
-            document.querySelector(`.rail__item[data-pane="${step.pane}"]`)?.click();
+            /** @type {HTMLElement | null} */ (document.querySelector(`.rail__item[data-pane="${step.pane}"]`))?.click();
         });
         pane.appendChild(link);
     }
@@ -431,9 +431,9 @@ function show(i) {
     for (const s of syncs) s();
 
     root.querySelector(".wizard__stage").replaceChildren(pane);
-    root.querySelector(".wizard__back").disabled = index === 0;
+    /** @type {HTMLButtonElement} */ (root.querySelector(".wizard__back")).disabled = index === 0;
     root.querySelector(".wizard__next").textContent = index === STEPS.length - 1 ? "Finish" : "Next";
-    root.querySelector(".wizard__skip").hidden = index === STEPS.length - 1;
+    /** @type {HTMLElement} */ (root.querySelector(".wizard__skip")).hidden = index === STEPS.length - 1;
 
     const dots = root.querySelector(".wizard__dots");
     dots.replaceChildren();

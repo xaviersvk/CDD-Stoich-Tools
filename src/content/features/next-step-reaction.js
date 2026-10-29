@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/next-step-reaction.js
 //
 // "Copy as next step" on every ELN reaction: a new reaction whose reactants
@@ -168,12 +167,12 @@ function ensureStyles() {
 }
 
 export function ensureNextStepButtons() {
-    const reactions = [...document.querySelectorAll(SELECTORS.reaction)];
+    const reactions = /** @type {HTMLElement[]} */ ([...document.querySelectorAll(SELECTORS.reaction)]);
     if (!reactions.length) return;
     ensureStyles();
 
     reactions.forEach((reactionEl, index) => {
-        const existing = reactionEl.querySelector(`.${BTN_CLASS}`);
+        const existing = /** @type {HTMLElement | null} */ (reactionEl.querySelector(`.${BTN_CLASS}`));
         if (existing?.dataset.reactionIndex === String(index)) return;
         existing?.remove();
 

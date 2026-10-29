@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/ui-fixes/readout-clipboard/api.js
 //
 // The endpoints CDD's own readout editor uses, called the way it calls them:
@@ -6,7 +5,7 @@
 // so every failure carries the status and the server's own words.
 
 function csrfToken() {
-    return document.querySelector('meta[name="csrf-token"]')?.content || "";
+    return /** @type {HTMLMetaElement | null} */ (document.querySelector('meta[name="csrf-token"]'))?.content || "";
 }
 
 function headers(withBody) {

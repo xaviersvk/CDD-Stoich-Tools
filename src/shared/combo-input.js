@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // shared/combo-input.js
 //
 // A text input that also offers a pick-list: type anything, or press ▾ and
@@ -16,6 +15,11 @@
 // `getOptions()` is called each time the menu opens, so the list always
 // reflects the current state.
 
+/**
+ * @param {HTMLInputElement} input
+ * @param {() => string[]} getOptions
+ * @param {{ onPick?: (value: string) => void }} [options]
+ */
 export function makeComboInput(input, getOptions, { onPick } = {}) {
     const wrapper = document.createElement("div");
     wrapper.className = "cdd-combo";

@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 import { EVENT_SOURCE, EVENTS } from "../../shared/event-types.js";
 
 function waitForImages(doc, callback) {
@@ -73,8 +72,8 @@ function printHtmlViaIframe(html) {
 }
 
 export function installPrintDispatcher() {
-    if (window.__CDD_STOICH_TOOLS_PRINT_DISPATCHER__) return;
-    window.__CDD_STOICH_TOOLS_PRINT_DISPATCHER__ = true;
+    if (/** @type {any} */ (window).__CDD_STOICH_TOOLS_PRINT_DISPATCHER__) return;
+    /** @type {any} */ (window).__CDD_STOICH_TOOLS_PRINT_DISPATCHER__ = true;
 
     window.addEventListener("message", (event) => {
         if (event.source !== window) return;

@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 let stylesInjected = false;
 
 export function injectFileDialogStyles() {
@@ -27,7 +26,7 @@ export function injectFileDialogStyles() {
 }
 
 export function enhanceFileDialogLinks() {
-    document.querySelectorAll(".filePreview a").forEach((link) => {
+    /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll(".filePreview a")).forEach((link) => {
         const fullText = link.getAttribute("title")?.trim();
 
         if (!fullText) return;
@@ -76,7 +75,7 @@ export function fixAssociateFileBar() {
     const dialog = document.querySelector("#existing_file_selector_single");
     if (!dialog) return;
 
-    const bar = dialog.querySelector(".buttons-right");
+    const bar = /** @type {HTMLElement | null} */ (dialog.querySelector(".buttons-right"));
     if (!bar) return;
 
     if (bar.dataset.fixed) return;

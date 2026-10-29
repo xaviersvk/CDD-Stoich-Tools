@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/sample-duplicate.js
 //
 // "Duplicate sample" on a molecule's Samples tab: a fourth icon next to
@@ -236,7 +235,7 @@ async function duplicate(header, button) {
         const sample = await fetchSample(match[1], match[2], sampleName);
         if (!sample) throw new Error(`sample ${sampleName} not found`);
 
-        const link = Array.from(document.querySelectorAll("a.editableData-editLink, a"))
+        const link = Array.from(/** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll("a.editableData-editLink, a")))
             .find((a) => (a.textContent || "").trim() === "Create a new sample");
         if (!link) throw new Error('"Create a new sample" link not found');
         link.click();

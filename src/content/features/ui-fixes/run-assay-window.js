@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/ui-fixes/run-assay-window.js
 //
 // A small table above a run's Data Summary (/vaults/<v>/runs/<r>): per plate
@@ -438,7 +437,7 @@ function runFromPath() {
 }
 
 function sync() {
-    const existing = document.querySelector(`.${ROOT_CLASS}`);
+    const existing = /** @type {HTMLElement | null} */ (document.querySelector(`.${ROOT_CLASS}`));
     const run = isAssayWindowEnabled() ? runFromPath() : null;
 
     if (!run) {

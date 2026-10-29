@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/ui-fixes/field-clipboard/page-dom.js
 //
 // Everything that knows what CDD's "… Fields" settings pages look like, so
@@ -68,7 +67,7 @@ function ownTable(el) {
 function visibleLink(kind, pattern) {
     const table = findTable(kind);
     if (!table) return null;
-    return [...document.querySelectorAll("a, button")]
+    return [.../** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll("a, button"))]
         .find((el) => pattern.test(el.textContent.trim()) && el.offsetParent !== null && ownTable(el) === table) || null;
 }
 
@@ -103,7 +102,7 @@ export function namesFromDom(kind) {
     const table = findTable(kind);
     if (!table) return [];
     return [...table.querySelectorAll("tbody tr")].map((tr) => {
-        const input = tr.querySelector('input[name="name"]');
+        const input = /** @type {HTMLInputElement | null} */ (tr.querySelector('input[name="name"]'));
         if (input) return input.value.trim();
         return readModeName(tr);
     }).filter(Boolean);
@@ -167,7 +166,7 @@ function setCheckbox(tr, name, wanted) {
 
 export async function enterEditMode(kind) {
     if (isEditing(kind)) return;
-    const link = findEditLink(kind);
+    const link = /** @type {HTMLElement | null} */ (findEditLink(kind));
     if (!link) throw new Error("the Add/Edit link is not on the page");
     link.click();
     const editing = await waitFor(() => isEditing(kind));

@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/ui-fixes/molecule-plate-protocols.js
 //
 // Adds a "Protocols" column to a molecule's Plates tab
@@ -184,7 +183,7 @@ function ensureRow(row) {
 }
 
 function ensureProtocolsColumn() {
-    const table = document.querySelector(TABLE_SELECTOR);
+    const table = /** @type {HTMLTableElement | null} */ (document.querySelector(TABLE_SELECTOR));
     if (!table) return;
 
     ensureHeader(table);

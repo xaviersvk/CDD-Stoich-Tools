@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/box-selection/init.js
 //
 // Framework wiring + discovery. This is the only part the rest of the extension
@@ -86,7 +85,7 @@ export function initBoxSelection() {
         stylesReady = true;
     }
 
-    if (typeof window !== "undefined" && !window.__CDD_BOX_SELECTION__) {
+    if (typeof window !== "undefined" && !(/** @type {any} */ (window).__CDD_BOX_SELECTION__)) {
         // Debug handle (M1): in the console, on a page showing a box grid, run
         //   __CDD_BOX_SELECTION__.attachBoxSelection(
         //     document.querySelector('.LocationBoxPicker .positions'),
@@ -96,6 +95,6 @@ export function initBoxSelection() {
         //   )
         // to verify selecting empty wells, blocking occupied ones, the counter,
         // and the SelectionContext. Remove this handle once a real consumer exists.
-        window.__CDD_BOX_SELECTION__ = { attachBoxSelection, observeBoxGrids };
+        /** @type {any} */ (window).__CDD_BOX_SELECTION__ = { attachBoxSelection, observeBoxGrids };
     }
 }

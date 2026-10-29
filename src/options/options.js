@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // options/options.js
 //
 // The settings page. Four independent columns, each persisting to
@@ -152,7 +151,7 @@ function showVersion() {
 
 /* ================================================================ 1 · Tab title */
 
-const titleRadios = [...document.querySelectorAll('input[name="elnTitleMode"]')];
+const titleRadios = [.../** @type {NodeListOf<HTMLInputElement>} */ (document.querySelectorAll('input[name="elnTitleMode"]'))];
 
 async function initElnTitleUI() {
     const stored = await chrome.storage.local.get({
@@ -506,9 +505,9 @@ async function initRegistrationDefaultsUI() {
 
 /* ====================================================== 4 · Registration form */
 
-const regModeRadios = [...document.querySelectorAll('input[name="regFormMode"]')];
-const regFixedSelect = document.getElementById("regFormFixedName");
-const regFixedWrap = regFixedSelect.closest(".choice__child");
+const regModeRadios = [.../** @type {NodeListOf<HTMLInputElement>} */ (document.querySelectorAll('input[name="regFormMode"]'))];
+const regFixedSelect = /** @type {HTMLSelectElement} */ (document.getElementById("regFormFixedName"));
+const regFixedWrap = /** @type {HTMLElement} */ (regFixedSelect.closest(".choice__child"));
 const regOrderList = document.getElementById("regFormOrderList");
 const regOrderReset = document.getElementById("regFormOrderReset");
 const regEmpty = document.getElementById("regFormEmpty");
@@ -543,7 +542,7 @@ function moveName(from, to) {
 let dragIndex = null;
 
 function clearDropMarks() {
-    for (const el of regOrderList.children) delete el.dataset.drop;
+    for (const el of /** @type {HTMLCollectionOf<HTMLElement>} */ (regOrderList.children)) delete el.dataset.drop;
 }
 
 function createOrderItem(name, index) {
@@ -737,8 +736,8 @@ async function initRegistrationFormUI() {
 
 /* --------------------------------------------- 4b · ELN ID into the new entity */
 
-const elnIdCarryCheckbox = document.getElementById("elnIdCarryEnabled");
-const elnIdCarryFieldInput = document.getElementById("elnIdCarryFieldLabel");
+const elnIdCarryCheckbox = /** @type {HTMLInputElement} */ (document.getElementById("elnIdCarryEnabled"));
+const elnIdCarryFieldInput = /** @type {HTMLInputElement} */ (document.getElementById("elnIdCarryFieldLabel"));
 
 elnIdCarryCheckbox.addEventListener("change", () => {
     saveElnIdCarryEnabled(elnIdCarryCheckbox.checked);
@@ -755,7 +754,7 @@ elnIdCarryFieldInput.addEventListener("blur", async () => {
     elnIdCarryFieldInput.value = await saveElnIdCarryFieldLabel("");
 });
 
-const elnIdFormatRadios = [...document.querySelectorAll('input[name="elnIdFormat"]')];
+const elnIdFormatRadios = [.../** @type {NodeListOf<HTMLInputElement>} */ (document.querySelectorAll('input[name="elnIdFormat"]'))];
 
 for (const radio of elnIdFormatRadios) {
     radio.addEventListener("change", () => {
@@ -764,7 +763,7 @@ for (const radio of elnIdFormatRadios) {
 }
 
 const elnTableSuffixStyleRadios = [
-    ...document.querySelectorAll('input[name="elnTableSuffixStyle"]'),
+    .../** @type {NodeListOf<HTMLInputElement>} */ (document.querySelectorAll('input[name="elnTableSuffixStyle"]')),
 ];
 
 for (const radio of elnTableSuffixStyleRadios) {
@@ -773,7 +772,7 @@ for (const radio of elnTableSuffixStyleRadios) {
     });
 }
 
-const elnTableSuffixFirstCheckbox = document.getElementById("elnTableSuffixFirst");
+const elnTableSuffixFirstCheckbox = /** @type {HTMLInputElement} */ (document.getElementById("elnTableSuffixFirst"));
 
 elnTableSuffixFirstCheckbox.addEventListener("change", () => {
     void saveElnTableSuffixFirst(elnTableSuffixFirstCheckbox.checked);
@@ -951,7 +950,7 @@ async function initNameMemoryUI() {
     renderNameMemory(await loadNameMemory());
 }
 
-const autoFillCheckbox = document.getElementById("autoFillEnabled");
+const autoFillCheckbox = /** @type {HTMLInputElement} */ (document.getElementById("autoFillEnabled"));
 
 autoFillCheckbox.addEventListener("change", () => {
     saveAutoFillEnabled(autoFillCheckbox.checked);
@@ -962,7 +961,7 @@ async function initAutoFillUI() {
 }
 
 const fillRowNameRadios = Array.from(
-    document.querySelectorAll('input[name="fillRowName"]')
+    /** @type {NodeListOf<HTMLInputElement>} */ (document.querySelectorAll('input[name="fillRowName"]'))
 );
 
 for (const radio of fillRowNameRadios) {
@@ -979,8 +978,8 @@ async function initFillRowNameUI() {
     }
 }
 
-const purityFillInput = document.getElementById("purityFillThreshold");
-const purityWarnInput = document.getElementById("purityWarnThreshold");
+const purityFillInput = /** @type {HTMLInputElement} */ (document.getElementById("purityFillThreshold"));
+const purityWarnInput = /** @type {HTMLInputElement} */ (document.getElementById("purityWarnThreshold"));
 
 purityFillInput.addEventListener("change", () => {
     savePurityFillThreshold(purityFillInput.value);
@@ -991,19 +990,19 @@ purityWarnInput.addEventListener("change", () => {
 
 async function initPurityThresholdUI() {
     const thresholds = await loadPurityThresholds();
-    purityFillInput.value = thresholds.fill;
-    purityWarnInput.value = thresholds.warn;
+    purityFillInput.value = /** @type {any} */ (thresholds.fill);
+    purityWarnInput.value = /** @type {any} */ (thresholds.warn);
 }
 
-const hplcEnabledCheckbox = document.getElementById("hplcBlockEnabled");
-const hplcAliquotInput = document.getElementById("hplcAliquotVolume");
-const hplcVialInput = document.getElementById("hplcVialVolume");
-const hplcTargetInput = document.getElementById("hplcTargetAmount");
-const hplcLadderInput = document.getElementById("hplcVialLadder");
-const hplcInjectionMinInput = document.getElementById("hplcInjectionMin");
-const hplcInjectionMaxInput = document.getElementById("hplcInjectionMax");
-const hplcComfortMinInput = document.getElementById("hplcComfortMin");
-const hplcComfortMaxInput = document.getElementById("hplcComfortMax");
+const hplcEnabledCheckbox = /** @type {HTMLInputElement} */ (document.getElementById("hplcBlockEnabled"));
+const hplcAliquotInput = /** @type {HTMLInputElement} */ (document.getElementById("hplcAliquotVolume"));
+const hplcVialInput = /** @type {HTMLInputElement} */ (document.getElementById("hplcVialVolume"));
+const hplcTargetInput = /** @type {HTMLInputElement} */ (document.getElementById("hplcTargetAmount"));
+const hplcLadderInput = /** @type {HTMLInputElement} */ (document.getElementById("hplcVialLadder"));
+const hplcInjectionMinInput = /** @type {HTMLInputElement} */ (document.getElementById("hplcInjectionMin"));
+const hplcInjectionMaxInput = /** @type {HTMLInputElement} */ (document.getElementById("hplcInjectionMax"));
+const hplcComfortMinInput = /** @type {HTMLInputElement} */ (document.getElementById("hplcComfortMin"));
+const hplcComfortMaxInput = /** @type {HTMLInputElement} */ (document.getElementById("hplcComfortMax"));
 const hplcComfortEcho = document.getElementById("hplcComfortEcho");
 const hplcComfortResetButton = document.getElementById("hplcComfortReset");
 
@@ -1047,8 +1046,8 @@ hplcComfortMaxInput.addEventListener("change", commitComfortBand);
 // worse than the problem. Hence a way back that the user chooses to take.
 hplcComfortResetButton?.addEventListener("click", async () => {
     await resetHplcComfortBand();
-    hplcComfortMinInput.value = DEFAULT_COMFORT_MIN_UL;
-    hplcComfortMaxInput.value = DEFAULT_COMFORT_MAX_UL;
+    hplcComfortMinInput.value = /** @type {any} */ (DEFAULT_COMFORT_MIN_UL);
+    hplcComfortMaxInput.value = /** @type {any} */ (DEFAULT_COMFORT_MAX_UL);
     paintComfortEcho(DEFAULT_COMFORT_MIN_UL, DEFAULT_COMFORT_MAX_UL);
 });
 
@@ -1077,10 +1076,10 @@ async function initHplcInjectionUI() {
     paintComfortEcho(settings.comfortMinUl, settings.comfortMaxUl);
 }
 
-const inventoryScanEnabledCheckbox = document.getElementById("inventoryScanEnabled");
-const inventoryScanColumnsInput = document.getElementById("inventoryScanColumns");
-const inventoryScanRowsInput = document.getElementById("inventoryScanRows");
-const inventoryScanOrganizedCheckbox = document.getElementById("inventoryScanOrganized");
+const inventoryScanEnabledCheckbox = /** @type {HTMLInputElement} */ (document.getElementById("inventoryScanEnabled"));
+const inventoryScanColumnsInput = /** @type {HTMLInputElement} */ (document.getElementById("inventoryScanColumns"));
+const inventoryScanRowsInput = /** @type {HTMLInputElement} */ (document.getElementById("inventoryScanRows"));
+const inventoryScanOrganizedCheckbox = /** @type {HTMLInputElement} */ (document.getElementById("inventoryScanOrganized"));
 
 inventoryScanEnabledCheckbox.addEventListener("change", () => {
     void saveInventoryScanEnabled(inventoryScanEnabledCheckbox.checked);
@@ -1126,7 +1125,7 @@ async function initInventoryScanUI() {
     inventoryScanOrganizedCheckbox.checked = settings.organized;
 }
 
-const showProductsCheckbox = document.getElementById("showProducts");
+const showProductsCheckbox = /** @type {HTMLInputElement} */ (document.getElementById("showProducts"));
 
 showProductsCheckbox.addEventListener("change", () => {
     saveShowProducts(showProductsCheckbox.checked);
@@ -1136,7 +1135,7 @@ async function initShowProductsUI() {
     showProductsCheckbox.checked = await getShowProducts();
 }
 
-const elnShiftLeftCheckbox = document.getElementById("elnShiftLeft");
+const elnShiftLeftCheckbox = /** @type {HTMLInputElement} */ (document.getElementById("elnShiftLeft"));
 
 elnShiftLeftCheckbox.addEventListener("change", () => {
     saveElnShiftEnabled(elnShiftLeftCheckbox.checked);
@@ -1146,7 +1145,7 @@ async function initElnShiftLeftUI() {
     elnShiftLeftCheckbox.checked = await getElnShiftEnabled();
 }
 
-const activeReactionCheckbox = document.getElementById("activeReaction");
+const activeReactionCheckbox = /** @type {HTMLInputElement} */ (document.getElementById("activeReaction"));
 
 activeReactionCheckbox.addEventListener("change", () => {
     void saveActiveReactionEnabled(activeReactionCheckbox.checked);
@@ -1156,7 +1155,7 @@ async function initActiveReactionUI() {
     activeReactionCheckbox.checked = await getActiveReactionEnabled();
 }
 
-const linkAliasFieldInput = document.getElementById("linkAliasField");
+const linkAliasFieldInput = /** @type {HTMLInputElement} */ (document.getElementById("linkAliasField"));
 
 // Saved as you type; a blank box goes back to the default on blur.
 linkAliasFieldInput.addEventListener("input", () => {
@@ -1172,7 +1171,7 @@ async function initLinkAliasUI() {
     linkAliasFieldInput.value = await getLinkAliasField();
 }
 
-const assayWindowCheckbox = document.getElementById("assayWindow");
+const assayWindowCheckbox = /** @type {HTMLInputElement} */ (document.getElementById("assayWindow"));
 
 assayWindowCheckbox.addEventListener("change", () => {
     void saveAssayWindowEnabled(assayWindowCheckbox.checked);
@@ -1184,7 +1183,7 @@ async function initAssayWindowUI() {
     refreshRailChips();
 }
 
-const doseResponseDragCheckbox = document.getElementById("doseResponseDrag");
+const doseResponseDragCheckbox = /** @type {HTMLInputElement} */ (document.getElementById("doseResponseDrag"));
 
 doseResponseDragCheckbox.addEventListener("change", () => {
     void saveDoseResponseDragEnabled(doseResponseDragCheckbox.checked);
@@ -1195,7 +1194,7 @@ async function initDoseResponseDragUI() {
     refreshRailChips();
 }
 
-const heatMapOutlierDragCheckbox = document.getElementById("heatMapOutlierDrag");
+const heatMapOutlierDragCheckbox = /** @type {HTMLInputElement} */ (document.getElementById("heatMapOutlierDrag"));
 
 heatMapOutlierDragCheckbox.addEventListener("change", () => {
     void saveHeatMapOutlierDragEnabled(heatMapOutlierDragCheckbox.checked);
@@ -1205,7 +1204,7 @@ async function initHeatMapOutlierDragUI() {
     heatMapOutlierDragCheckbox.checked = await getHeatMapOutlierDragEnabled();
 }
 
-const elnIdToBatchCheckbox = document.getElementById("elnIdToBatch");
+const elnIdToBatchCheckbox = /** @type {HTMLInputElement} */ (document.getElementById("elnIdToBatch"));
 
 elnIdToBatchCheckbox.addEventListener("change", () => {
     saveElnIdToBatchEnabled(elnIdToBatchCheckbox.checked);
@@ -1215,8 +1214,8 @@ async function initElnIdToBatchUI() {
     elnIdToBatchCheckbox.checked = await getElnIdToBatchEnabled();
 }
 
-const tableRowsCheckbox = document.getElementById("panelSourceTableRows");
-const mentionsCheckbox = document.getElementById("panelSourceMentions");
+const tableRowsCheckbox = /** @type {HTMLInputElement} */ (document.getElementById("panelSourceTableRows"));
+const mentionsCheckbox = /** @type {HTMLInputElement} */ (document.getElementById("panelSourceMentions"));
 
 function savePanelSourcesFromUI() {
     savePanelSources({
@@ -1446,14 +1445,14 @@ const railEl = document.getElementById("settingsRail");
 const panesEl = document.getElementById("settingsPanes");
 
 function showPane(paneId, { remember = true } = {}) {
-    const items = [...railEl.querySelectorAll(".rail__item")];
+    const items = [.../** @type {NodeListOf<HTMLElement>} */ (railEl.querySelectorAll(".rail__item"))];
     const target = items.find((i) => i.dataset.pane === paneId) || items[0];
     if (!target) return;
 
     for (const item of items) {
         item.setAttribute("aria-current", String(item === target));
     }
-    for (const card of panesEl.querySelectorAll(".card")) {
+    for (const card of /** @type {NodeListOf<HTMLElement>} */ (panesEl.querySelectorAll(".card"))) {
         card.hidden = card.getAttribute("aria-labelledby") !== target.dataset.pane;
     }
 
@@ -1469,15 +1468,15 @@ function showPane(paneId, { remember = true } = {}) {
 }
 
 railEl.addEventListener("click", (event) => {
-    const item = event.target.closest(".rail__item");
+    const item = /** @type {HTMLElement | null} */ (/** @type {Element} */ (event.target).closest(".rail__item"));
     if (item) showPane(item.dataset.pane);
 });
 
 // Left/right (or up/down) walk the rail, the way a settings sidebar is
 // expected to. Home and End jump to the ends.
 railEl.addEventListener("keydown", (event) => {
-    const items = [...railEl.querySelectorAll(".rail__item")];
-    const here = items.indexOf(document.activeElement);
+    const items = [.../** @type {NodeListOf<HTMLElement>} */ (railEl.querySelectorAll(".rail__item"))];
+    const here = items.indexOf(/** @type {HTMLElement} */ (document.activeElement));
     if (here < 0) return;
 
     const step = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 }[event.key];
@@ -1498,7 +1497,7 @@ railEl.addEventListener("keydown", (event) => {
 // mitigation, which is why they are wired to the same state the cards render
 // from rather than being decorative.
 function setChip(key, text) {
-    const chip = railEl.querySelector(`.rail__chip[data-chip="${key}"]`);
+    const chip = /** @type {HTMLElement | null} */ (railEl.querySelector(`.rail__chip[data-chip="${key}"]`));
     if (!chip) return;
     const value = text == null ? "" : String(text);
     chip.textContent = value;
@@ -1527,19 +1526,19 @@ function refreshRailChips() {
     // the count comes from the same array the card renders from.
     setChip("heatmap", heatMapSelection.length || null);
 
-    const hplcOn = document.getElementById("hplcBlockEnabled");
+    const hplcOn = /** @type {HTMLInputElement} */ (document.getElementById("hplcBlockEnabled"));
     if (hplcOn) setChip("hplc", hplcOn.checked ? "on" : "off");
 
-    const qcOn = document.getElementById("assayWindow");
+    const qcOn = /** @type {HTMLInputElement} */ (document.getElementById("assayWindow"));
     if (qcOn) setChip("plateqc", qcOn.checked ? "on" : "off");
 
-    const dragOn = document.getElementById("doseResponseDrag");
+    const dragOn = /** @type {HTMLInputElement} */ (document.getElementById("doseResponseDrag"));
     if (dragOn) setChip("doseresponse", dragOn.checked ? "on" : "off");
 
-    const aiOn = document.getElementById("aiWriteUpEnabled");
+    const aiOn = /** @type {HTMLInputElement} */ (document.getElementById("aiWriteUpEnabled"));
     if (aiOn) setChip("aiwriteup", aiOn.checked ? "on" : "off");
 
-    const scanOn = document.getElementById("inventoryScanEnabled");
+    const scanOn = /** @type {HTMLInputElement} */ (document.getElementById("inventoryScanEnabled"));
     if (scanOn) setChip("inventoryscan", scanOn.checked ? "on" : "off");
 
     const mode = titleRadios.find((r) => r.checked);

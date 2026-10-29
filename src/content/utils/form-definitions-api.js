@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/utils/form-definitions-api.js
 //
 // CDD's internal form definition endpoints (protocol and registration forms),
@@ -11,7 +10,7 @@
 // `url` is the collection: /api/internal/v1/vaults/{id}/…_form_definitions.
 
 function csrfToken() {
-    return document.querySelector('meta[name="csrf-token"]')?.content || "";
+    return /** @type {HTMLMetaElement | null} */ (document.querySelector('meta[name="csrf-token"]'))?.content || "";
 }
 
 function headers(withBody) {

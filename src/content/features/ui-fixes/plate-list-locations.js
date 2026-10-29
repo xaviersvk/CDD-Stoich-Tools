@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/ui-fixes/plate-list-locations.js
 //
 // Adds "Inventory Location" and "Location" columns to the Plates list table
@@ -145,7 +144,7 @@ function ensureRow(row) {
 }
 
 function ensureLocationColumns() {
-    const table = document.querySelector(TABLE_SELECTOR);
+    const table = /** @type {HTMLTableElement | null} */ (document.querySelector(TABLE_SELECTOR));
     if (!table) return;
 
     ensureHeader(table);

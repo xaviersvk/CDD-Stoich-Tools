@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/ui-fixes/registration-field-delete.js
 //
 // Taking fields off a registration form (Settings → Registration → a form →
@@ -149,7 +148,7 @@ async function removeField(field) {
  * ------------------------------------------------------------------ */
 
 function fields() {
-    return [...document.querySelectorAll(FIELD)];
+    return [.../** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll(FIELD))];
 }
 
 function fieldById(id) {
@@ -323,16 +322,16 @@ export function initRegistrationFieldDelete() {
     // does not start a drag or a text selection.
     for (const type of ["pointerdown", "mousedown"]) {
         window.addEventListener(type, (event) => {
-            if (!markingClick(event) || !event.target.closest?.(FIELD)) return;
-            if (event.target.closest(`.${BUTTON_CLASS}`)) return;
+            if (!markingClick(event) || !/** @type {Element} */ (event.target).closest?.(FIELD)) return;
+            if (/** @type {Element} */ (event.target).closest(`.${BUTTON_CLASS}`)) return;
             event.preventDefault();
             event.stopPropagation();
         }, true);
     }
     window.addEventListener("click", (event) => {
         if (!markingClick(event) || running) return;
-        const field = event.target.closest?.(FIELD);
-        if (!field || event.target.closest(`.${BUTTON_CLASS}`)) return;
+        const field = /** @type {Element} */ (event.target).closest?.(FIELD);
+        if (!field || /** @type {Element} */ (event.target).closest(`.${BUTTON_CLASS}`)) return;
         event.preventDefault();
         event.stopPropagation();
         toggle(field, event.shiftKey);

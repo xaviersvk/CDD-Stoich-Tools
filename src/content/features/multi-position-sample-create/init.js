@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/multi-position-sample-create/init.js
 //
 // Production batch sample creation — the first consumer of the Box Selection
@@ -266,7 +265,7 @@ function watchCreateDialog() {
     function scan() {
         if (!isCreateSampleDialogOpen()) return;
 
-        const dialog = findCreateDialogRoot();
+        const dialog = /** @type {HTMLElement | null} */ (findCreateDialogRoot());
         if (!dialog) return;
         if (dialog.dataset[DIALOG_FLAG] === "1") return;
         dialog.dataset[DIALOG_FLAG] = "1";
@@ -620,7 +619,7 @@ function parseCreatedLabel(resp) {
 
 function installDebugHelpers() {
     if (typeof window === "undefined") return;
-    window.__CDD_MULTI_POSITION_DEBUG__ = {
+    /** @type {any} */ (window).__CDD_MULTI_POSITION_DEBUG__ = {
         getStore: () => store.getState(),
         getListenersCount: () => store.getListenerCount(),
         isBatchRunning: () => batchRunning,
@@ -680,8 +679,8 @@ function truncate(s, max) {
 function schedulePageRefresh(delayMs) {
     setTimeout(() => {
         try {
-            if (typeof window.Turbo?.visit === "function") {
-                window.Turbo.visit(location.href, { action: "replace" });
+            if (typeof /** @type {any} */ (window).Turbo?.visit === "function") {
+                /** @type {any} */ (window).Turbo.visit(location.href, { action: "replace" });
             } else {
                 location.reload();
             }

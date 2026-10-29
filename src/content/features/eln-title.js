@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 import { isElnEntryPage } from "../../shared/page-detection.js";
 import { readElnEntryId } from "../utils/eln-entry-id.js";
 import { watchDocument } from "../utils/dom.js";
@@ -18,7 +17,7 @@ export function initElnTitle() {
         if (!changes[ELN_TITLE_MODE_KEY]) return;
 
         currentElnTitleMode =
-            changes[ELN_TITLE_MODE_KEY].newValue || DEFAULT_ELN_TITLE_MODE;
+            /** @type {string} */ (changes[ELN_TITLE_MODE_KEY].newValue) || DEFAULT_ELN_TITLE_MODE;
 
         updateElnTabTitle();
     });
@@ -37,7 +36,7 @@ function loadElnTitleMode() {
         { [ELN_TITLE_MODE_KEY]: DEFAULT_ELN_TITLE_MODE },
         (result) => {
             currentElnTitleMode =
-                result[ELN_TITLE_MODE_KEY] || DEFAULT_ELN_TITLE_MODE;
+                /** @type {string} */ (result[ELN_TITLE_MODE_KEY]) || DEFAULT_ELN_TITLE_MODE;
 
             updateElnTabTitle();
         }
@@ -89,7 +88,9 @@ function restoreOriginalTitle() {
 }
 
 function updateElnTabTitle() {
-    const titleElement = document.querySelector('[data-autotest-id="title"]');
+    const titleElement = /** @type {HTMLTextAreaElement | null} */ (
+        document.querySelector('[data-autotest-id="title"]')
+    );
     if (!titleElement) return;
 
     // Collapsed the way document.title reads back ("strip and collapse ASCII

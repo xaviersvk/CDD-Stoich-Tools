@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/ui-fixes/readout-clipboard/init.js
 //
 // Copy a protocol's readout definitions in one vault, paste them into a

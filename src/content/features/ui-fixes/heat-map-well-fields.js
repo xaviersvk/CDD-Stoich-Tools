@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/ui-fixes/heat-map-well-fields.js
 //
 // Appends extra rows to CDD's OWN hover popup on run heat maps
@@ -224,7 +223,7 @@ function maybeAugment() {
     const balloon = document.getElementById("balloon");
     if (!balloon) return;
 
-    const popup = balloon.querySelector(".details-popup");
+    const popup = /** @type {HTMLElement | null} */ (balloon.querySelector(".details-popup"));
     if (!popup) return;
 
     const link = popup.querySelector('a[href*="/molecules/"]');
@@ -269,7 +268,7 @@ export function initHeatMapWellFields() {
 
     // Delegated on document so it survives Turbo's <body> swaps.
     document.addEventListener("mouseover", (event) => {
-        const td = event.target.closest?.(WELL_SELECTOR);
+        const td = /** @type {Element} */ (event.target).closest?.(WELL_SELECTOR);
         if (td) onWellHover(td);
     });
 

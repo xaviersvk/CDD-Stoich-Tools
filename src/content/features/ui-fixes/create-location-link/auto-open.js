@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/ui-fixes/create-location-link/auto-open.js
 //
 // The settings page's side of the link. Arriving at
@@ -30,7 +29,7 @@ const CLICK_TRIES = 25;
 const CLICK_SETTLE_MS = 400;
 
 function visibleWithText(text) {
-    return [...document.querySelectorAll("a, button, span")]
+    return [.../** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll("a, button, span"))]
         .find((el) => el.textContent.trim() === text && el.offsetParent !== null) || null;
 }
 

@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 import {doseResponseOverrideState as state} from "./state";
 import {handleDoNotCalculate, handleDoNotOverwrite, handleIc50GreaterThanMax, handleIc50LessThanMin} from "./actions";
 
@@ -33,7 +32,9 @@ export function syncActionSelects (sourceSelect) {
         if (!sourceSelect) return;
 
         const newValue = sourceSelect.value;
-        const allSelects = document.querySelectorAll(".cdd-dose-response-select");
+        const allSelects = /** @type {NodeListOf<HTMLSelectElement>} */ (
+            document.querySelectorAll(".cdd-dose-response-select")
+        );
 
         allSelects.forEach((select) => {
             if (select === sourceSelect) return;
@@ -67,7 +68,7 @@ export function createActionMenu (plotRoot) {
         select.value = state?.selectedAction || "ic50GreaterThanMax";
 
         select.addEventListener("change", (event) => {
-            const currentSelect = event.currentTarget;
+            const currentSelect = /** @type {HTMLSelectElement} */ (event.currentTarget);
             if (state) {
                 state.selectedAction = currentSelect.value;
             }

@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // inject/hooks/fetch-hook.js
 //
 // `processJsonPayload` is called with the parsed body AND the URL it came
@@ -18,7 +17,7 @@ export function installFetchHook(tryParseText) {
         // reading them costs a whole body per request.
         if (isSurelyNotJson(res.headers.get("content-type"))) return res;
 
-        const url = res.url || (typeof args[0] === "string" ? args[0] : args[0]?.url) || "";
+        const url = res.url || (typeof args[0] === "string" ? args[0] : /** @type {any} */ (args[0])?.url) || "";
 
         let clone;
         try {

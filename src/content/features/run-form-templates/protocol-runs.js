@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/run-form-templates/protocol-runs.js
 //
 // A Copy and a Duplicate button on every row of a protocol's "Run Data" table.
@@ -112,14 +111,14 @@ async function fetchRunFields(path) {
 
 // Opens CDD's "Create a new run" and presses our Paste into form in it.
 async function pasteIntoNewRun() {
-    const panel = document.querySelector(NEW_RUN_EDIT);
+    const panel = /** @type {HTMLElement | null} */ (document.querySelector(NEW_RUN_EDIT));
     if (!panel) throw new Error("no “Create a new run” on this page");
-    if (!panel.offsetParent) document.querySelector(NEW_RUN_OPEN)?.click();
+    if (!panel.offsetParent) /** @type {HTMLElement | null} */ (document.querySelector(NEW_RUN_OPEN))?.click();
 
     const paste = await waitFor(() => {
         const root = panel.querySelector(`.${ROOT_CLASS}`);
         const annotator = root?.nextElementSibling;
-        const btn = root?.querySelector("[data-cdd-rft-paste]");
+        const btn = /** @type {HTMLButtonElement | null} */ (root?.querySelector("[data-cdd-rft-paste]"));
         return panel.offsetParent && isEditMode(annotator) && btn && !btn.disabled ? btn : null;
     });
     if (!paste) throw new Error("the new-run form did not open");
@@ -306,7 +305,7 @@ export function scanProtocolRunTables() {
         const matches = labels.filter((l) => l && validNames.has(l.toLowerCase())).length;
         if (matches < 3) continue;
 
-        for (const row of table.querySelectorAll("tbody tr")) {
+        for (const row of /** @type {NodeListOf<HTMLTableRowElement>} */ (table.querySelectorAll("tbody tr"))) {
             if (!row.cells?.length) continue;
             attachRowButton(row, labels, validNames, table);
         }

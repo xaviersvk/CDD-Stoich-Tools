@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/utils/settings-page.js
 //
 // Finding and watching CDD's settings pages, for the bars the field and form
@@ -44,6 +43,10 @@ export function findVisibleControl(root, pattern) {
 // The forms table on `page`, once it and CDD's own "Create a new form" link
 // are there — the link is CDD's way of saying the user is an administrator —
 // or null. Everything is looked up inside `root`.
+/**
+ * @param {RegExp} page
+ * @param {Document | Element | null} [root]
+ */
 export function findFormsTable(page, root = document) {
     if (!page.test(location.pathname)) return null;
     const table = root?.querySelector("table");

@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/ui-fixes/registration-defaults.js
 //
 // Registering the product of a reaction, without typing what the ELN already
@@ -171,7 +170,7 @@ function fillDefaults() {
 
         const ok = setControlValue(control, value);
         if (ok) {
-            control.title = `Filled from your ${label} default for this vault`;
+            /** @type {HTMLElement} */ (control).title = `Filled from your ${label} default for this vault`;
         }
     }
 }
@@ -187,7 +186,7 @@ function fillSampleAmount() {
     const form = document.querySelector(FORM_SELECTOR);
     if (!form) return;
 
-    const gate = form.querySelector(CREATE_SAMPLE_SELECTOR);
+    const gate = /** @type {HTMLInputElement | null} */ (form.querySelector(CREATE_SAMPLE_SELECTOR));
     if (!gate?.checked) return;
 
     const amountInput = findSampleAmountInput(form);
@@ -242,7 +241,7 @@ export async function initRegistrationDefaults() {
     // Ticking Create a New Sample is what makes the sample fields matter, and
     // it happens long after load.
     document.addEventListener("change", (event) => {
-        if (event.target?.matches?.(CREATE_SAMPLE_SELECTOR)) fillSampleAmount();
+        if (/** @type {Element | null} */ (event.target)?.matches?.(CREATE_SAMPLE_SELECTOR)) fillSampleAmount();
     }, true);
 
     // The form is rebuilt whenever the project or the registration form

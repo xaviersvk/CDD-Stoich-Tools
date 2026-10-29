@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/phrases/capture.js
 //
 // The "Save phrase" affordance: select text inside an ELN entry and a small
@@ -443,7 +442,7 @@ async function openDialog() {
     };
     saveBtn.addEventListener("click", submit);
     dialog.addEventListener("keydown", (event) => {
-        if (event.key === "Enter" && event.target.tagName === "INPUT") {
+        if (event.key === "Enter" && /** @type {Element} */ (event.target).tagName === "INPUT") {
             event.preventDefault();
             submit();
         }

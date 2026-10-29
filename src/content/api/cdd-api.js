@@ -1,8 +1,7 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 export function getCsrfToken() {
     return (
-        document.querySelector('meta[name="csrf-token"]')?.content ||
-        document.querySelector('meta[name="csrfToken"]')?.content ||
+        /** @type {HTMLMetaElement | null} */ (document.querySelector('meta[name="csrf-token"]'))?.content ||
+        /** @type {HTMLMetaElement | null} */ (document.querySelector('meta[name="csrfToken"]'))?.content ||
         ""
     );
 }

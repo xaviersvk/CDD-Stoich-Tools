@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/ui-fixes/registration-form-default.js
 //
 // Two conveniences on the "Registration Form" picklist of the Create a New
@@ -159,7 +158,7 @@ export async function initRegistrationFormDefault() {
     });
 
     document.addEventListener("change", (event) => {
-        if (event.target?.matches?.(SELECT_SELECTOR)) onUserPickedForm(event.target);
+        if (/** @type {Element} */ (event.target)?.matches?.(SELECT_SELECTOR)) onUserPickedForm(event.target);
     });
 
     const run = watchDocument(sync);

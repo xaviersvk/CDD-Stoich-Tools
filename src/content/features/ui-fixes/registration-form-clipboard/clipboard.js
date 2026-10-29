@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/ui-fixes/registration-form-clipboard/clipboard.js
 //
 // Where copied registration forms wait between one vault and the next. What
@@ -10,7 +9,7 @@ const STORAGE_KEY = "cddRegistrationFormClipboard";
 export async function readRegistrationFormClipboard() {
     try {
         const result = await chrome.storage.local.get(STORAGE_KEY);
-        const entry = result?.[STORAGE_KEY];
+        const entry = /** @type {any} */ (result?.[STORAGE_KEY]);
         return entry && Array.isArray(entry.forms) ? entry : null;
     } catch {
         return null;

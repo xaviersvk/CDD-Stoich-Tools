@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // inject/hooks/xhr-hook.js
 import { isSurelyNotJson } from "./content-type.js";
 
@@ -7,7 +6,7 @@ export function installXhrHook(tryParseText) {
     const origSend = XMLHttpRequest.prototype.send;
 
     XMLHttpRequest.prototype.open = function (method, url, ...rest) {
-        this.__cdd_url = url;
+        /** @type {any} */ (this).__cdd_url = url;
         return origOpen.call(this, method, url, ...rest);
     };
 
@@ -16,7 +15,7 @@ export function installXhrHook(tryParseText) {
             try {
                 if (
                     this.responseType &&
-                    this.responseType !== "" &&
+                    /** @type {string} */ (this.responseType) !== "" &&
                     this.responseType !== "text"
                 ) {
                     return;
@@ -24,7 +23,7 @@ export function installXhrHook(tryParseText) {
 
                 if (isSurelyNotJson(this.getResponseHeader("content-type"))) return;
 
-                tryParseText(this.responseText, this.__cdd_url);
+                tryParseText(this.responseText, /** @type {any} */ (this).__cdd_url);
             } catch (err) {
                 console.warn("[CDD Stoich Tools] xhr parse failed", err);
             }

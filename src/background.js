@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // background.js
 //
 // The toolbar icon has no popup any more — the settings live on their own page,
@@ -75,7 +74,7 @@ const AI_TIMEOUT_MIGRATED_KEY = "cddAiWriteUpTimeout300";
 async function migrateAiTimeout() {
     const stored = await chrome.storage.local.get([AI_SETTINGS_STORAGE_KEY, AI_TIMEOUT_MIGRATED_KEY]);
     if (stored[AI_TIMEOUT_MIGRATED_KEY]) return;
-    const value = stored[AI_SETTINGS_STORAGE_KEY];
+    const value = /** @type {any} */ (stored[AI_SETTINGS_STORAGE_KEY]);
     const patch = { [AI_TIMEOUT_MIGRATED_KEY]: true };
     if (value && Number(value.timeoutS) === 180) patch[AI_SETTINGS_STORAGE_KEY] = { ...value, timeoutS: AI_TIMEOUT_DEFAULT_S };
     await chrome.storage.local.set(patch);
@@ -92,7 +91,7 @@ function trimmed(value) {
 // Settings saved before 19.4.0 hold CERIT's key and model as `apiKey`/`model`.
 async function aiSettings() {
     const stored = await chrome.storage.local.get(AI_SETTINGS_STORAGE_KEY);
-    const value = stored?.[AI_SETTINGS_STORAGE_KEY] || {};
+    const value = /** @type {any} */ (stored?.[AI_SETTINGS_STORAGE_KEY] || {});
     const provider = AI_PROVIDERS[value.provider] ? value.provider : "cerit";
     const dictationProvider = AI_PROVIDERS[value.dictationProvider]?.transcribeModel ? value.dictationProvider : "cerit";
     return {

@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/ui-fixes/slurp-picklist-defaults.js
 //
 // Bulk registration ("slurp") mapping page:
@@ -141,7 +140,7 @@ function defaultFormFor(fieldId) {
 
 function applyDefault(fieldId, value) {
     const form = defaultFormFor(fieldId);
-    const input = form?.querySelector(VALUE_INPUT);
+    const input = /** @type {HTMLInputElement | null} */ (form?.querySelector(VALUE_INPUT));
     if (!input) return;
 
     input.value = value;
@@ -171,7 +170,7 @@ function buildRow(fieldId, values) {
 
 // Under each "You must map X … provide a default x" line.
 function decorateErrors(picklists) {
-    for (const link of document.querySelectorAll(ERROR_LINK)) {
+    for (const link of /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll(ERROR_LINK))) {
         const fieldId = fieldIdFromErrorId(link.dataset.mappingErrorId);
         const values = fieldId && picklists.get(fieldId);
         const item = link.closest("li");
@@ -186,7 +185,7 @@ function decorateErrors(picklists) {
 function decorateDialogs(picklists) {
     for (const input of document.querySelectorAll(VALUE_INPUT)) {
         const form = input.closest("form");
-        const fieldId = form?.querySelector(FIELD_ID_INPUT)?.value;
+        const fieldId = /** @type {HTMLInputElement | null} */ (form?.querySelector(FIELD_ID_INPUT))?.value;
         const values = fieldId && picklists.get(fieldId);
         if (!values || form.querySelector(`.${ROW_CLASS}`)) continue;
 

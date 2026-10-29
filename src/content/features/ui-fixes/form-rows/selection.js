@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/ui-fixes/form-rows/selection.js
 //
 // The fields last added to forms, per table key, so the same row can be
@@ -21,7 +20,7 @@ function cleanPicks(list) {
 export async function readFormRowSelection() {
     try {
         const result = await chrome.storage.local.get([STORAGE_KEY, LEGACY_BATCH_KEY]);
-        const entry = result?.[STORAGE_KEY] || {};
+        const entry = /** @type {any} */ (result?.[STORAGE_KEY] || {});
         const picks = {};
         for (const [key, list] of Object.entries(entry.picks || {})) picks[key] = cleanPicks(list);
         if (!picks.batch) picks.batch = cleanPicks(result?.[LEGACY_BATCH_KEY]);

@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/ai-write-up/panel-tab.js
 //
 // The "Write-up" tab of the floating panel (off unless Settings → AI write-up
@@ -112,7 +111,7 @@ function render() {
         const text = el("div", "cdd-wu-text");
         // Filling a placeholder redraws the checks only: the text keeps its
         // scroll position and the slot just typed into.
-        text.append(mentionsToDom(result.segments, { onChange: () => renderChecks(checksCard, result) }));
+        text.append(mentionsToDom(result.segments, /** @type {any} */ ({ onChange: () => renderChecks(checksCard, result) })));
         copyParagraphOnCtrlClick(text, result.segments);
         card.append(head, text);
         resultEl.append(card);

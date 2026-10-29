@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // shared/eln-id-carry.js
 //
 // Carrying the ELN entry ID (IDEMO-MDX-0014) from an ELN entry into the
@@ -310,6 +309,7 @@ export function cleanElnEntryId(raw) {
 
 export async function getElnIdCarrySettings() {
     try {
+        /** @type {Record<string, any>} */
         const stored = await chrome.storage.local.get({
             [ELN_ID_CARRY_ENABLED_KEY]: true,
             [ELN_ID_CARRY_FIELD_KEY]: DEFAULT_ELN_ID_CARRY_FIELD,

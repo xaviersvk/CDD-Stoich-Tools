@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 const OBSERVER_KEY = "__CDD_DEPLETED_OBSERVER__";
 
 import { STATE } from "../state.js";
@@ -54,7 +53,7 @@ export function markDepletedSamplesInSelector() {
 
     const depleted = getDepletedSet();
 
-    document.querySelectorAll('input[type="radio"][value]').forEach((input) => {
+    /** @type {NodeListOf<HTMLInputElement>} */ (document.querySelectorAll('input[type="radio"][value]')).forEach((input) => {
         const value = normalizeValue(input.value);
 
         const wrapper =

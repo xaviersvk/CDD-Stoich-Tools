@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/ui-fixes/search-column-copy.js
 //
 // Ctrl+click (or Cmd+click) a column header on a search results table and the
@@ -228,8 +227,8 @@ function showToast(message) {
     toast.textContent = message;
     toast.classList.add("visible");
 
-    clearTimeout(toast.dataset.timer);
-    toast.dataset.timer = setTimeout(() => toast.classList.remove("visible"), 1800);
+    clearTimeout(/** @type {any} */ (toast.dataset.timer));
+    toast.dataset.timer = /** @type {any} */ (setTimeout(() => toast.classList.remove("visible"), 1800));
 }
 
 async function copyColumns(table, th) {
@@ -347,7 +346,7 @@ export function initSearchColumnCopy() {
             // with it.
             if ((!event.ctrlKey && !event.metaKey) || event.altKey) return;
 
-            const th = event.target?.closest?.("thead th");
+            const th = /** @type {HTMLElement | null | undefined} */ (/** @type {Element | null} */ (event.target)?.closest?.("thead th"));
             if (th) {
                 const table = th.closest(TABLE_SELECTOR);
                 if (!table) return;
@@ -365,7 +364,7 @@ export function initSearchColumnCopy() {
                 return;
             }
 
-            const cell = event.target?.closest?.(CELL_SELECTOR);
+            const cell = /** @type {HTMLElement | null | undefined} */ (/** @type {Element | null} */ (event.target)?.closest?.(CELL_SELECTOR));
             if (!cell || !cell.closest(TABLE_SELECTOR)) return;
             if (!isCopyableCell(cell)) return;
 
@@ -382,7 +381,7 @@ export function initSearchColumnCopy() {
     // hovered, and never overwrites a title CDD set itself — nor one of our
     // own hover bubbles.
     document.documentElement.addEventListener("mouseover", (event) => {
-        const th = event.target?.closest?.("thead th");
+        const th = /** @type {HTMLElement | null | undefined} */ (/** @type {Element | null} */ (event.target)?.closest?.("thead th"));
         if (th) {
             if (th.title || th.dataset.cddNoColumnHint) return;
             const table = th.closest(TABLE_SELECTOR);
@@ -400,7 +399,7 @@ export function initSearchColumnCopy() {
             return;
         }
 
-        const cell = event.target?.closest?.(CELL_SELECTOR);
+        const cell = /** @type {HTMLElement | null | undefined} */ (/** @type {Element | null} */ (event.target)?.closest?.(CELL_SELECTOR));
         if (!cell || cell.title || !cell.closest(TABLE_SELECTOR)) return;
         if (!isCopyableCell(cell)) return;
         // The plate name cell answers a hover with our own location bubble

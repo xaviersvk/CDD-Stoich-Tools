@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/ai-write-up/reaction-buttons.js
 //
 // 🎤 on each reaction, beside Print and ⤳ (only while AI write-up is on):
@@ -92,7 +91,7 @@ function ensureStyles() {
 }
 
 export function ensureDictateButtons() {
-    const reactions = [...document.querySelectorAll(SELECTORS.reaction)];
+    const reactions = [.../** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll(SELECTORS.reaction))];
     if (!isAiWriteUpEnabled()) {
         for (const btn of document.querySelectorAll(`.${BTN_CLASS}`)) btn.remove();
         return;
@@ -105,7 +104,7 @@ export function ensureDictateButtons() {
     }
 
     reactions.forEach((reactionEl, index) => {
-        const existing = reactionEl.querySelector(`.${BTN_CLASS}`);
+        const existing = /** @type {HTMLElement | null} */ (reactionEl.querySelector(`.${BTN_CLASS}`));
         if (existing?.dataset.reactionIndex === String(index)) return;
         existing?.remove();
 

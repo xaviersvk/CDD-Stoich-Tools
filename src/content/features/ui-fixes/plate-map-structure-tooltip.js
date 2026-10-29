@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/ui-fixes/plate-map-structure-tooltip.js
 //
 // Shows a hover bubble with the molecule's synonym + structure when the mouse
@@ -181,7 +180,7 @@ export function initPlateMapStructureTooltip() {
     // Delegated on document so it survives Turbo's <body> swaps and the React
     // plate map mounting after us, without per-link wiring.
     document.addEventListener("mouseover", (event) => {
-        const link = event.target.closest?.(WELL_LINK_SELECTOR);
+        const link = /** @type {Element} */ (event.target).closest?.(WELL_LINK_SELECTOR);
         if (!link) return;
         if (link.getAttribute("href") === activeHref) return; // already showing it
         onEnter(link, event).catch((err) =>
@@ -190,17 +189,17 @@ export function initPlateMapStructureTooltip() {
     });
 
     document.addEventListener("mouseout", (event) => {
-        const link = event.target.closest?.(WELL_LINK_SELECTOR);
+        const link = /** @type {Element} */ (event.target).closest?.(WELL_LINK_SELECTOR);
         if (!link) return;
         // Ignore moves that stay within the same link (e.g. onto its text node).
-        if (link.contains(event.relatedTarget)) return;
+        if (link.contains(/** @type {Node | null} */ (event.relatedTarget))) return;
         hideBubble();
     });
 
     // Keep the bubble next to the cursor while hovering the link.
     document.addEventListener("mousemove", (event) => {
         if (activeHref === null || bubble.hidden()) return;
-        if (!event.target.closest?.(WELL_LINK_SELECTOR)) return;
+        if (!(/** @type {Element} */ (event.target)).closest?.(WELL_LINK_SELECTOR)) return;
         bubble.position(event);
     });
 

@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/ui-fixes/eln-id-to-registration.js
 //
 // Registering a product straight out of a reaction: in the stoichiometry table
@@ -160,11 +159,11 @@ function ordinaryProductSuffix(link) {
     const productIndex = productOrdinalOf(samples, sample);
     if (productIndex < 0) return null;
 
-    return productSuffix({
+    return productSuffix(/** @type {Parameters<typeof productSuffix>[0]} */ ({
         productIndex,
         style: settings.style,
         markFirst: settings.markFirst,
-    });
+    }));
 }
 
 // A parallel ("bulk") reaction renders its pairs as
@@ -226,7 +225,7 @@ function stampLink(target) {
     // row above.
     const parallel = parallelInfoOf(link);
     const suffix = parallel
-        ? productSuffix({ parallel })
+        ? productSuffix(/** @type {Parameters<typeof productSuffix>[0]} */ ({ parallel }))
         : ordinaryProductSuffix(link);
 
     // Not a product: nothing is written, and the link keeps the href CDD gave
@@ -308,7 +307,7 @@ function fillTargetField() {
     const value = carriedElnId();
     if (!value) return;
 
-    const input = findTargetInput();
+    const input = /** @type {HTMLInputElement | null} */ (findTargetInput());
     if (!input || filledInputs.has(input)) return;
 
     filledInputs.add(input);
@@ -349,7 +348,7 @@ export async function initElnIdToRegistration() {
     // link opens it in a new tab.
     const onRegistration = isRegistrationPage();
 
-    settings = await getElnIdCarrySettings();
+    settings = /** @type {typeof settings} */ (await getElnIdCarrySettings());
 
     chrome.storage.onChanged.addListener((changes, areaName) => {
         if (areaName !== "local") return;
@@ -364,7 +363,7 @@ export async function initElnIdToRegistration() {
         }
 
         getElnIdCarrySettings().then((fresh) => {
-            settings = fresh;
+            settings = /** @type {typeof settings} */ (fresh);
             if (onRegistration) fillTargetField();
         });
     });

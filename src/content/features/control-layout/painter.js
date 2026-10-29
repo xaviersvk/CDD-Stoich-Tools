@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/control-layout/painter.js
 //
 // Turns a control-layout edit grid into a selection surface while a brush is
@@ -59,6 +58,9 @@ import { PAINTING_CLASS } from "./styles.js";
  * controller.setBrush(state | null)  arm a state, or null to disarm
  * controller.getBrush()              the armed state, or null
  * controller.destroy()               remove every listener and the cursor class
+ *
+ * @param {HTMLElement} table
+ * @param {{ onPaint?: (count: number) => void }} [options]
  */
 export function attachPainter(table, { onPaint } = {}) {
     let brush = null;

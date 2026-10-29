@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // inject/hooks/create-request-capture.js  (PAGE / MAIN world)
 //
 // Snapshots the BODY of an outgoing create-sample request (so the content side
@@ -103,7 +102,7 @@ export function installCreateRequestCapture(onCapture, onResponse) {
 
     // ---- fetch ----
     const origFetch = window.fetch;
-    if (typeof origFetch === "function" && !origFetch.__cddCreateCapture) {
+    if (typeof origFetch === "function" && !/** @type {any} */ (origFetch).__cddCreateCapture) {
         const wrapped = function (input, init) {
             let correlationId = null;
             try {
@@ -159,10 +158,10 @@ export function installCreateRequestCapture(onCapture, onResponse) {
     // ---- XMLHttpRequest (safety net) ----
     const origOpen = XMLHttpRequest.prototype.open;
     const origSend = XMLHttpRequest.prototype.send;
-    if (typeof origSend === "function" && !origSend.__cddCreateCapture) {
+    if (typeof origSend === "function" && !/** @type {any} */ (origSend).__cddCreateCapture) {
         XMLHttpRequest.prototype.open = function (method, url) {
-            this.__cddMethod = String(method || "GET").toUpperCase();
-            this.__cddUrl = url;
+            /** @type {any} */ (this).__cddMethod = String(method || "GET").toUpperCase();
+            /** @type {any} */ (this).__cddUrl = url;
             return origOpen.apply(this, arguments);
         };
         const wrappedSend = function (body) {

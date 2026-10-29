@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // inject/hooks/inventory-exact-first.js
 //
 // Inventory → search. CDD's keyword search splits "SM000008" into "SM" and
@@ -105,19 +104,19 @@ export function installInventoryExactFirst() {
     const origSetHeader = XMLHttpRequest.prototype.setRequestHeader;
 
     XMLHttpRequest.prototype.open = function (method, url, ...rest) {
-        this.__cddExact = String(method).toUpperCase() === "POST" && PATH.test(String(url))
+        /** @type {any} */ (this).__cddExact = String(method).toUpperCase() === "POST" && PATH.test(String(url))
             ? { url: String(url), headers: {} }
             : null;
         return origOpen.call(this, method, url, ...rest);
     };
 
     XMLHttpRequest.prototype.setRequestHeader = function (name, value) {
-        if (this.__cddExact) this.__cddExact.headers[name] = value;
+        if (/** @type {any} */ (this).__cddExact) /** @type {any} */ (this).__cddExact.headers[name] = value;
         return origSetHeader.call(this, name, value);
     };
 
     XMLHttpRequest.prototype.send = function (body) {
-        const ctx = this.__cddExact;
+        const ctx = /** @type {any} */ (this).__cddExact;
         const request = ctx && parseBody(body);
         if (!request || !wantsExact(request)) {
             if (request) publish([], ctx.url);

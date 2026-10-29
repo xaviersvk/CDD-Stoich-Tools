@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/api/molecule-page.js
 //
 // Shared, parse-once accessor for a molecule's server-rendered page.
@@ -49,7 +48,7 @@ async function requestMoleculePage(vaultId, moleculeId) {
         const line =
             `${LOG_PREFIX} molecule page failed: HTTP ${res.status} for molecule ` +
             `${moleculeId} in vault ${vaultId} (${res.url || "no url"})`;
-        const error = new Error(`HTTP ${res.status}`);
+        const error = /** @type {Error & { status?: number }} */ (new Error(`HTTP ${res.status}`));
         error.status = res.status;
         if (isNoAccess(error)) {
             console.debug(line);

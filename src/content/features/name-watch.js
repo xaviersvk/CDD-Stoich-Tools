@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/name-watch.js
 //
 // Asks for a molecule's synonyms the moment its row appears — not when the
@@ -321,7 +320,9 @@ function learnFromMoleculePicker(vaultId) {
         }
         if (!moleculeId) continue;
 
-        const chosen = box.querySelector('input[placeholder="Select..."]')?.value?.trim();
+        const chosen = /** @type {HTMLInputElement | null} */ (
+            box.querySelector('input[placeholder="Select..."]')
+        )?.value?.trim();
         if (chosen) idByBatchName.set(chosen, moleculeId);
 
         if (!getSynonyms(moleculeId)) {
@@ -399,7 +400,9 @@ async function drainWrites() {
                 continue;
             }
 
-            const result = await runExclusive(() => fillNameIntoRow(row, value));
+            const result = /** @type {{ ok: boolean, reason?: string }} */ (
+                /** @type {unknown} */ (await runExclusive(() => fillNameIntoRow(row, value)))
+            );
             say(`write "${value}" -> ${result.ok ? "ok" : result.reason} [${key}]`);
             if (!result.ok && result.reason !== "row has no empty Name field") {
                 setStatus(`Row name "${value}": ${result.reason} — type it in the row instead.`);

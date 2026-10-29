@@ -6,6 +6,9 @@
 // (`prefix-color-delete` for editable rows, `density-memory-delete` for
 // remembered ones).
 
+/**
+ * @param {{ className: string, label: string, title?: string, onClick: (event: MouseEvent) => void }} opts
+ */
 export function deleteButton({ className, label, title, onClick }) {
     const button = document.createElement("button");
     button.type = "button";

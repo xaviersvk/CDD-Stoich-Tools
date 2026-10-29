@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/sample-bulk-edit/search.js
 //
 // Inventory search → "Bulk edit fields", next to CDD's "Bulk Update". It
@@ -144,7 +143,7 @@ export function addSearchButton() {
         // A tick may change nothing in the DOM tree the observer watches.
         listening = true;
         document.addEventListener("change", (event) => {
-            if (!event.target?.matches?.('input[type="checkbox"]')) return;
+            if (!(/** @type {Element | null} */ (event.target))?.matches?.('input[type="checkbox"]')) return;
             const current = document.querySelector(`.${BUTTON_CLASS}`);
             if (current) refresh(current);
         }, true);

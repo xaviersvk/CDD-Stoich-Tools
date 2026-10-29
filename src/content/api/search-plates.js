@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/api/search-plates.js
 //
 // Collects every distinct plate referenced by the current search's results,
@@ -28,7 +27,9 @@ function getResultsEndpoint() {
         ?.getAttribute("data-url");
     if (dataUrl) return new URL(dataUrl, location.origin);
 
-    const id = document.querySelector("#search_results_id")?.value;
+    const id = /** @type {HTMLInputElement | null} */ (
+        document.querySelector("#search_results_id")
+    )?.value;
     const vault = location.pathname.match(/\/vaults\/(\d+)/)?.[1];
     if (id && vault) {
         return new URL(`/vaults/${vault}/search_results/${id}`, location.origin);
@@ -47,12 +48,12 @@ function getCsrf() {
 // Current sort, read from the live sorting/display form (defaults match CDD's).
 function getSortParams() {
     const by =
-        document.querySelector('#sorting_form [name="sort_by"]')?.value ||
-        document.querySelector('[name="sort_by"]')?.value ||
+        /** @type {HTMLInputElement | null} */ (document.querySelector('#sorting_form [name="sort_by"]'))?.value ||
+        /** @type {HTMLInputElement | null} */ (document.querySelector('[name="sort_by"]'))?.value ||
         "molecule_header";
     const dir =
-        document.querySelector('#sorting_form [name="sort_direction"]')?.value ||
-        document.querySelector('[name="sort_direction"]')?.value ||
+        /** @type {HTMLInputElement | null} */ (document.querySelector('#sorting_form [name="sort_direction"]'))?.value ||
+        /** @type {HTMLInputElement | null} */ (document.querySelector('[name="sort_direction"]'))?.value ||
         "DESC";
     return { by, dir };
 }
@@ -121,6 +122,10 @@ export function readResultTotal(doc = document) {
 //   maxPages   runaway guard, not an expected limit.
 //   signal     AbortSignal; aborts the in-flight fetch and stops paging.
 //   onProgress called per page with { pages, plates, total, scanned }.
+/**
+ * @param {{ pageSize?: number, maxPages?: number, signal?: AbortSignal,
+ *           onProgress?: (p: { pages: number, plates: number, total: number | null, scanned: number }) => void }} [options]
+ */
 export async function collectAllPlates({
     pageSize = 1000,
     maxPages = 500,

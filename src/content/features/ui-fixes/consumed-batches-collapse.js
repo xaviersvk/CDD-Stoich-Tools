@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 import { watchDocument } from "../../utils/dom.js";
 
 let stylesInjected = false;
@@ -204,7 +203,7 @@ export function collapseConsumedBatches() {
 
     moveConsumedBlocksIntoWrapper(wrapper, consumedBlocks);
 
-    const header = wrapper.querySelector(".cdd-consumed-batches-header");
+    const header = /** @type {HTMLElement} */ (wrapper.querySelector(".cdd-consumed-batches-header"));
     header.dataset.title = `Consumed batches (${consumedBlocks.length})`;
 
     updateHeaderText(wrapper);

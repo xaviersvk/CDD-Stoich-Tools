@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/ui-fixes/readout-clipboard/clipboard.js
 //
 // Where copied readout definitions wait between one vault and the next. One
@@ -9,7 +8,7 @@ const STORAGE_KEY = "cddReadoutClipboard";
 export async function readReadoutClipboard() {
     try {
         const result = await chrome.storage.local.get(STORAGE_KEY);
-        const entry = result?.[STORAGE_KEY];
+        const entry = /** @type {any} */ (result?.[STORAGE_KEY]);
         return entry && Array.isArray(entry.readouts) ? entry : null;
     } catch {
         return null;

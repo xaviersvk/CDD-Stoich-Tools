@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/hplc-injection-block.js
 //
 // "How much do I inject?" answered in the panel, once per reaction.
@@ -324,11 +323,11 @@ export function createHplcInjectionBlock(reaction, color) {
         // open block survive renderSamples rebuilding it.
         paintCollapse();
 
-        for (const [input, name] of [
+        for (const [input, name] of /** @type {Array<[HTMLInputElement, string]>} */ ([
             [aliquotInput, "aliquotUl"],
             [vialInput, "vialMl"],
             [targetInput, "targetNmol"],
-        ]) {
+        ])) {
             // Never write over the box the user is standing in — the commit
             // that triggered this repaint came from it.
             if (input !== document.activeElement) input.value = String(current[name]);

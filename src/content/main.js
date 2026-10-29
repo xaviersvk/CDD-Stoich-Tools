@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/main.js
 import { injectPageScript } from "./inject-loader.js";
 import { handleMessage } from "./message-router.js";
@@ -130,8 +129,8 @@ function guard(fn, name = fn.name) {
 function init() {
   if (!isSupportedHost()) return;
 
-  if (window.__CDD_STOICH_TOOLS_CONTENT__) return;
-  window.__CDD_STOICH_TOOLS_CONTENT__ = true;
+  if (/** @type {any} */ (window).__CDD_STOICH_TOOLS_CONTENT__) return;
+  /** @type {any} */ (window).__CDD_STOICH_TOOLS_CONTENT__ = true;
 
   // Before the page script loads, so its hello finds a listener.
   guard(initDoseResponseDragSelect);

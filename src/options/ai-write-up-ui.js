@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // options/ai-write-up-ui.js
 //
 // The "AI write-up" settings card: on/off, the AI service (CERIT-SC, OpenAI
@@ -36,22 +35,22 @@ import {
 import { AI_MODELS_MESSAGE } from "../shared/event-types.js";
 import { deleteButton } from "./delete-button.js";
 
-const enabledBox = document.getElementById("aiWriteUpEnabled");
-const providerSelect = document.getElementById("aiProvider");
-const keyInput = document.getElementById("aiApiKey");
+const enabledBox = /** @type {HTMLInputElement} */ (document.getElementById("aiWriteUpEnabled"));
+const providerSelect = /** @type {HTMLSelectElement} */ (document.getElementById("aiProvider"));
+const keyInput = /** @type {HTMLInputElement} */ (document.getElementById("aiApiKey"));
 const keyHint = document.getElementById("aiKeyHint");
 const dictationRow = document.getElementById("aiDictationRow");
-const dictationSelect = document.getElementById("aiDictationProvider");
+const dictationSelect = /** @type {HTMLSelectElement} */ (document.getElementById("aiDictationProvider"));
 const dictationKeyRow = document.getElementById("aiDictationKeyRow");
-const dictationKeyInput = document.getElementById("aiDictationKey");
+const dictationKeyInput = /** @type {HTMLInputElement} */ (document.getElementById("aiDictationKey"));
 const dictationKeyHint = document.getElementById("aiDictationKeyHint");
-const modelSelect = document.getElementById("aiModel");
-const testButton = document.getElementById("aiTest");
+const modelSelect = /** @type {HTMLSelectElement} */ (document.getElementById("aiModel"));
+const testButton = /** @type {HTMLButtonElement} */ (document.getElementById("aiTest"));
 const statusLine = document.getElementById("aiStatus");
-const timeoutInput = document.getElementById("aiTimeout");
-const mentionStyleSelect = document.getElementById("aiMentionStyle");
+const timeoutInput = /** @type {HTMLInputElement} */ (document.getElementById("aiTimeout"));
+const mentionStyleSelect = /** @type {HTMLSelectElement} */ (document.getElementById("aiMentionStyle"));
 const rulesList = document.getElementById("aiRules");
-const ruleNewInput = document.getElementById("aiRuleNew");
+const ruleNewInput = /** @type {HTMLInputElement} */ (document.getElementById("aiRuleNew"));
 const ruleAddButton = document.getElementById("aiRuleAdd");
 
 // Image, audio, embedding and moderation models are no use for writing.

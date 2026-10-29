@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/ui-fixes/inventory-location-scan/scan-panel.js
 //
 // The overlay that turns a scanner into a shelf of boxes.
@@ -335,7 +334,7 @@ export async function openScanPanel(dialog) {
 
     /* ----- adding rows ----- */
     function addScan(raw, size) {
-        const scan = classifyScan(raw, nodes, state.scans, { targetId: state.targetId });
+        const scan = /** @type {ReturnType<typeof classifyScan> & { raw?: string, columns?: number, rows?: number, capacity?: number, organized?: boolean, sized?: boolean }} */ (classifyScan(raw, nodes, state.scans, { targetId: state.targetId }));
         if (!scan) return false;
         scan.raw = raw;
         scan.columns = size?.columns ?? state.gridColumns;

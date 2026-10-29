@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 import { post } from "./bus.js";
 import { EVENTS } from "../shared/event-types.js";
 import {
@@ -152,8 +151,8 @@ function processJsonPayload(data, url) {
 const tryParseText = createTextParser(processJsonPayload);
 
 (() => {
-  if (window.__CDD_STOICH_TOOLS_HOOKED__) return;
-  window.__CDD_STOICH_TOOLS_HOOKED__ = true;
+  if (/** @type {any} */ (window).__CDD_STOICH_TOOLS_HOOKED__) return;
+  /** @type {any} */ (window).__CDD_STOICH_TOOLS_HOOKED__ = true;
 
   console.log("[CDD Stoich Tools] inject main loaded");
 

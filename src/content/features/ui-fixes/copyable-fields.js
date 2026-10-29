@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 import { copyText } from "../../utils/clipboard.js";
 
 let stylesInjected = false;
@@ -161,7 +160,7 @@ function enhanceSampleNames() {
     const container = document.querySelector(SAMPLE_NAME_CONTAINER);
     if (!container) return;
 
-    const nameNodes = Array.from(container.querySelectorAll(SAMPLE_NAME_SELECTOR));
+    const nameNodes = /** @type {HTMLElement[]} */ (Array.from(container.querySelectorAll(SAMPLE_NAME_SELECTOR)));
 
     nameNodes.forEach((node) => {
         if (node.dataset.cddCopyableBound === "1") return;
@@ -175,7 +174,7 @@ function enhanceSampleNames() {
 
         node.addEventListener("click", async (event) => {
             // A click on the collapse/expand toggle should only collapse.
-            if (event.target.closest("button")) return;
+            if (/** @type {Element} */ (event.target).closest("button")) return;
 
             event.stopPropagation();
 

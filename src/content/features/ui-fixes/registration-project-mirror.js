@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/ui-fixes/registration-project-mirror.js
 //
 // The "Create a New Entity" registration form puts the required Project select
@@ -232,7 +231,7 @@ function guardSubmit() {
     document.addEventListener(
         "click",
         (event) => {
-            const submit = event.target?.closest?.(SUBMIT_SELECTOR);
+            const submit = /** @type {Element} */ (event.target)?.closest?.(SUBMIT_SELECTOR);
             if (!submit) return;
 
             const form = getForm();
@@ -267,7 +266,7 @@ export function initRegistrationProjectMirror() {
     document.addEventListener(
         "change",
         (event) => {
-            if (event.target?.matches?.(SOURCE_SELECTOR)) sync();
+            if (/** @type {Element} */ (event.target)?.matches?.(SOURCE_SELECTOR)) sync();
         },
         true
     );

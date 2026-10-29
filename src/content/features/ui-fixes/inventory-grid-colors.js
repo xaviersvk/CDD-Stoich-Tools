@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/ui-fixes/inventory-grid-colors.js
 //
 // Tints the BACKGROUND of each occupied well in the inventory box grid
@@ -84,7 +83,7 @@ function recolor() {
         colorByPosition.set(key, getColorForSampleId(entry.name));
     }
 
-    for (const cell of grid.querySelectorAll(CELL_SELECTOR)) {
+    for (const cell of /** @type {NodeListOf<HTMLElement>} */ (grid.querySelectorAll(CELL_SELECTOR))) {
         // Empty wells stay native; also clears any stale tint if a well emptied.
         if (!cell.classList.contains(FILLED_CLASS)) {
             if (cell.style.backgroundColor) cell.style.backgroundColor = "";

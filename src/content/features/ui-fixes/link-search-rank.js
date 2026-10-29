@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/ui-fixes/link-search-rank.js
 //
 // CDD's link search (`@` in the text, Insert link, Bulk link) lists its hits
@@ -30,7 +29,7 @@ const PREFIX = -1;
 function currentQuery() {
     const active = document.activeElement;
     if (active?.matches?.(SEARCH_INPUT)) {
-        const words = active.value.trim().split(/\s+/);
+        const words = /** @type {HTMLInputElement} */ (active).value.trim().split(/\s+/);
         return words[words.length - 1] || "";
     }
     // The whole paragraph up to the caret, not just the caret's text node:
@@ -38,7 +37,7 @@ function currentQuery() {
     const selection = window.getSelection();
     const node = selection?.anchorNode;
     if (!node) return "";
-    const element = node.nodeType === Node.TEXT_NODE ? node.parentElement : node;
+    const element = /** @type {Element | null} */ (node.nodeType === Node.TEXT_NODE ? node.parentElement : node);
     const block = element?.closest('[data-slate-node="element"]');
     if (!block) return "";
     const range = document.createRange();

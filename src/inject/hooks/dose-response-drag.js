@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // inject/hooks/dose-response-drag.js
 //
 // Box-select outliers on a CDD Visualization dose-response plot. In Edit
@@ -150,7 +149,7 @@ function plotAt(x, y) {
         const box = rect.getBoundingClientRect();
         if (x < box.left || x > box.right || y < box.top || y > box.bottom) continue;
 
-        const canvas = rect.ownerSVGElement?.querySelector("canvas");
+        const canvas = /** @type {SVGRectElement} */ (rect).ownerSVGElement?.querySelector("canvas");
         const store = canvas && storeOf(canvas);
         if (!store || store.mode !== "outliers") return null;
         if (!plotProps(canvas)) return null;
@@ -267,6 +266,7 @@ function onPointerUp(event) {
     d.x1 = event.clientX;
     d.y1 = event.clientY;
 
+    /** @type {{ left: number, right: number, top: number, bottom: number, isClick?: boolean }} */
     let area = dragArea(d.x0, d.y0, d.x1, d.y1);
     if (area.isClick) {
         area = {

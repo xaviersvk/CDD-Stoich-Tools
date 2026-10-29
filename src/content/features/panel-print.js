@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/panel-print.js
 import { escapeHtml } from "../utils/dom.js";
 import { EVENT_SOURCE, EVENTS } from "../../shared/event-types";
@@ -77,7 +76,7 @@ function readElnEntryTitle() {
     // element tagged "title" (other forms on the page use the same tag), and
     // the entry's textarea is not always the first in document order.
     for (const el of document.querySelectorAll('[data-autotest-id="title"]')) {
-        const fromField = (el?.value ?? el?.textContent ?? "").trim();
+        const fromField = (/** @type {HTMLTextAreaElement} */ (el)?.value ?? el?.textContent ?? "").trim();
         if (fromField) return fromField;
     }
 

@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // shared/places-editor.js
 //
 // Editor for the categories a phrase is filed under: the current ones as
@@ -15,6 +14,7 @@
 import { makeComboInput } from "./combo-input.js";
 import { phraseCategories, sanitizeCategories } from "./phrases.js";
 
+/** @param {{ categories?: string[], phrases?: any[], onChange?: (categories: string[]) => void, inputClass?: string }} [options] */
 export function makeCategoriesEditor({ categories = [], phrases = [], onChange, inputClass = "" } = {}) {
     let current = sanitizeCategories(categories);
 

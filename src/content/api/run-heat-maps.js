@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/api/run-heat-maps.js — control-well readouts of a run, read from
 // CDD's heat map viewer (no API exposes them).
 //
@@ -44,7 +43,7 @@ export async function fetchRunHeatMapIndex(vaultId, runId) {
     const html = await fetchText(heatMapsPath(vaultId, runId), "text/html");
     const doc = new DOMParser().parseFromString(html, "text/html");
 
-    const readouts = [...doc.querySelectorAll("select#readout_definition_id option")]
+    const readouts = [.../** @type {NodeListOf<HTMLOptionElement>} */ (doc.querySelectorAll("select#readout_definition_id option"))]
         .map((o) => ({ id: o.value, name: o.textContent.trim(), selected: o.selected }))
         .filter((r) => r.id);
 

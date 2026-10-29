@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // shared/run-form-templates.js — named snapshots of a run's "Run Definition"
 // form, stored in chrome.storage.local so the same values can be replayed into
 // the next run instead of being typed again.
@@ -236,7 +235,7 @@ export async function setRunFormStash(text, meta = {}) {
 export async function getRunFormStash() {
     try {
         const result = await chrome.storage.local.get(RUN_FORM_STASH_KEY);
-        const stash = result?.[RUN_FORM_STASH_KEY];
+        const stash = /** @type {any} */ (result?.[RUN_FORM_STASH_KEY]);
         if (!stash || typeof stash !== "object") return null;
 
         const text = String(stash.text ?? "");

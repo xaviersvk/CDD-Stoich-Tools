@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/auto-fill.js
 //
 // Runs the same fills the card buttons offer, without the click. Two settings
@@ -135,7 +134,7 @@ async function runQueue() {
                 if (attempted.has(key)) continue;
                 attempted.add(key);
 
-                const result = await runFillOffer(sample, offer);
+                const result = /** @type {{ ok: boolean, note?: string, reason?: string }} */ (/** @type {unknown} */ (await runFillOffer(sample, offer)));
                 if (result.ok) {
                     filled += 1;
                     markOfferFilled(sample, offer, result);

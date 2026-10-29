@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 import { copyTextWithFeedback } from "../utils/clipboard.js";
 import { normalizeValue } from "../utils/format.js";
 import { STATE } from "../state.js";
@@ -168,7 +167,7 @@ export function setPanelTab(tab, { remember = true } = {}) {
     if (!panel) return;
     const next = validTab(tab);
     panel.dataset.tab = next;
-    for (const btn of panel.querySelectorAll(".cdd-stoich-tab")) {
+    for (const btn of /** @type {NodeListOf<HTMLElement>} */ (panel.querySelectorAll(".cdd-stoich-tab"))) {
         const active = btn.dataset.tab === next;
         btn.classList.toggle("cdd-stoich-tab--active", active);
         btn.setAttribute("aria-selected", active ? "true" : "false");
@@ -1184,7 +1183,9 @@ function buildFillButton(sample, offer) {
 
         await new Promise((resolve) => setTimeout(resolve, 60));
 
-        const result = await runFillOffer(sample, offer);
+        const result = /** @type {{ ok: boolean, note?: string, reason?: string }} */ (
+            /** @type {unknown} */ (await runFillOffer(sample, offer))
+        );
 
         if (result.ok) {
             markOfferFilled(sample, offer, result);
@@ -1225,7 +1226,9 @@ async function runAllOffers(btn) {
     for (const sample of samples) {
         for (const offer of computeFillOffers(sample)) {
             btn.textContent = `Filling ${offer.field} — ${sample.name}…`;
-            const result = await runFillOffer(sample, offer);
+            const result = /** @type {{ ok: boolean, note?: string, reason?: string }} */ (
+                /** @type {unknown} */ (await runFillOffer(sample, offer))
+            );
             if (result.ok) {
                 filled += 1;
                 markOfferFilled(sample, offer, result);

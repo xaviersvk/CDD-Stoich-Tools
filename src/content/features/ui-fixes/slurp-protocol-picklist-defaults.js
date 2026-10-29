@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/ui-fixes/slurp-protocol-picklist-defaults.js
 //
 // Bulk import ("slurp") mapping page, protocol data:
@@ -150,7 +149,7 @@ function picklistsFor(vaultId, protocolId, rerun) {
  * ------------------------------------------------------------------ */
 
 function csrfToken() {
-    return document.querySelector('meta[name="csrf-token"]')?.content || "";
+    return /** @type {HTMLMetaElement | null} */ (document.querySelector('meta[name="csrf-token"]'))?.content || "";
 }
 
 async function fetchDocument(url) {

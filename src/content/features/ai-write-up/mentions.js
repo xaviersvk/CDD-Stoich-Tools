@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/ai-write-up/mentions.js
 //
 // Entities in the LLM's English come back as CDD @-mentions, the same thing
@@ -82,7 +81,7 @@ function linkFeatures(elnEntry) {
 
 /**
  * How a row's mention reads — Settings → AI write-up → "Compound links":
- *   "label" (default) — like an @-mention: CDD's "Tenofovir (36.8 mg, 128 µmol)",
+ *   "label" (default) — like an @mention: CDD's "Tenofovir (36.8 mg, 128 µmol)",
  *                       amounts from the table; the token stands for the name
  *                       AND the amounts after it;
  *   "name"            — the name only; the amounts the text gives stay text.
@@ -489,6 +488,9 @@ export function segmentLines(segments) {
  * The panel's view: one block per paragraph (`data-line` = its index in
  * segmentLines), with text, links and placeholder slots; "## " lines in
  * bold. `onChange` runs when a placeholder is filled in.
+ *
+ * @param {any[]} segments
+ * @param {{ doc?: Document, onChange?: () => void }} [options]
  */
 export function mentionsToDom(segments, { doc = document, onChange } = {}) {
     const fragment = doc.createDocumentFragment();

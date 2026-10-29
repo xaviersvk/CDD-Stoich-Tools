@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/ui-fixes/link-structure-default.js
 //
 // CDD's link popup (toolbar → Insert link, then pick an entity) offers
@@ -24,7 +23,7 @@ const STRUCTURE_BOX =
 const handled = new WeakSet();
 
 function untickStructure() {
-    const box = document.querySelector(STRUCTURE_BOX);
+    const box = /** @type {HTMLInputElement | null} */ (document.querySelector(STRUCTURE_BOX));
     if (!box || handled.has(box)) return;
     handled.add(box);
     if (box.checked) box.click();

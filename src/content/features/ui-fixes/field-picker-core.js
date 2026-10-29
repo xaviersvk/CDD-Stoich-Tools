@@ -1,4 +1,3 @@
-// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/ui-fixes/field-picker-core.js
 //
 // Shared engine for CDD's structured, multi-column field pickers.
@@ -589,7 +588,9 @@ function buildChipRow(panel, spec) {
 }
 
 function buildItem(item, onSelect) {
-    const btn = document.createElement("button");
+    const btn = /** @type {HTMLButtonElement & { _ffpName?: string, _ffpRequired?: boolean, _ffpFold?: any, _ffpItem?: any }} */ (
+        document.createElement("button")
+    );
     btn.type = "button";
     btn.className = `${PANEL_CLASS}__item`;
     if (item.selected) btn.classList.add("is-selected");

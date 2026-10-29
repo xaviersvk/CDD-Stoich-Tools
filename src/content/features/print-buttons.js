@@ -5,6 +5,7 @@ import { PRINT_FOOTER_TEXT, PRINT_SHEET_SHARED_CSS } from "./panel-print.js";
 import {EVENT_SOURCE, EVENTS} from "../../shared/event-types";
 import { isShowProductsEnabled } from "../../shared/show-products-flag.js";
 import { peekRawMoleculeSamples } from "../api/molecule-samples.js";
+import { SELECTORS } from "../selectors.js";
 
 const BTN_CLASS = "cdd-stoich-print-button";
 const BTN_ATTR = "data-cdd-stoich-print-button";
@@ -600,7 +601,7 @@ function getReactionPayload(index) {
 
 function getReactionElements() {
     const exact = Array.from(
-        document.querySelectorAll('[data-autotest-id="reaction"]')
+        document.querySelectorAll(SELECTORS.reaction)
     );
 
     if (exact.length) return exact;

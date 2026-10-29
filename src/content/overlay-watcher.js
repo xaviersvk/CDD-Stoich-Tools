@@ -2,6 +2,7 @@
 import { STATE } from "./state.js";
 import { PANEL_ID } from "../shared/plugin-constants.js";
 import { watchDocument } from "./utils/dom.js";
+import { SELECTORS } from "./selectors.js";
 
 // Set on the panel whenever it is hidden here, so CSS keyed on the panel
 // (eln-shift-left.js) can tell "open" from "open but hidden".
@@ -28,10 +29,7 @@ export function isKetcherDialogOpen() {
  * entry, and a layout read in it would force a reflow each time.
  * ------------------------------------------------------------------ */
 
-const SIDEBAR_SELECTORS = [
-    '[data-autotest-id="toc-sidebar-content"]',
-    '[data-autotest-id="comments-sidebar-header"]',
-];
+const SIDEBAR_SELECTORS = [SELECTORS.tocSidebar, SELECTORS.commentsSidebar];
 
 // Observed element -> is it open (width > 0)?
 const sidebarOpen = new Map();

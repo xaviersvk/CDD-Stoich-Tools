@@ -26,6 +26,7 @@
 
 import { mouseClick } from "../utils/dom.js";
 import { concentrationText } from "../../shared/concentration-text.js";
+import { SELECTORS } from "../selectors.js";
 
 // Waiting is counted in POLL ATTEMPTS, not wall-clock: Chrome throttles
 // timers in a background tab to roughly one tick per minute, and a
@@ -58,7 +59,7 @@ async function waitFor(probe, attempts = STEP_POLL_ATTEMPTS) {
 // displayed reaction; index = display order = sample.reactionIndex.
 export function getReactionContainers() {
     const byTestId = Array.from(
-        document.querySelectorAll('[data-autotest-id="reaction"]')
+        document.querySelectorAll(SELECTORS.reaction)
     );
     if (byTestId.length) return byTestId;
 
@@ -673,7 +674,7 @@ export async function fillNameIntoRow(tr, value) {
     // looked up by number after the write can be a different row — which is
     // how a landed value came back as "did not stick", six times over.
     const container =
-        tr.closest('[data-autotest-id="reaction"]') || tr.closest("table") || document.body;
+        tr.closest(SELECTORS.reaction) || tr.closest("table") || document.body;
     const rowNumber = (tr.cells?.[0]?.innerText || "").trim();
     const batch = readMoleculeLabel(tr);
 

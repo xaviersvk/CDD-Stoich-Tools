@@ -8,10 +8,11 @@
 // never disagree about what "the entry ID" means.
 
 import { cleanElnEntryId } from "../../shared/eln-id-carry.js";
+import { SELECTORS } from "../selectors.js";
 
 // CDD's own test hook, and by far the cheapest way in:
 //   <span data-autotest-id="entry-identifier">ID: IDEMO-MDX-0014</span>
-const IDENTIFIER_SELECTOR = '[data-autotest-id="entry-identifier"]';
+const IDENTIFIER_SELECTOR = SELECTORS.entryIdentifier;
 
 export function readElnEntryId() {
     const tagged = document.querySelector(IDENTIFIER_SELECTOR);

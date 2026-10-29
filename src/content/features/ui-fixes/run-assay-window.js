@@ -26,13 +26,14 @@ import {
     plateMetrics,
     runMetrics,
 } from "../../../shared/assay-window.js";
+import { SELECTORS } from "../../selectors.js";
 
 const LOG_PREFIX = "[CDD plate plugin]";
 
 const STYLE_ID = "cdd-assay-window-style";
 const ROOT_CLASS = "cdd-assay-window";
 const RUN_PATH_RE = /^\/vaults\/(\d+)\/runs\/(\d+)\/?$/;
-const ANCHOR_SELECTOR = "#run-summary > #run-summary-links";
+const ANCHOR_SELECTOR = SELECTORS.runSummaryLinks;
 const FETCH_CONCURRENCY = 3;
 
 // Values past these are shown in red.

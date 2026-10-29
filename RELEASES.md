@@ -13,6 +13,12 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 19.12.0 — 2026-10-29
+
+If a CDD update breaks part of the extension, the browser console now says so, with *[CDD Stoich Tools] health check: … missing* and the affected features. Please paste that line into a bug report.
+
+---
+
 ## 19.11.0 — 2026-10-29
 
 Busy CDD pages, such as large grids and long ELN entries, do less work with the extension on. Nothing changes in how anything looks or works.

@@ -19,6 +19,34 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [19.12.0] — 2026-10-29
+
+### Added
+- **Startup health check for CDD markup changes.** A CDD change to the
+  markup a feature stands on throws nothing: the feature's `querySelector`
+  finds nothing, and its button or fill silently never appears.
+  `content/health-check.js` now looks at each page 10 s after it loads, and
+  again after every in-app navigation. Anchors still missing 10 s later are
+  reported in one console warning per page. The warning lists each selector
+  with the features that depend on it:
+  `[CDD Stoich Tools] health check: N CDD anchor(s) missing on <path>`.
+
+  Only anchors that must be on the page are checked:
+  - **Every vault page:** the header user name.
+  - **ELN entry, always:** the identifier and the editor.
+  - **ELN entry, when the payload has a reaction:** the reaction blocks and
+    the stoichiometry tables.
+  - **ELN entry, when the panel has samples:** the stoichiometry rows.
+  - **Run page, when it has a Data Summary:** its summary links.
+
+  Dialogs and menus are never checked.
+- **`content/selectors.js`** holds the CDD anchors that several features
+  share. Twelve modules now import them from there instead of keeping their
+  own copy of the string, and the health check looks for exactly the same
+  strings. A CDD rename is now fixed in one place.
+- `tests/health-check.test.js`.
+
+---
 ## [19.11.0] — 2026-10-29
 
 ### Changed

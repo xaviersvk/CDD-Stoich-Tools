@@ -96,12 +96,13 @@ const REGISTER_LINK_SELECTOR = 'a[href*="/molecules/new"]';
 // reactions: a reaction that carries only a scheme has no table and so cannot
 // shift the letters of the ones that do. CDD's own autotest hook, not the
 // emotion class hash next to it — that changes on every deploy.
-const TABLE_SELECTOR = '[data-autotest-id="stoichiometry"]';
+const TABLE_SELECTOR = SELECTORS.stoichTable;
 
 // Both selectors, and the guards that go with them, are shared with
 // registration-defaults.js — see registration-fill.js. Two features writing
 // into the same form must not disagree about which form that is.
 import { FORM_SELECTOR, CELL_SELECTOR } from "./registration-fill.js";
+import { SELECTORS } from "../../selectors.js";
 
 let started = false;
 

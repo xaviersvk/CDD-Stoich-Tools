@@ -1,3 +1,5 @@
+import { SELECTORS } from "../../../selectors.js";
+
 // content/features/ui-fixes/create-location-link/permission.js
 //
 // May this user edit the vault's locations? Two gates, the cheap one first.
@@ -20,7 +22,7 @@
 
 const ROLE_LINK_SELECTOR = '.user-dropdown a[data-tooltip-path*="user_roles"]';
 const ADMIN_ROLE = "Vault Administrator";
-const USER_SELECTOR = ".username-text";
+const USER_SELECTOR = SELECTORS.username;
 const CACHE_PREFIX = "cddCanEditLocations:";
 const NO_TTL_MS = 5 * 60 * 1000;
 

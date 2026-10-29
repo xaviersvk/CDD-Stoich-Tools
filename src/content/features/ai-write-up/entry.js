@@ -9,9 +9,10 @@
 // the editor shows it as a rendered widget, not as data.
 
 import { entryTextFromNodes } from "./model.js";
+import { SELECTORS } from "../../selectors.js";
 
 const ENTRY_PATH = /\/vaults\/(\d+)\/eln\/entries\/(\d+)/;
-const EDITOR_SELECTOR = '[data-slate-editor="true"]';
+const EDITOR_SELECTOR = SELECTORS.entryEditor;
 // Slate's zero-width placeholders (BOM, zero-width space) in empty leaves.
 const ZERO_WIDTH = /[\uFEFF\u200B]/g;
 

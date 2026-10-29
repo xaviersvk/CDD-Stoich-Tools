@@ -54,8 +54,9 @@ import {
 import { fillNameIntoRow } from "./row-fill.js";
 import { runExclusive } from "./write-lock.js";
 import { setStatus, renderFromState } from "./sample-panel.js";
+import { SELECTORS } from "../selectors.js";
 
-const ROW_SELECTOR = '[data-autotest-id="stoichiometry-row"]';
+const ROW_SELECTOR = SELECTORS.stoichRow;
 const MOLECULE_PICKER = '[data-autotest-id="molecule-selector"]';
 const MOLECULE_HREF = /\/molecules\/(\d+)/;
 

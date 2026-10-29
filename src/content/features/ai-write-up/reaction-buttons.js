@@ -11,6 +11,7 @@
 import { isAiWriteUpEnabled } from "../../../shared/ai-write-up-settings.js";
 import { setPanelTab } from "../sample-panel.js";
 import { dictationLabel, dictationUnavailable, getDictationState, onDictationChanged, toggleDictation } from "./dictation.js";
+import { SELECTORS } from "../../selectors.js";
 
 const BTN_CLASS = "cdd-stoich-dictate-button";
 const STYLE_ID = "cdd-stoich-dictate-button-styles";
@@ -75,8 +76,8 @@ function ensureStyles() {
             box-shadow: 0 1px 2px rgba(0,0,0,0.08); cursor: pointer; white-space: nowrap;
             opacity: 0; pointer-events: none; transition: opacity 0.15s ease;
         }
-        [data-autotest-id="reaction"]:hover .${BTN_CLASS},
-        [data-autotest-id="reaction"]:focus-within .${BTN_CLASS},
+        ${SELECTORS.reaction}:hover .${BTN_CLASS},
+        ${SELECTORS.reaction}:focus-within .${BTN_CLASS},
         .${BTN_CLASS}--active {
             opacity: 1; pointer-events: auto;
         }
@@ -90,7 +91,7 @@ function ensureStyles() {
 }
 
 export function ensureDictateButtons() {
-    const reactions = [...document.querySelectorAll('[data-autotest-id="reaction"]')];
+    const reactions = [...document.querySelectorAll(SELECTORS.reaction)];
     if (!isAiWriteUpEnabled()) {
         for (const btn of document.querySelectorAll(`.${BTN_CLASS}`)) btn.remove();
         return;

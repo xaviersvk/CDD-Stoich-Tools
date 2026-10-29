@@ -23,6 +23,7 @@
 
 import { copyText } from "../../utils/clipboard.js";
 import { PLATE_LINK_SELECTOR } from "./plate-location-tooltip.js";
+import { SELECTORS } from "../../selectors.js";
 
 const STYLE_ID = "cdd-search-column-copy-style";
 const FLASH_CLASS = "cdd-column-copied";
@@ -30,7 +31,7 @@ const TOAST_ID = "cdd-column-copy-toast";
 // Two tables answer to this: Explore's Rails-rendered search results, and the
 // Inventory search's MUI grid, whose expandable event rows sit in the same
 // column grid as the sample row above them.
-const TABLE_SELECTORS = ["table.search_results_table", "table.NestedExpandableDataTable"];
+const TABLE_SELECTORS = SELECTORS.searchResultsTables;
 const TABLE_SELECTOR = TABLE_SELECTORS.join(", ");
 const CELL_SELECTOR = "tbody td, tbody th";
 

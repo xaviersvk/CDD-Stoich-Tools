@@ -16,6 +16,7 @@ import {
     encodeFragment,
     withImageStructure,
 } from "../../shared/next-step-reaction.js";
+import { SELECTORS } from "../selectors.js";
 
 const BTN_CLASS = "cdd-stoich-next-step-button";
 const STYLE_ID = "cdd-stoich-next-step-styles";
@@ -155,8 +156,8 @@ function ensureStyles() {
             box-shadow: 0 1px 2px rgba(0,0,0,0.08); cursor: pointer;
             opacity: 0; pointer-events: none; transition: opacity 0.15s ease;
         }
-        [data-autotest-id="reaction"]:hover .${BTN_CLASS},
-        [data-autotest-id="reaction"]:focus-within .${BTN_CLASS} {
+        ${SELECTORS.reaction}:hover .${BTN_CLASS},
+        ${SELECTORS.reaction}:focus-within .${BTN_CLASS} {
             opacity: 1; pointer-events: auto;
         }
         .${BTN_CLASS}:hover { background: #f9fafb; border-color: #bfc6cf; color: #374151; }
@@ -166,7 +167,7 @@ function ensureStyles() {
 }
 
 export function ensureNextStepButtons() {
-    const reactions = [...document.querySelectorAll('[data-autotest-id="reaction"]')];
+    const reactions = [...document.querySelectorAll(SELECTORS.reaction)];
     if (!reactions.length) return;
     ensureStyles();
 

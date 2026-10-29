@@ -98,6 +98,7 @@ import {initInventoryScan} from "../shared/inventory-scan.js";
 import {initPanelSources, onPanelSourcesChanged} from "../shared/panel-sources-flag.js";
 import {initElnMentions} from "./features/mentions/init.js";
 import { watchDocument } from "./utils/dom.js";
+import { scheduleHealthCheck } from "./health-check.js";
 
 
 function isSupportedHost() {
@@ -190,6 +191,7 @@ function init() {
 
     guard(ensureDictateButtons);
     guard(markDepletedSamplesInSelector);
+    guard(scheduleHealthCheck);
   });
 
   guard(watchKetcherDialog);
@@ -321,6 +323,10 @@ function init() {
   // popup edit. Fire-and-forget: features render with the default look until the
   // (fast) storage read completes.
   guard(initPrefixColorCache);
+
+  // Ten seconds after the page settles: which CDD anchors the features stand
+  // on are missing (a CDD markup change). Warns once per page in the console.
+  guard(scheduleHealthCheck);
 
   // Remembered densities: load the batch->density map, then re-render the
   // panel whenever it changes in any context (typing on another tab, deleting

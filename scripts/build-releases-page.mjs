@@ -1,3 +1,4 @@
+// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // scripts/build-releases-page.mjs
 //
 // Renders RELEASES.md into the public "What's new" page published by GitHub

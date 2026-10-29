@@ -1,3 +1,4 @@
+// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // scripts/notes-for-tag.mjs <tag>
 //
 // Prints the RELEASES.md section for a tag as markdown, for `gh release create

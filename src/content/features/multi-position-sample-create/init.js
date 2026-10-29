@@ -1,3 +1,4 @@
+// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/multi-position-sample-create/init.js
 //
 // Production batch sample creation — the first consumer of the Box Selection

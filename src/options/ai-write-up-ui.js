@@ -1,3 +1,4 @@
+// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // options/ai-write-up-ui.js
 //
 // The "AI write-up" settings card: on/off, the AI service (CERIT-SC, OpenAI

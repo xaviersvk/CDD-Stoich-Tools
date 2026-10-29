@@ -1,3 +1,4 @@
+// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 import { EVENT_SOURCE, EVENTS } from "../../shared/event-types.js";
 
 function waitForImages(doc, callback) {

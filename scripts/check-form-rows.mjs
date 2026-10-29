@@ -1,3 +1,4 @@
+// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // scripts/check-form-rows.mjs
 //
 // node scripts/check-form-rows.mjs — the cases behind form-rows/row-model.js,

@@ -1,3 +1,4 @@
+// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/utils/form-definitions-api.js
 //
 // CDD's internal form definition endpoints (protocol and registration forms),

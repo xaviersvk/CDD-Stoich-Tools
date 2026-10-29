@@ -1,3 +1,4 @@
+// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/run-form-templates/protocol-runs.js
 //
 // A Copy and a Duplicate button on every row of a protocol's "Run Data" table.

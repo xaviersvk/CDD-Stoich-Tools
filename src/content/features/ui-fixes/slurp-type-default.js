@@ -1,3 +1,4 @@
+// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/ui-fixes/slurp-type-default.js
 //
 // The same two conveniences as registration-form-default.js, applied to the

@@ -3,7 +3,8 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "checkJs": false,
+    "checkJs": true,
+    "noEmit": true,
     "types": ["chrome"]
   },
   "include": ["src/**/*.js", "scripts/**/*.mjs", "vite.*.config.js"],

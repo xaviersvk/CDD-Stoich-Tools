@@ -1,3 +1,4 @@
+// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/panel-print.js
 import { escapeHtml } from "../utils/dom.js";
 import { EVENT_SOURCE, EVENTS } from "../../shared/event-types";

@@ -1,3 +1,4 @@
+// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/hplc-injection-block.js
 //
 // "How much do I inject?" answered in the panel, once per reaction.

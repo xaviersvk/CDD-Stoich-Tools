@@ -1,3 +1,4 @@
+// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/ui-fixes/field-picker-core.js
 //
 // Shared engine for CDD's structured, multi-column field pickers.

@@ -1,3 +1,4 @@
+// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/ui-fixes/search-column-copy.js
 //
 // Ctrl+click (or Cmd+click) a column header on a search results table and the

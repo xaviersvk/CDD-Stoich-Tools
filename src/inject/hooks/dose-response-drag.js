@@ -1,3 +1,4 @@
+// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // inject/hooks/dose-response-drag.js
 //
 // Box-select outliers on a CDD Visualization dose-response plot. In Edit

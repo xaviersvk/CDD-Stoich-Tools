@@ -1,6 +1,6 @@
 name: Test
 
-# The unit tests on every push and pull request, not only when a release tag
+# The unit tests and the type check on every push and pull request, not only when a release tag
 # is pushed (publish.yml runs them too, as the release gate).
 
 on:
@@ -27,3 +27,8 @@ jobs:
 
       - name: Test
         run: npm test
+
+      # checkJs: files still marked // @ts-nocheck are skipped; every other file
+      # (and every new one) must type-check.
+      - name: Type check
+        run: npm run typecheck

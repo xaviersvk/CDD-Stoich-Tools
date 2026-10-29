@@ -1,3 +1,4 @@
+// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/ui-fixes/form-clipboard/clipboard.js
 //
 // Where copied forms wait between one vault and the next. What is stored is

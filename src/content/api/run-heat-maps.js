@@ -1,3 +1,4 @@
+// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/api/run-heat-maps.js — control-well readouts of a run, read from
 // CDD's heat map viewer (no API exposes them).
 //

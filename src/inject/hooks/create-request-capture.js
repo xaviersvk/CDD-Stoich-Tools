@@ -1,3 +1,4 @@
+// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // inject/hooks/create-request-capture.js  (PAGE / MAIN world)
 //
 // Snapshots the BODY of an outgoing create-sample request (so the content side

@@ -1,3 +1,4 @@
+// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // inject/hooks/inventory-exact-first.js
 //
 // Inventory → search. CDD's keyword search splits "SM000008" into "SM" and

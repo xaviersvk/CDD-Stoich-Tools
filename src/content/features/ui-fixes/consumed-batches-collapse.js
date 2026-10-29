@@ -1,3 +1,4 @@
+// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 import { watchDocument } from "../../utils/dom.js";
 
 let stylesInjected = false;

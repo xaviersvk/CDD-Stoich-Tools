@@ -1,3 +1,4 @@
+// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/phrases/capture.js
 //
 // The "Save phrase" affordance: select text inside an ELN entry and a small

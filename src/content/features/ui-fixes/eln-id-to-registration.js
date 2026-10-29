@@ -1,3 +1,4 @@
+// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/ui-fixes/eln-id-to-registration.js
 //
 // Registering a product straight out of a reaction: in the stoichiometry table

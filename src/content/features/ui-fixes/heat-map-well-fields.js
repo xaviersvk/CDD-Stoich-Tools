@@ -1,3 +1,4 @@
+// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/ui-fixes/heat-map-well-fields.js
 //
 // Appends extra rows to CDD's OWN hover popup on run heat maps

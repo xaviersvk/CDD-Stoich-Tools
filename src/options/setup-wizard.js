@@ -1,3 +1,4 @@
+// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // setup-wizard.js — the setup guide on the settings page.
 //
 // A short tour a newcomer can click through: each step says, in a chemist's

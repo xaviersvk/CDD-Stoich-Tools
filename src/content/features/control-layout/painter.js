@@ -1,3 +1,4 @@
+// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/control-layout/painter.js
 //
 // Turns a control-layout edit grid into a selection surface while a brush is

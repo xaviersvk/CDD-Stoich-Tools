@@ -1,3 +1,4 @@
+// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/auto-fill.js
 //
 // Runs the same fills the card buttons offer, without the click. Two settings

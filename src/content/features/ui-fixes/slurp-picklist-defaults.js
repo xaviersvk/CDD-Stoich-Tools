@@ -1,3 +1,4 @@
+// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // content/features/ui-fixes/slurp-picklist-defaults.js
 //
 // Bulk registration ("slurp") mapping page:

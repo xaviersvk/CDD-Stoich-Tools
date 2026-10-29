@@ -1,3 +1,4 @@
+// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 const OBSERVER_KEY = "__CDD_DEPLETED_OBSERVER__";
 
 import { STATE } from "../state.js";

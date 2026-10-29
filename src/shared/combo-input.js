@@ -1,3 +1,4 @@
+// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 // shared/combo-input.js
 //
 // A text input that also offers a pick-list: type anything, or press ▾ and

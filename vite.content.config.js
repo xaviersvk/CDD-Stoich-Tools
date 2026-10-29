@@ -1,3 +1,4 @@
+// @ts-nocheck — not yet type-clean; remove this line once `npm run typecheck` passes without it.
 import { defineConfig } from "vite";
 import { resolve } from "path";
 import { mkdirSync, copyFileSync, cpSync, existsSync, rmSync, readFileSync, writeFileSync } from "fs";

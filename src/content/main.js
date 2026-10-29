@@ -117,6 +117,20 @@ function watchFileDialog() {
   });
 }
 
+// One feature that throws — a CDD markup change it did not expect — must not
+// stop every feature after it from starting. A returned promise is watched
+// too, so an async init that rejects is logged instead of lost.
+function guard(fn, name = fn.name) {
+  try {
+    const result = fn();
+    if (result && typeof result.catch === "function") {
+      result.catch((err) => console.error(`[CDD Stoich Tools] ${name} failed`, err));
+    }
+  } catch (err) {
+    console.error(`[CDD Stoich Tools] ${name} failed`, err);
+  }
+}
+
 function init() {
   if (!isSupportedHost()) return;
 
@@ -124,142 +138,142 @@ function init() {
   window.__CDD_STOICH_TOOLS_CONTENT__ = true;
 
   // Before the page script loads, so its hello finds a listener.
-  initDoseResponseDragSelect();
-  initHeatMapOutlierDragSelect();
-  injectPageScript();
-  initDoseResponseOverride();
-  initSamplePanelFields();
-  initSynonymEnrichment();
-  initRowNameEnrichment();
-  initNamePicker();
-  initNameWatch();
-  initPhraseCapture();
+  guard(initDoseResponseDragSelect);
+  guard(initHeatMapOutlierDragSelect);
+  guard(injectPageScript);
+  guard(initDoseResponseOverride);
+  guard(initSamplePanelFields);
+  guard(initSynonymEnrichment);
+  guard(initRowNameEnrichment);
+  guard(initNamePicker);
+  guard(initNameWatch);
+  guard(initPhraseCapture);
   // The panel's Write-up tab follows it on its own; the reactions' 🎤 here.
-  void initAiWriteUp();
-  onAiWriteUpChanged(() => ensureDictateButtons());
+  guard(initAiWriteUp);
+  guard(() => onAiWriteUpChanged(() => ensureDictateButtons()), "onAiWriteUpChanged");
 
   window.addEventListener("message", handleMessage);
 
-  ensurePanel();
-  ensureDepletedStyle();
-  startDepletedMarkerObserver();
+  guard(ensurePanel);
+  guard(ensureDepletedStyle);
+  guard(startDepletedMarkerObserver);
   // Batch/sample picker: depleted crossed out and the most used sample
   // starred as soon as an entity is chosen, not after the entry saves.
-  initSamplePickerHints();
+  guard(initSamplePickerHints);
   // Molecule → Samples: "Duplicate sample" opens CDD's create dialog filled
   // in like that sample; the user only picks a location.
-  initSampleDuplicate();
+  guard(initSampleDuplicate);
   // Molecule → Samples: "Bulk edit" sets one field on many samples at once.
-  initSampleBulkEdit();
+  guard(initSampleBulkEdit);
   // Create a New Sample: a molecule with one batch gets it chosen.
-  initSampleSingleBatch();
+  guard(initSampleSingleBatch);
 
-  renderFromState();
-  ensurePrintButtons();
-  ensureNextStepButtons();
+  guard(renderFromState);
+  guard(ensurePrintButtons);
+  guard(ensureNextStepButtons);
 
-  ensureDictateButtons();
-  markDepletedSamplesInSelector();
-  applyFileDialogFixes();
-  injectAssociateFileBarStyles();
-  watchFileDialog();
+  guard(ensureDictateButtons);
+  guard(markDepletedSamplesInSelector);
+  guard(applyFileDialogFixes);
+  guard(injectAssociateFileBarStyles);
+  guard(watchFileDialog);
 
   watchUrlChanges(() => {
     resetState();
     // Per-reaction HPLC overrides describe the entry being left, not the one
     // being opened — "reaction 1 took two drops" does not carry over.
-    clearHplcInjectionState();
+    guard(clearHplcInjectionState);
 
     // Same reasoning: a "✓ Internal ID set to MDX-0095" belongs to the entry
     // it was clicked in.
-    clearElnIdToBatchWrites();
+    guard(clearElnIdToBatchWrites);
 
-    ensurePanel();
-    renderFromState();
+    guard(ensurePanel);
+    guard(renderFromState);
 
-    ensurePrintButtons();
-    ensureNextStepButtons();
+    guard(ensurePrintButtons);
+    guard(ensureNextStepButtons);
 
-    ensureDictateButtons();
-    markDepletedSamplesInSelector();
+    guard(ensureDictateButtons);
+    guard(markDepletedSamplesInSelector);
   });
 
-  watchKetcherDialog();
+  guard(watchKetcherDialog);
 
-  observeCopyableFields();
+  guard(observeCopyableFields);
 
 
-  injectLeftEllipsisForLocations();
-  initFilterFieldPicker();
-  initElnFilterFieldPicker();
-  initKeywordsFieldPicker();
-  initColumnManager();
-  initLocationPickerResize();
-  initInventoryLocationTree();
+  guard(injectLeftEllipsisForLocations);
+  guard(initFilterFieldPicker);
+  guard(initElnFilterFieldPicker);
+  guard(initKeywordsFieldPicker);
+  guard(initColumnManager);
+  guard(initLocationPickerResize);
+  guard(initInventoryLocationTree);
 
   // "Scan racks" in the Edit Locations dialog: a barcode scanner's Enter is
   // Save there, which made adding a shelf of racks one round trip per rack.
   // Off unless switched on in the options page.
-  initInventoryLocationScan();
-  initCreateLocationLink();
-  initFieldClipboard();
-  initFieldForms();
-  initFormClipboard();
-  initRegistrationSystems();
-  initRegistrationFormClipboard();
-  initFormRows();
-  initRegistrationFieldDelete();
+  guard(initInventoryLocationScan);
+  guard(initCreateLocationLink);
+  guard(initFieldClipboard);
+  guard(initFieldForms);
+  guard(initFormClipboard);
+  guard(initRegistrationSystems);
+  guard(initRegistrationFormClipboard);
+  guard(initFormRows);
+  guard(initRegistrationFieldDelete);
 
-  injectMoleculeLinksStyles();
-  initElnShiftLeft();
-  watchConsumedBatches();
-  watchInventoryWellStructure();
-  initInventoryGridColors();
-  initPlateLocationTooltip();
-  initRunPlatesTooltip();
-  initPlateLocationExport();
-  initPlateListLocations();
-  initMoleculePlateProtocols();
+  guard(injectMoleculeLinksStyles);
+  guard(initElnShiftLeft);
+  guard(watchConsumedBatches);
+  guard(watchInventoryWellStructure);
+  guard(initInventoryGridColors);
+  guard(initPlateLocationTooltip);
+  guard(initRunPlatesTooltip);
+  guard(initPlateLocationExport);
+  guard(initPlateListLocations);
+  guard(initMoleculePlateProtocols);
   // A batch field linking to another batch: the linked molecule's synonyms
   // in brackets after the link.
-  initBatchLinkSynonyms();
-  initPlateListExport();
-  initPlateMapStructureTooltip();
-  initPlateMapExport();
-  initHeatMapWellFields();
+  guard(initBatchLinkSynonyms);
+  guard(initPlateListExport);
+  guard(initPlateMapStructureTooltip);
+  guard(initPlateMapExport);
+  guard(initHeatMapWellFields);
 
   // Assay window, signal window and Z′ per plate above a run's Data Summary,
   // from the control wells of the run's heat maps.
-  initRunAssayWindow();
+  guard(initRunAssayWindow);
 
   // Control-layout editor: arm a control type, then drag a rectangle over the
   // wells (or click a row/column header) to set them all at once, plus named
   // layout presets per plate format. Inert until a brush is armed — CDD's
   // one-well click cycling is untouched otherwise.
-  initControlLayoutTools();
-  initRunFormTemplates();
+  guard(initControlLayoutTools);
+  guard(initRunFormTemplates);
 
-  initRegistrationProjectMirror();
-  initRegistrationFormDefault();
+  guard(initRegistrationProjectMirror);
+  guard(initRegistrationFormDefault);
 
   // Registering a product straight out of a reaction: the Register link in a
   // stoichiometry row carries the entry's own ID (IDEMO-MDX-0014) across in its
   // URL, and the Create a New Entity page writes it into Internal ID.
-  initElnIdToRegistration();
+  guard(initElnIdToRegistration);
 
   // Per-vault constants (Origin -> Synthesized) plus the amount out of the
   // stoichiometry row, both only on a registration opened FROM an ELN entry.
-  initRegistrationDefaults();
+  guard(initRegistrationDefaults);
 
   // Insert link → Display Options: "Include structure" starts unticked.
-  initLinkStructureDefault();
+  guard(initLinkStructureDefault);
 
   // Link search (@, Insert link, Bulk link): the exact match on top.
-  initLinkSearchRank();
+  guard(initLinkSearchRank);
 
   // Insert link on a batch or sample: its Internal ID (or the field set in
   // Settings) offered and preselected as the link's description.
-  initLinkAlias();
+  guard(initLinkAlias);
 
   // Inventory search: the exact hits (lifted first by the page-world hook)
   // also shown in a view-only "Exact" table above CDD's results.
@@ -287,49 +301,49 @@ function init() {
   //   import {initStoichTableCopy} from "./features/ui-fixes/stoich-table-copy";
   // and call initStoichTableCopy() here.
 
-  initSlurpTypeDefault();
-  initSlurpPicklistDefaults();
-  initSlurpProtocolPicklistDefaults();
-  initReadoutClipboard();
-  initOptionsMenuLink();
-  initSavedSearchCopyLinks();
-  initSearchColumnCopy();
-  initElnTitle();
+  guard(initSlurpTypeDefault);
+  guard(initSlurpPicklistDefaults);
+  guard(initSlurpProtocolPicklistDefaults);
+  guard(initReadoutClipboard);
+  guard(initOptionsMenuLink);
+  guard(initSavedSearchCopyLinks);
+  guard(initSearchColumnCopy);
+  guard(initElnTitle);
 
   // Box Selection Framework (Phase 1): injects styles + a console debug handle.
   // Attaches no selection UI by itself — a consumer (e.g. multi-position sample
   // create, Phase 2) calls observeBoxGrids() to opt a grid into selection.
-  initBoxSelection();
+  guard(initBoxSelection);
 
   // Multi-position sample create (Phase 3): production batch create — one click
   // creates N samples (native first save + sequential replay of the rest).
   // Consumes the Box Selection SelectionContext; CDD's native Save is untouched
   // outside batch mode.
-  initMultiPositionSampleCreate();
+  guard(initMultiPositionSampleCreate);
 
   // Load the prefix->colour map into the in-memory cache and keep it live.
   // Called LAST so every feature that subscribed via onPrefixColorsChanged()
   // above gets notified once the initial map resolves, and again on any later
   // popup edit. Fire-and-forget: features render with the default look until the
   // (fast) storage read completes.
-  initPrefixColorCache();
+  guard(initPrefixColorCache);
 
   // Remembered densities: load the batch->density map, then re-render the
   // panel whenever it changes in any context (typing on another tab, deleting
   // from the options page) so fill offers appear/disappear live.
-  initDensityMemory().then(() => {
-    onDensityMemoryChanged(() => renderFromState());
-  });
+  guard(() => initDensityMemory().then(() => {
+    guard(() => onDensityMemoryChanged(() => renderFromState()), "onDensityMemoryChanged");
+  }), "initDensityMemory");
 
   // Experimental auto-fill (opt-in via the options checkbox): runs the
   // same fills the card buttons offer, sequentially, once the page settles.
-  initAutoFill();
+  guard(initAutoFill);
 
   // Purity thresholds (fill + warn): badge and offers re-render when they
   // change in the options page.
-  initPurityThresholds().then(() => {
-    onPurityThresholdChanged(() => renderFromState());
-  });
+  guard(() => initPurityThresholds().then(() => {
+    guard(() => onPurityThresholdChanged(() => renderFromState()), "onPurityThresholdChanged");
+  }), "initPurityThresholds");
 
   // The HPLC injection parameters. Fire-and-forget: the block paints with
   // the defaults until the (fast) storage read lands, and the block's own
@@ -339,49 +353,49 @@ function init() {
   // The on/off flag is the exception: it adds and removes whole blocks, so
   // it does need a re-render. It has its own subscription for exactly that
   // reason — see the two listener sets in shared/hplc-injection.js.
-  initHplcSettings();
-  onHplcBlockEnabledChanged(() => renderFromState());
+  guard(initHplcSettings);
+  guard(() => onHplcBlockEnabledChanged(() => renderFromState()), "onHplcBlockEnabledChanged");
 
   // Optional products section (panel + print).
-  initShowProducts().then(() => {
-    onShowProductsChanged(() => renderFromState());
-  });
+  guard(() => initShowProducts().then(() => {
+    guard(() => onShowProductsChanged(() => renderFromState()), "onShowProductsChanged");
+  }), "initShowProducts");
 
   // Row name from synonym. Defaults to "suggest"; nothing that depends on it
   // runs until the mode has been read out of storage.
-  initFillRowName();
+  guard(initFillRowName);
 
   // Remembered row names: load the molecule->name map, then re-render the
   // panel whenever it changes in any context (typing on another tab, deleting
   // from the options page) so fill offers appear/disappear live.
-  initNameMemory().then(() => {
-    onNameMemoryChanged(() => renderFromState());
-  });
+  guard(() => initNameMemory().then(() => {
+    guard(() => onNameMemoryChanged(() => renderFromState()), "onNameMemoryChanged");
+  }), "initNameMemory");
 
   // Writing this entry's ID onto a product's existing batch. Off by default:
   // it is the only thing in the panel that saves to a record rather than to
   // the stoichiometry table.
-  initElnIdToBatch().then(() => {
-    onElnIdToBatchChanged(() => renderFromState());
-  });
+  guard(() => initElnIdToBatch().then(() => {
+    guard(() => onElnIdToBatchChanged(() => renderFromState()), "onElnIdToBatchChanged");
+  }), "initElnIdToBatch");
 
   // Which sources the panel draws from (stoichiometry tables / entity links
   // written into the entry body). The mention scan starts only once the flag
   // is known, so a disabled scan never fires a single request.
-  initPanelSources().then(() => {
-    onPanelSourcesChanged(() => renderFromState());
-    initElnMentions();
-  });
+  guard(() => initPanelSources().then(() => {
+    guard(() => onPanelSourcesChanged(() => renderFromState()), "onPanelSourcesChanged");
+    guard(initElnMentions);
+  }), "initPanelSources");
 
   // Extra rows in the heat-map well tooltip. Fire-and-forget: hovers before
   // the (fast) storage read completes just show CDD's native popup.
-  initHeatMapFieldsConfig();
+  guard(initHeatMapFieldsConfig);
 
   // The "Scan racks" button in CDD's Edit Locations dialog. Fire-and-forget:
   // the dialog watcher (initInventoryLocationScan) asks the cache each time a
   // dialog appears, and the cache's own subscription adds or removes the
   // button if the switch is flipped while one is open.
-  void initInventoryScan();
+  guard(initInventoryScan);
 }
 
 init();

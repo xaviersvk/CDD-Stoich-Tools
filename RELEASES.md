@@ -13,12 +13,23 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 19.10.0 — 2026-10-29
+
+CDD pages respond a little faster with the extension on: CDD no longer waits for the extension to read each response.
+
+- If one feature breaks after a CDD update, the others still work. The broken one shows up in the browser console as *[CDD Stoich Tools] … failed*.
+
+---
+
 ## 19.9.0 — 2026-10-29
 
 You can now set one sample field on many samples at once, for example fix *Concentration Unit* from uM to mM, or clear a field.
 
 - On a molecule's *Samples* tab, click *Bulk edit*. On *Inventory* search, tick the samples and click *Bulk edit fields*.
 - Pick the field and the new value, check the preview, then click *Write*.
+
+---
+
 
 ## 19.8.0 — 2026-10-27
 

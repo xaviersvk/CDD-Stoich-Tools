@@ -19,6 +19,36 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [19.10.0] — 2026-10-29
+
+### Fixed
+- **One failing feature no longer stops the rest from starting.** The content
+  script started about 80 features one after another with nothing between
+  them, so a single one that threw, for example on a CDD markup change it did
+  not expect, left every feature after it unstarted with no message.
+  `content/main.js` now runs each one through `guard()`, which logs
+  `[CDD Stoich Tools] <name> failed` and moves on. Promises an init returns
+  are watched too, so an async init that rejects is logged as well.
+- **CDD no longer waits for the extension on every request.** The page-world
+  fetch hook used to read and parse the cloned response *before* handing the
+  original back to CDD, so every JSON-ish answer reached CDD only after the
+  whole body had downloaded and been processed. The clone is now read in a
+  detached task, and the response is returned at once. The JSON branch, which
+  read the clone a second time after a failed `json()` (a read that could
+  never succeed), is gone: the body is read once, as text.
+- **A broken payload parser now says so.** `createTextParser` caught errors
+  from the payload processor as if the response were "not JSON". Only
+  `JSON.parse` is inside the `try` now. A processor error reaches the hook,
+  which logs it as a warning (it used to log at debug level, which is hidden
+  by default).
+
+### Added
+- `.github/workflows/test.yml` runs `npm test` on every push to `main` and on
+  every pull request. Before this, tests ran only from `publish.yml`, when a
+  release tag was pushed.
+- `tests/text-parser.test.js` covers the parser behaviour above.
+
+---
 ## [19.9.0] — 2026-10-29
 
 ### Added
@@ -42,6 +72,7 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   match uses the sample name in any cell, so column order does not matter.
   Each involved molecule's samples are loaded, 4 at a time.
 
+---
 ## [19.8.0] — 2026-10-27
 
 ### Added

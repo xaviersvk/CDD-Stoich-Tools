@@ -7,7 +7,7 @@
 // has been saved.
 import { isSurelyNotJson } from "./content-type.js";
 
-export function installFetchHook(processJsonPayload, tryParseText) {
+export function installFetchHook(tryParseText) {
     const origFetch = window.fetch;
 
     window.fetch = async function (...args) {
@@ -26,25 +26,16 @@ export function installFetchHook(processJsonPayload, tryParseText) {
             return res;
         }
 
-        try {
-            const contentType = clone.headers.get("content-type") || "";
-
-            if (
-                contentType.includes("application/json") ||
-                contentType.includes("text/json")
-            ) {
-                try {
-                    const json = await clone.json();
-                    processJsonPayload(json, url);
-                } catch {
-                    tryParseText(await clone.text(), url);
-                }
-            } else {
+        // Detached: CDD gets its response now, not after we have read and
+        // parsed the whole body. Read once, as text — the body of a clone
+        // cannot be read a second time.
+        void (async () => {
+            try {
                 tryParseText(await clone.text(), url);
+            } catch (err) {
+                console.warn("[CDD Stoich Tools] fetch parse failed", err);
             }
-        } catch (err) {
-            console.debug("[CDD Stoich Tools] fetch parse failed", err);
-        }
+        })();
 
         return res;
     };

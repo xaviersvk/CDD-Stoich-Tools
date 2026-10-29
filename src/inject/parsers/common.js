@@ -89,10 +89,15 @@ export function createTextParser(processJsonPayload) {
     return function tryParseText(text, url) {
         if (!text || typeof text !== "string") return;
 
+        let data;
         try {
-            processJsonPayload(JSON.parse(text), url);
+            data = JSON.parse(text);
         } catch (_) {
-            // ignore non-json responses
+            return; // not JSON
         }
+
+        // Outside the try: a parser broken by a changed CDD payload throws to
+        // the hook, which logs it, instead of passing for "not JSON".
+        processJsonPayload(data, url);
     };
 }

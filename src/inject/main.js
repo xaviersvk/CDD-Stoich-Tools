@@ -157,7 +157,7 @@ const tryParseText = createTextParser(processJsonPayload);
   console.log("[CDD Stoich Tools] inject main loaded");
 
   installPrintDispatcher();
-  installFetchHook(processJsonPayload, tryParseText);
+  installFetchHook(tryParseText);
   installXhrHook(tryParseText);
   // After the XHR hook, so it wraps it: inventory search answered exact-first.
   // OFF since 18.14.0 — parked until inventory search is looked at again

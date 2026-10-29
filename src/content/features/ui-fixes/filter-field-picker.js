@@ -40,6 +40,7 @@ import {
     initFormFilterChips,
     refreshChipsWhenReady,
 } from "./form-filter-chips.js";
+import { watchDocument } from "../../utils/dom.js";
 
 // The single marker that identifies THIS menu (and separates it from CDD's
 // operator/style selects, the columns editor, and every other MUI menu, which
@@ -258,10 +259,7 @@ export function initFilterFieldPicker() {
     injectPickerStyles();
     void initFormFilterChips();   // deliberate: the chips render on their own
 
-    const observer = new MutationObserver(() => scan());
-    // <html>, not <body>: Turbo swaps <body> on in-app navigation.
-    observer.observe(document.documentElement, { childList: true, subtree: true });
-
-    // Catch a menu that's somehow already open at init time.
-    scan();
+    // Once per frame, and once now to catch a menu that's somehow already
+    // open at init time.
+    watchDocument(scan)();
 }

@@ -1,3 +1,5 @@
+import { watchDocument } from "../../utils/dom.js";
+
 let stylesInjected = false;
 let observerStarted = false;
 
@@ -160,19 +162,9 @@ export function initLocationPickerResize() {
     if (observerStarted) return;
     observerStarted = true;
 
-    const observer = new MutationObserver(() => {
+    watchDocument(() => {
         document
             .querySelectorAll(TREE_PANEL_SELECTOR)
             .forEach(enhanceTreeContainer);
-    });
-
-    // <html>, not <body>: Turbo swaps <body> on in-app navigation.
-    observer.observe(document.documentElement, {
-        childList: true,
-        subtree: true,
-    });
-
-    document
-        .querySelectorAll(TREE_PANEL_SELECTOR)
-        .forEach(enhanceTreeContainer);
+    })();
 }

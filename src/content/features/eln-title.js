@@ -1,5 +1,6 @@
 import { isElnEntryPage } from "../../shared/page-detection.js";
 import { readElnEntryId } from "../utils/eln-entry-id.js";
+import { watchDocument } from "../utils/dom.js";
 
 let observer = null;
 let currentElnTitleMode = "id-title";
@@ -26,15 +27,8 @@ export function initElnTitle() {
     window.addEventListener("popstate", runOnlyOnElnEntryPage);
     window.addEventListener("hashchange", runOnlyOnElnEntryPage);
 
-    const navigationObserver = new MutationObserver(() => {
-        runOnlyOnElnEntryPage();
-    });
-
-    // <html>, not <body>: Turbo swaps <body> on in-app navigation.
-    navigationObserver.observe(document.documentElement, {
-        childList: true,
-        subtree: true,
-    });
+    // Once per frame: every mutation used to run it.
+    watchDocument(runOnlyOnElnEntryPage);
 }
 
 function loadElnTitleMode() {
@@ -63,8 +57,14 @@ function runOnlyOnElnEntryPage() {
 function startTitleObserver() {
     if (observer) return;
 
+    let scheduled = false;
     observer = new MutationObserver(() => {
-        updateElnTabTitle();
+        if (scheduled) return;
+        scheduled = true;
+        requestAnimationFrame(() => {
+            scheduled = false;
+            updateElnTabTitle();
+        });
     });
 
     // <html>, not <body>: Turbo swaps <body> on in-app navigation.

@@ -37,6 +37,7 @@
 
 import { buildPickerPanel, injectPickerStyles, positionPanel, HOST_CLASS, PANEL_CLASS } from "./field-picker-core.js";
 import { EVENTS, EVENT_SOURCE } from "../../../shared/event-types.js";
+import { watchDocument } from "../../utils/dom.js";
 
 const TRIGGER_SELECTOR = '[data-autotest-id="filter-field-select"]';
 const POPUP_SELECTOR = '.selectDropdown[data-component="PopupContainer"]';
@@ -440,8 +441,6 @@ export function initElnFilterFieldPicker() {
     injectPickerStyles();
     injectOwnStyles();
 
-    const observer = new MutationObserver(() => scan());
-    // <html>, not <body>: Turbo swaps <body> on in-app navigation.
-    observer.observe(document.documentElement, { childList: true, subtree: true });
-    scan();
+    // Once per frame: CDD's grids change many nodes per render.
+    watchDocument(scan)();
 }

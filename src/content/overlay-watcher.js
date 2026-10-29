@@ -1,6 +1,7 @@
 // content/overlay-watcher.js
 import { STATE } from "./state.js";
 import { PANEL_ID } from "../shared/plugin-constants.js";
+import { watchDocument } from "./utils/dom.js";
 
 // Set on the panel whenever it is hidden here, so CSS keyed on the panel
 // (eln-shift-left.js) can tell "open" from "open but hidden".
@@ -86,18 +87,10 @@ export function updatePanelVisibilityForOverlays() {
 }
 
 export function watchKetcherDialog() {
-    const observer = new MutationObserver(() => {
+    // Once per frame — still before the paint, so the panel never shows over
+    // a dialog that has just opened.
+    watchDocument(() => {
         trackSidebars();
         updatePanelVisibilityForOverlays();
-    });
-
-    // <html>, not <body>: Turbo swaps <body> on in-app navigation.
-    observer.observe(document.documentElement, {
-        childList: true,
-        subtree: true,
-        attributes: false
-    });
-
-    trackSidebars();
-    updatePanelVisibilityForOverlays();
+    })();
 }

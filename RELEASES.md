@@ -13,6 +13,12 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 19.11.0 — 2026-10-29
+
+Busy CDD pages, such as large grids and long ELN entries, do less work with the extension on. Nothing changes in how anything looks or works.
+
+---
+
 ## 19.10.0 — 2026-10-29
 
 CDD pages respond a little faster with the extension on: CDD no longer waits for the extension to read each response.

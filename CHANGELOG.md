@@ -19,6 +19,39 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [19.11.0] — 2026-10-29
+
+### Changed
+- **Seven document-wide observers now run at most once per frame.** They used
+  to run their whole pass on every mutation batch, and CDD's grids and editors
+  produce many of those per render. The affected observers:
+  - column manager
+  - both filter field pickers
+  - location picker resize
+  - overlay watcher (panel hidden behind Ketcher and CDD sidebars)
+  - file-dialog fixes in `content/main.js`
+  - ELN tab title (both observers)
+
+  All of them except the second title observer use `watchDocument`
+  (`content/utils/dom.js`), which already throttles to one call per animation
+  frame. That title observer keeps its own observer so that it can still be
+  disconnected, and is throttled in the same way. A frame is still before the
+  paint, so the panel never shows over a dialog that has just opened.
+- **Five on/off settings share one implementation.** `shared/boolean-flag.js`
+  (`createBooleanFlag(key, defaultOn)`) replaces five copies of the same
+  60-line module: show products, active reaction, dose-response drag,
+  heat-map outlier drag, and ELN shift. Each `*-flag.js` keeps its exported
+  names, so no caller changed. Storage keys and defaults are unchanged.
+
+### Added
+- `tests/inject-parsers.test.js` covers the page-world parsers, which had no
+  tests: reaction order from the entry body, row numbering by role and
+  `displayIndex`, parallel letters and the dropped *Variable product*, purity
+  as a fraction, dedupe, sample vault, field resolvers, and print data.
+- `tests/boolean-flag.test.js` covers the flag defaults, change listeners, and
+  storage that throws.
+
+---
 ## [19.10.0] — 2026-10-29
 
 ### Fixed

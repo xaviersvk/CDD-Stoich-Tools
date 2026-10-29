@@ -29,6 +29,7 @@ import {
     normalize,
     normalizeQuery,
 } from "./field-picker-core.js";
+import { watchDocument } from "../../utils/dom.js";
 
 const STYLE_ID = "cdd-column-manager-style";
 const NS = "cdd-cm";
@@ -424,9 +425,6 @@ export function initColumnManager() {
 
     injectStyles();
 
-    const observer = new MutationObserver(() => scan());
-    // <html>, not <body>: Turbo swaps <body> on in-app navigation.
-    observer.observe(document.documentElement, { childList: true, subtree: true });
-
-    scan();
+    // Once per frame: CDD's grids change many nodes per render.
+    watchDocument(scan)();
 }

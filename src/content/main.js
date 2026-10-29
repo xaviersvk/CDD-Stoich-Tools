@@ -97,6 +97,7 @@ import {initHeatMapFieldsConfig} from "../shared/heat-map-fields.js";
 import {initInventoryScan} from "../shared/inventory-scan.js";
 import {initPanelSources, onPanelSourcesChanged} from "../shared/panel-sources-flag.js";
 import {initElnMentions} from "./features/mentions/init.js";
+import { watchDocument } from "./utils/dom.js";
 
 
 function isSupportedHost() {
@@ -104,16 +105,9 @@ function isSupportedHost() {
 }
 
 function watchFileDialog() {
-  const observer = new MutationObserver(() => {
+  watchDocument(() => {
     applyFileDialogFixes();
     fixAssociateFileBar();
-  });
-
-  // <html>, not <body>: Turbo swaps <body> on in-app navigation, which would
-  // silently kill an observer attached to the old body.
-  observer.observe(document.documentElement, {
-    childList: true,
-    subtree: true
   });
 }
 

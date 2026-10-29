@@ -1,4 +1,4 @@
-import {EVENT_SOURCE} from "../shared/event-types";
+import {EVENT_SOURCE} from "../shared/event-types.js";
 
 
 export function post(type, payload) {

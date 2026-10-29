@@ -19,3 +19,6 @@
 # Snapshots of vault registration forms taken before/after a rollout run.
 # Internal vault layouts; this repo is public.
 /backups/
+
+# Packed builds for manual store uploads; the release workflow builds its own.
+/*.zip

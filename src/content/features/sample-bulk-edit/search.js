@@ -5,7 +5,8 @@
 //
 // The table shows names, not ids. The ids come from the search response
 // itself — POST /vaults/<v>/inventory_search.json → { inventory_entries:
-// [{ id, name, batch: { molecule_id } }] } — which inject/main.js already
+// [{ id, name, batch: { molecule_id } }] } (the page's first load: GET, same
+// entries under `initial_entries`) — which inject/main.js already
 // forwards as MOLECULE_SEARCH (noteInventorySearch). A ticked row is matched
 // to its entry by the sample name in one of its cells, so the column order
 // does not matter.
@@ -27,13 +28,21 @@ const PARALLEL = 4;
 const entries = new Map();
 let listening = false;
 
+// The page's first 30 rows come from GET inventory_search.json as
+// `initial_entries`; a search (and every next page) as `inventory_entries`.
 export function noteInventorySearch(body) {
-    const list = Array.isArray(body?.inventory_entries) ? body.inventory_entries : [];
+    const list = [body?.inventory_entries, body?.initial_entries]
+        .filter(Array.isArray)
+        .flat();
     for (const entry of list) {
         const moleculeId = entry?.batch?.molecule_id ?? entry?.molecule_id;
         if (entry?.id == null || !entry.name || moleculeId == null) continue;
         entries.set(String(entry.name).trim(), { id: entry.id, moleculeId: String(moleculeId) });
     }
+}
+
+export function searchEntry(name) {
+    return entries.get(String(name ?? "").trim()) || null;
 }
 
 // → { picked: [{ id, moleculeId }], unknown: number }
@@ -63,8 +72,30 @@ async function loadPicked(vaultId, picked) {
     return found;
 }
 
+// The page's own first load happens before the inject hook is in place, so
+// its `initial_entries` never come past. Ask for them once, the same GET the
+// page made, when a ticked row is not known.
+let primed = null;   // vaultId asked for
+
+function primeInitialEntries(vaultId, button) {
+    if (primed === vaultId) return;
+    primed = vaultId;
+    fetch(`/vaults/${vaultId}/inventory_search.json`, {
+        credentials: "include",
+        headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" },
+    })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((json) => {
+            noteInventorySearch(json);
+            refresh(document.querySelector(`.${BUTTON_CLASS}`) || button);
+        })
+        .catch((error) => console.debug("[CDD stoich plugin] bulk edit: first rows not loaded", error));
+}
+
 function refresh(button) {
     const { picked, unknown } = tickedSamples();
+    const vaultId = location.pathname.match(SEARCH_PATH)?.[1];
+    if (unknown && vaultId) primeInitialEntries(vaultId, button);
     const disabled = picked.length === 0;
     button.disabled = disabled;
     button.classList.toggle("Mui-disabled", disabled);
@@ -80,7 +111,16 @@ export function addSearchButton() {
         .find((b) => (b.textContent || "").trim() === "Bulk Update");
     if (!bulk) return;
 
-    let button = bulk.parentElement?.querySelector(`.${BUTTON_CLASS}`);
+    // A disabled Bulk Update sits in a tooltip <span>, an enabled one does
+    // not: ours goes after whichever is outermost, and there is only ever one.
+    const anchor = bulk.parentElement?.tagName === "SPAN" && bulk.parentElement.children.length === 1
+        ? bulk.parentElement
+        : bulk;
+    const bar = anchor.closest(".search-bar__summary_actions") || anchor.parentElement;
+    const existing = Array.from(bar?.querySelectorAll(`.${BUTTON_CLASS}`) || []);
+    existing.slice(1).forEach((extra) => extra.remove());
+    let button = existing[0] || null;
+    if (button && anchor.nextElementSibling !== button) anchor.after(button);
     if (!button) {
         button = el("button", { type: "button", className: `${bulk.className} ${BUTTON_CLASS}`, text: "Bulk edit fields" });
         button.addEventListener("click", (event) => {
@@ -97,7 +137,7 @@ export function addSearchButton() {
                 reloadOnClose: false,
             });
         });
-        bulk.after(button);
+        anchor.after(button);
     }
     if (!listening) {
         // A tick may change nothing in the DOM tree the observer watches.

@@ -19,6 +19,29 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [19.9.0] — 2026-10-29
+
+### Added
+- **Bulk edit of sample fields.** A molecule's Samples tab has a **Bulk
+  edit** link next to *Create a new sample*. Inventory search has a **Bulk
+  edit fields** button next to CDD's *Bulk Update*, which can only add
+  events. Both open one dialog: pick a sample field (from the vault's
+  definitions; Sample ID, Sample Number and Barcode are never offered), a
+  new value by the field's type or *Clear the field*, and tick samples. Ticks
+  can be set all, none, or by current value. Each ticked row previews
+  `old → new`, and rows that already hold the value are skipped. **Write**
+  saves the samples one at a time with the same PUT CDD's sample Edit dialog
+  sends (`/vaults/<v>/molecules/<m>/inventory_samples/<id>`, multipart, every
+  field of the sample with the one replaced). The samples are re-read just
+  before writing. Each row shows ✓ or CDD's error, and a failure does not
+  stop the rest. On the molecule page, closing after a write reloads the
+  page. On search, the dialog asks to run the search again, so the query is
+  kept.
+- On Inventory search, the ticked rows are matched to sample and molecule ids
+  through the search response that `MOLECULE_SEARCH` already forwards. The
+  match uses the sample name in any cell, so column order does not matter.
+  Each involved molecule's samples are loaded, 4 at a time.
+
 ## [19.8.0] — 2026-10-27
 
 ### Added

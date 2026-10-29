@@ -15,6 +15,7 @@ import { initPhraseCapture } from "./features/phrases/capture.js";
 import { initAiWriteUp, onAiWriteUpChanged } from "../shared/ai-write-up-settings.js";
 import { initSamplePickerHints } from "./features/sample-picker-hints.js";
 import { initSampleDuplicate } from "./features/sample-duplicate.js";
+import { initSampleBulkEdit } from "./features/sample-bulk-edit/init.js";
 import { initSampleSingleBatch } from "./features/ui-fixes/sample-single-batch.js";
 import {
   ensureDepletedStyle,
@@ -148,6 +149,8 @@ function init() {
   // Molecule → Samples: "Duplicate sample" opens CDD's create dialog filled
   // in like that sample; the user only picks a location.
   initSampleDuplicate();
+  // Molecule → Samples: "Bulk edit" sets one field on many samples at once.
+  initSampleBulkEdit();
   // Create a New Sample: a molecule with one batch gets it chosen.
   initSampleSingleBatch();
 

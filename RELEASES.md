@@ -13,6 +13,13 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 19.9.0 — 2026-10-29
+
+You can now set one sample field on many samples at once, for example fix *Concentration Unit* from uM to mM, or clear a field.
+
+- On a molecule's *Samples* tab, click *Bulk edit*. On *Inventory* search, tick the samples and click *Bulk edit fields*.
+- Pick the field and the new value, check the preview, then click *Write*.
+
 ## 19.8.0 — 2026-10-27
 
 When a protocol form can't be pasted because this vault lacks some of its fields, *Paste* now lists them with their type, linked to *Protocol Fields* / *Run Fields*.

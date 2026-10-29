@@ -6,6 +6,7 @@ import { enrichInventorySamples } from "./features/inventory-sample-enrichment.j
 import { enrichSampleSynonyms } from "./features/synonym-enrichment.js";
 import { captureRowNames } from "./features/name-capture.js";
 import { learnFromSearchResponse } from "./features/search-learning.js";
+import { noteInventorySearch } from "./features/sample-bulk-edit/search.js";
 import { enrichRowNameSynonyms } from "./features/name-enrichment.js";
 import { onSamplePayload, scheduleAutoFill } from "./features/auto-fill.js";
 import { ensurePrintButtons } from "./features/print-buttons.js";
@@ -143,6 +144,7 @@ export function handleMessage(event) {
 
         case EVENTS.MOLECULE_SEARCH: {
             learnFromSearchResponse(data.payload?.body);
+            noteInventorySearch(data.payload?.body);
             break;
         }
 

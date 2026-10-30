@@ -19,6 +19,45 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [19.13.0] — 2026-10-30
+
+### Added
+- **Registration form paste lists the missing fields and hands them to the
+  field clipboard**, as protocol form paste has done since 19.8.0. *Copy
+  registration forms* now stores, beside the neutral forms, the definitions
+  of the molecule, batch, sample and inventory fields those forms use, in
+  the field clipboard's shape. When *Paste* is blocked by missing fields,
+  the card lists them under the forms, one line per settings page, with
+  type and pick list size, the page name linked. The molecule and batch
+  labels take the settings menu's own link text when the page has it (a
+  vault that renamed its nouns reads *Entity Fields*), falling back to
+  *Molecule Fields* / *Batch Fields*. *Copy N missing fields* writes them to
+  the field clipboard, one entry per kind, for that page's own *Paste* +
+  *Update*.
+- A clipboard copied before this version still names the missing fields,
+  with *copy the forms again*.
+
+### Fixed
+- **Field clipboard: pasting exactly one field stopped with "CDD did not add
+  a row".** The card's own *Add 1 field* button matched the pattern for
+  CDD's *Add a … field* link (*Add 2 fields* does not, `field\b`), sat next
+  to the table, and so counted as that link: the page was taken to be in
+  edit mode already, and the run clicked its own button instead of CDD's.
+  `page-dom.js` now ignores anything inside the bar. Reproduced and checked
+  on vault 1000000096's Entity Fields page.
+
+### Changed
+- `usedFieldDefinitions` and `missingFields` in the protocol form model take
+  the kinds (and the field-name walk) as parameters; the registration model
+  wraps them with its four components.
+
+### Not measured
+- Whether the Registration page's field definitions carry
+  `required_group_number`, `unique_value`, `overwritable` and
+  `is_single_use` (the test browser profile was not signed in to CDD). If
+  not, the fields arrive optional and not unique, and the field paste
+  preview shows it.
+
 ## [19.12.0] — 2026-10-29
 
 ### Added

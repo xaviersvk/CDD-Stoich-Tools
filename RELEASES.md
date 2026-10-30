@@ -13,6 +13,17 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 19.13.0 — 2026-10-30
+
+When a registration form can't be pasted because this vault lacks some of its fields, *Paste* now lists them with their type, linked to *Entity Fields* / *Batch Fields* (and sample or inventory fields).
+
+- *Copy N missing fields* puts them on the field clipboard: on that page press *Paste*, then *Update*, then come back and *Paste* the forms again.
+- Works for forms copied from this version on; copy older ones again.
+
+Fixed: pasting a single field on a *… Fields* page stopped with *CDD did not add a row*.
+
+---
+
 ## 19.12.0 — 2026-10-29
 
 If a CDD update breaks part of the extension, the browser console now says so, with *[CDD Stoich Tools] health check: … missing* and the affected features. Please paste that line into a bug report.

@@ -13,6 +13,15 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 19.14.0 — 2026-10-30
+
+A run's readout table (*All Data*) has a filter box: type a molecule, plate or well and the table shows the matching readouts from every page of the run.
+
+- `1059 H*` = plate 1059, row H; a comma shows either (`PHA-0334303, PHA-0334468`). *Clear* brings the normal pages back.
+- Tick rows (or the header box for all shown) and press *Delete N selected* to delete them in one go.
+
+---
+
 ## 19.13.0 — 2026-10-30
 
 When a registration form can't be pasted because this vault lacks some of its fields, *Paste* now lists them with their type, linked to *Entity Fields* / *Batch Fields* (and sample or inventory fields).

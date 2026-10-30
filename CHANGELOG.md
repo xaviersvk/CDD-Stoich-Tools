@@ -19,6 +19,51 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [19.14.0] — 2026-10-30
+
+### Added
+- **Filter box over a run's readout table** (run page → *All Data*), at the
+  right above the table. Type a molecule, plate or well and CDD's own table
+  shows only the matching readouts of the whole run, every page of it; the
+  pagination is hidden while filtered and *Clear* puts CDD's page back.
+  Words in one search must all match (`1059 H*` = plate 1059, row H), a
+  comma separates alternatives (`PHA-0334303, PHA-0334468`), `*` is a
+  wildcard; a molecule matches by substring with dashes ignored, a plate
+  exactly, a well with or without its leading zero, and a bare row letter
+  means the whole row (so `H` does not match every `PHA-…` name). Rules
+  and tests: `run-readout-filter/model.js`. The query is kept per run in
+  sessionStorage, so a reload comes back filtered.
+- **Tick boxes and *Delete N selected*.** A box before every row's Edit
+  link, one in the header for every row shown. *Delete N selected* asks
+  inline (*Delete N rows and all their readouts? Yes, delete / Cancel*),
+  then deletes the rows one at a time the way their own Delete link does
+  (DELETE on the link's path with the page's CSRF token), stops at the
+  first refusal, and reloads the page. A change of filter unticks every row
+  it hides, so only rows on screen can be deleted.
+- The other pages are CDD's own `…/readouts?page[run_readouts]=N`, fetched
+  three at a time on the first filter of a page visit. Not `per_page`: CDD
+  stores that in the session, so one large request would change the page
+  size of every readout table the user opens afterwards (measured).
+- The table is a CDD bigDataTable — four clones (cells, column headers, row
+  headers, corner); the frozen left columns a user clicks are the
+  `.rowHeaders` clone. Rows are swapped in the `.cells` table and CDD's own
+  `rebuildBigDataTable` splits it again, called through a new page-world
+  bridge (`inject/hooks/big-data-table-bridge.js`, event
+  `BIG_DATA_TABLE_REBUILD`). The selection lives by row id and is painted
+  onto every clone after each rebuild.
+
+### Notes
+- The page has two elements with `id="page_run_readouts"`: a hidden input in
+  the *Add a readout* form, then the pagination select. The page count is
+  read from the select inside `#readoutRowsPagination`.
+- Checked on vault 6884, run 1000013747 (376 readouts, 19 pages):
+  `PHA-0334303` → 20 rows on plate 1059, H01–H10 and H13–H22; `1059 H*` →
+  23; ticking, select-all, the inline confirmation and *Cancel*.
+- Delete checked on vault 6772, run 765816: `105 A10, 105 A11` → 2 rows
+  ticked, deleted, page reloaded with the filter kept; A10 and A11 gone,
+  A01–A09 still there.
+
+---
 ## [19.13.0] — 2026-10-30
 
 ### Added

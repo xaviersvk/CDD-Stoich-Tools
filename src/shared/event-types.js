@@ -80,6 +80,12 @@ export const EVENTS = {
   // which needs CDD.HeatMap and CDD.ConnectionPool). HELLO as above.
   HEAT_MAP_OUTLIER_DRAG_ENABLED: "HEAT_MAP_OUTLIER_DRAG_ENABLED",
   HEAT_MAP_OUTLIER_DRAG_HELLO: "HEAT_MAP_OUTLIER_DRAG_HELLO",
+  // Content -> page world: { id, options } — "re-split this bigDataTable".
+  // CDD's tables with frozen headers are four clones of one table; after the
+  // run readout filter swaps the rows of the first, CDD's own
+  // rebuildBigDataTable (page world only) makes the other three again.
+  // inject/hooks/big-data-table-bridge.js; no answer.
+  BIG_DATA_TABLE_REBUILD: "BIG_DATA_TABLE_REBUILD",
 };
 // Content/options -> background: the Write-up tab's requests to the AI service
 // (CERIT-SC, OpenAI or Anthropic). background.js repeats these literals (it ships unbundled).

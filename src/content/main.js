@@ -64,6 +64,7 @@ import {initPlateMapStructureTooltip} from "./features/ui-fixes/plate-map-struct
 import {initPlateMapExport} from "./features/ui-fixes/plate-map-export";
 import {initHeatMapWellFields} from "./features/ui-fixes/heat-map-well-fields";
 import {initRunAssayWindow} from "./features/ui-fixes/run-assay-window";
+import {initRunReadoutFilter} from "./features/ui-fixes/run-readout-filter/index.js";
 import {initControlLayoutTools} from "./features/control-layout/init";
 import {initRunFormTemplates} from "./features/run-form-templates/init";
 import {initRegistrationProjectMirror} from "./features/ui-fixes/registration-project-mirror";
@@ -241,6 +242,10 @@ function init() {
   // Assay window, signal window and Z′ per plate above a run's Data Summary,
   // from the control wells of the run's heat maps.
   guard(initRunAssayWindow);
+
+  // A filter box over a run's readout table: molecule, plate or well, over
+  // every page of the run, shown in CDD's own table.
+  guard(initRunReadoutFilter);
 
   // Control-layout editor: arm a control type, then drag a rectangle over the
   // wells (or click a row/column header) to set them all at once, plus named

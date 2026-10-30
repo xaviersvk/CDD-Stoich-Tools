@@ -18,11 +18,19 @@
 // dash ("I25-SM" finds "AHL-SM"), then the target's first system — the one
 // thing a user may well want different, so the preview says which it chose.
 //
-// No DOM, no storage; the imports are the protocol model's wording and the
-// tree walk the two models share.
+// When the target lacks a field, the copy carries the definitions of the
+// fields its forms use, so the paste can say what to make on which settings
+// page and hand them to the field clipboard — as the protocol forms do.
+//
+// No DOM, no storage; the imports are the protocol model's wording and
+// missing-field helpers and the tree walk the two models share.
 
 import { formWalker } from "../../../utils/form-walk.js";
-import { lostField } from "../form-clipboard/form-model.js";
+import {
+    lostField,
+    missingFields as missingFieldsOf,
+    usedFieldDefinitions as usedFieldDefinitionsOf,
+} from "../form-clipboard/form-model.js";
 
 export const PLAN_ADD = "add";
 export const PLAN_SAME_NAME = "same-name";
@@ -188,4 +196,17 @@ export function planForms(neutralForms, targetNames, target) {
         if (droppedDefaults.length) notes.push(`no default for ${droppedDefaults.join(", ")}`);
         return { form, status: PLAN_ADD, note: notes.join(" · "), missing: [] };
     });
+}
+
+// The definitions behind the fields `neutralForms` use, per component, from
+// the source vault's { defs, systems }.
+export function usedFieldDefinitions(neutralForms, source) {
+    return usedFieldDefinitionsOf(neutralForms, source?.defs, COMPONENTS, formFieldNames);
+}
+
+// [{ kind, fields: [{ name, definition | null }] }] for the forms the plan
+// cannot make; kind is a component. A form held back only for want of a
+// registration system lists no fields.
+export function missingFields(plan, fieldDefinitions) {
+    return missingFieldsOf(plan, fieldDefinitions, COMPONENTS);
 }

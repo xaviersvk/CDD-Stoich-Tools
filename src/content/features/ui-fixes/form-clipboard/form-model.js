@@ -172,13 +172,14 @@ export const FIELD_KINDS = ["protocol", "run"];
 // The definitions behind the fields `neutralForms` use, per kind, in the
 // field clipboard's shape. Normalized against the whole source list first:
 // a required group is "is required" or "or X is required" only once all of
-// its members are counted.
-export function usedFieldDefinitions(neutralForms, sourceMap) {
-    const used = Object.fromEntries(FIELD_KINDS.map((kind) => [kind, new Set()]));
+// its members are counted. `kinds` and `namesOf` default to the protocol
+// form's; the registration model passes its own.
+export function usedFieldDefinitions(neutralForms, sourceMap, kinds = FIELD_KINDS, namesOf = formFieldNames) {
+    const used = Object.fromEntries(kinds.map((kind) => [kind, new Set()]));
     for (const form of neutralForms || []) {
-        for (const { component, name } of formFieldNames(form)) used[component]?.add(name);
+        for (const { component, name } of namesOf(form)) used[component]?.add(name);
     }
-    return Object.fromEntries(FIELD_KINDS.map((kind) => [
+    return Object.fromEntries(kinds.map((kind) => [
         kind,
         normalizeRows(sourceMap?.[kind]).filter((field) => used[kind].has(field.name)),
     ]));
@@ -188,9 +189,9 @@ export function usedFieldDefinitions(neutralForms, sourceMap) {
 // [{ kind, fields: [{ name, definition | null }] }], kinds with nothing
 // missing left out. `definition` is null for a clipboard copied before the
 // definitions were carried.
-export function missingFields(plan, fieldDefinitions) {
+export function missingFields(plan, fieldDefinitions, kinds = FIELD_KINDS) {
     const out = [];
-    for (const kind of FIELD_KINDS) {
+    for (const kind of kinds) {
         const names = [];
         for (const entry of plan || []) {
             if (entry.status !== PLAN_MISSING_FIELDS) continue;

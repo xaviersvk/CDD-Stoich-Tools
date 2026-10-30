@@ -56,6 +56,9 @@ function waitFor(predicate) {
 const EDIT_LINK = /^Add\/Edit .+ Fields\b/;
 const ADD_LINK = /^Add (?:an? )?.+ field\b/i;
 const UPDATE_BUTTON = /^Update .+ fields\b/i;
+// The bar's own buttons sit next to the table and can read the same way —
+// "Add 1 field" matches ADD_LINK — so nothing inside the bar counts.
+const OWN_BAR = ".cdd-fc-bar";
 
 function ownTable(el) {
     let node = el.parentElement;
@@ -68,7 +71,8 @@ function visibleLink(kind, pattern) {
     const table = findTable(kind);
     if (!table) return null;
     return [.../** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll("a, button"))]
-        .find((el) => pattern.test(el.textContent.trim()) && el.offsetParent !== null && ownTable(el) === table) || null;
+        .find((el) => pattern.test(el.textContent.trim()) && el.offsetParent !== null && !el.closest(OWN_BAR)
+            && ownTable(el) === table) || null;
 }
 
 // The Update button as this vault words it, for the status line.

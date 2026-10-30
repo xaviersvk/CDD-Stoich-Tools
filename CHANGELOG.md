@@ -37,6 +37,15 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 - A clipboard copied before this version still names the missing fields,
   with *copy the forms again*.
 
+### Fixed
+- **Field clipboard: pasting exactly one field stopped with "CDD did not add
+  a row".** The card's own *Add 1 field* button matched the pattern for
+  CDD's *Add a … field* link (*Add 2 fields* does not, `field\b`), sat next
+  to the table, and so counted as that link: the page was taken to be in
+  edit mode already, and the run clicked its own button instead of CDD's.
+  `page-dom.js` now ignores anything inside the bar. Reproduced and checked
+  on vault 1000000096's Entity Fields page.
+
 ### Changed
 - `usedFieldDefinitions` and `missingFields` in the protocol form model take
   the kinds (and the field-name walk) as parameters; the registration model

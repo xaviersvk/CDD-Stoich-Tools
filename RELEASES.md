@@ -13,6 +13,12 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 19.15.0 — 2026-11-02
+
+When you click a value in a stoichiometry table, it stays where you clicked it. The table still switches to edit mode, but the rows above slide up and the rows below slide down around the value, so you don't have to find it again. Leaving edit mode works the same way.
+
+Switch it off under *Settings → Panel fields → keep the value you clicked where it was*.
+
 ## 19.14.1 — 2026-11-02
 
 Fixed: sample values that start with a number show in the right order again (*Freezing medium* `90% FBS, 10% DMSO` read `FBS, 10% DMSO 90%`). Only the display was wrong; the saved value is fine.

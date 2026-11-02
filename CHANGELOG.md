@@ -19,6 +19,36 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [19.15.0] — 2026-11-02
+
+### Added
+- **The value you click in a stoichiometry table stays where you clicked
+  it.** Clicking a value switches the whole table into edit mode: every row
+  grows (Role, Entity, %w/w and %v/v ratios, Equivalent), a reaction
+  conditions block appears above the header and the columns shift sideways
+  (Amounts by ~66 px), so the value lands somewhere else, often several lines
+  lower (Purity moves from the 2nd to the 5th line of its cell). Chrome's own
+  scroll anchoring keeps it in place only sometimes, depending on which
+  element it happens to pick. Now, on pointerdown, the position of every table
+  cell and of the page blocks around the reaction is recorded; when the table
+  changes size, the page scrolls so the inline editor CDD opened (or the
+  clicked element, or its cell) is back at the click, and every cell and
+  nearby block slides from its old position to its new one (FLIP, 280 ms):
+  what is above moves up, what is below moves down, the columns glide
+  sideways, and cells that edit mode adds fade in. The spot stays pinned for
+  450 ms while CDD finishes rendering; a wheel or touch scroll ends it early.
+  Leaving edit mode by clicking elsewhere works the same way, pinning what
+  was clicked. `ui-fixes/steady-stoich-edit/`.
+- Strictly an observer, because of the 15.4.3 lesson with
+  `stoich-table-copy.js`: passive capture listeners, no event cancelled, no
+  attribute or style written on CDD's nodes — the motion is Web Animations
+  (`element.animate`). Relies on CDD's React keeping the same `<tr>`/`<td>`
+  nodes across the mode switch (verified on entry 1000000823). Edit mode is
+  recognised by its `reaction-conditions-*` rows. `prefers-reduced-motion`
+  keeps the scroll fix and skips the motion.
+- Setting *Settings → Panel fields → Keep the value you clicked where it was*
+  (`cddSteadyStoichEdit`), on by default.
+
 ## [19.14.1] — 2026-11-02
 
 ### Fixed

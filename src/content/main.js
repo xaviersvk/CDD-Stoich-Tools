@@ -65,6 +65,7 @@ import {initPlateMapExport} from "./features/ui-fixes/plate-map-export";
 import {initHeatMapWellFields} from "./features/ui-fixes/heat-map-well-fields";
 import {initRunAssayWindow} from "./features/ui-fixes/run-assay-window";
 import {initRunReadoutFilter} from "./features/ui-fixes/run-readout-filter/index.js";
+import {initSteadyStoichEdit} from "./features/ui-fixes/steady-stoich-edit/index.js";
 import {initControlLayoutTools} from "./features/control-layout/init";
 import {initRunFormTemplates} from "./features/run-form-templates/init";
 import {initRegistrationProjectMirror} from "./features/ui-fixes/registration-project-mirror";
@@ -223,6 +224,10 @@ function init() {
 
   guard(injectMoleculeLinksStyles);
   guard(initElnShiftLeft);
+  // Clicking a stoichiometry value: the table switches into edit mode and
+  // grows, but the value (now its editor) stays where it was clicked; the
+  // rest slides out of its way. Leaving edit mode the same in reverse.
+  guard(initSteadyStoichEdit);
   guard(watchConsumedBatches);
   guard(watchInventoryWellStructure);
   guard(initInventoryGridColors);

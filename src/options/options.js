@@ -75,6 +75,10 @@ import {
     saveElnShiftEnabled,
 } from "../shared/eln-shift-flag.js";
 import {
+    getSteadyStoichEditEnabled,
+    saveSteadyStoichEditEnabled,
+} from "../shared/steady-stoich-edit-flag.js";
+import {
     getActiveReactionEnabled,
     saveActiveReactionEnabled,
 } from "../shared/active-reaction-flag.js";
@@ -1145,6 +1149,16 @@ async function initElnShiftLeftUI() {
     elnShiftLeftCheckbox.checked = await getElnShiftEnabled();
 }
 
+const steadyStoichEditCheckbox = /** @type {HTMLInputElement} */ (document.getElementById("steadyStoichEdit"));
+
+steadyStoichEditCheckbox.addEventListener("change", () => {
+    saveSteadyStoichEditEnabled(steadyStoichEditCheckbox.checked);
+});
+
+async function initSteadyStoichEditUI() {
+    steadyStoichEditCheckbox.checked = await getSteadyStoichEditEnabled();
+}
+
 const activeReactionCheckbox = /** @type {HTMLInputElement} */ (document.getElementById("activeReaction"));
 
 activeReactionCheckbox.addEventListener("change", () => {
@@ -1580,6 +1594,7 @@ initFillRowNameUI();
 initPurityThresholdUI();
 initShowProductsUI();
 initElnShiftLeftUI();
+initSteadyStoichEditUI();
 void initActiveReactionUI();
 void initLinkAliasUI();
 initElnIdToBatchUI();

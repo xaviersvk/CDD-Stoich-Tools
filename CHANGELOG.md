@@ -37,8 +37,13 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   what is above moves up, what is below moves down, the columns glide
   sideways, and cells that edit mode adds fade in. The spot stays pinned for
   450 ms while CDD finishes rendering; a wheel or touch scroll ends it early.
-  Leaving edit mode by clicking elsewhere works the same way, pinning what
-  was clicked. `ui-fixes/steady-stoich-edit/`.
+  Leaving edit mode holds the value that was just edited: the last inline
+  editor opened (`inline-input-<field>`, remembered on focusin) turns back
+  into the view-mode line `field-<field>` of the same cell, and that line
+  stays where the editor was. Exception: a click into the entry text or
+  another input — there the clicked spot is held, so the caret does not run
+  away. (CDD needs two clicks outside the table to leave edit mode: the first
+  only closes the editor.) `ui-fixes/steady-stoich-edit/`.
 - Strictly an observer, because of the 15.4.3 lesson with
   `stoich-table-copy.js`: passive capture listeners, no event cancelled, no
   attribute or style written on CDD's nodes — the motion is Web Animations

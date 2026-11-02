@@ -13,6 +13,12 @@
 // from where it was to where it is now (FLIP): what is above moves up, what is
 // below moves down, the columns glide sideways.
 //
+// Leaving edit mode by clicking somewhere else holds the value that was just
+// edited instead: its editor (`inline-input-<field>`) turns back into the
+// view-mode line (`field-<field>`) of the same cell, and that line stays put.
+// Except when the click lands where you are about to type — the entry text,
+// another input: then that spot is held, so the caret does not run away.
+//
 // Strictly an observer. CDD's Slate editor is not touched: no event is
 // cancelled, no attribute or style is written — the motion is Web Animations
 // (element.animate), which leave the DOM alone. A table that does not change
@@ -38,6 +44,10 @@ const EASING = "cubic-bezier(0.2, 0.8, 0.2, 1)";
 // Only edit mode has the reaction conditions rows (separator, Temperature…).
 const EDIT_MODE_MARK = '[data-autotest-id^="reaction-conditions"]';
 const INLINE_EDITOR = 'textarea, input:not([type="radio"]):not([type="checkbox"])';
+// CDD's own field names: the editor in edit mode and the line in view mode
+// carry the same one (inline-input-purity ↔ field-purity).
+const EDITOR_PREFIX = "inline-input-";
+const FIELD_PREFIX = "field-";
 
 /**
  * @typedef {object} Pending
@@ -47,6 +57,7 @@ const INLINE_EDITOR = 'textarea, input:not([type="radio"]):not([type="checkbox"]
  * @property {number} targetTop
  * @property {Element | null} cell   the table cell clicked in, if any
  * @property {number} cellTop
+ * @property {Field | null} field    the value just edited, held when leaving edit mode
  * @property {Map<Element, DOMRect>} before
  * @property {Set<Element>} animated
  * @property {ResizeObserver} observer
@@ -54,8 +65,43 @@ const INLINE_EDITOR = 'textarea, input:not([type="radio"]):not([type="checkbox"]
  * @property {number} timer
  */
 
+/**
+ * @typedef {object} Field
+ * @property {Element} cell
+ * @property {string} name
+ * @property {number} top
+ * @property {number} cellTop
+ */
+
 /** @type {Pending | null} */
 let pending = null;
+
+/** The last value an inline editor was opened for: `{ cell, name }`. */
+/** @type {{ cell: Element, name: string } | null} */
+let lastEdit = null;
+
+/**
+ * The element showing field `name` in `cell`: its editor while it is open,
+ * else its view-mode line — or the other way round with `lineFirst`.
+ *
+ * @param {Element} cell
+ * @param {string} name
+ * @param {boolean} [lineFirst]
+ */
+function fieldElement(cell, name, lineFirst = false) {
+    const editor = cell.querySelector(`[data-autotest-id="${EDITOR_PREFIX}${CSS.escape(name)}"]`);
+    const line = cell.querySelector(`[data-autotest-id="${FIELD_PREFIX}${CSS.escape(name)}"]`);
+    return lineFirst ? line || editor : editor || line;
+}
+
+// Somewhere the user is about to type: the entry text or another form field
+// outside the stoichiometry tables.
+/** @param {Element} target */
+function isTypingTarget(target) {
+    if (target.closest(SELECTORS.stoichTable)) return false;
+    if (target.closest("input, textarea, select")) return true;
+    return !!target.closest('[contenteditable="true"]') && !target.closest('[contenteditable="false"]');
+}
 
 /** @param {Element} table */
 const isEditing = (table) => !!table.querySelector(EDIT_MODE_MARK);
@@ -106,6 +152,12 @@ function layoutTop(el, animated) {
 // the clicked element itself, then its cell.
 /** @param {Pending} p */
 function anchor(p) {
+    if (p.field) {
+        const f = p.field;
+        const el = f.cell.isConnected ? fieldElement(f.cell, f.name, true) : null;
+        if (el) return { was: f.top, is: layoutTop(el, p.animated) };
+        if (f.cell.isConnected) return { was: f.cellTop, is: layoutTop(f.cell, p.animated) };
+    }
     const active = document.activeElement;
     if (p.cell?.isConnected && active && p.cell.contains(active) && active.matches(INLINE_EDITOR)) {
         return { was: p.targetTop, is: layoutTop(active, p.animated) };
@@ -194,7 +246,21 @@ function onPointerDown(e) {
     const tables = [...document.querySelectorAll(SELECTORS.stoichTable)]
         .filter((t) => t === clicked || isEditing(t));
     stop();
+    // Entering edit mode: whatever was edited last time is history.
+    if (clicked && !isEditing(clicked)) lastEdit = null;
     if (!tables.length) return;
+
+    /** @type {Field | null} */
+    let field = null;
+    if (!clicked && !isTypingTarget(target) && lastEdit?.cell.isConnected
+        && tables.some((t) => t.contains(lastEdit?.cell ?? null))) {
+        const el = fieldElement(lastEdit.cell, lastEdit.name);
+        field = {
+            ...lastEdit,
+            top: (el || lastEdit.cell).getBoundingClientRect().top,
+            cellTop: lastEdit.cell.getBoundingClientRect().top,
+        };
+    }
 
     /** @type {Map<Element, DOMRect>} */
     const before = new Map();
@@ -213,6 +279,7 @@ function onPointerDown(e) {
         targetTop: target.getBoundingClientRect().top,
         cell,
         cellTop: cell ? cell.getBoundingClientRect().top : 0,
+        field,
         before,
         animated: new Set(),
         observer,
@@ -224,6 +291,15 @@ function onPointerDown(e) {
     for (const table of tables) observer.observe(table);
 }
 
+/** @param {FocusEvent} e */
+function onFocusIn(e) {
+    const el = e.target instanceof Element ? e.target : null;
+    const id = el?.getAttribute("data-autotest-id") || "";
+    if (!el || !id.startsWith(EDITOR_PREFIX) || !el.closest(SELECTORS.stoichTable)) return;
+    const cell = el.closest("td, th");
+    if (cell) lastEdit = { cell, name: id.slice(EDITOR_PREFIX.length) };
+}
+
 // The user scrolling takes over: stop holding the spot.
 function onUserScroll() {
     if (pending?.phase === "pin") stop();
@@ -232,6 +308,7 @@ function onUserScroll() {
 export function initSteadyStoichEdit() {
     initSteadyStoichEditFlag();
     document.addEventListener("pointerdown", onPointerDown, { capture: true, passive: true });
+    document.addEventListener("focusin", onFocusIn, { capture: true, passive: true });
     window.addEventListener("wheel", onUserScroll, { capture: true, passive: true });
     window.addEventListener("touchmove", onUserScroll, { capture: true, passive: true });
 }

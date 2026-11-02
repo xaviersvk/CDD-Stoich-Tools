@@ -33,7 +33,7 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   cell and of the page blocks around the reaction is recorded; when the table
   changes size, the page scrolls so the inline editor CDD opened (or the
   clicked element, or its cell) is back at the click, and every cell and
-  nearby block slides from its old position to its new one (FLIP, 280 ms):
+  nearby block slides from its old position to its new one (FLIP, 700 ms):
   what is above moves up, what is below moves down, the columns glide
   sideways, and cells that edit mode adds fade in. The spot stays pinned for
   450 ms while CDD finishes rendering; a wheel or touch scroll ends it early.

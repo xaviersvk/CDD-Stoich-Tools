@@ -32,7 +32,7 @@ const WAIT_MS = 1200;
 // CDD renders edit mode in more than one commit (the inline editor gets its
 // focus a moment after the rows grow); keep the spot pinned that long.
 const SETTLE_MS = 450;
-const DURATION_MS = 280;
+const DURATION_MS = 700;
 const EASING = "cubic-bezier(0.2, 0.8, 0.2, 1)";
 
 // Only edit mode has the reaction conditions rows (separator, Temperature…).

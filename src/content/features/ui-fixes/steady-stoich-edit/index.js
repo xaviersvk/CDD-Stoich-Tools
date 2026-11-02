@@ -155,18 +155,18 @@ function anchor(p) {
     if (p.field) {
         const f = p.field;
         const el = f.cell.isConnected ? fieldElement(f.cell, f.name, true) : null;
-        if (el) return { was: f.top, is: layoutTop(el, p.animated) };
-        if (f.cell.isConnected) return { was: f.cellTop, is: layoutTop(f.cell, p.animated) };
+        if (el) return { el, was: f.top, is: layoutTop(el, p.animated) };
+        if (f.cell.isConnected) return { el: f.cell, was: f.cellTop, is: layoutTop(f.cell, p.animated) };
     }
     const active = document.activeElement;
     if (p.cell?.isConnected && active && p.cell.contains(active) && active.matches(INLINE_EDITOR)) {
-        return { was: p.targetTop, is: layoutTop(active, p.animated) };
+        return { el: active, was: p.targetTop, is: layoutTop(active, p.animated) };
     }
     if (p.target.isConnected && p.target.getClientRects().length) {
-        return { was: p.targetTop, is: layoutTop(p.target, p.animated) };
+        return { el: p.target, was: p.targetTop, is: layoutTop(p.target, p.animated) };
     }
     if (p.cell?.isConnected) {
-        return { was: p.cellTop, is: layoutTop(p.cell, p.animated) };
+        return { el: p.cell, was: p.cellTop, is: layoutTop(p.cell, p.animated) };
     }
     return null;
 }
@@ -184,9 +184,20 @@ function animate(p) {
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
     const timing = { duration: DURATION_MS, easing: EASING };
 
+    // The cell holding the spot being kept still slides sideways with its
+    // column but not up or down: its own top moves (rows above it grow, a
+    // Role line appears above the value), and following that would make the
+    // value dip and come back during the motion. Its vertical offset is the
+    // kept spot's — zero once pinned.
+    const a = anchor(p);
+    const anchorCell = a && p.tables.some((t) => t.contains(a.el)) ? a.el.closest("td, th") : null;
+
     for (const [el, was] of p.before) {
         if (!el.isConnected) continue;
-        const offset = flipOffset(was, el.getBoundingClientRect());
+        const now = el.getBoundingClientRect();
+        const offset = el === anchorCell && a
+            ? flipOffset({ left: was.left, top: a.was }, { left: now.left, top: a.is })
+            : flipOffset(was, now);
         if (!offset) continue;
         el.animate(
             [{ transform: `translate(${offset.dx}px, ${offset.dy}px)` }, { transform: "translate(0, 0)" }],

@@ -13,6 +13,10 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 19.15.1 — 2026-11-02
+
+Fixed: the value you click no longer dips and bounces back while the table slides into edit mode.
+
 ## 19.15.0 — 2026-11-02
 
 When you click a value in a stoichiometry table, it stays where you clicked it. The table still switches to edit mode, but the rows above slide up and the rows below slide down around the value, so you don't have to find it again. When you leave edit mode, the value you just changed stays put. If you click into the text to keep writing, that spot stays put instead.

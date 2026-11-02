@@ -19,6 +19,18 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [19.15.1] — 2026-11-02
+
+### Fixed
+- **The clicked value no longer dips during the slide.** It ended in the
+  right place, but on the way the cell holding it was animated from its own
+  old top — and that top moves (rows above grow, a Role line appears above
+  the value), so the value sank ~18 px and came back over the 0.7 s. The
+  anchor's cell now takes its vertical offset from the kept spot (zero once
+  pinned) and keeps only the sideways glide of its column. Measured live on
+  entry 1000000823, Purity of row 2: offset from the click 0 px at every
+  sampled point of the animation, entering and leaving edit mode.
+
 ## [19.15.0] — 2026-11-02
 
 ### Added

@@ -47,7 +47,13 @@ function renderInline(markdown) {
     });
 
     html = escapeHtml(html)
-        .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+        // Bold may hold whole *italic* runs: "**Tick *Synonym* under …**",
+        // "**Tick *Molecule-Batch ID***".
+        .replace(/\*\*((?:[^*]|\*[^*\s][^*]*\*)+)\*\*/g, "<strong>$1</strong>")
+        // *Settings → HPLC injection*: the notes name UI paths this way. The
+        // opening star must touch a word and the closing one follow it, so a
+        // lone star ("2 * 3", "H *") stays a star.
+        .replace(/(^|[^\w*])\*(?=\S)([^*\n]*?\S)\*(?![\w*])/g, "$1<em>$2</em>")
         .replace(/\[([^\]]+)]\(([^)]+)\)/g, (_match, text, href) => {
             const url = href.startsWith("./")
                 ? `${REPO}/blob/main/${href.slice(2)}`

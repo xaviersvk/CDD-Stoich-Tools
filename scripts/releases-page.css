@@ -387,6 +387,48 @@ main.wrap {
     border-top: 1px solid var(--rule);
 }
 
+/* Versions that were never tagged, inside the card of the release that carried
+   them. A hairline and a smaller heading separate them — weight, not colour. */
+.folded-intro {
+    margin: 22px 0 0 !important;
+    padding-top: 14px;
+    border-top: 1px solid var(--rule);
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.folded {
+    margin-top: 14px;
+}
+
+.folded h3 {
+    margin: 0 0 8px;
+    font-size: 15px;
+    line-height: 1.35;
+}
+
+.folded h3 .anchor {
+    color: inherit;
+    text-decoration: none;
+}
+
+.folded h3 .anchor:hover {
+    color: var(--accent);
+}
+
+.folded__date {
+    margin-left: 6px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+}
+
 .notes blockquote {
     margin: 0 0 12px;
     padding: 10px 14px;

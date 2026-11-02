@@ -132,26 +132,76 @@ function renderTile(release, status) {
       </div>`;
 }
 
-function renderRelease(release, status) {
+const indent = (html, by) =>
+    html
+        .split("\n")
+        .map((line) => by + line)
+        .join("\n");
+
+// The lead is promoted to a heading, so it must not appear again in the body.
+const bodyWithoutLead = (release) =>
+    release.lead ? release.body.replace(/^\*\*[\s\S]+?\*\*\s*(\n\n|$)/, "") : release.body;
+
+// A version that was never tagged, shown inside the card of the release that
+// carried it. It keeps its own anchor, so old links to #v19-13-0 still land.
+function renderFolded(release) {
+    const id = anchor(release.versionLabel);
+    const title = release.lead
+        ? `${escapeHtml(release.versionLabel)} · ${renderInline(release.lead)}`
+        : escapeHtml(release.versionLabel);
+
+    return `        <section class="folded" id="${id}">
+          <h3><a class="anchor" href="#${id}">${title}</a> <span class="folded__date">${escapeHtml(release.date)}</span></h3>
+${indent(renderMarkdown(bodyWithoutLead(release)), "          ")}
+        </section>`;
+}
+
+function renderRelease(release, status, folded = []) {
     const id = anchor(release.versionLabel);
 
-    // The lead is promoted to the release's own heading, so it must not appear
-    // again in the body.
-    const body = release.lead
-        ? release.body.replace(/^\*\*[\s\S]+?\*\*\s*(\n\n|$)/, "")
-        : release.body;
+    const also = folded.length
+        ? `
+        <p class="folded-intro">Also in this release</p>
+${folded.map(renderFolded).join("\n")}`
+        : "";
 
     return `    <article class="release" id="${id}">
 ${renderTile(release, status)}
       <div class="notes">
         <p class="eyebrow">${escapeHtml(release.date)}</p>
         <h2><a class="anchor" href="#${id}">${release.lead ? renderInline(release.lead) : escapeHtml(release.versionLabel)}</a></h2>
-${renderMarkdown(body)
-            .split("\n")
-            .map((line) => "        " + line)
-            .join("\n")}
+${indent(renderMarkdown(bodyWithoutLead(release)), "        ")}${also}
       </div>
     </article>`;
+}
+
+/**
+ * One card per release people could install. A version that was never tagged
+ * went out inside the next tagged one, so it is shown inside that card rather
+ * than as a card of its own — 19.10–19.13 read as part of 19.14.0. A folded
+ * version whose carrier has no section here keeps its own card, pill and all.
+ */
+function renderReleases(releases, tags) {
+    const statuses = releases.map((release) => statusOf(release, tags));
+    const carriers = new Set(releases.map((release) => release.version).filter(Boolean));
+
+    const foldedInto = new Map();
+    releases.forEach((release, i) => {
+        const status = statuses[i];
+        if (status.kind !== "folded" || !carriers.has(status.carrier)) return;
+        if (!foldedInto.has(status.carrier)) foldedInto.set(status.carrier, []);
+        foldedInto.get(status.carrier).push(release);
+    });
+    const nested = new Set([...foldedInto.values()].flat());
+
+    return releases
+        .map((release, i) =>
+            nested.has(release)
+                ? null
+                : renderRelease(release, statuses[i], foldedInto.get(release.version))
+        )
+        .filter(Boolean)
+        .join("\n\n");
 }
 
 // The first tag cut after publish.yml (2026-07-07) made pushing a tag the thing
@@ -244,9 +294,7 @@ function renderPage(releases, version, tags, assets) {
 </aside>
 
 <main class="wrap">
-${releases
-            .map((release) => renderRelease(release, statusOf(release, tags)))
-            .join("\n\n")}
+${renderReleases(releases, tags)}
 </main>
 
 <footer class="masthead masthead--foot">

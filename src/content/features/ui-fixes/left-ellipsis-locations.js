@@ -19,8 +19,13 @@ export function injectLeftEllipsisForLocations() {
             text-align: left !important;
         }
 
+        /* The outer box stays RTL so the ellipsis lands on the left; the text
+           itself must stay LTR and isolated, otherwise the bidi algorithm
+           moves a leading number to the end ("90% FBS, 10% DMSO" was shown
+           as "FBS, 10% DMSO 90%"). */
         .AutoEllipsisTooltip.value-text.right-margin .text-contents {
-            direction: rtl !important;
+            direction: ltr !important;
+            unicode-bidi: isolate !important;
             text-align: left !important;
         }
     `;

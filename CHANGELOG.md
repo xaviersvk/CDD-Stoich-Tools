@@ -19,6 +19,18 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [19.14.1] — 2026-11-02
+
+### Fixed
+- **Sample values shown in the wrong order.** The left-ellipsis CSS for long
+  locations set `direction: rtl` on every `.AutoEllipsisTooltip.value-text`
+  value in the Samples table, not just locations, and on the inner text too.
+  In a right-to-left line the bidi algorithm moves a leading number to the
+  end, so *Freezing medium* `90% FBS, 10% DMSO` read `FBS, 10% DMSO 90%`.
+  Only the display was wrong; the stored value was never touched. The outer
+  box keeps `rtl` (the ellipsis still lands on the left of long locations);
+  the text inside is now `direction: ltr; unicode-bidi: isolate`.
+
 ## [19.14.0] — 2026-10-30
 
 ### Added

@@ -19,6 +19,26 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [19.14.1] — 2026-11-02
+
+### Fixed
+- **Sample values shown in the wrong order.** The left-ellipsis CSS for long
+  locations set `direction: rtl` on every `.AutoEllipsisTooltip.value-text`
+  value in the Samples table, not just locations, and on the inner text too.
+  In a right-to-left line the bidi algorithm moves a leading number to the
+  end, so *Freezing medium* `90% FBS, 10% DMSO` read `FBS, 10% DMSO 90%`.
+  Only the display was wrong; the stored value was never touched. The outer
+  box keeps `rtl` (the ellipsis still lands on the left of long locations);
+  the text inside is now `direction: ltr; unicode-bidi: isolate`.
+
+### Changed
+- **What's new page: untagged versions sit inside the release that carried
+  them.** A version that never got a tag (19.10–19.13) used to get a card of
+  its own with a *Went out in 19.14.0* pill; it is now a sub-section of the
+  19.14.0 card under *Also in this release*, keeping its `#v19-13-0` anchor.
+  A folded version whose carrier has no `RELEASES.md` section (15.6.0) keeps
+  its own card. `RELEASES.md` itself is unchanged.
+
 ## [19.14.0] — 2026-10-30
 
 ### Added

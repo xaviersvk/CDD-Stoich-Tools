@@ -13,6 +13,10 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 19.14.1 — 2026-11-02
+
+Fixed: sample values that start with a number show in the right order again (*Freezing medium* `90% FBS, 10% DMSO` read `FBS, 10% DMSO 90%`). Only the display was wrong; the saved value is fine.
+
 ## 19.14.0 — 2026-10-30
 
 A run's readout table (*All Data*) has a filter box: type a molecule, plate or well and the table shows the matching readouts from every page of the run.

@@ -99,22 +99,35 @@ export function computeFillOffers(sample) {
     // solvent slot either: the concentration fill makes the solution and
     // takes the solvent with it. Only once the row IS a solution does a
     // solvent of its own become something to offer.
-    // A w/w percentage (a bare "%" too - ammonia 28 %) is not a
-    // concentration CDD takes: it is the row's own "%w/w ratio", typed as
-    // the bare number. No solution is made and no solvent offered for it.
+    const solvent = solventSource(sample, entry);
+
+    // A w/w percentage (a bare "%" too - ammonia 28 % in water) is not a
+    // concentration CDD takes. It is a solution whose row carries the
+    // percentage as its own "%w/w ratio" (bare number) and whose solvent row
+    // names the solvent; Concentration stays empty. One offer does it all
+    // (row-fill.js fillWwRatioIntoTable), and it stays on offer while either
+    // half is missing — a ratio typed by hand still lacks its solvent.
     const weightPercent = has(sample?.concentration)
         ? isWeightPercent(sample?.concentrationUnits)
         : !!entry?.concentration && isWeightPercent(entry?.concentrationUnits);
     if (weightPercent) {
-        if (!has(sample?.tableWwRatio)) {
-            offers.push(has(sample?.concentration)
-                ? { field: "wwRatio", label: "%w/w ratio", value: String(sample.concentration), units: "%", source: "sample" }
-                : { field: "wwRatio", label: "%w/w ratio", value: entry.concentration, units: "%", source: "memory" });
+        const fromSample = has(sample?.concentration);
+        const value = fromSample ? String(sample.concentration) : entry.concentration;
+        const needsSolvent = !!solvent && !has(sample?.tableSolvent);
+        if (!has(sample?.tableWwRatio) || needsSolvent) {
+            offers.push({
+                field: "wwRatio",
+                label: "%w/w ratio",
+                value,
+                units: "%",
+                solvent: needsSolvent ? solvent.value : null,
+                solventSource: needsSolvent ? solvent.source : null,
+                source: fromSample ? "sample" : "memory",
+            });
         }
         return offers;
     }
 
-    const solvent = solventSource(sample, entry);
     if (!has(sample?.tableConcentration)) {
         if (has(sample?.concentration)) {
             offers.push({
@@ -168,7 +181,7 @@ export function runFillOffer(sample, offer) {
             case "purity":
                 return fillPurityIntoTable(sample, offer.value);
             case "wwRatio":
-                return fillWwRatioIntoTable(sample, offer.value);
+                return fillWwRatioIntoTable(sample, offer.value, offer.solvent);
             case "concentration":
                 return fillConcentrationIntoTable(sample, offer.value, offer.units, offer.solvent);
             case "solvent":
@@ -188,7 +201,10 @@ export function runFillOffer(sample, offer) {
 export function markOfferFilled(sample, offer, result) {
     if (offer.field === "density") sample.tableDensity = String(offer.value);
     if (offer.field === "purity") sample.tablePurity = String(offer.value);
-    if (offer.field === "wwRatio") sample.tableWwRatio = String(offer.value);
+    if (offer.field === "wwRatio") {
+        sample.tableWwRatio = String(offer.value);
+        if (offer.solvent && !result?.note) sample.tableSolvent = String(offer.solvent);
+    }
     if (offer.field === "solvent") sample.tableSolvent = String(offer.value);
     if (offer.field === "name") sample.tableName = String(offer.value);
     if (offer.field === "concentration") {

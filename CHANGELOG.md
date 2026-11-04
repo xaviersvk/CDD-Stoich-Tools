@@ -38,17 +38,21 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   molecule in the right vault too.
 
 ### Fixed
-- **A w/w percentage now fills the row's %w/w ratio, not its concentration.**
-  The concentration fill read a sample's bare "%" as `%w/v` and typed it in
-  through Make solution — I34S007039 (ammonia, "28 %", which is w/w) would
-  have become a `28 %w/v` solution. Every CDD row has its own "%w/w ratio"
-  field (`wwRatio`, a fraction, 1 = the 100 % default;
-  `inline-input-wwRatio` takes the bare number, verified on entry
-  1000018140), so a bare "%", "%w/w" or "wt%" (`isWeightPercent`) is now
-  offered as "Fill %w/w ratio (28 %)" and written there — no solution, no
-  solvent. CDD's Equivalent is held across the write, as for Purity (shared
-  `fillPercentField`). The parser reads `tableWwRatio` so a typed ratio
-  hides the offer. An explicit "%w/v" is still a concentration.
+- **A w/w percentage is filled as a solution with a %w/w ratio, not as a
+  %w/v concentration.** The concentration fill read a sample's bare "%" as
+  `%w/v` — I34S007039 (ammonia, "28 %" in Water, which is w/w) would have
+  become a `28 %w/v` solution. CDD models a w/w solution differently
+  (verified on entry 1000018140): after Make solution the row keeps its own
+  "%w/w ratio" field (`wwRatio`, a fraction, 1 = the 100 % default;
+  `inline-input-wwRatio` takes the bare number), Concentration becomes
+  Optional, and the solvent row's Name takes the solvent. So a bare "%",
+  "%w/w" or "wt%" (`isWeightPercent`) is now one offer, "Fill %w/w ratio
+  (28 % in Water)": Make solution, the ratio, the solvent picked;
+  Concentration is left empty. Without a solvent only the ratio is written.
+  The offer stays while either half is missing (`tableWwRatio` from the
+  parser, `tableSolvent`), so a ratio typed by hand still gets its solvent.
+  Make solution is now one helper (`ensureSolution`) shared with the
+  concentration fill. An explicit "%w/v" is still a concentration.
 
 ## [19.15.1] — 2026-11-02
 

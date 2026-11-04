@@ -695,7 +695,7 @@ export async function fillNameIntoRow(tr, value) {
     return writeNameThroughEditor(row, value, container);
 }
 
-// Fill `value` into one of the row's percent fields - Purity, %w/w ratio.
+// Fill `value` into one of the row's percent fields (Purity today).
 // CDD recalculates this row's Equivalent when it changes - snapshot it
 // first and put it back afterwards, so the fill only changes that field.
 async function fillPercentField(sample, value, label, field, what) {
@@ -755,11 +755,80 @@ export function fillPurityIntoTable(sample, value) {
     return fillPercentField(sample, value, "Purity:", "purity", "purity");
 }
 
-// The %w/w ratio: where a w/w percentage goes (ammonia 28 %). The editor is
-// `inline-input-wwRatio` and takes the bare number, like Purity (verified
-// 2026-11-04 on entry 1000018140: "100 %w/w" opens holding "100").
-export function fillWwRatioIntoTable(sample, value) {
-    return fillPercentField(sample, value, "%w/w ratio:", "wwRatio", "%w/w ratio");
+// Turn the open row into a solution ("Make solution") unless it is one —
+// a solution row shows a Concentration field, a plain row a Make solution
+// link. → { ok } | { ok: false, reason }; never presses Escape itself.
+async function ensureSolution(ctx) {
+    const hasField = await waitFor(() => {
+        const tr = findTargetRow(ctx.container, ctx.name, ctx.rowNumber);
+        return tr && findFieldValueLink(tr, "Concentration:", false) ? true : null;
+    });
+    if (hasField) return { ok: true };
+
+    const make = (() => {
+        const tr = findTargetRow(ctx.container, ctx.name, ctx.rowNumber);
+        if (!tr) return null;
+        for (const el of tr.querySelectorAll("a, span, button")) {
+            if (/^Make solution$/i.test((el.textContent || "").trim())) return el;
+        }
+        return null;
+    })();
+    if (!make) return { ok: false, reason: "no Concentration field and no Make solution link" };
+
+    mouseClick(make);
+
+    const appeared = await waitFor(() => {
+        const tr = findTargetRow(ctx.container, ctx.name, ctx.rowNumber);
+        return tr && findFieldValueLink(tr, "Concentration:", false) ? true : null;
+    });
+    return appeared
+        ? { ok: true }
+        : { ok: false, reason: "Concentration field did not appear after Make solution" };
+}
+
+// A w/w percentage (ammonia 28 % in water) as CDD models it: the row made a
+// solution, its own %w/w ratio set, the solvent picked in the solvent row —
+// and Concentration left empty, it is Optional on a solution (verified
+// 2026-11-04 on entry 1000018140: after Make solution the row keeps
+// "%w/w ratio", gains "Concentration: Optional", and a solvent row with
+// "Name: Required" appears under it). The ratio's editor is
+// `inline-input-wwRatio` and takes the bare number, like Purity. Without a
+// solvent nothing is made a solution: only the ratio is written.
+export async function fillWwRatioIntoTable(sample, value, solvent) {
+    value = value != null ? String(value).trim() : "";
+    if (!value) return { ok: false, reason: "no %w/w ratio value on this card" };
+    solvent = solvent != null ? String(solvent).trim() : "";
+
+    const ctx = await openRow(sample);
+    if (!ctx) return { ok: false, reason: "table row not found" };
+
+    if (solvent) {
+        const solution = await ensureSolution(ctx);
+        if (!solution.ok) {
+            pressEscape();
+            return solution;
+        }
+    }
+
+    const ratio = await writeFieldInline(ctx, "%w/w ratio:", "wwRatio", value, false);
+    if (!ratio.ok) {
+        pressEscape();
+        return ratio;
+    }
+
+    // As for a concentration: the ratio IS written, so a solvent that cannot
+    // be picked comes back as a note, not a failure.
+    let note = null;
+    if (solvent) {
+        const picked = await writeSolventViaPicker(ctx, solvent);
+        if (!picked.ok) {
+            pressEscape();
+            note = picked.reason;
+        }
+    }
+
+    clickOutside(ctx.container);
+    return note ? { ok: true, note } : { ok: true };
 }
 
 // Fill `value` (+ optional `units`) into the row's Concentration field.
@@ -778,35 +847,10 @@ export async function fillConcentrationIntoTable(sample, value, units, solvent) 
     const ctx = await openRow(sample);
     if (!ctx) return { ok: false, reason: "table row not found" };
 
-    const hasField = await waitFor(() => {
-        const tr = findTargetRow(ctx.container, ctx.name, ctx.rowNumber);
-        return tr && findFieldValueLink(tr, "Concentration:", false) ? true : null;
-    });
-
-    if (!hasField) {
-        const make = (() => {
-            const tr = findTargetRow(ctx.container, ctx.name, ctx.rowNumber);
-            if (!tr) return null;
-            for (const el of tr.querySelectorAll("a, span, button")) {
-                if (/^Make solution$/i.test((el.textContent || "").trim())) return el;
-            }
-            return null;
-        })();
-        if (!make) {
-            pressEscape();
-            return { ok: false, reason: "no Concentration field and no Make solution link" };
-        }
-
-        mouseClick(make);
-
-        const appeared = await waitFor(() => {
-            const tr = findTargetRow(ctx.container, ctx.name, ctx.rowNumber);
-            return tr && findFieldValueLink(tr, "Concentration:", false) ? true : null;
-        });
-        if (!appeared) {
-            pressEscape();
-            return { ok: false, reason: "Concentration field did not appear after Make solution" };
-        }
+    const solution = await ensureSolution(ctx);
+    if (!solution.ok) {
+        pressEscape();
+        return solution;
     }
 
     const result = await writeFieldInline(

@@ -695,12 +695,12 @@ export async function fillNameIntoRow(tr, value) {
     return writeNameThroughEditor(row, value, container);
 }
 
-// Fill `value` into the row's Purity field. CDD recalculates this row's
-// Equivalent when purity changes — snapshot it first and put it back
-// afterwards, so the fill only changes purity.
-export async function fillPurityIntoTable(sample, value) {
+// Fill `value` into one of the row's percent fields - Purity, %w/w ratio.
+// CDD recalculates this row's Equivalent when it changes - snapshot it
+// first and put it back afterwards, so the fill only changes that field.
+async function fillPercentField(sample, value, label, field, what) {
     value = value != null ? String(value).trim() : "";
-    if (!value) return { ok: false, reason: "no purity value on this card" };
+    if (!value) return { ok: false, reason: `no ${what} value on this card` };
 
     const ctx = await openRow(sample);
     if (!ctx) return { ok: false, reason: "table row not found" };
@@ -708,7 +708,7 @@ export async function fillPurityIntoTable(sample, value) {
     await waitFor(() => (readEquivalent(ctx.container, ctx.name, ctx.rowNumber) != null) || null);
     const equivalentBefore = readEquivalent(ctx.container, ctx.name, ctx.rowNumber);
 
-    const result = await writeFieldInline(ctx, "Purity:", "purity", value, false);
+    const result = await writeFieldInline(ctx, label, field, value, false);
     if (!result.ok) {
         pressEscape();
         return result;
@@ -729,10 +729,10 @@ export async function fillPurityIntoTable(sample, value) {
                 ctx, "Equivalent:", "equivalent", equivalentBefore, false);
             if (!restore.ok) {
                 pressEscape();
-                // Purity IS written; the failure is visible, never silent.
+                // The value IS written; the failure is visible, never silent.
                 return {
                     ok: false,
-                    reason: `purity written but equivalent restore failed (was ${equivalentBefore})`,
+                    reason: `${what} written but equivalent restore failed (was ${equivalentBefore})`,
                 };
             }
 
@@ -741,7 +741,7 @@ export async function fillPurityIntoTable(sample, value) {
                 pressEscape();
                 return {
                     ok: false,
-                    reason: `purity written but equivalent is ${finalEquivalent}, not ${equivalentBefore}`,
+                    reason: `${what} written but equivalent is ${finalEquivalent}, not ${equivalentBefore}`,
                 };
             }
         }
@@ -751,18 +751,28 @@ export async function fillPurityIntoTable(sample, value) {
     return { ok: true };
 }
 
+export function fillPurityIntoTable(sample, value) {
+    return fillPercentField(sample, value, "Purity:", "purity", "purity");
+}
+
+// The %w/w ratio: where a w/w percentage goes (ammonia 28 %). The editor is
+// `inline-input-wwRatio` and takes the bare number, like Purity (verified
+// 2026-11-04 on entry 1000018140: "100 %w/w" opens holding "100").
+export function fillWwRatioIntoTable(sample, value) {
+    return fillPercentField(sample, value, "%w/w ratio:", "wwRatio", "%w/w ratio");
+}
+
 // Fill `value` (+ optional `units`) into the row's Concentration field.
 // The field only exists on solution rows — "Make solution" converts the
 // row first when needed. `solvent` (optional) is picked afterwards, in the
 // solvent row the conversion created.
-export async function fillConcentrationIntoTable(sample, value, units, solvent, density) {
+export async function fillConcentrationIntoTable(sample, value, units, solvent) {
     value = value != null ? String(value).trim() : "";
     if (!value) return { ok: false, reason: "no concentration value on this card" };
 
     // Before anything is clicked: a unit CDD cannot take must not leave a
     // half-made solution row behind.
-    // A w/w percentage goes in as w/v, converted by the density passed along.
-    const typed = concentrationText(value, units, density);
+    const typed = concentrationText(value, units);
     if (!typed) return { ok: false, reason: `concentration unit "${units}" is not one CDD accepts` };
 
     const ctx = await openRow(sample);

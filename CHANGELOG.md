@@ -38,15 +38,17 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   molecule in the right vault too.
 
 ### Fixed
-- **A w/w percentage is no longer filled as w/v.** The concentration fill
-  read a sample's bare "%" as `%w/v` and typed it straight in — I34S007039
-  (ammonia, "28 %", which is w/w) would have gone in as `28 %w/v`. A bare
-  "%", "%w/w" and "wt%" are now w/w (`isWeightPercent`); CDD's field takes
-  only `%w/v`, so the fill converts with the density — w/v = w/w × ρ — from
-  the row, else the batch, else memory (28 % at 0.90 g/mL → `25.2 %w/v`),
-  and the button shows the conversion. With no density the card shows a
-  disabled button saying a density is needed; Fill all and auto-fill skip
-  it (`computeBlockedOffers`). An explicit "%w/v" is unchanged.
+- **A w/w percentage now fills the row's %w/w ratio, not its concentration.**
+  The concentration fill read a sample's bare "%" as `%w/v` and typed it in
+  through Make solution — I34S007039 (ammonia, "28 %", which is w/w) would
+  have become a `28 %w/v` solution. Every CDD row has its own "%w/w ratio"
+  field (`wwRatio`, a fraction, 1 = the 100 % default;
+  `inline-input-wwRatio` takes the bare number, verified on entry
+  1000018140), so a bare "%", "%w/w" or "wt%" (`isWeightPercent`) is now
+  offered as "Fill %w/w ratio (28 %)" and written there — no solution, no
+  solvent. CDD's Equivalent is held across the write, as for Purity (shared
+  `fillPercentField`). The parser reads `tableWwRatio` so a typed ratio
+  hides the offer. An explicit "%w/v" is still a concentration.
 
 ## [19.15.1] — 2026-11-02
 

@@ -122,6 +122,15 @@ function resolveTablePurity(row) {
     return String(Number((p * 100).toFixed(6)));
 }
 
+// Typed %w/w ratio as a percent string ("28"), or null. Kept like purity: a
+// fraction, exactly 1 the untyped 100 % default (verified on entry
+// 1000018140: `wwRatio: 1` on every row, shown "100 %w/w").
+function resolveTableWwRatio(row) {
+    const r = Number(row?.wwRatio);
+    if (!Number.isFinite(r) || r === 1) return null;
+    return String(Number((r * 100).toFixed(6)));
+}
+
 // The solvent a solution row was made with, as the name CDD stores it
 // ("ethanol"). A solution keeps its solvent NESTED under `row.solvent` — a
 // row object of its own, never a member of stoichiometryTable.rows. The
@@ -253,6 +262,7 @@ export function extractRowsFromReactionFeature(feature, reactionIndex, parallelO
             // Only the typed value is worth remembering.
             typedDensity: row?.userInput?.density ?? null,
             tablePurity: resolveTablePurity(row),
+            tableWwRatio: resolveTableWwRatio(row),
             tableConcentration:
                 row?.concentration != null && row.concentration !== ""
                     ? String(row.concentration)

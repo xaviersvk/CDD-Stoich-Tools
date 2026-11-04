@@ -14,10 +14,11 @@ import { rowNameCandidates } from "../../shared/row-name-choice.js";
 import { getSynonyms } from "../api/molecule-synonyms.js";
 import { getPurityFillThreshold } from "../../shared/purity-threshold.js";
 import { runExclusive } from "./write-lock.js";
-import { concentrationText, isWeightPercent } from "../../shared/concentration-text.js";
+import { isWeightPercent } from "../../shared/concentration-text.js";
 import {
     fillDensityIntoTable,
     fillPurityIntoTable,
+    fillWwRatioIntoTable,
     fillConcentrationIntoTable,
     fillSolventIntoTable,
     fillNameIntoTable,
@@ -31,52 +32,6 @@ function solventSource(sample, entry) {
     if (has(sample?.solvent)) return { value: String(sample.solvent), source: "sample" };
     if (entry?.solvent) return { value: entry.solvent, source: "memory" };
     return null;
-}
-
-// The concentration to offer, or null. A w/w percentage carries the density
-// that turns it into the w/v CDD takes (row-fill → concentrationText) — the
-// row's own first, then the batch's, then a remembered one. Without any it
-// comes back `blocked`: never filled, only shown, so nobody gets 28 %w/v for
-// a 28 % w/w bottle.
-/** @returns {{ field: string, value: any, units: any, source: string, solvent: any,
- *   solventSource: any, blocked?: string, density?: string, display?: string } | null} */
-function concentrationOffer(sample, entry, solvent) {
-    let base = null;
-    if (has(sample?.concentration)) {
-        base = {
-            value: String(sample.concentration),
-            units: has(sample?.concentrationUnits) ? String(sample.concentrationUnits) : null,
-            source: "sample",
-        };
-    } else if (entry?.concentration) {
-        base = { value: entry.concentration, units: entry.concentrationUnits || null, source: "memory" };
-    }
-    if (!base) return null;
-    const offer = {
-        field: "concentration",
-        ...base,
-        solvent: solvent?.value || null,
-        solventSource: solvent?.source || null,
-    };
-    if (!isWeightPercent(offer.units)) return offer;
-
-    const density = [sample?.tableDensity, sample?.density, entry?.density].find(has);
-    if (!density) return { ...offer, blocked: "needs a density to convert w/w to the w/v CDD takes" };
-    const typed = concentrationText(offer.value, offer.units, density);
-    return {
-        ...offer,
-        density: String(density),
-        display: `${offer.value} % w/w → ${typed?.text || "?"} at ${density} g/mL`,
-    };
-}
-
-// Offers that exist but cannot run — shown on the card as a disabled button
-// saying what is missing, never run by Fill all or auto-fill.
-export function computeBlockedOffers(sample) {
-    if (sample?.isProduct || sample?.isMention || has(sample?.tableConcentration)) return [];
-    const entry = sample?.batchId ? getRememberedValues(sample.batchId) : null;
-    const offer = concentrationOffer(sample, entry, solventSource(sample, entry));
-    return offer?.blocked ? [offer] : [];
 }
 
 export function computeFillOffers(sample) {
@@ -144,10 +99,42 @@ export function computeFillOffers(sample) {
     // solvent slot either: the concentration fill makes the solution and
     // takes the solvent with it. Only once the row IS a solution does a
     // solvent of its own become something to offer.
+    // A w/w percentage (a bare "%" too - ammonia 28 %) is not a
+    // concentration CDD takes: it is the row's own "%w/w ratio", typed as
+    // the bare number. No solution is made and no solvent offered for it.
+    const weightPercent = has(sample?.concentration)
+        ? isWeightPercent(sample?.concentrationUnits)
+        : !!entry?.concentration && isWeightPercent(entry?.concentrationUnits);
+    if (weightPercent) {
+        if (!has(sample?.tableWwRatio)) {
+            offers.push(has(sample?.concentration)
+                ? { field: "wwRatio", label: "%w/w ratio", value: String(sample.concentration), units: "%", source: "sample" }
+                : { field: "wwRatio", label: "%w/w ratio", value: entry.concentration, units: "%", source: "memory" });
+        }
+        return offers;
+    }
+
     const solvent = solventSource(sample, entry);
     if (!has(sample?.tableConcentration)) {
-        const offer = concentrationOffer(sample, entry, solvent);
-        if (offer && !offer.blocked) offers.push(offer);
+        if (has(sample?.concentration)) {
+            offers.push({
+                field: "concentration",
+                value: String(sample.concentration),
+                units: has(sample?.concentrationUnits) ? String(sample.concentrationUnits) : null,
+                solvent: solvent?.value || null,
+                solventSource: solvent?.source || null,
+                source: "sample",
+            });
+        } else if (entry?.concentration) {
+            offers.push({
+                field: "concentration",
+                value: entry.concentration,
+                units: entry.concentrationUnits || null,
+                solvent: solvent?.value || null,
+                solventSource: solvent?.source || null,
+                source: "memory",
+            });
+        }
     } else if (!has(sample?.tableSolvent) && solvent) {
         offers.push({ field: "solvent", value: solvent.value, source: solvent.source });
     }
@@ -180,8 +167,10 @@ export function runFillOffer(sample, offer) {
                 return fillDensityIntoTable(sample, offer.value);
             case "purity":
                 return fillPurityIntoTable(sample, offer.value);
+            case "wwRatio":
+                return fillWwRatioIntoTable(sample, offer.value);
             case "concentration":
-                return fillConcentrationIntoTable(sample, offer.value, offer.units, offer.solvent, offer.density);
+                return fillConcentrationIntoTable(sample, offer.value, offer.units, offer.solvent);
             case "solvent":
                 return fillSolventIntoTable(sample, offer.value);
             case "name":
@@ -199,6 +188,7 @@ export function runFillOffer(sample, offer) {
 export function markOfferFilled(sample, offer, result) {
     if (offer.field === "density") sample.tableDensity = String(offer.value);
     if (offer.field === "purity") sample.tablePurity = String(offer.value);
+    if (offer.field === "wwRatio") sample.tableWwRatio = String(offer.value);
     if (offer.field === "solvent") sample.tableSolvent = String(offer.value);
     if (offer.field === "name") sample.tableName = String(offer.value);
     if (offer.field === "concentration") {

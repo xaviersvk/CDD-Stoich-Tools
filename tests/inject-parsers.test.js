@@ -82,7 +82,7 @@ test("a parallel reaction drops the Variable product and letters its pairs", () 
 
 test("table values: purity is a fraction, 1 means untyped; vault from the sample url", () => {
     const rows = [
-        sampleRow({ uid: "a", purity: 0.982, userInput: { density: "1.2" }, name: "DIPEA", concentration: 0.5 }),
+        sampleRow({ uid: "a", purity: 0.982, wwRatio: 0.28, userInput: { density: "1.2" }, name: "DIPEA", concentration: 0.5 }),
         sampleRow({ uid: "b", purity: 1, sample: { id: 12, sample_identifier: "S-2" } }),
     ];
     const [a, b] = extractAllReactionRows(entry({ 1: reaction(1, rows) })).samples;
@@ -94,6 +94,8 @@ test("table values: purity is a fraction, 1 means untyped; vault from the sample
     assert.equal(a.sampleVaultId, "6884");
     assert.equal(a.location, "Fridge A > Box 3");
     assert.equal(b.tablePurity, null);
+    assert.equal(a.tableWwRatio, "28");
+    assert.equal(b.tableWwRatio, null);
     assert.equal(b.sampleVaultId, null);
 });
 

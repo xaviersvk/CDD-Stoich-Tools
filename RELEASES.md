@@ -17,7 +17,7 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 The batch picker now bolds the most used sample and crosses out depleted ones for reagents from shared vaults too.
 
-- Fixed: a sample's concentration in % (w/w) is no longer filled as w/v. The fill converts it with the density; without a density the button tells you to add one.
+- Fixed: a sample's concentration in % (e.g. ammonia 28 %) now fills the row's **%w/w ratio** instead of being made into a %w/v solution.
 
 ## 19.15.1 — 2026-11-02
 

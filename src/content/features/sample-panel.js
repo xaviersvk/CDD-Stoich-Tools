@@ -3,7 +3,6 @@ import { normalizeValue } from "../utils/format.js";
 import { STATE } from "../state.js";
 import {
     computeFillOffers,
-    computeBlockedOffers,
     runFillOffer,
     markOfferFilled,
     touchOfferMemory,
@@ -1132,22 +1131,9 @@ function reactionCard(group, color) {
     return card;
 }
 
-// An offer that cannot run (fill-offers.js computeBlockedOffers): the same
-// button, disabled, saying what is missing.
-function buildBlockedFillButton(offer) {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "cdd-density-fill-btn";
-    btn.disabled = true;
-    btn.textContent = `✗ ${offer.field} ${offer.value} % w/w — add a density to fill`;
-    btn.title = `This ${offer.field} is w/w; CDD only takes w/v, which is w/w × density. ` +
-        "Type the density into the row (or put it on the batch) and the fill appears.";
-    return btn;
-}
-
 function buildFillButton(sample, offer) {
-    const withUnits = offer.display
-        || (offer.units ? `${offer.value} ${offer.units}` : offer.value);
+    const withUnits = offer.units ? `${offer.value} ${offer.units}` : offer.value;
+    const what = offer.label || offer.field;
     // A concentration fill makes the solution and picks its solvent in one
     // go — the label has to say so, or the row gains a solvent nobody
     // clicked for.
@@ -1157,8 +1143,8 @@ function buildFillButton(sample, offer) {
     btn.className = "cdd-density-fill-btn";
     btn.textContent =
         offer.source === "memory"
-            ? `⤵ Fill remembered ${offer.field} (${shown}) into table`
-            : `⤵ Fill ${offer.field} (${shown}) into table`;
+            ? `⤵ Fill remembered ${what} (${shown}) into table`
+            : `⤵ Fill ${what} (${shown}) into table`;
     btn.title =
         offer.source === "memory"
             ? offer.field === "name"
@@ -1208,8 +1194,8 @@ function buildFillButton(sample, offer) {
             // A concentration fill reports a solvent it could not pick
             // rather than failing over it — say so instead of a bare ✓.
             btn.textContent = result.note
-                ? `✓ ${offer.field} filled — solvent: ${result.note}`
-                : `✓ ${offer.field} filled`;
+                ? `✓ ${what} filled — solvent: ${result.note}`
+                : `✓ ${what} filled`;
         } else {
             btn.textContent = `✗ ${result.reason || "couldn't fill"} — edit the row manually`;
             btn.disabled = false;
@@ -1679,9 +1665,6 @@ export function renderSamples(payload) {
             const offers = computeFillOffers(sample);
             for (const offer of offers) {
                 card.appendChild(buildFillButton(sample, offer));
-            }
-            for (const offer of computeBlockedOffers(sample)) {
-                card.appendChild(buildBlockedFillButton(offer));
             }
 
             groupBody.appendChild(card);

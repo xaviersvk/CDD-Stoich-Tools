@@ -37,6 +37,17 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   `molecules[].moleculeUrl`, so a row already in the table resolves its
   molecule in the right vault too.
 
+### Fixed
+- **A w/w percentage is no longer filled as w/v.** The concentration fill
+  read a sample's bare "%" as `%w/v` and typed it straight in — I34S007039
+  (ammonia, "28 %", which is w/w) would have gone in as `28 %w/v`. A bare
+  "%", "%w/w" and "wt%" are now w/w (`isWeightPercent`); CDD's field takes
+  only `%w/v`, so the fill converts with the density — w/v = w/w × ρ — from
+  the row, else the batch, else memory (28 % at 0.90 g/mL → `25.2 %w/v`),
+  and the button shows the conversion. With no density the card shows a
+  disabled button saying a density is needed; Fill all and auto-fill skip
+  it (`computeBlockedOffers`). An explicit "%w/v" is unchanged.
+
 ## [19.15.1] — 2026-11-02
 
 ### Fixed

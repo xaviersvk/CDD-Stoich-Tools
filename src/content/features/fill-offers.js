@@ -14,6 +14,7 @@ import { rowNameCandidates } from "../../shared/row-name-choice.js";
 import { getSynonyms } from "../api/molecule-synonyms.js";
 import { getPurityFillThreshold } from "../../shared/purity-threshold.js";
 import { runExclusive } from "./write-lock.js";
+import { concentrationText, isWeightPercent } from "../../shared/concentration-text.js";
 import {
     fillDensityIntoTable,
     fillPurityIntoTable,
@@ -30,6 +31,52 @@ function solventSource(sample, entry) {
     if (has(sample?.solvent)) return { value: String(sample.solvent), source: "sample" };
     if (entry?.solvent) return { value: entry.solvent, source: "memory" };
     return null;
+}
+
+// The concentration to offer, or null. A w/w percentage carries the density
+// that turns it into the w/v CDD takes (row-fill → concentrationText) — the
+// row's own first, then the batch's, then a remembered one. Without any it
+// comes back `blocked`: never filled, only shown, so nobody gets 28 %w/v for
+// a 28 % w/w bottle.
+/** @returns {{ field: string, value: any, units: any, source: string, solvent: any,
+ *   solventSource: any, blocked?: string, density?: string, display?: string } | null} */
+function concentrationOffer(sample, entry, solvent) {
+    let base = null;
+    if (has(sample?.concentration)) {
+        base = {
+            value: String(sample.concentration),
+            units: has(sample?.concentrationUnits) ? String(sample.concentrationUnits) : null,
+            source: "sample",
+        };
+    } else if (entry?.concentration) {
+        base = { value: entry.concentration, units: entry.concentrationUnits || null, source: "memory" };
+    }
+    if (!base) return null;
+    const offer = {
+        field: "concentration",
+        ...base,
+        solvent: solvent?.value || null,
+        solventSource: solvent?.source || null,
+    };
+    if (!isWeightPercent(offer.units)) return offer;
+
+    const density = [sample?.tableDensity, sample?.density, entry?.density].find(has);
+    if (!density) return { ...offer, blocked: "needs a density to convert w/w to the w/v CDD takes" };
+    const typed = concentrationText(offer.value, offer.units, density);
+    return {
+        ...offer,
+        density: String(density),
+        display: `${offer.value} % w/w → ${typed?.text || "?"} at ${density} g/mL`,
+    };
+}
+
+// Offers that exist but cannot run — shown on the card as a disabled button
+// saying what is missing, never run by Fill all or auto-fill.
+export function computeBlockedOffers(sample) {
+    if (sample?.isProduct || sample?.isMention || has(sample?.tableConcentration)) return [];
+    const entry = sample?.batchId ? getRememberedValues(sample.batchId) : null;
+    const offer = concentrationOffer(sample, entry, solventSource(sample, entry));
+    return offer?.blocked ? [offer] : [];
 }
 
 export function computeFillOffers(sample) {
@@ -99,25 +146,8 @@ export function computeFillOffers(sample) {
     // solvent of its own become something to offer.
     const solvent = solventSource(sample, entry);
     if (!has(sample?.tableConcentration)) {
-        if (has(sample?.concentration)) {
-            offers.push({
-                field: "concentration",
-                value: String(sample.concentration),
-                units: has(sample?.concentrationUnits) ? String(sample.concentrationUnits) : null,
-                solvent: solvent?.value || null,
-                solventSource: solvent?.source || null,
-                source: "sample",
-            });
-        } else if (entry?.concentration) {
-            offers.push({
-                field: "concentration",
-                value: entry.concentration,
-                units: entry.concentrationUnits || null,
-                solvent: solvent?.value || null,
-                solventSource: solvent?.source || null,
-                source: "memory",
-            });
-        }
+        const offer = concentrationOffer(sample, entry, solvent);
+        if (offer && !offer.blocked) offers.push(offer);
     } else if (!has(sample?.tableSolvent) && solvent) {
         offers.push({ field: "solvent", value: solvent.value, source: solvent.source });
     }
@@ -151,7 +181,7 @@ export function runFillOffer(sample, offer) {
             case "purity":
                 return fillPurityIntoTable(sample, offer.value);
             case "concentration":
-                return fillConcentrationIntoTable(sample, offer.value, offer.units, offer.solvent);
+                return fillConcentrationIntoTable(sample, offer.value, offer.units, offer.solvent, offer.density);
             case "solvent":
                 return fillSolventIntoTable(sample, offer.value);
             case "name":

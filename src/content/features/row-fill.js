@@ -755,13 +755,14 @@ export async function fillPurityIntoTable(sample, value) {
 // The field only exists on solution rows — "Make solution" converts the
 // row first when needed. `solvent` (optional) is picked afterwards, in the
 // solvent row the conversion created.
-export async function fillConcentrationIntoTable(sample, value, units, solvent) {
+export async function fillConcentrationIntoTable(sample, value, units, solvent, density) {
     value = value != null ? String(value).trim() : "";
     if (!value) return { ok: false, reason: "no concentration value on this card" };
 
     // Before anything is clicked: a unit CDD cannot take must not leave a
     // half-made solution row behind.
-    const typed = concentrationText(value, units);
+    // A w/w percentage goes in as w/v, converted by the density passed along.
+    const typed = concentrationText(value, units, density);
     if (!typed) return { ok: false, reason: `concentration unit "${units}" is not one CDD accepts` };
 
     const ctx = await openRow(sample);

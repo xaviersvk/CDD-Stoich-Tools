@@ -96,7 +96,20 @@ test("table values: purity is a fraction, 1 means untyped; vault from the sample
     assert.equal(b.tablePurity, null);
     assert.equal(a.tableWwRatio, "28");
     assert.equal(b.tableWwRatio, null);
+    assert.equal(a.tableAmountTyped, false);
     assert.equal(b.sampleVaultId, null);
+});
+
+test("tableAmountTyped: a mass or volume the user typed", () => {
+    const rows = [
+        sampleRow({ uid: "m", userInput: { msample: "2 mg" } }),
+        sampleRow({ uid: "v", userInput: { vsample: "10 µL" }, sample: { id: 12, sample_identifier: "S-2" } }),
+        sampleRow({ uid: "d", userInput: { density: "1" }, sample: { id: 13, sample_identifier: "S-3" } }),
+    ];
+    const [m, v, d] = extractAllReactionRows(entry({ 1: reaction(1, rows) })).samples;
+    assert.equal(m.tableAmountTyped, true);
+    assert.equal(v.tableAmountTyped, true);
+    assert.equal(d.tableAmountTyped, false);
 });
 
 test("moleculeVaultId: the vault of the row's own molecule, a shared one included", () => {

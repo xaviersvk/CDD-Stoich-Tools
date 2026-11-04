@@ -122,6 +122,10 @@ export function computeFillOffers(sample) {
                 units: "%",
                 solvent: needsSolvent ? solvent.value : null,
                 solventSource: needsSolvent ? solvent.source : null,
+                // CDD keeps the mass when the ratio changes and moves the
+                // Equivalent. Right when the mass was weighed; otherwise the
+                // planned Equivalent is what counts and the mass follows.
+                holdEquivalent: !sample?.tableAmountTyped,
                 source: fromSample ? "sample" : "memory",
             });
         }
@@ -181,7 +185,7 @@ export function runFillOffer(sample, offer) {
             case "purity":
                 return fillPurityIntoTable(sample, offer.value);
             case "wwRatio":
-                return fillWwRatioIntoTable(sample, offer.value, offer.solvent);
+                return fillWwRatioIntoTable(sample, offer.value, offer.solvent, offer.holdEquivalent !== false);
             case "concentration":
                 return fillConcentrationIntoTable(sample, offer.value, offer.units, offer.solvent);
             case "solvent":

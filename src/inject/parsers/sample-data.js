@@ -263,6 +263,11 @@ export function extractRowsFromReactionFeature(feature, reactionIndex, parallelO
             typedDensity: row?.userInput?.density ?? null,
             tablePurity: resolveTablePurity(row),
             tableWwRatio: resolveTableWwRatio(row),
+            // The amount was typed by hand — weighed or measured out. CDD
+            // keeps what the user typed last in `userInput`: a typed mass is
+            // `msample: "2 mg"`, and typing the Equivalent afterwards clears
+            // it (verified 2026-11-04 on entry 1000018140). Volume likewise.
+            tableAmountTyped: !!(row?.userInput?.msample || row?.userInput?.vsample),
             tableConcentration:
                 row?.concentration != null && row.concentration !== ""
                     ? String(row.concentration)

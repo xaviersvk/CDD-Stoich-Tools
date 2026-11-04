@@ -699,6 +699,36 @@ export async function fillNameIntoRow(tr, value) {
     return writeNameThroughEditor(row, value, container);
 }
 
+// CDD recalculates a row's Equivalent when its Purity or %w/w ratio changes
+// (it keeps the mass and lowers the moles: 28 %w/w turned Equivalent 1 into
+// 0.28 on entry 1000018140). Put `before` back so the fill only changes the
+// field it was asked to. → { ok } | { ok: false, reason }; no Escape.
+async function restoreEquivalent(ctx, equivalentBefore, what) {
+    if (equivalentBefore == null) return { ok: true };
+    // Give CDD a moment to recalculate, then decide on the CURRENT
+    // value — never on whether the wait happened to observe the
+    // change. (A wait that times out must not mean "nothing changed".)
+    await waitFor(() => {
+        const now = readEquivalent(ctx.container, ctx.name, ctx.rowNumber);
+        return now != null && !valuesMatch(now, equivalentBefore) ? now : null;
+    });
+
+    const equivalentAfter = readEquivalent(ctx.container, ctx.name, ctx.rowNumber);
+    if (equivalentAfter == null || valuesMatch(equivalentAfter, equivalentBefore)) return { ok: true };
+
+    const restore = await writeFieldInline(
+        ctx, "Equivalent:", "equivalent", equivalentBefore, false);
+    // The value IS written; the failure is visible, never silent.
+    if (!restore.ok) {
+        return { ok: false, reason: `${what} written but equivalent restore failed (was ${equivalentBefore})` };
+    }
+    const finalEquivalent = readEquivalent(ctx.container, ctx.name, ctx.rowNumber);
+    if (finalEquivalent != null && !valuesMatch(finalEquivalent, equivalentBefore)) {
+        return { ok: false, reason: `${what} written but equivalent is ${finalEquivalent}, not ${equivalentBefore}` };
+    }
+    return { ok: true };
+}
+
 // Fill `value` into one of the row's percent fields (Purity today).
 // CDD recalculates this row's Equivalent when it changes - snapshot it
 // first and put it back afterwards, so the fill only changes that field.
@@ -718,37 +748,10 @@ async function fillPercentField(sample, value, label, field, what) {
         return result;
     }
 
-    if (equivalentBefore != null) {
-        // Give CDD a moment to recalculate, then decide on the CURRENT
-        // value — never on whether the wait happened to observe the
-        // change. (A wait that times out must not mean "nothing changed".)
-        await waitFor(() => {
-            const now = readEquivalent(ctx.container, ctx.name, ctx.rowNumber);
-            return now != null && !valuesMatch(now, equivalentBefore) ? now : null;
-        });
-
-        const equivalentAfter = readEquivalent(ctx.container, ctx.name, ctx.rowNumber);
-        if (equivalentAfter != null && !valuesMatch(equivalentAfter, equivalentBefore)) {
-            const restore = await writeFieldInline(
-                ctx, "Equivalent:", "equivalent", equivalentBefore, false);
-            if (!restore.ok) {
-                pressEscape();
-                // The value IS written; the failure is visible, never silent.
-                return {
-                    ok: false,
-                    reason: `${what} written but equivalent restore failed (was ${equivalentBefore})`,
-                };
-            }
-
-            const finalEquivalent = readEquivalent(ctx.container, ctx.name, ctx.rowNumber);
-            if (finalEquivalent != null && !valuesMatch(finalEquivalent, equivalentBefore)) {
-                pressEscape();
-                return {
-                    ok: false,
-                    reason: `${what} written but equivalent is ${finalEquivalent}, not ${equivalentBefore}`,
-                };
-            }
-        }
+    const held = await restoreEquivalent(ctx, equivalentBefore, what);
+    if (!held.ok) {
+        pressEscape();
+        return held;
     }
 
     clickOutside(ctx.container);
@@ -798,7 +801,14 @@ async function ensureSolution(ctx) {
 // "Name: Required" appears under it). The ratio's editor is
 // `inline-input-wwRatio` and takes the bare number, like Purity. Without a
 // solvent nothing is made a solution: only the ratio is written.
-export async function fillWwRatioIntoTable(sample, value, solvent) {
+//
+// CDD keeps the row's mass when the ratio changes and recalculates the
+// Equivalent (2026-11-04: 28 %w/w turned Equivalent 1 into 0.28, whether
+// the Equivalent had been typed or not). That is right for a mass that was
+// weighed and typed in — the bottle on the balance does not change — so
+// `holdEquivalent` is false then. Otherwise the planned Equivalent is put
+// back and the mass follows (14.5 µmol at 28 % → 1.81 mg).
+export async function fillWwRatioIntoTable(sample, value, solvent, holdEquivalent = true) {
     value = value != null ? String(value).trim() : "";
     if (!value) return { ok: false, reason: "no %w/w ratio value on this card" };
     solvent = solvent != null ? String(solvent).trim() : "";
@@ -814,10 +824,20 @@ export async function fillWwRatioIntoTable(sample, value, solvent) {
         }
     }
 
+    await waitFor(() => (readEquivalent(ctx.container, ctx.name, ctx.rowNumber) != null) || null);
+    const equivalentBefore = readEquivalent(ctx.container, ctx.name, ctx.rowNumber);
+
     const ratio = await writeFieldInline(ctx, "%w/w ratio:", "wwRatio", value, false);
     if (!ratio.ok) {
         pressEscape();
         return ratio;
+    }
+    const held = holdEquivalent
+        ? await restoreEquivalent(ctx, equivalentBefore, "%w/w ratio")
+        : { ok: true };
+    if (!held.ok) {
+        pressEscape();
+        return held;
     }
 
     // As for a concentration: the ratio IS written, so a solvent that cannot

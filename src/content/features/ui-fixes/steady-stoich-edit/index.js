@@ -250,7 +250,31 @@ function onPointerDown(e) {
     if (e.button !== 0 || !isSteadyStoichEditEnabled()) return;
     const target = e.target instanceof Element ? e.target : null;
     if (!target || target.closest(`#${PANEL_ID}`)) return;
+    begin(target);
+}
 
+/**
+ * The panel's fill buttons click the table themselves (row-fill.js), with
+ * synthetic mouse events and no pointerdown — call this right before such a
+ * click on `target` and it moves like a click of the user's: the row stays
+ * where it was, the rest slides. Same flag as the user's clicks.
+ *
+ * The click that ends a fill lands in the entry text above the table, which
+ * for a user's click means "hold where I am about to type". Nobody types
+ * there after a fill: the value just filled is what stays put.
+ *
+ * @param {Element} target
+ */
+export function steadyBeforeClick(target) {
+    if (!isSteadyStoichEditEnabled() || !(target instanceof Element)) return;
+    begin(target, true);
+}
+
+/**
+ * @param {Element} target
+ * @param {boolean} [synthetic]  a click of ours, not the user's
+ */
+function begin(target, synthetic = false) {
     const clicked = target.closest(SELECTORS.stoichTable);
     // A click in a table may switch it into edit mode; a click anywhere may
     // switch a table that is in edit mode back out.
@@ -263,7 +287,7 @@ function onPointerDown(e) {
 
     /** @type {Field | null} */
     let field = null;
-    if (!clicked && !isTypingTarget(target) && lastEdit?.cell.isConnected
+    if (!clicked && (synthetic || !isTypingTarget(target)) && lastEdit?.cell.isConnected
         && tables.some((t) => t.contains(lastEdit?.cell ?? null))) {
         const el = fieldElement(lastEdit.cell, lastEdit.name);
         field = {

@@ -25,6 +25,7 @@
 // loudly in the button/status).
 
 import { mouseClick } from "../utils/dom.js";
+import { steadyBeforeClick } from "./ui-fixes/steady-stoich-edit/index.js";
 import { concentrationText } from "../../shared/concentration-text.js";
 import { SELECTORS } from "../selectors.js";
 
@@ -216,6 +217,7 @@ function clickOutside(container) {
     const target = document.elementFromPoint(x, y);
 
     if (target && !container.contains(target)) {
+        steadyBeforeClick(target);
         mouseClick(target);
     }
 }
@@ -278,6 +280,7 @@ async function openRow(sample) {
             const name =
                 names.find((n) => (tr.innerText || "").includes(n)) || names[0] || "";
             if (name) {
+                steadyBeforeClick(tr.cells[0]);
                 mouseClick(tr.cells[0]);
                 return { container: primary, name, rowNumber: sample.rowNumber };
             }
@@ -306,6 +309,7 @@ async function openRow(sample) {
             // Either the row is view-mode, or the table is already in edit
             // mode — both tolerate the click; the field-link searches that
             // follow decide.
+            steadyBeforeClick(viewRows[0].cells[0]);
             mouseClick(viewRows[0].cells[0]);
             return { container, name, rowNumber: null };
         }

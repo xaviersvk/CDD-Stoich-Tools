@@ -17,6 +17,7 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 The batch picker now bolds the most used sample and crosses out depleted ones for reagents from shared vaults too.
 
+- The panel's Fill buttons now slide the table smoothly like a click in it does, so the row you fill stays in place.
 - Fixed: a sample in % w/w (e.g. ammonia 28 % in water) now fills as a solution with a **%w/w ratio** and its solvent, not as a %w/v concentration.
 
 ## 19.15.1 — 2026-11-02

@@ -22,6 +22,19 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 ## [19.16.0] — 2026-11-04
 
 ### Changed
+- **The panel's fill buttons move the table like a click does.** The steady
+  edit animation (19.15.0: the clicked value stays put, the rest slides)
+  only followed the user's own clicks — it listens for `pointerdown`, skips
+  clicks in the panel, and a fill clicks the table with synthetic mouse
+  events that carry no pointerdown. So Fill density / purity / concentration
+  / %w/w ratio, and Fill all, made the table jump into and out of edit mode.
+  steady-stoich-edit now exports `steadyBeforeClick(target)`, and row-fill
+  calls it before the two clicks that change the table's size: the click
+  that opens the row (the row stays where it was) and the click outside
+  that ends the fill (the value just filled stays where it is — for a fill
+  this holds even though that click lands in the entry text, which for a
+  user's click would mean "hold where I am about to type"). Same Settings
+  flag as the click animation.
 - **Sample picker hints now cover reagents from shared vaults.** The batch /
   sample picker's "most used" bold and the early depleted strike-through
   used to skip every molecule registered outside the entry's vault

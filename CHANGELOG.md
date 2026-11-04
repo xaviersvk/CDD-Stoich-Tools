@@ -19,6 +19,24 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [19.16.0] — 2026-11-04
+
+### Changed
+- **Sample picker hints now cover reagents from shared vaults.** The batch /
+  sample picker's "most used" bold and the early depleted strike-through
+  used to skip every molecule registered outside the entry's vault
+  (`inThisVault`), on the assumption that shared/public vaults hold no
+  samples of ours. They do: entry 1000018140 (vault 1000000109) adds
+  I34-SM-0039847, registered in shared vault 8158, whose sample I34S007039
+  sits in our inventory. Molecule lookups and CDD's own sample lists are
+  now taken from any vault, and samples are fetched from the molecule's
+  own vault (`GET /vaults/8158/molecules/<id>/inventory_samples.json`
+  answers 200 from the other vault's entry). Fetches stay limited to the
+  entity the picker actually shows.
+- The reaction-row parser exposes `moleculeVaultId`, read from the row's
+  `molecules[].moleculeUrl`, so a row already in the table resolves its
+  molecule in the right vault too.
+
 ## [19.15.1] — 2026-11-02
 
 ### Fixed

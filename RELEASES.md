@@ -13,6 +13,10 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 19.16.0 — 2026-11-04
+
+The batch picker now bolds the most used sample and crosses out depleted ones for reagents from shared vaults too.
+
 ## 19.15.1 — 2026-11-02
 
 Fixed: the value you click no longer dips and bounces back while the table slides into edit mode.

@@ -288,10 +288,22 @@ export function extractRowsFromReactionFeature(feature, reactionIndex, parallelO
             // A sample can sit in another vault than the entry.
             sampleVaultId:
                 String(row?.sample?.url || "").match(/\/vaults\/(\d+)\//)?.[1] ?? null,
+            // The vault the row's molecule is registered in — a shared vault
+            // when the reagent comes from one (entry 1000018140: molecule
+            // I34-SM-0039847 lives in vault 8158, the entry in 1000000109).
+            // Read from the row's `molecules[].moleculeUrl`; null if absent.
+            moleculeVaultId: resolveMoleculeVaultId(row, moleculeFields.moleculeId),
         });
     }
 
     return sortByRowNumber(output);
+}
+
+function resolveMoleculeVaultId(row, moleculeId) {
+    const molecules = Array.isArray(row?.molecules) ? row.molecules : [];
+    const own = molecules.find((m) => moleculeId != null && String(m?.id) === String(moleculeId))
+        || (molecules.length === 1 ? molecules[0] : null);
+    return String(own?.moleculeUrl || "").match(/\/vaults\/(\d+)\/molecules\//)?.[1] ?? null;
 }
 
 export function extractAllReactionRows(payload) {

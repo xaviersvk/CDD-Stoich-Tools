@@ -70,18 +70,18 @@ function load(vaultId, moleculeId) {
         .finally(() => requested.delete(moleculeId));
 }
 
-function inThisVault(vaultId) {
-    // CDD also looks up shared/public vaults' molecules; those have no
-    // samples of ours.
-    const vault = location.pathname.match(/^\/vaults\/(\d+)/)?.[1];
-    return !vault || String(vaultId) === vault;
-}
+// Molecules of a shared vault count too: a reagent registered in a shared
+// vault keeps its samples there, and the picker offers them (entry
+// 1000018140: I34-SM-0039847 from vault 8158 in an entry of 1000000109).
+// Each molecule's samples are fetched from its own vault. Only the molecule
+// the picker actually shows gets fetched (decorate checks the radios match),
+// so the many lookups CDD makes when a picker opens cost nothing extra.
 
 // EVENTS.MOLECULE_LOADED: CDD looked up an entity the picker may offer. Only
 // the name → id pair is kept; the samples are fetched once the picker shows
 // that entity — opening a picker looks up dozens of molecules.
 export function notePickedMolecule(payload) {
-    if (!payload?.moleculeId || !payload?.name || !inThisVault(payload.vaultId)) return;
+    if (!payload?.moleculeId || !payload?.name || !payload?.vaultId) return;
     lastLooked = {
         vaultId: String(payload.vaultId),
         moleculeId: String(payload.moleculeId),
@@ -92,7 +92,7 @@ export function notePickedMolecule(payload) {
 
 // EVENTS.MOLECULE_SAMPLES: CDD loaded a molecule's samples itself.
 export function noteMoleculeSamples(payload) {
-    if (!payload?.moleculeId || !inThisVault(payload.vaultId)) return;
+    if (!payload?.moleculeId || !payload?.vaultId) return;
     const id = String(payload.moleculeId);
     loaded.set(id, seedMoleculeSamples(String(payload.vaultId), id, payload.samples));
     schedule();
@@ -180,15 +180,16 @@ function setHint(radio, bold, title) {
 // The entity of a row already in the table, from the entry payload. Opening
 // the picker on such a row makes no request at all since CDD's 2026-10
 // update — the picker is drawn from the entry — so EVENTS.MOLECULE_LOADED
-// never teaches us its name. The payload's rows carry name and id together.
+// never teaches us its name. The payload's rows carry name and id together,
+// and the vault the molecule is registered in (a shared one included).
 function moleculeFromPayload(name) {
     if (!name) return null;
     const pageVault = location.pathname.match(/^\/vaults\/(\d+)/)?.[1];
-    if (!pageVault) return null;
     for (const sample of STATE.lastPayload?.samples || []) {
         if (!sample?.moleculeId || String(sample.moleculeName || "").trim() !== name) continue;
-        if (sample.sampleVaultId && String(sample.sampleVaultId) !== pageVault) continue;
-        return { vaultId: pageVault, moleculeId: String(sample.moleculeId) };
+        const vaultId = sample.moleculeVaultId || sample.sampleVaultId || pageVault;
+        if (!vaultId) continue;
+        return { vaultId: String(vaultId), moleculeId: String(sample.moleculeId) };
     }
     return null;
 }

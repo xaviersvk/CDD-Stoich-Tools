@@ -97,6 +97,22 @@ test("table values: purity is a fraction, 1 means untyped; vault from the sample
     assert.equal(b.sampleVaultId, null);
 });
 
+test("moleculeVaultId: the vault of the row's own molecule, a shared one included", () => {
+    const rows = [
+        sampleRow({
+            uid: "shared", moleculeId: 160304127,
+            molecules: [
+                { id: 160304127, moleculeUrl: "https://eu.collaborativedrug.com/vaults/8158/molecules/160304127" },
+                { id: 1000474863, moleculeUrl: "https://eu.collaborativedrug.com/vaults/1000000109/molecules/1000474863" },
+            ],
+        }),
+        sampleRow({ uid: "none", moleculeId: 5, sample: { id: 12, sample_identifier: "S-2" } }),
+    ];
+    const [shared, none] = extractAllReactionRows(entry({ 1: reaction(1, rows) })).samples;
+    assert.equal(shared.moleculeVaultId, "8158");
+    assert.equal(none.moleculeVaultId, null);
+});
+
 test("the same sample in the same row is listed once", () => {
     const row = sampleRow({ uid: "dup" });
     const { samples } = extractAllReactionRows(entry({ 1: reaction(1, [row, row]) }));

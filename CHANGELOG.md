@@ -19,6 +19,30 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [19.17.0] — 2026-11-09
+
+### Added
+- **The location filter now also sits above the tree in Pick Location**
+  (Create a New Sample → Click to Pick Location). Same box as in Edit
+  Locations: type part of a name, the tree unfolds every branch holding a
+  match and shows only the matches and the path to each; Esc clears it and
+  Enter does nothing (it would otherwise press OK).
+- The page-world bridge (`location-tree-bridge.js`) takes a `scope`:
+  `"edit"` (default) or `"picker"`. The picker's tree is built differently,
+  measured: the whole tree (938 nodes in the test vault, every branch loaded)
+  is the `locations` prop of a component 19 levels above the `<ul>`, while
+  `expandedItems` / `onExpandedItemsChange` sit on the SimpleTreeView itself.
+  The picker's handler reads `event.nativeEvent.type`, so the synthetic event
+  carries itself as its own `nativeEvent`. Plates ride along in `plates` and
+  are not tree rows, so the filter skips them. Picker rows have no
+  `data-nodeid`; the id is the tail of the row's MUI id
+  (`mui-tree-view-1-25573`).
+
+### Changed
+- Clearing the filter (in both dialogs) puts the earlier expansion back
+  **plus the path down to the selected row**, so a box picked from the
+  filtered list stays on screen instead of folding away.
+
 ## [19.16.0] — 2026-11-04
 
 ### Changed

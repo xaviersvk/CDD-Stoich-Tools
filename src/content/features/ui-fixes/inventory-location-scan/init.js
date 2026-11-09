@@ -12,6 +12,10 @@
 // start-up, so flipping it in the options page adds or removes the button on a
 // dialog that is already open.
 //
+// The filter box is also mounted in the Pick Location dialog that Create a
+// New Sample opens — same box, same behaviour, read through the bridge's
+// "picker" scope.
+//
 // Independently of the switch, the footer also gets Copy tree
 // (tree-copy-button.js), which only reads. And every sync runs the
 // duplicate-name pass:
@@ -31,7 +35,15 @@ import { findDialog, findFooter, footerAnchor, nextFrame } from "./dialog-dom.js
 import { markDuplicateNames } from "./name-marks.js";
 import { closeScanPanel, openScanPanel } from "./scan-panel.js";
 import { injectScanStyles } from "./styles.js";
-import { mountTreeFilter, paintTreeFilter, unmountTreeFilter } from "./tree-filter.js";
+import {
+    PICKER_DIALOG_SELECTOR,
+    mountPickerTreeFilter,
+    mountTreeFilter,
+    paintPickerTreeFilter,
+    paintTreeFilter,
+    unmountPickerTreeFilter,
+    unmountTreeFilter,
+} from "./tree-filter.js";
 import { ensureTreeCopyButton } from "./tree-copy-button.js";
 import { duplicateBoxNames } from "./tree-model.js";
 import { readTreeNodes } from "./tree-source.js";
@@ -86,7 +98,22 @@ async function markPass(dialog) {
     }
 }
 
+// The Pick Location dialog (Create a New Sample → Click to Pick Location)
+// gets the same filter box. Nothing else from this feature goes there.
+function syncPicker() {
+    const picker = document.querySelector(PICKER_DIALOG_SELECTOR);
+    if (!picker) {
+        unmountPickerTreeFilter();
+        return;
+    }
+    mountPickerTreeFilter(picker);
+    // React may have repainted rows the filter had hidden.
+    paintPickerTreeFilter(picker);
+}
+
 function sync() {
+    syncPicker();
+
     const dialog = findDialog();
     if (!dialog) {
         closeScanPanel();

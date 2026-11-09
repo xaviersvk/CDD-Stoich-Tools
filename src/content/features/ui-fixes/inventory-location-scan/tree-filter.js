@@ -11,149 +11,215 @@
 // attribute React does not manage, re-applied by the discovery pass after
 // every mutation.
 //
-// Enter in this box would be Save. It is swallowed on `window` in the capture
-// phase, the same way the scan panel guards its own box.
+// Clearing the box puts the old expansion back plus the path down to the
+// selected row, so a box picked from the filtered list stays on screen.
+//
+// Enter in this box would be Save (or OK). It is swallowed on `window` in the
+// capture phase, the same way the scan panel guards its own box.
+//
+// The same filter serves two dialogs, one instance each: Edit Locations
+// (`mountTreeFilter`, rows carry data-nodeid) and Pick Location, opened from
+// Create a New Sample (`mountPickerTreeFilter`, rows carry the id in their MUI
+// id). What differs is where the tree is and how its state is read.
 
 import { findLeftColumn, nextFrame, treeItems } from "./dialog-dom.js";
 import { normalizeScan } from "./tree-model.js";
-import { expandTree, readTreeState } from "./tree-source.js";
+import { expandTree, readPickerTreeState, readTreeState, treeItemId } from "./tree-source.js";
 
 export const FILTER_CLASS = "cdd-tree-filter";
 const FILTERED_ATTR = "data-cdd-filtered";
-
-let mounted = null; // { dialog, input, onKeyDown }
-let query = "";
-let snapshot = null; // expansion before the first keystroke
-let visible = null; // Set of ids to show, or null when no query
-
-let applying = false;
-let applyAgain = false;
 
 function keyOf(name) {
     return normalizeScan(name).toLowerCase();
 }
 
-export function paintTreeFilter(dialog) {
-    if (!mounted || mounted.dialog !== dialog) return;
-    for (const item of treeItems(dialog)) {
-        const hide = visible !== null && !visible.has(String(item.dataset.nodeid));
-        if (hide) item.setAttribute(FILTERED_ATTR, "");
-        else if (item.hasAttribute(FILTERED_ATTR)) item.removeAttribute(FILTERED_ATTR);
-    }
+function allTreeItems(dialog) {
+    return dialog ? [...dialog.querySelectorAll('li[role="treeitem"]')] : [];
 }
 
-async function apply(dialog) {
-    if (applying) {
-        applyAgain = true;
-        return;
-    }
-    applying = true;
-    try {
-        const q = keyOf(query);
-        const { nodes, expanded } = await readTreeState(dialog);
-        if (!dialog.isConnected) return;
+function selectedItemId(dialog, itemId) {
+    const item = allTreeItems(dialog).find((node) =>
+        node.querySelector(":scope > .MuiTreeItem-content")?.classList.contains("Mui-selected"));
+    return item ? itemId(item) : null;
+}
 
-        if (!q) {
-            visible = null;
-            if (snapshot) {
-                expandTree(snapshot);
-                snapshot = null;
-            }
-            paintTreeFilter(dialog);
+function ancestorsOf(id, byId) {
+    const out = [];
+    const seen = new Set();
+    let cursor = byId.get(id);
+    cursor = cursor?.parentId ? byId.get(cursor.parentId) : null;
+    while (cursor && !seen.has(cursor.id)) {
+        seen.add(cursor.id);
+        out.push(cursor.id);
+        cursor = cursor.parentId ? byId.get(cursor.parentId) : null;
+    }
+    return out;
+}
+
+function createTreeFilter({ findTree, readState, expand, items, itemId }) {
+    let mounted = null; // { dialog, input, onKeyDown }
+    let query = "";
+    let snapshot = null; // expansion before the first keystroke
+    let visible = null; // Set of ids to show, or null when no query
+
+    let applying = false;
+    let applyAgain = false;
+
+    function paint(dialog) {
+        if (!mounted || mounted.dialog !== dialog) return;
+        for (const item of items(dialog)) {
+            const hide = visible !== null && !visible.has(String(itemId(item)));
+            if (hide) item.setAttribute(FILTERED_ATTR, "");
+            else if (item.hasAttribute(FILTERED_ATTR)) item.removeAttribute(FILTERED_ATTR);
+        }
+    }
+
+    async function apply(dialog) {
+        if (applying) {
+            applyAgain = true;
             return;
         }
+        applying = true;
+        try {
+            const q = keyOf(query);
+            const { nodes, expanded } = await readState(dialog);
+            if (!dialog.isConnected) return;
+            const byId = new Map(nodes.map((node) => [node.id, node]));
 
-        if (!snapshot) snapshot = expanded;
-
-        const byId = new Map(nodes.map((node) => [node.id, node]));
-        const show = new Set();
-        const toExpand = new Set(expanded);
-        let unfolds = false;
-        for (const node of nodes) {
-            if (!keyOf(node.name).includes(q)) continue;
-            show.add(node.id);
-            const seen = new Set();
-            let cursor = node.parentId ? byId.get(node.parentId) : null;
-            while (cursor && !seen.has(cursor.id)) {
-                seen.add(cursor.id);
-                show.add(cursor.id);
-                if (!toExpand.has(cursor.id)) {
-                    toExpand.add(cursor.id);
-                    unfolds = true;
+            if (!q) {
+                visible = null;
+                if (snapshot) {
+                    const restore = new Set(snapshot);
+                    const selected = selectedItemId(dialog, itemId);
+                    if (selected) for (const id of ancestorsOf(selected, byId)) restore.add(id);
+                    expand([...restore]);
+                    snapshot = null;
                 }
-                cursor = cursor.parentId ? byId.get(cursor.parentId) : null;
+                paint(dialog);
+                return;
+            }
+
+            if (!snapshot) snapshot = expanded;
+
+            const show = new Set();
+            const toExpand = new Set(expanded);
+            let unfolds = false;
+            for (const node of nodes) {
+                if (!keyOf(node.name).includes(q)) continue;
+                show.add(node.id);
+                for (const id of ancestorsOf(node.id, byId)) {
+                    show.add(id);
+                    if (!toExpand.has(id)) {
+                        toExpand.add(id);
+                        unfolds = true;
+                    }
+                }
+            }
+
+            visible = show;
+            if (unfolds) expand([...toExpand]);
+            paint(dialog);
+        } catch (error) {
+            // Callers fire and forget; a failed filter pass must never cost the
+            // user the dialog (same rule as markPass in init.js).
+            console.warn("[CDD scan-racks] tree filter pass failed", error);
+        } finally {
+            applying = false;
+            if (applyAgain) {
+                applyAgain = false;
+                if (dialog.isConnected) void apply(dialog);
             }
         }
-
-        visible = show;
-        if (unfolds) expandTree([...toExpand]);
-        paintTreeFilter(dialog);
-    } catch (error) {
-        // Callers fire and forget; a failed filter pass must never cost the
-        // user the dialog (same rule as markPass in init.js).
-        console.warn("[CDD scan-racks] tree filter pass failed", error);
-    } finally {
-        applying = false;
-        if (applyAgain) {
-            applyAgain = false;
-            if (dialog.isConnected) void apply(dialog);
-        }
     }
-}
 
-function schedule(dialog) {
-    nextFrame().then(() => {
-        if (mounted?.dialog === dialog) void apply(dialog);
-    });
-}
+    function schedule(dialog) {
+        nextFrame().then(() => {
+            if (mounted?.dialog === dialog) void apply(dialog);
+        });
+    }
 
-export function mountTreeFilter(dialog) {
-    if (mounted?.dialog === dialog && mounted.input.isConnected) return;
-    unmountTreeFilter();
+    function unmount() {
+        if (!mounted) return;
+        window.removeEventListener("keydown", mounted.onKeyDown, true);
+        mounted.input.remove();
+        mounted = null;
+        query = "";
+        snapshot = null;
+        visible = null;
+    }
 
-    const left = findLeftColumn(dialog);
-    const tree = left?.querySelector('ul[role="tree"]');
-    if (!left || !tree) return;
+    function mount(dialog) {
+        if (mounted?.dialog === dialog && mounted.input.isConnected) return;
+        unmount();
 
-    const input = document.createElement("input");
-    input.type = "text";
-    input.className = FILTER_CLASS;
-    input.placeholder = "Filter locations and boxes";
-    input.autocomplete = "off";
-    input.spellcheck = false;
-    input.addEventListener("input", () => {
-        query = input.value;
-        schedule(dialog);
-    });
+        const tree = findTree(dialog);
+        if (!tree?.parentElement) return;
 
-    const onKeyDown = (event) => {
-        if (event.target !== input) return;
-        if (event.key === "Enter") {
-            event.preventDefault();
-            event.stopImmediatePropagation();
-        } else if (event.key === "Escape") {
-            event.preventDefault();
-            event.stopImmediatePropagation();
-            input.value = "";
-            query = "";
+        const input = document.createElement("input");
+        input.type = "text";
+        input.className = FILTER_CLASS;
+        input.placeholder = "Filter locations and boxes";
+        input.autocomplete = "off";
+        input.spellcheck = false;
+        input.addEventListener("input", () => {
+            query = input.value;
             schedule(dialog);
-        }
-    };
-    window.addEventListener("keydown", onKeyDown, true);
+        });
 
-    tree.parentElement.insertBefore(input, tree);
-    mounted = { dialog, input, onKeyDown };
-    query = "";
-    snapshot = null;
-    visible = null;
+        const onKeyDown = (event) => {
+            if (event.target !== input) return;
+            if (event.key === "Enter") {
+                event.preventDefault();
+                event.stopImmediatePropagation();
+            } else if (event.key === "Escape") {
+                // Escape would also close the dialog; here it only clears.
+                event.preventDefault();
+                event.stopImmediatePropagation();
+                input.value = "";
+                query = "";
+                schedule(dialog);
+            }
+        };
+        window.addEventListener("keydown", onKeyDown, true);
+
+        tree.parentElement.insertBefore(input, tree);
+        mounted = { dialog, input, onKeyDown };
+        query = "";
+        snapshot = null;
+        visible = null;
+    }
+
+    return { mount, unmount, paint };
 }
 
-export function unmountTreeFilter() {
-    if (!mounted) return;
-    window.removeEventListener("keydown", mounted.onKeyDown, true);
-    mounted.input.remove();
-    mounted = null;
-    query = "";
-    snapshot = null;
-    visible = null;
-}
+// ---- Edit Locations --------------------------------------------------------
+
+const editFilter = createTreeFilter({
+    findTree: (dialog) => findLeftColumn(dialog)?.querySelector('ul[role="tree"]') || null,
+    readState: (dialog) => readTreeState(dialog),
+    expand: (ids) => expandTree(ids, "edit"),
+    items: (dialog) => treeItems(dialog),
+    itemId: (item) => item.dataset.nodeid,
+});
+
+export const mountTreeFilter = editFilter.mount;
+export const unmountTreeFilter = editFilter.unmount;
+export const paintTreeFilter = editFilter.paint;
+
+// ---- Pick Location (Create a New Sample) -----------------------------------
+
+export const PICKER_DIALOG_SELECTOR = ".location-picker-dialog-paper";
+
+const pickerFilter = createTreeFilter({
+    findTree: (dialog) => dialog?.querySelector('.LocationPicker ul[role="tree"]')
+        || dialog?.querySelector('ul[role="tree"]')
+        || null,
+    readState: (dialog) => readPickerTreeState(dialog),
+    expand: (ids) => expandTree(ids, "picker"),
+    items: allTreeItems,
+    itemId: treeItemId,
+});
+
+export const mountPickerTreeFilter = pickerFilter.mount;
+export const unmountPickerTreeFilter = pickerFilter.unmount;
+export const paintPickerTreeFilter = pickerFilter.paint;

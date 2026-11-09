@@ -19,8 +19,9 @@ let requestCounter = 0;
 let warned = false;
 
 // Resolves with { nodes, expanded }, or null when the bridge is silent or
-// could not read the tree.
-function requestBridge() {
+// could not read the tree. `scope` names the dialog: "edit" (Edit Locations,
+// the default) or "picker" (Pick Location) — see location-tree-bridge.js.
+function requestBridge(scope = "edit") {
     return new Promise((resolve) => {
         const requestId = `cdd-loc-tree-${++requestCounter}`;
         let settled = false;
@@ -46,7 +47,7 @@ function requestBridge() {
 
         window.addEventListener("message", onMessage);
         window.postMessage(
-            { source: EVENT_SOURCE, type: EVENTS.LOCATION_TREE_REQUEST, payload: { requestId } },
+            { source: EVENT_SOURCE, type: EVENTS.LOCATION_TREE_REQUEST, payload: { requestId, scope } },
             "*",
         );
     });
@@ -94,10 +95,51 @@ export async function readRawTree() {
     return (await requestBridge())?.nodes ?? null;
 }
 
+// The Pick Location dialog's tree, for the filter. Its rows carry no
+// data-nodeid — the item id is the tail of the row's MUI id — so the DOM
+// fallback reads ids from there and parents from the nesting.
+export async function readPickerTreeState(dialog) {
+    const bridged = await requestBridge("picker");
+    if (bridged) {
+        const nodes = buildNodes(bridged.nodes.filter((node) => !node.isPlate));
+        return { nodes, expanded: bridged.expanded };
+    }
+    if (!warned) {
+        warned = true;
+        console.warn("[CDD scan-racks] tree bridge silent; collapsed branches are not checked");
+    }
+    const rows = treeItemRows(dialog);
+    return { nodes: buildNodes(rows), expanded: [] };
+}
+
+// `mui-tree-view-1-25573` → "25573", measured on the Pick Location tree.
+export function treeItemId(item) {
+    if (item.dataset.nodeid != null) return String(item.dataset.nodeid);
+    const match = /^mui-tree-view-[^-]*-(.+)$/.exec(item.id || "");
+    return match ? match[1] : null;
+}
+
+function treeItemRows(dialog) {
+    return [...(dialog?.querySelectorAll('li[role="treeitem"]') || [])].map((item) => {
+        const parent = item.parentElement?.closest('li[role="treeitem"]');
+        const label = item.querySelector(":scope > .MuiTreeItem-content .MuiTreeItem-label");
+        return {
+            id: treeItemId(item),
+            parentId: parent ? treeItemId(parent) : null,
+            name: label ? label.textContent.trim() : "",
+            rendered: true,
+        };
+    }).filter((row) => row.id != null);
+}
+
 // Fire and forget: the tree repaints, and the discovery pass sees that.
-export function expandTree(ids) {
+export function expandTree(ids, scope = "edit") {
     window.postMessage(
-        { source: EVENT_SOURCE, type: EVENTS.LOCATION_TREE_EXPAND, payload: { ids: (ids || []).map(String) } },
+        {
+            source: EVENT_SOURCE,
+            type: EVENTS.LOCATION_TREE_EXPAND,
+            payload: { ids: (ids || []).map(String), scope },
+        },
         "*",
     );
 }

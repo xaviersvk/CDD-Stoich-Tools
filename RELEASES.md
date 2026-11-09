@@ -13,6 +13,13 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 19.17.0 — 2026-11-09
+
+You can now search for a box by name when you pick a location for a new sample (*Create a New Sample → Click to Pick Location*).
+
+- Type part of the name in the box above the tree to see only the matches. Press Esc to clear it.
+- When you clear the filter, the box you picked stays open in the tree.
+
 ## 19.16.0 — 2026-11-04
 
 The batch picker now bolds the most used sample and crosses out depleted ones for reagents from shared vaults too.

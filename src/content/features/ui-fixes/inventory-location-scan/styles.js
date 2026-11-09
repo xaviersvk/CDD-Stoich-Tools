@@ -38,6 +38,14 @@ export function injectScanStyles() {
         background: #fff;
     }
     .cdd-tree-filter:focus { outline: none; border-color: #1565c0; }
+    /* Pick Location: the tree scrolls inside its panel; the box stays put. */
+    .location-picker-dialog-paper .cdd-tree-filter {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        width: 100%;
+        margin: 0 0 8px;
+    }
     li[role="treeitem"][data-cdd-filtered] { display: none; }
 
     /* ===== THE FOOTER BUTTONS: Scan racks, Copy tree ===== */

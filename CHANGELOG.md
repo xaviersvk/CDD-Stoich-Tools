@@ -19,6 +19,40 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [19.18.0] — 2026-11-09
+
+### Added
+- **Merge vaults in Edit Locations.** A switch in the dialog's footer swaps
+  CDD's tree for one tree folded from every vault of the account, as the
+  management page's location tree does. A location whose path of names is
+  the same in several vaults (case and runs of spaces ignored) is one row;
+  coloured dots after it say which vaults hold it, and the tooltip lists
+  *In:* and *Not in:* — the vaults that have the parent but not this
+  location, i.e. where the structures have drifted apart. Filter box,
+  legend, box counts on collapsed branches.
+- Each row has one action for the dialog's own vault, found in the LIVE
+  tree (bridge) by name path, not id, so an unsaved location counts:
+  **Show** switches the view off and opens CDD's tree at the location
+  (expands its ancestors through `LOCATION_TREE_EXPAND`, scrolls, selects
+  it), so CDD's row icons add under it; **Create here** makes the missing
+  part of the path through CDD's own buttons (`createLocationUnder` /
+  `createBoxUnder`, as Scan racks does), a box at the size the first vault
+  holding it has (`position_limit` is an unorganized box's capacity). The
+  view stays on, so several can be made in a row; what was made shows as a
+  ring in this vault's colour until saved. Nothing is kept without Save.
+- CDD's tree is hidden with CSS, never unmounted, so unsaved edits survive
+  switching back, and Create here drives it while hidden. Opening Scan
+  racks switches the view off (it picks targets in CDD's tree).
+- New CDD endpoints (`content/api/vault-locations.js`), all GETs on the
+  session cookie, nothing switched: `/api/internal/v1/vaults/{v}` for the
+  account id, `/api/internal/v1/accounts/{a}/vaults` for the vault list
+  (the header's vault links go through `/switch_vault`, which changes the
+  user's current vault, so they are not used), and per vault
+  `inventory_field_definitions.json` → the `Location` event field id (it
+  differs per vault) → `inventory_locations.json`, the tree the dialog
+  itself loads. Shows the saved trees; this vault's unsaved edits are not
+  in it. Fetched once per dialog.
+
 ## [19.17.0] — 2026-11-09
 
 ### Added

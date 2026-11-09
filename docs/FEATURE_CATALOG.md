@@ -663,6 +663,22 @@ affect the others. These are the **safest** files to touch.
 - **Filter:** `inventory-location-scan/tree-filter.js` — a box above the
   tree; matches and their ancestors stay, branches unfold through the bridge
   (`LOCATION_TREE_EXPAND`), clearing restores the previous expansion.
+- **Merge vaults:** `inventory-location-scan/merged-vaults.js` — a footer
+  switch that hides CDD's tree (display only; it stays mounted, unsaved
+  edits survive) and shows one read-only tree folded from every vault of
+  the account. Same path of names (case and spaces ignored) = one row;
+  dots say which vaults hold it, the tooltip lists *In* and *Not in* (vaults
+  that have the parent but not this). Model: `shared/merged-location-tree.js`
+  (tests: `tests/merged-location-tree.test.js`). Data:
+  `content/api/vault-locations.js` — `GET /api/internal/v1/vaults/{v}`
+  (account_id) → `GET /api/internal/v1/accounts/{a}/vaults` → per vault
+  `inventory_field_definitions.json` (the `Location` event field id) →
+  `inventory_event_field_definitions/{id}/inventory_locations.json`. Saved
+  trees only; fetched once per dialog. Opening Scan racks switches it off.
+  Row actions, by name path in the live tree (`locateInLiveTree`): *Show*
+  (view off, ancestors expanded, row selected) and *Create here* (missing
+  path made with `dialog-dom.js createLocationUnder` / `createBoxUnder`,
+  box size from the other vault; drawn as a ring until saved).
 - **Size presets:** SBS 96 / SBS 384 / 9 × 9 / 10 × 10 / Custom in the panel.
 - **Duplicate names:** `inventory-location-scan/name-marks.js` paints orange
   every box whose name another box carries (`tree-model.js

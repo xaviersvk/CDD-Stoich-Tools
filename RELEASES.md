@@ -13,6 +13,14 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 19.18.0 — 2026-11-09
+
+You can now see the location trees of all your vaults as one tree: switch on **Merge vaults** at the bottom of *Edit Locations*.
+
+- Each dot after a location stands for a vault that has it. Hover the dots to see which vaults have it and which don't.
+- **Show** opens that location in this vault's tree, so you can add locations and boxes under it.
+- **Create here** adds a location or box this vault is missing, in the same size as in the other vault. Press **Save** to keep it.
+
 ## 19.17.0 — 2026-11-09
 
 You can now search for a box by name when you pick a location for a new sample (*Create a New Sample → Click to Pick Location*).

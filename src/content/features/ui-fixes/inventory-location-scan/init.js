@@ -32,6 +32,7 @@ import {
     onInventoryScanChanged,
 } from "../../../../shared/inventory-scan.js";
 import { findDialog, findFooter, footerAnchor, nextFrame } from "./dialog-dom.js";
+import { closeMergedView, ensureMergedVaults, leaveMergedView } from "./merged-vaults.js";
 import { markDuplicateNames } from "./name-marks.js";
 import { closeScanPanel, openScanPanel } from "./scan-panel.js";
 import { injectScanStyles } from "./styles.js";
@@ -60,7 +61,11 @@ function mount(dialog) {
     button.type = "button";
     button.className = BUTTON_CLASS;
     button.textContent = "Scan racks";
-    button.addEventListener("click", () => openScanPanel(dialog));
+    button.addEventListener("click", () => {
+        // Scan racks picks its target in CDD's tree, which the merged view hides.
+        leaveMergedView(dialog);
+        openScanPanel(dialog);
+    });
 
     const anchor = footerAnchor(footer);
     if (anchor) footer.insertBefore(button, anchor);
@@ -118,6 +123,7 @@ function sync() {
     if (!dialog) {
         closeScanPanel();
         unmountTreeFilter();
+        closeMergedView();
         return;
     }
 
@@ -127,6 +133,9 @@ function sync() {
     void markPass(dialog);
     // Copy tree only reads, so it does not wait for the Scan racks switch.
     ensureTreeCopyButton(dialog, findFooter(dialog));
+    // Merge vaults only reads too: a switch that swaps the tree for one
+    // folded from every vault of the account (merged-vaults.js).
+    ensureMergedVaults(dialog, findFooter(dialog));
 
     const existing = dialog.querySelector(`.${BUTTON_CLASS}`);
     if (isInventoryScanEnabled()) {

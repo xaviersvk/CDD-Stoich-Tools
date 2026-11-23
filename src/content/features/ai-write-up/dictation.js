@@ -143,6 +143,81 @@ export function dictationLabel(idleLabel) {
     }
 }
 
+// ---------------------------------------------------------------- level meter
+
+// While recording, the ■ Stop button fills from the left in green as loud as
+// the microphone hears — proof it is listening. One analyser per recording
+// writes the level (0–1) to a CSS variable on <html>; every button marked
+// live reads it, so a repaint of the buttons never restarts the meter.
+const LIVE_CLASS = "cdd-mic-live";
+const LEVEL_VAR = "--cdd-mic-level";
+const METER_STYLE_ID = "cdd-mic-live-styles";
+// Quiet room ≈ −60 dB, normal speech close to the mic ≈ −20 dB.
+const METER_FLOOR_DB = -58;
+const METER_SPAN_DB = 42;
+
+let meter = null;
+
+function ensureMeterStyle() {
+    if (document.getElementById(METER_STYLE_ID)) return;
+    const style = document.createElement("style");
+    style.id = METER_STYLE_ID;
+    style.textContent = `
+        .${LIVE_CLASS} {
+            background-image: linear-gradient(to right,
+                rgba(46, 160, 67, 0.45) calc(var(${LEVEL_VAR}, 0) * 100%),
+                transparent calc(var(${LEVEL_VAR}, 0) * 100%)) !important;
+            background-repeat: no-repeat !important;
+        }`;
+    (document.head || document.documentElement).appendChild(style);
+}
+
+/** Marks a 🎤 button as the one recording: it shows the level meter. */
+export function markMicButton(btn, live) {
+    if (live) ensureMeterStyle();
+    btn.classList.toggle(LIVE_CLASS, !!live);
+}
+
+function startMeter(stream) {
+    stopMeter();
+    try {
+        const ctx = new AudioContext();
+        void ctx.resume();
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 1024;
+        ctx.createMediaStreamSource(stream).connect(analyser);
+        const samples = new Float32Array(analyser.fftSize);
+        const root = document.documentElement;
+        let level = 0;
+        const frame = () => {
+            if (!meter) return;
+            analyser.getFloatTimeDomainData(samples);
+            let sum = 0;
+            for (const v of samples) sum += v * v;
+            const db = 20 * Math.log10(Math.sqrt(sum / samples.length) || 1e-8);
+            const target = Math.min(1, Math.max(0, (db - METER_FLOOR_DB) / METER_SPAN_DB));
+            // Up at once, down slowly — a word stays visible.
+            level = target > level ? target : level * 0.88 + target * 0.12;
+            root.style.setProperty(LEVEL_VAR, level.toFixed(3));
+            meter.raf = requestAnimationFrame(frame);
+        };
+        meter = { ctx, raf: requestAnimationFrame(frame) };
+    } catch (err) {
+        // No meter is no reason to stop the recording.
+        console.debug("[CDD Stoich Tools] mic level meter unavailable", err);
+        meter = null;
+    }
+}
+
+function stopMeter() {
+    if (meter) {
+        cancelAnimationFrame(meter.raf);
+        void meter.ctx.close().catch(() => {});
+        meter = null;
+    }
+    document.documentElement.style.removeProperty(LEVEL_VAR);
+}
+
 function toBase64(buffer) {
     const bytes = new Uint8Array(buffer);
     let binary = "";
@@ -539,6 +614,7 @@ async function start(origin) {
         if (event.data?.size) chunks.push(event.data);
     });
     recorder.addEventListener("stop", () => {
+        stopMeter();
         for (const track of stream.getTracks()) track.stop();
         const blob = new Blob(chunks, { type: recorder.mimeType });
         recorder = null;
@@ -546,6 +622,7 @@ async function start(origin) {
     });
 
     recorder.start();
+    startMeter(stream);
     clearInterval(tick);
     setState({ phase: "recording", since: Date.now(), origin, status: "Recording — click Stop when done." });
     tick = setInterval(() => {
@@ -629,6 +706,7 @@ function replyBoxNode(card) {
         if (!box.isConnected) return unsubscribe();
         const mine = state.origin?.field === card;
         mic.textContent = mine ? dictationLabel("🎤") : "🎤";
+        markMicButton(mic, mine && state.phase === "recording");
         const unavailable = dictationUnavailable();
         mic.disabled = !!unavailable;
         mic.title = unavailable || "Dictate the reply into the field";
@@ -764,6 +842,7 @@ export function mountDictation(bar, list) {
         mic.disabled = !!unavailable;
         // The tab's button shows a reaction's recording too: one microphone.
         mic.textContent = dictationLabel("🎤 Dictate");
+        markMicButton(mic, state.phase === "recording");
         // Busy, the button cancels (✕ on its label).
         mic.title = unavailable || (busy ? "Cancel" : "Dictate about the whole entry. Stop when done: the English appears below, ready to copy.");
         status.textContent = state.status || "";

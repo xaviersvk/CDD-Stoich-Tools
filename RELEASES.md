@@ -13,6 +13,10 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 19.19.0 — 2026-11-23
+
+While you dictate, the **■ Stop** button fills with green as loud as the microphone hears you, so you can see it is listening.
+
 ## 19.18.1 — 2026-11-23
 
 - Fixed: **Paste** on the *Settings → … Fields* pages fills Pick List values again (CDD changed its Pick List editor).

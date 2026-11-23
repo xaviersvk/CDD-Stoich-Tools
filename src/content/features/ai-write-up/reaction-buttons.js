@@ -10,7 +10,7 @@
 
 import { isAiWriteUpEnabled } from "../../../shared/ai-write-up-settings.js";
 import { setPanelTab } from "../sample-panel.js";
-import { dictationLabel, dictationUnavailable, getDictationState, onDictationChanged, toggleDictation } from "./dictation.js";
+import { dictationLabel, dictationUnavailable, getDictationState, markMicButton, onDictationChanged, toggleDictation } from "./dictation.js";
 import { SELECTORS } from "../../selectors.js";
 
 const BTN_CLASS = "cdd-stoich-dictate-button";
@@ -24,6 +24,7 @@ function paint(btn) {
     const mine = state.origin?.reactionIndex === Number(btn.dataset.reactionIndex);
     btn.textContent = mine ? dictationLabel("🎤") : "🎤";
     btn.classList.toggle(`${BTN_CLASS}--active`, mine && state.phase !== "idle");
+    markMicButton(btn, mine && state.phase === "recording");
     // No dictation key: grey, saying why. Busy, the button that started it
     // cancels; the others wait.
     const unavailable = dictationUnavailable();

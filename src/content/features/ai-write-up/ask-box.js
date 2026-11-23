@@ -13,6 +13,7 @@ import {
     askAboutEntry,
     dictateInto,
     dictationLabel,
+    markMicButton,
     dictationUnavailable,
     getDictationState,
     onDictationChanged,
@@ -82,6 +83,7 @@ export function mountAskBox() {
         const state = getDictationState();
         const mine = state.origin?.field === "ask";
         mic.textContent = mine ? dictationLabel("🎤") : "🎤";
+        markMicButton(mic, mine && state.phase === "recording");
         const unavailable = dictationUnavailable();
         mic.disabled = !!unavailable || (state.phase !== "idle" && !mine);
         mic.title = unavailable || "Dictate the request into the field";

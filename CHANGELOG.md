@@ -19,6 +19,20 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [19.19.0] — 2026-11-23
+
+### Added
+- **Microphone level on the recording button.** While a dictation records,
+  the button showing ■ Stop (Write-up tab, reaction 🎤, Ask and Reply 🎤)
+  fills from the left in translucent green with the input level, so it is
+  plain that the microphone hears something. `dictation.js` taps the
+  recording stream with an `AnalyserNode` (RMS → dB, −58 dB to −16 dB mapped
+  to 0–1, instant attack, slow release) and writes the level to the
+  `--cdd-mic-level` CSS variable on `<html>` once per animation frame; the
+  buttons only carry the `cdd-mic-live` class, so their repaints never
+  restart the meter. The meter's AudioContext closes when the recording
+  stops; if it cannot start, the recording goes on without it.
+
 ## [19.18.1] — 2026-11-23
 
 ### Fixed

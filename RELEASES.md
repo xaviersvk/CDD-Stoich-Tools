@@ -13,6 +13,14 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 19.21.0 — 2026-11-23
+
+You can pin a phrase: click **☆** on its row in the panel's *Phrases* tab or in *Settings → Phrases*.
+
+- Pinned phrases sit in **★ Pinned** at the top and are never dropped at the 50-phrase limit.
+- *Save phrase* tells you when the same text is already saved.
+- Importing a JSON file skips phrases you already have.
+
 ## 19.20.0 — 2026-11-23
 
 You can download your last dictation recording: **⬇** next to the language picker in the Write-up tab.

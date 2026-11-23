@@ -1057,11 +1057,22 @@ body {
 }
 .phrase-row__head {
     display: grid;
-    grid-template-columns: 1fr auto auto;
+    grid-template-columns: auto 1fr auto auto auto;
     align-items: center;
     gap: 10px;
 }
 .phrase-row__name { font-weight: 600; }
+.phrase-pin-btn {
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 0;
+    font-size: 16px;
+    line-height: 1;
+    color: var(--muted);
+}
+.phrase-pin-btn:hover,
+.phrase-pin-btn--on { color: #d97706; }
 .phrase-preview {
     font-size: 12px;
     color: var(--muted);

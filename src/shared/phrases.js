@@ -19,6 +19,13 @@
 // recently goes — a phrase never copied counts from the moment it was
 // saved. Using = clicking it in the panel (which is what puts it on the
 // clipboard); merely looking at it does not count.
+//
+// A PINNED phrase sits at the top of the panel and is never the one dropped
+// at the cap — unlike its use stamp, a pin is something the user said.
+//
+// Two phrases are DUPLICATES when their plain text is the same once
+// whitespace is collapsed (phraseBodyKey). Saving one says so first; a merge
+// import skips them. Formatting and name do not make a phrase different.
 
 export const PHRASES_STORAGE_KEY = "cddPhrasesV1";
 export const PHRASE_LIMIT = 50;
@@ -212,6 +219,7 @@ export function sanitizePhrase(raw) {
         categories: sanitizeCategories(raw.categories, raw),
         text: text || "",
         html,
+        pinned: raw.pinned === true,
         createdAt: Number.isFinite(raw.createdAt) ? raw.createdAt : 0,
         lastUsedAt: Number.isFinite(raw.lastUsedAt) ? raw.lastUsedAt : 0,
     };
@@ -253,12 +261,35 @@ function usedStamp(phrase) {
     return phrase.lastUsedAt || phrase.createdAt || 0;
 }
 
-// Drop the least recently used phrases until the list fits the cap.
+// Drop the least recently used phrases until the list fits the cap. Pinned
+// phrases go last: one is only dropped when the pinned ones alone are over
+// the cap.
 export function enforceLimit(list, limit = PHRASE_LIMIT) {
     if (list.length <= limit) return list;
-    const keep = [...list].sort((a, b) => usedStamp(b) - usedStamp(a)).slice(0, limit);
+    const keep = [...list]
+        .sort((a, b) => (Number(!!b.pinned) - Number(!!a.pinned)) || (usedStamp(b) - usedStamp(a)))
+        .slice(0, limit);
     const keepIds = new Set(keep.map((p) => p.id));
     return list.filter((p) => keepIds.has(p.id));
+}
+
+// ---------------------------------------------------------------------------
+// Duplicates
+// ---------------------------------------------------------------------------
+
+// What makes two phrases "the same": the plain text with invisible characters
+// gone and every run of whitespace collapsed. Case is kept — "mL" and "ML"
+// are not the same thing in a lab notebook.
+export function phraseBodyKey(text) {
+    return String(text ?? "").replace(INVISIBLE_RE, "").replace(/\s+/g, " ").trim();
+}
+
+// The stored phrase with the same body as `text`, or null. `exceptId` leaves
+// one phrase out (itself).
+export function findDuplicatePhrase(list, text, exceptId = null) {
+    const key = phraseBodyKey(text);
+    if (!key) return null;
+    return list.find((p) => p.id !== exceptId && phraseBodyKey(p.text) === key) || null;
 }
 
 // ---------------------------------------------------------------------------
@@ -426,18 +457,37 @@ export function parsePhrasesJson(text) {
     return { phrases, error: null };
 }
 
-// Merge imported phrases into the stored list. A phrase with the same id
-// replaces the stored one; the cap evicts by last use as usual.
-// `mode`: "merge" (default) or "replace".
+// The merge behind importPhrases, without the storage. A phrase with the same
+// id replaces the stored one. One with a new id but the body of a phrase
+// already stored is skipped — importing a colleague's file must not fill the
+// cap with copies of what is already there. Incoming phrases are only compared
+// with what was stored BEFORE the import, never with each other: a file is
+// taken as its author left it.
+export function mergeImportedPhrases(current, incoming) {
+    const byId = new Map(current.map((p) => [p.id, p]));
+    let imported = 0;
+    let skipped = 0;
+    for (const p of incoming) {
+        if (!byId.has(p.id) && findDuplicatePhrase(current, p.text)) {
+            skipped += 1;
+            continue;
+        }
+        byId.set(p.id, p);
+        imported += 1;
+    }
+    return { phrases: [...byId.values()], imported, skipped };
+}
+
+// Bring imported phrases into the stored list; the cap evicts by last use as
+// usual. `mode`: "merge" (default) or "replace". Returns { imported, skipped }
+// — skipped counts the duplicates a merge left out.
 export async function importPhrases(imported, mode = "merge") {
     const incoming = sanitizePhrases(imported);
     if (mode === "replace") {
         await savePhrases(incoming);
-        return incoming.length;
+        return { imported: incoming.length, skipped: 0 };
     }
-    const current = await loadPhrases();
-    const byId = new Map(current.map((p) => [p.id, p]));
-    for (const p of incoming) byId.set(p.id, p);
-    await savePhrases(enforceLimit([...byId.values()]));
-    return incoming.length;
+    const merged = mergeImportedPhrases(await loadPhrases(), incoming);
+    await savePhrases(enforceLimit(merged.phrases));
+    return { imported: merged.imported, skipped: merged.skipped };
 }

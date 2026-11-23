@@ -17,6 +17,7 @@ import { isElnEntryPage } from "../../../shared/page-detection.js";
 import {
     addPhrase,
     defaultPhraseName,
+    findDuplicatePhrase,
     loadPhrases,
     PHRASE_LIMIT,
 } from "../../../shared/phrases.js";
@@ -113,6 +114,8 @@ function ensureStyle() {
   }
   #${DIALOG_ID} button.cdd-phrase-primary { background: #2563eb; border-color: #2563eb; }
   #${DIALOG_ID} .cdd-phrase-note { font-size: 11px; color: #94a3b8; }
+  #${DIALOG_ID} .cdd-phrase-note--warn { color: #fbbf24; }
+  #${DIALOG_ID} button:disabled { opacity: 0.5; cursor: default; }
 ${COMBO_STYLES}
 ${PLACES_STYLES}
   #${DIALOG_ID} .cdd-phrase-places-label { font-size: 11px; color: #cbd5e1; margin-bottom: -4px; }
@@ -414,15 +417,35 @@ async function openDialog() {
     preview.className = "cdd-phrase-preview";
     preview.textContent = text.length > 400 ? `${text.slice(0, 400)}…` : text;
 
+    // Pinned phrases are never dropped, so a list that is full of them has
+    // no room: the new phrase would be the one evicted the moment it is saved.
+    const full = phrases.length >= PHRASE_LIMIT;
+    const noRoom = full && phrases.every((p) => p.pinned);
+    const duplicate = findDuplicatePhrase(phrases, text);
+
     const note = document.createElement("div");
     note.className = "cdd-phrase-note";
-    note.textContent = phrases.length >= PHRASE_LIMIT
-        ? `${PHRASE_LIMIT} phrases is the limit — the one used longest ago will be dropped.`
-        : `${phrases.length} of ${PHRASE_LIMIT} phrases saved.`;
+    if (noRoom) {
+        note.textContent = `All ${PHRASE_LIMIT} phrases are pinned — unpin one to save another.`;
+    } else if (full) {
+        note.textContent = `${PHRASE_LIMIT} phrases is the limit — the one used longest ago will be dropped.`;
+    } else {
+        note.textContent = `${phrases.length} of ${PHRASE_LIMIT} phrases saved.`;
+    }
+    note.classList.toggle("cdd-phrase-note--warn", noRoom);
 
-    const { actions, primary: saveBtn } = dialogActions("Save");
+    // Same text already saved: say so and leave the choice to the user. A
+    // second copy is sometimes wanted (another name, another category).
+    const duplicateNote = document.createElement("div");
+    duplicateNote.className = "cdd-phrase-note cdd-phrase-note--warn";
+    duplicateNote.hidden = !duplicate;
+    if (duplicate) duplicateNote.textContent = `You already have this text saved as “${duplicate.name}”.`;
+
+    const { actions, primary: saveBtn } = dialogActions(duplicate ? "Save anyway" : "Save");
+    saveBtn.disabled = noRoom;
 
     const submit = async () => {
+        if (saveBtn.disabled) return;   // Enter in the name field comes here too
         saveBtn.disabled = true;
 
         // A category half-typed when Save is clicked still counts; commit it
@@ -448,7 +471,7 @@ async function openDialog() {
         }
     });
 
-    dialog.append(heading, nameLabel, placesLabel, row, preview, note, actions);
+    dialog.append(heading, nameLabel, placesLabel, row, preview, duplicateNote, note, actions);
     showDialog(anchorRect);
 
     nameInput.focus();

@@ -5,12 +5,25 @@
 // clipboard and counts as a use, which is what keeps it from being the one
 // evicted when the cap is hit.
 //
+// ☆ on a row pins the phrase: it is listed again in a "★ Pinned" group at the
+// top, and is never the one dropped at the cap. Pinning is not a use.
+//
 // Management (rename, re-file, delete, export/import) lives in Settings.
 
-import { groupPhrases, loadPhrases, onPhrasesChanged, touchPhrase, PHRASE_LIMIT } from "../../../shared/phrases.js";
+import {
+    groupPhrases,
+    loadPhrases,
+    onPhrasesChanged,
+    touchPhrase,
+    updatePhrase,
+    PHRASE_LIMIT,
+} from "../../../shared/phrases.js";
 import { copyRichText } from "../../utils/clipboard.js";
 
 const OPEN_STATE_KEY = "cdd-stoich-phrase-groups";
+// The Pinned group's key in the open/closed map. The control character keeps
+// it clear of any category a user could type.
+const PINNED_KEY = "\u0001pinned";
 
 let container = null;
 let listEl = null;
@@ -41,7 +54,29 @@ function matches(phrase, needle) {
     return hay.includes(needle);
 }
 
+function buildPinButton(phrase) {
+    const pin = document.createElement("button");
+    pin.type = "button";
+    pin.className = "cdd-phrase-pin";
+    pin.classList.toggle("cdd-phrase-pin--on", phrase.pinned);
+    pin.textContent = phrase.pinned ? "★" : "☆";
+    pin.title = phrase.pinned
+        ? "Unpin"
+        : "Pin to the top — a pinned phrase is never dropped at the limit";
+    pin.setAttribute("aria-label", `${phrase.pinned ? "Unpin" : "Pin"} phrase ${phrase.name}`);
+    pin.setAttribute("aria-pressed", String(phrase.pinned));
+    pin.addEventListener("click", (event) => {
+        event.stopPropagation();
+        // The list redraws from the storage change.
+        void updatePhrase(phrase.id, { pinned: !phrase.pinned });
+    });
+    return pin;
+}
+
 function buildPhraseRow(phrase) {
+    const wrap = document.createElement("div");
+    wrap.className = "cdd-phrase-row";
+
     const row = document.createElement("button");
     row.type = "button";
     row.className = "cdd-phrase-item";
@@ -72,7 +107,9 @@ function buildPhraseRow(phrase) {
         // it.
         if (ok) void touchPhrase(phrase.id);
     });
-    return row;
+
+    wrap.append(row, buildPinButton(phrase));
+    return wrap;
 }
 
 function buildGroup(key, label, level, children, closedMap) {
@@ -121,6 +158,18 @@ function render() {
 
     const closedMap = needle ? {} : loadClosed();
 
+    // Pinned first, in a group of their own. They stay under their categories
+    // too — pinning is a shortcut, not a move.
+    const pinned = visible
+        .filter((p) => p.pinned)
+        .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+    if (pinned.length) {
+        const rows = pinned.map(buildPhraseRow);
+        listEl.appendChild(
+            buildGroup(PINNED_KEY, "★ Pinned", "cat", { nodes: rows, count: rows.length }, closedMap)
+        );
+    }
+
     for (const group of groupPhrases(visible)) {
         const rows = group.phrases.map(buildPhraseRow);
         if (!group.category) {
@@ -157,7 +206,7 @@ export function mountPhrasesPane(pane) {
 
     const hint = document.createElement("div");
     hint.className = "cdd-phrase-hint";
-    hint.textContent = `Click a phrase to copy it, then paste into the entry. Up to ${PHRASE_LIMIT}; manage them in Settings.`;
+    hint.textContent = `Click a phrase to copy it, then paste into the entry. ☆ pins it to the top. Up to ${PHRASE_LIMIT}; manage them in Settings.`;
 
     toolbar.append(filterInput);
     listEl = document.createElement("div");
@@ -217,12 +266,19 @@ export const PHRASES_PANE_STYLES = (panelId) => `
     font-weight: 500;
     color: #94a3b8;
   }
+  #${panelId} .cdd-phrase-row {
+    display: flex;
+    align-items: stretch;
+    gap: 2px;
+    width: calc(100% - 12px);
+    margin: 0 6px;
+  }
   #${panelId} .cdd-phrase-item {
     display: flex;
     align-items: center;
     gap: 8px;
-    width: calc(100% - 12px);
-    margin: 0 6px;
+    flex: 1 1 auto;
+    min-width: 0;
     padding: 5px 8px;
     text-align: left;
     font: 12px Arial, sans-serif;
@@ -232,7 +288,21 @@ export const PHRASES_PANE_STYLES = (panelId) => `
     border-radius: 6px;
     cursor: pointer;
   }
-  #${panelId} .cdd-phrase-list > .cdd-phrase-item { width: 100%; margin: 0; }
+  #${panelId} .cdd-phrase-list > .cdd-phrase-row { width: 100%; margin: 0; }
+  #${panelId} .cdd-phrase-pin {
+    flex: 0 0 auto;
+    width: 24px;
+    padding: 0;
+    font: 14px Arial, sans-serif;
+    line-height: 1;
+    color: #64748b;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  #${panelId} .cdd-phrase-pin:hover { color: #fbbf24; border-color: #4b5563; }
+  #${panelId} .cdd-phrase-pin--on { color: #fbbf24; }
   #${panelId} .cdd-phrase-item:hover { background: #1f2937; border-color: #4b5563; }
   #${panelId} .cdd-phrase-item--done { background: rgba(52, 211, 153, 0.25); }
   #${panelId} .cdd-phrase-item__name {

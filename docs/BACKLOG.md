@@ -628,6 +628,45 @@ error box.
 
 ---
 
+## Phrases — ideas from other snippet extensions
+
+Looked at on 2026-11-23, after comparing with *Prompt Saves* (a small
+popup snippet vault in the Chrome Web Store). Two ideas were worth taking and
+were **built in 19.21.0**; the rest is recorded so the comparison is not
+repeated.
+
+**Built (19.21.0)**
+
+- **Pinning.** ☆ on a row, a *★ Pinned* group at the top of the panel tab, and
+  a pinned phrase is never the one dropped at the 50-phrase cap. That last
+  part is what makes it worth more here than in a plain snippet list: before
+  it, a rarely copied but important phrase could vanish silently.
+- **Duplicates.** *Save phrase* warns when the same text is already saved
+  (*Save anyway* still allowed); a merge import skips phrases already stored.
+  "Same" = plain text equal after collapsing whitespace, case kept.
+
+**Not built**
+
+- **Order of pinned phrases by drag.** They are sorted by name. Needs a stored
+  order and drag handling in a panel that is itself draggable; only worth it
+  if someone pins more than a handful.
+- **Search by words.** The filter is one substring over name + categories +
+  text. Matching every typed word separately ("workup EtOAc") is a few lines;
+  real fuzzy matching is not needed at 50 phrases.
+- **Category colours.** Cosmetic. Sample ID prefixes already have a colour
+  picker (`prefix-colors.js`) whose pattern could be reused.
+- **Flagging duplicates already in the list**, and warning when an edited body
+  in Settings becomes the same as another phrase. Today only saving and
+  importing check.
+- **Sharing one phrase** — see the share code in the next section.
+- **Starter phrases** for organic chemistry (workup, drying, TLC, inert
+  atmosphere, purification). Asked for on 2026-11-23; the wording is waiting
+  for approval. Open question: seed them once on first use, or offer them as
+  an "Add starter phrases" button in Settings — the button is safer, nothing
+  appears in a list the user did not ask for.
+
+---
+
 ## Sharing phrases with colleagues — options, and what they cost
 
 Analysed 2026-08-25. Nothing built; this is the decision record so the question

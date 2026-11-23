@@ -19,6 +19,40 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [19.21.0] — 2026-11-23
+
+### Added
+- **Pin a phrase.** ☆ on a phrase row — in the panel's *Phrases* tab and in
+  *Settings → Phrases* — pins it. Pinned phrases are listed in a **★ Pinned**
+  group at the top of the tab (and stay under their categories), come first
+  in Settings, and are never the phrase dropped at the 50-phrase limit:
+  `enforceLimit()` now evicts unpinned phrases first and touches a pinned one
+  only when the pinned ones alone exceed the cap. `pinned` is a new boolean
+  on the stored phrase (absent = false, so existing phrases and old export
+  files need no migration) and travels through export / import. Pinning is
+  not a use — it does not refresh the last-used stamp.
+- **Duplicates are caught.** Two phrases are the same when their plain text
+  matches after whitespace is collapsed (`phraseBodyKey()`); name, categories
+  and formatting do not count, case does.
+  - *Save phrase* says "You already have this text saved as …" and the button
+    reads **Save anyway** — a second copy is still allowed.
+  - A merge import skips a phrase whose text is already stored under another
+    id, and the status line says how many were skipped. Same id still
+    replaces. The file's phrases are not compared with each other, and
+    *Import replaces everything* takes the file as it is.
+
+### Changed
+- *Save phrase* refuses to save when all 50 phrases are pinned — the new one
+  would be the phrase evicted — and says to unpin one.
+- `importPhrases()` returns `{ imported, skipped }` instead of a count; the
+  merge itself is the pure `mergeImportedPhrases()`.
+- *Settings → Phrases*: the row head grid has a column per control (pin,
+  name, last use, ✎, ✕).
+
+### Tests
+- `tests/phrases.test.js` — 8 cases over the cap with pins, the body key,
+  duplicate lookup and the import merge.
+
 ## [19.20.0] — 2026-11-23
 
 ### Added

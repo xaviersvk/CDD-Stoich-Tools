@@ -987,6 +987,12 @@ Storage is `chrome.storage.local` under `cddPhrasesV1`, capped at
 `PHRASE_LIMIT` (50). Over the cap the phrase **copied** least recently goes —
 looking at one does not count.
 
+Since **19.21.0** a phrase can be **pinned** (`pinned: true`). `enforceLimit()`
+drops unpinned phrases first, so a pinned one only goes when the pinned ones
+alone exceed the cap. Two phrases are **duplicates** when `phraseBodyKey()` of
+their text matches — whitespace collapsed, invisible characters gone, case
+kept. Name, categories and formatting do not make a phrase different.
+
 ### 10.1 Save a selection ("Save phrase")
 - **User value:** Select text in an ELN entry and a small button appears at the
   end of the selection; it opens a popover for a name and categories, and files
@@ -998,6 +1004,10 @@ looking at one does not count.
   `shared/places-editor.js`, `shared/combo-input.js`.
 - **Data source:** the DOM selection inside `.slate-editor`. Nothing is read
   from a payload.
+- **Duplicates:** when the selection's text is already saved
+  (`findDuplicatePhrase`), the popover names the existing phrase and the
+  button reads *Save anyway*. It warns, it does not block. When all 50 phrases
+  are pinned Save is disabled — the new phrase would be evicted on the spot.
 - **Maintenance difficulty:** **medium-high** — `selection-html.js` has to
   understand CDD's non-semantic Slate DOM (`div.slate-p`,
   `span[data-slate-leaf]`) and rename blocks by their `slate-*` class. Blocks
@@ -1008,20 +1018,25 @@ looking at one does not count.
 
 ### 10.2 Phrases panel tab
 - **User value:** The floating panel's *Phrases* tab lists saved phrases grouped
-  by category; a click copies one (HTML + text) and counts as a use.
+  by category; a click copies one (HTML + text) and counts as a use. ☆ on a
+  row pins it: pinned phrases are listed again in a *★ Pinned* group at the
+  top (they stay under their categories) and survive the cap.
 - **Entry point:** `src/content/features/phrases/panel-tab.js`.
 - **Related files:** `content/utils/clipboard.js` (`copyRichText`),
   `shared/phrases.js` (`groupPhrases`, `touchPhrase`).
 - **Note:** the copy is what refreshes the LRU stamp deciding which phrase is
   dropped at the cap. It is fired without awaiting — the clipboard already has
-  the text and nothing on screen waits for the write.
+  the text and nothing on screen waits for the write. Pinning is not a use and
+  leaves the stamp alone. A row is a `div.cdd-phrase-row` holding two buttons
+  (copy, pin) — a button cannot sit inside a button.
 - **Maintenance difficulty:** **low**.
 - **Regression risk:** **low**.
 
 ### 10.3 Manage and edit in Settings
 - **User value:** Rename a phrase, re-file it into other categories, rename or
   remove a category everywhere, delete a phrase — and, since **15.4.3**, edit
-  the wording itself.
+  the wording itself. Since **19.21.0**, ☆ pins a phrase; pinned rows are
+  listed first.
 - **Entry point:** `src/options/phrases-ui.js` (`initPhrasesUI`).
 - **Related files:** `shared/phrases.js`, `shared/places-editor.js`,
   `src/options/options.html` (the *Phrases* card), `src/options/options.css`
@@ -1068,6 +1083,11 @@ looking at one does not count.
 - **Note:** import is either **merge** (same id replaces) or **replace**, and
   everything imported goes through the same sanitiser as stored data — an
   export file is untrusted input.
+- **Duplicates:** a merge skips a phrase whose text is already stored under
+  another id (`mergeImportedPhrases`) and reports the count. Incoming phrases
+  are compared with what was stored before the import, never with each other;
+  *replace* takes the file as it is.
+- **Tests:** `tests/phrases.test.js`.
 - **Maintenance difficulty:** **low**.
 - **Regression risk:** **low**.
 

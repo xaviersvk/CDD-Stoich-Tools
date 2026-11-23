@@ -13,6 +13,13 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 19.20.0 — 2026-11-23
+
+You can download your last dictation recording: **⬇** next to the language picker in the Write-up tab.
+
+- **■ Stop** now shows the limit — `0:12 / 5:00`; the recording stops by itself at 5 minutes.
+- The recording is kept only until the next one or a page reload.
+
 ## 19.19.0 — 2026-11-23
 
 While you dictate, the **■ Stop** button fills with green as loud as the microphone hears you, so you can see it is listening.

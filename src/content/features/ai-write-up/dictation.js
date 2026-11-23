@@ -65,7 +65,10 @@ import {
 import { answerMeta, cardActions, copyParagraphOnCtrlClick } from "./copy-button.js";
 import { checksList } from "./checks-view.js";
 
+// A recording stops by itself here. Ours, not the services': five minutes of
+// the browser's Opus is a few MB, well under what either service accepts.
 const MAX_SECONDS = 300;
+const MAX_LABEL = `${Math.floor(MAX_SECONDS / 60)}:${String(MAX_SECONDS % 60).padStart(2, "0")}`;
 const MAX_CARDS = 10;
 
 // ---------------------------------------------------------------- state
@@ -82,6 +85,9 @@ let tick = null;
 let cards = [];
 // The request out at the AI service right now — a click on the busy button cancels it.
 let requestId = null;
+// { blob, at, seconds } — the last recording, kept until the next one or a
+// reload, so it can be downloaded (⬇ in the Write-up tab).
+let lastRecording = null;
 
 function newRequestId() {
     requestId = crypto.randomUUID();
@@ -124,16 +130,20 @@ export function dictationUnavailable() {
 // A key added or removed in the settings repaints every 🎤.
 onAiWriteUpChanged(() => setState({}));
 
-function clock(since) {
-    const s = Math.floor((Date.now() - since) / 1000);
+function minSec(seconds) {
+    const s = Math.floor(seconds);
     return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
-/** What a dictate button says in the current state — "■ 0:12", "⏳ Translating… 0:04". */
+function clock(since) {
+    return minSec((Date.now() - since) / 1000);
+}
+
+/** What a dictate button says in the current state — "■ Stop 0:12 / 5:00", "⏳ Translating… 0:04". */
 export function dictationLabel(idleLabel) {
     switch (state.phase) {
         case "recording":
-            return `■ Stop ${clock(state.since)}`;
+            return `■ Stop ${clock(state.since)} / ${MAX_LABEL}`;
         case "transcribing":
             return `⏳ Transcribing… ${clock(state.since)} ✕`;
         case "translating":
@@ -618,13 +628,14 @@ async function start(origin) {
         for (const track of stream.getTracks()) track.stop();
         const blob = new Blob(chunks, { type: recorder.mimeType });
         recorder = null;
+        if (blob.size) lastRecording = { blob, at: Date.now(), seconds: (Date.now() - state.since) / 1000 };
         void runDictation(blob, origin, entryTextForContext(origin), currentEntry()?.key);
     });
 
     recorder.start();
     startMeter(stream);
     clearInterval(tick);
-    setState({ phase: "recording", since: Date.now(), origin, status: "Recording — click Stop when done." });
+    setState({ phase: "recording", since: Date.now(), origin, status: `Recording — click Stop when done. It stops by itself at ${MAX_LABEL}.` });
     tick = setInterval(() => {
         if (Date.now() - state.since >= MAX_SECONDS * 1000) stop();
         setState({});
@@ -803,6 +814,28 @@ function cardNode(card) {
 
 let unsubscribeTab = null;
 
+function fileSize(bytes) {
+    return bytes >= 1e6 ? `${(bytes / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1e3))} kB`;
+}
+
+// The file the service got: dictation-2026-11-23-1432.webm.
+function downloadLastRecording() {
+    if (!lastRecording) return;
+    const { blob, at } = lastRecording;
+    const d = new Date(at);
+    const pad = (n) => String(n).padStart(2, "0");
+    const stamp = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
+    const extension = /ogg/.test(blob.type) ? "ogg" : /mp4/.test(blob.type) ? "m4a" : "webm";
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `dictation-${stamp}.${extension}`;
+    document.documentElement.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
 /**
  * Adds 🎤, the language picker and a status line to `bar`, and the
  * dictation cards to `list`. Called again whenever the pane is rebuilt.
@@ -831,9 +864,20 @@ export function mountDictation(bar, list) {
     language.addEventListener("mousedown", (event) => event.stopPropagation());
     language.addEventListener("change", () => void saveAiSettings({ language: language.value }));
 
+    // ⬇ the last recording, as recorded — there once something was recorded.
+    const download = document.createElement("button");
+    download.type = "button";
+    download.className = "cdd-wu-download";
+    download.textContent = "⬇";
+    download.addEventListener("mousedown", (event) => event.stopPropagation());
+    download.addEventListener("click", (event) => {
+        event.stopPropagation();
+        downloadLastRecording();
+    });
+
     const status = document.createElement("div");
     status.className = "cdd-wu-dictation-status";
-    bar.append(mic, language, status);
+    bar.append(mic, language, download, status);
 
     let shown = null;
     const paint = () => {
@@ -846,6 +890,10 @@ export function mountDictation(bar, list) {
         // Busy, the button cancels (✕ on its label).
         mic.title = unavailable || (busy ? "Cancel" : "Dictate about the whole entry. Stop when done: the English appears below, ready to copy.");
         status.textContent = state.status || "";
+        download.hidden = !lastRecording;
+        if (lastRecording) {
+            download.title = `Download the last recording — ${minSec(lastRecording.seconds)}, ${fileSize(lastRecording.blob.size)}. Kept until the next one or a page reload.`;
+        }
         const key = currentEntry()?.key;
         if (shown?.cards !== cards || shown?.key !== key) {
             shown = { cards, key };
@@ -899,6 +947,7 @@ export const DICTATION_STYLES = (panelId) => `
     color: #111827;
     background: #ffffff;
   }
+  #${panelId} .cdd-wu-download[hidden] { display: none; }
   #${panelId} .cdd-wu-dictation-status { flex-basis: 100%; font-size: 11px; color: #cbd5e1; }
   #${panelId} .cdd-wu-dictation-status:empty { display: none; }
   #${panelId} .cdd-wu-dictations { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }

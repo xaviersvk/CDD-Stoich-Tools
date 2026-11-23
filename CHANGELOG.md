@@ -19,6 +19,22 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [19.20.0] — 2026-11-23
+
+### Added
+- **Download the last recording.** A ⬇ button appears next to the language
+  picker in the Write-up tab once something has been recorded (from the tab,
+  a reaction, Ask or Reply). It saves the audio exactly as it was sent to the
+  dictation service — `dictation-YYYY-MM-DD-HHMM.webm` (or `.ogg` / `.m4a`,
+  whatever the browser recorded) — and its tooltip gives the length and size.
+  The recording lives in the content script's memory only: the next recording
+  replaces it and a page reload drops it. Meant for checking what the
+  microphone actually picked up when a transcript comes back wrong.
+- **The recording limit is on the button.** ■ Stop now reads
+  `■ Stop 0:12 / 5:00`, and the status line says the recording stops by
+  itself at 5:00. The limit is the extension's own `MAX_SECONDS` (300 s),
+  unchanged; it was never shown before.
+
 ## [19.19.0] — 2026-11-23
 
 ### Added

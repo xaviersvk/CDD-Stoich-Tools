@@ -48,6 +48,9 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   merge itself is the pure `mergeImportedPhrases()`.
 - *Settings → Phrases*: the row head grid has a column per control (pin,
   name, last use, ✎, ✕).
+- **22 more lines for cards without a sample.** The pool `pickNoSampleQuote()`
+  draws from grows from 74 to 96 (IT, space, fairy tales, bookkeeping, and a
+  few short ones).
 
 ### Tests
 - `tests/phrases.test.js` — 8 cases over the cap with pins, the body key,

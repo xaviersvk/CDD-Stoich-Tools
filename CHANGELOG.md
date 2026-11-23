@@ -52,6 +52,20 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   draws from grows from 74 to 96 (IT, space, fairy tales, bookkeeping, and a
   few short ones).
 
+### Internal
+- **CI back to green, no behaviour change.** Test and Qodana had been red
+  since 19.18.1 (run 45258283390: HIGH 1, MODERATE 82 against a ceiling of
+  79), all of it from code that predates this version.
+  - `steady-stoich-edit/index.js`: `begin()` reads `lastEdit` into a local
+    once, so the checker can see it is not null inside the block (the HIGH).
+  - `location-tree-bridge.js`: `nativeEvent` is put on the synthetic event
+    with `Object.assign` — the `npm run typecheck` failure (TS2339).
+  - `src/types/xhr-marks.d.ts` declares the four private marks the page-world
+    hooks keep on an XMLHttpRequest (`__cdd_url`, `__cddMethod`, `__cddUrl`,
+    `__cddExact`); `jsconfig.json` includes `src/**/*.d.ts`.
+  - Left alone: `vite` 8.2.1 → 8.2.4 (a dev-server advisory; nothing of vite
+    ships in the extension) and two clone findings.
+
 ### Tests
 - `tests/phrases.test.js` — 8 cases over the cap with pins, the body key,
   duplicate lookup and the import merge.

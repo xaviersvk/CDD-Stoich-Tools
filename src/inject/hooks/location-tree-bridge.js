@@ -133,7 +133,9 @@ function expandTree(ids, scope) {
     const handler = props?.view?.onExpandedItemsChange;
     if (typeof handler !== "function") return;
     const event = new Event("cdd-tree-filter");
-    event.nativeEvent = event;
+    // Same as `event.nativeEvent = event`; a plain Event has no such property
+    // as far as the type checker knows.
+    Object.assign(event, { nativeEvent: event });
     handler(event, (ids || []).map(String));
 }
 

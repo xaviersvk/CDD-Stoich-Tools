@@ -287,13 +287,16 @@ function begin(target, synthetic = false) {
 
     /** @type {Field | null} */
     let field = null;
-    if (!clicked && (synthetic || !isTypingTarget(target)) && lastEdit?.cell.isConnected
-        && tables.some((t) => t.contains(lastEdit?.cell ?? null))) {
-        const el = fieldElement(lastEdit.cell, lastEdit.name);
+    // Read once: a module-level `let` cannot be narrowed past the callback
+    // below, a local can.
+    const last = lastEdit;
+    if (!clicked && (synthetic || !isTypingTarget(target)) && last?.cell.isConnected
+        && tables.some((t) => t.contains(last.cell))) {
+        const el = fieldElement(last.cell, last.name);
         field = {
-            ...lastEdit,
-            top: (el || lastEdit.cell).getBoundingClientRect().top,
-            cellTop: lastEdit.cell.getBoundingClientRect().top,
+            ...last,
+            top: (el || last.cell).getBoundingClientRect().top,
+            cellTop: last.cell.getBoundingClientRect().top,
         };
     }
 

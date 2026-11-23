@@ -17,7 +17,7 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 You can download your last dictation recording: **⬇** next to the language picker in the Write-up tab.
 
-- **■ Stop** now shows the limit — `0:12 / 5:00`; the recording stops by itself at 5 minutes.
+- A dictation can now run 10 minutes (was 5). **■ Stop** shows the limit — `0:12 / 10:00`.
 - The recording is kept only until the next one or a page reload.
 
 ## 19.19.0 — 2026-11-23

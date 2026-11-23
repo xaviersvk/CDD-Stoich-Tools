@@ -65,9 +65,9 @@ import {
 import { answerMeta, cardActions, copyParagraphOnCtrlClick } from "./copy-button.js";
 import { checksList } from "./checks-view.js";
 
-// A recording stops by itself here. Ours, not the services': five minutes of
-// the browser's Opus is a few MB, well under what either service accepts.
-const MAX_SECONDS = 300;
+// A recording stops by itself here. Ours, not the services': ten minutes of
+// the browser's Opus is under 10 MB even at 128 kbit/s, and OpenAI takes 25 MB.
+const MAX_SECONDS = 600;
 const MAX_LABEL = `${Math.floor(MAX_SECONDS / 60)}:${String(MAX_SECONDS % 60).padStart(2, "0")}`;
 const MAX_CARDS = 10;
 

@@ -31,9 +31,15 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
   replaces it and a page reload drops it. Meant for checking what the
   microphone actually picked up when a transcript comes back wrong.
 - **The recording limit is on the button.** ■ Stop now reads
-  `■ Stop 0:12 / 5:00`, and the status line says the recording stops by
-  itself at 5:00. The limit is the extension's own `MAX_SECONDS` (300 s),
-  unchanged; it was never shown before.
+  `■ Stop 0:12 / 10:00`, and the status line says the recording stops by
+  itself at 10:00. The limit is the extension's own `MAX_SECONDS`; it was
+  never shown before.
+
+### Changed
+- **A dictation may run 10 minutes** (was 5). Ten minutes of the browser's
+  Opus stays under 10 MB even at 128 kbit/s, against OpenAI's 25 MB upload
+  limit; CERIT-SC's own limit is not verified. The answer timeout stays at
+  its 300 s default.
 
 ## [19.19.0] — 2026-11-23
 

@@ -660,10 +660,12 @@ repeated.
   importing check.
 - **Sharing one phrase** — see the share code in the next section.
 - **Starter phrases** for organic chemistry (workup, drying, TLC, inert
-  atmosphere, purification). Asked for on 2026-11-23; the wording is waiting
-  for approval. Open question: seed them once on first use, or offer them as
-  an "Add starter phrases" button in Settings — the button is safer, nothing
-  appears in a list the user did not ask for.
+  atmosphere, purification). Asked for on 2026-11-23; five generic
+  experimental-section sentences were proposed the same day and **all five
+  were rejected**, so nothing ships. If it comes back, the wording has to come
+  from the user, not be invented. Open question then: seed them once on first
+  use, or offer them as an "Add starter phrases" button in Settings — the
+  button is safer, nothing appears in a list the user did not ask for.
 
 ---
 

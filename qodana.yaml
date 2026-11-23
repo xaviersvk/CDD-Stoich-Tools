@@ -18,6 +18,15 @@ include:
 # is excluded here rather than with scattered `noinspection` comments.
 exclude:
   - name: ExceptionCaughtLocallyJS
+  # "Result of method call returning a promise is ignored" (MODERATE). Excluded
+  # on 2026-11-23 at 72 findings: nearly every one is a deliberate
+  # fire-and-forget call (click handlers, first paints, options-page change
+  # handlers whose writers catch their own storage failure), and a report
+  # carrying 72 of them was not being read. What is given up: this rule did
+  # find one real bug, a missing catch in tree-filter.js (2026-09-30). An
+  # async call that can reject still needs its own catch -- nothing checks
+  # that any more. Remove this line to bring the rule back.
+  - name: JSIgnoredPromiseFromCall
 
 # The quality gate. The run fails when the count for a severity goes above its
 # number, which turns the "Qodana" check red and — once the check is required in
@@ -26,6 +35,12 @@ exclude:
 # critical/high: none, ever.
 #
 # moderate: a RATCHET, not a target. The agreed ceiling is 20.
+#
+# 2026-11-23: 5 (3 deprecated, 2 clones). JSIgnoredPromiseFromCall is excluded
+# above, which takes 72 out of the count, and vite went 8.2.1 -> 8.2.4 for the
+# one vulnerable-dependency finding. Before that the same day: 78, after the
+# HIGH and four undefined-property findings were fixed for 19.21.0 (run on
+# 1fe2609). The notes below are history from when ignored promises counted.
 #
 # 2026-10-21: red since 2026-10-09 at 89 (CI run 39577699387). The 10 new
 # findings, against the last green run (f3ff26d): two imports of the parked
@@ -104,4 +119,4 @@ failureConditions:
   severityThresholds:
     critical: 0
     high: 0
-    moderate: 79
+    moderate: 5

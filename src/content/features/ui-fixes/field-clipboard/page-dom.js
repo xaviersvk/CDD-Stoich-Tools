@@ -16,11 +16,14 @@
 //     UNNAMED checkbox — the sample identifier — which is never touched.
 //   - "Add a … field" appends a row at the end of the table.
 //   - A Pick List row grows a pencil (.editPickListButton) at once, even
-//     unsaved. It opens .pickListDefinitionDialog: one text input per value
-//     and an empty one whose placeholder says "Type in a value and hit enter
-//     or paste in a list of values, one per line". A `paste` event with a
-//     multi-line text/plain payload adds one value per line; setting the
-//     input's value alone adds nothing. "Update Pick List" closes it.
+//     unsaved. Since 2026-11 it opens an MUI dialog (.listItemsDialog): an
+//     empty .listItemsInput whose placeholder says "Type in a value and hit
+//     enter or paste in a list of values, one per line", and one
+//     .listItemsEditor input per value. A `paste` event with a multi-line
+//     text/plain payload adds one value per line; setting the input's value
+//     alone adds nothing. "Save" closes it. The older dialog
+//     (.pickListDefinitionDialog, closed by "Update Pick List") is still
+//     accepted.
 //   - Nothing reaches the server before the page's own "Update … fields".
 
 import { EVENTS, EVENT_SOURCE } from "../../../../shared/event-types.js";
@@ -28,7 +31,8 @@ import { setNativeValue } from "../../../utils/dom.js";
 import { nextBeat, waitForBeats } from "../../../utils/wait.js";
 import { kindConfig } from "./field-model.js";
 
-const PICK_DIALOG = ".pickListDefinitionDialog";
+const PICK_DIALOG = ".listItemsDialog, .pickListDefinitionDialog";
+const PICK_CONFIRM = /^(?:Save|Update Pick List)$/;
 const PICK_BUTTON = ".editPickListButton";
 const BRIDGE_TIMEOUT_MS = 500;
 // field-forms puts its (i) into the name cell; names are read around it.
@@ -250,8 +254,8 @@ export async function setPickList(tr, values) {
     });
     if (!filled) throw new Error("the pick list did not take the values");
 
-    const update = [...dialog.querySelectorAll("a, button")].find((el) => el.textContent.trim() === "Update Pick List");
-    if (!update) throw new Error("the pick list dialog has no Update button");
+    const update = [...dialog.querySelectorAll("a, button")].find((el) => PICK_CONFIRM.test(el.textContent.trim()));
+    if (!update) throw new Error("the pick list dialog has no Save button");
     update.click();
 
     const closed = await waitFor(() => (document.querySelector(PICK_DIALOG) ? null : true));

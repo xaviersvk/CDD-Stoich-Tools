@@ -13,6 +13,10 @@ detail, see [`CHANGELOG.md`](./CHANGELOG.md).
 
 ---
 
+## 19.18.1 — 2026-11-23
+
+- Fixed: **Paste** on the *Settings → … Fields* pages fills Pick List values again (CDD changed its Pick List editor).
+
 ## 19.18.0 — 2026-11-09
 
 You can now see the location trees of all your vaults as one tree: switch on **Merge vaults** at the bottom of *Edit Locations*.

@@ -19,6 +19,19 @@ taken from `manifest.json` bumps in the git history; dates are commit dates
 > analysis.
 
 ---
+## [19.18.1] — 2026-11-23
+
+### Fixed
+- **Paste fields fills Pick Lists again.** CDD replaced the Pick List editor on
+  the "… Fields" settings pages with an MUI dialog (`.listItemsDialog`, values
+  in `.listItemsEditor` inputs, confirmed by **Save**). Paste looked for the old
+  `.pickListDefinitionDialog` and its "Update Pick List" button, so every Pick
+  List field failed. The paste event into the entry box still adds one value
+  per line; only the dialog selector and the confirm button changed. Both the
+  new and the old dialog are accepted. Copy was not affected — the page's
+  React rows still carry `pick_list_values`. Verified live on vaults
+  1000000091 and 1000000109 with an unsaved row.
+
 ## [19.18.0] — 2026-11-09
 
 ### Added
